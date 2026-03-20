@@ -39,9 +39,8 @@ export async function POST(
         row.plan.entities,
         row.plan.visual_strategy?.image_density
       ),
-      // Try AI-generated hero → Brave search → best image from article
-      generateHeroImage(rawArticle, id)
-        .then((url) => url ?? fetchThumbnailImage(rawArticle.title, rawArticle.article_type)),
+      // Brave search for hero image (real photos look more natural than AI-generated)
+      fetchThumbnailImage(rawArticle.title, rawArticle.article_type),
     ])
 
     enrichedArticle.thumbnail_url = heroUrl ?? pickBestArticleImage(enrichedArticle)
