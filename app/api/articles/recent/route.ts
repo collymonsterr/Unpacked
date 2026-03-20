@@ -13,5 +13,23 @@ export async function GET() {
     return Response.json({ error: 'Failed to fetch articles' }, { status: 500 })
   }
 
-  return Response.json(data ?? [])
+  // Sort by sort_order (stored in article JSONB), then by created_at
+  const articles = (data ?? []).sort((a, b) => {
+    // Pinned first
+    const aPinned = a.pinned ? 1 : 0
+    const bPinned = b.pinned ? 1 : 0
+    if (aPinned !== bPinned) return bPinned - aPinned
+
+    // Then by sort_order (lower = higher position)
+    const aOrder = (a.article as Record<string, unknown>)?.sort_order as number | undefined
+    const bOrder = (b.article as Record<string, unknown>)?.sort_order as number | undefined
+    if (aOrder != null && bOrder != null) return aOrder - bOrder
+    if (aOrder != null) return -1
+    if (bOrder != null) return 1
+
+    // Finally by created_at descending
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  })
+
+  return Response.json(articles)
 }

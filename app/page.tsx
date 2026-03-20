@@ -10,11 +10,26 @@ async function getRecentArticles(): Promise<ArticleRow[]> {
     const { getSupabaseAdmin } = await import('@/lib/supabase')
     const { data } = await getSupabaseAdmin()
       .from('articles')
-      .select('id, slug, query, status, plan, article, created_at')
+      .select('id, slug, query, status, plan, article, pinned, created_at')
       .eq('status', 'complete')
+      .order('pinned', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
       .limit(20)
-    return (data ?? []) as ArticleRow[]
+
+    // Sort by sort_order (stored in article JSONB), then by created_at
+    const articles = (data ?? []).sort((a, b) => {
+      const aPinned = a.pinned ? 1 : 0
+      const bPinned = b.pinned ? 1 : 0
+      if (aPinned !== bPinned) return bPinned - aPinned
+      const aOrder = (a.article as Record<string, unknown>)?.sort_order as number | undefined
+      const bOrder = (b.article as Record<string, unknown>)?.sort_order as number | undefined
+      if (aOrder != null && bOrder != null) return aOrder - bOrder
+      if (aOrder != null) return -1
+      if (bOrder != null) return 1
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+
+    return articles as ArticleRow[]
   } catch {
     return []
   }
@@ -36,9 +51,11 @@ export default async function HomePage() {
           className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4 max-w-3xl"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
         >
-          AI answers,
+          AI answers
           <br />
-          <span style={{ color: 'var(--accent)' }}>elevated to editorial quality.</span>
+          Elevated to
+          <br />
+          <span style={{ color: 'var(--accent)' }}>Editorial quality.</span>
         </h1>
         <p
           className="text-lg md:text-xl mb-10 max-w-xl"
