@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { writeArticle } from '@/lib/claude'
 import { enrichArticleWithImages, fetchThumbnailImage } from '@/lib/images'
+import { generateHeroImage } from '@/lib/imagen'
 import { getSupabaseAdmin } from '@/lib/supabase'
 
 export const maxDuration = 300 // 5 minutes (Vercel Pro)
@@ -31,17 +32,19 @@ export async function POST(
     // Step 2: Research & Write
     const rawArticle = await writeArticle(row.query, row.plan)
 
-    // Step 3: Image enrichment + thumbnail (in parallel)
-    const [enrichedArticle, thumbnailUrl] = await Promise.all([
+    // Step 3: Image enrichment + hero image (in parallel)
+    const [enrichedArticle, heroUrl] = await Promise.all([
       enrichArticleWithImages(
         rawArticle,
         row.plan.entities,
         row.plan.visual_strategy?.image_density
       ),
-      fetchThumbnailImage(rawArticle.title, rawArticle.article_type),
+      // Try AI-generated hero first, fall back to Brave search
+      generateHeroImage(rawArticle.title, rawArticle.article_type, id)
+        .then((url) => url ?? fetchThumbnailImage(rawArticle.title, rawArticle.article_type)),
     ])
 
-    enrichedArticle.thumbnail_url = thumbnailUrl
+    enrichedArticle.thumbnail_url = heroUrl
 
     // Save complete article
     await db

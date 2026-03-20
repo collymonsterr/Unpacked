@@ -4,8 +4,8 @@ import { useRef, useState, useEffect } from 'react'
 import type { ComparisonMatrixSection } from '@/types/article'
 
 const HIGHLIGHT_COLOR = '#E07A3A'
-const NEUTRAL_COLOR = '#D9D6D0'
-const DOT_BG = '#EEEDEA'
+const NEUTRAL_COLOR = '#8A8580'
+const DOT_BG = '#E8E6E3'
 
 export default function ComparisonMatrix({ section }: { section: ComparisonMatrixSection }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -64,13 +64,15 @@ export default function ComparisonMatrix({ section }: { section: ComparisonMatri
             </thead>
             <tbody>
               {section.metrics.map((metric, mi) => {
-                const maxScore = Math.max(...metric.scores)
+                // Pad scores to match items length (handles AI generating fewer scores than items)
+                const scores = section.items.map((_, i) => metric.scores[i] ?? 0)
+                const maxScore = Math.max(...scores)
                 return (
                   <tr key={metric.name} style={{ borderTop: '1px solid var(--border)' }}>
                     <td className="text-sm font-medium py-3 pr-4" style={{ color: 'var(--text-primary)' }}>
                       {metric.name}
                     </td>
-                    {metric.scores.map((score, si) => {
+                    {scores.map((score, si) => {
                       const isHighest = score === maxScore
                       return (
                         <td key={si} className="py-3 px-2">

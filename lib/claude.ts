@@ -2,11 +2,18 @@ import Anthropic from '@anthropic-ai/sdk'
 import type { ArticlePlan, ArticleContent, ArticleType } from '@/types/article'
 import { VISUAL_DEFAULTS } from '@/lib/article-config'
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-  maxRetries: 4,
-  timeout: 5 * 60 * 1000, // 5 minutes — web search calls are slow
-})
+// Lazy-init so the env var is always available at call time (not module-load time)
+let _anthropic: Anthropic | null = null
+function getAnthropic(): Anthropic {
+  if (!_anthropic) {
+    _anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      maxRetries: 4,
+      timeout: 5 * 60 * 1000, // 5 minutes — web search calls are slow
+    })
+  }
+  return _anthropic
+}
 
 const PLANNING_SYSTEM_PROMPT = `You are an article planning engine for ArticleAI. Given a user query, you MUST first classify the query into the correct article type, then design the optimal structure and visual strategy for that type.
 
@@ -303,8 +310,8 @@ function extractJSON(text: string): string {
 }
 
 export async function planArticle(query: string): Promise<ArticlePlan> {
-  const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5',
+  const message = await getAnthropic().messages.create({
+    model: 'claude-sonnet-4-20250514',
     max_tokens: 2048,
     system: PLANNING_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: `Plan an article for: "${query}"` }],
@@ -329,8 +336,8 @@ export async function writeArticle(query: string, plan: ArticlePlan): Promise<Ar
 
   for (let attempt = 0; attempt < 2; attempt++) {
     // Use streaming to keep the connection alive during long web search calls
-    const stream = anthropic.messages.stream({
-      model: 'claude-sonnet-4-5',
+    const stream = getAnthropic().messages.stream({
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 16000,
       system: WRITING_SYSTEM_PROMPT,
       tools: [{ type: 'web_search_20250305' as const, name: 'web_search', max_uses: 5 }],
@@ -374,8 +381,8 @@ export async function refineArticle(
   currentArticle: ArticleContent,
   instruction: string
 ): Promise<{ article: ArticleContent; suggestion_chips: { refinements: string[]; related: string[] } }> {
-  const stream = anthropic.messages.stream({
-    model: 'claude-sonnet-4-5',
+  const stream = getAnthropic().messages.stream({
+    model: 'claude-sonnet-4-20250514',
     max_tokens: 16000,
     system: WRITING_SYSTEM_PROMPT,
     tools: [{ type: 'web_search_20250305' as const, name: 'web_search', max_uses: 5 }],

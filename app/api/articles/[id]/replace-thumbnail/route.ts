@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { fetchThumbnailImage } from '@/lib/images'
+import { generateHeroImage } from '@/lib/imagen'
 import type { ArticleContent } from '@/types/article'
 
 export async function POST(
@@ -14,10 +15,10 @@ export async function POST(
   if (!row?.article) return Response.json({ error: 'Not found' }, { status: 404 })
 
   const article = row.article as ArticleContent
-  const oldUrl = article.thumbnail_url
 
-  // Fetch a new thumbnail, excluding the current one
-  const newUrl = await fetchThumbnailImage(article.title, article.article_type, oldUrl ?? undefined)
+  // Generate a new AI hero image, fall back to Brave search
+  const newUrl = await generateHeroImage(article.title, article.article_type, id)
+    ?? await fetchThumbnailImage(article.title, article.article_type, article.thumbnail_url ?? undefined)
 
   article.thumbnail_url = newUrl
 
