@@ -7,7 +7,11 @@ export interface NavItem {
 
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text
-  return text.slice(0, max).trimEnd() + '…'
+  // Try to break at a word boundary
+  const trimmed = text.slice(0, max)
+  const lastSpace = trimmed.lastIndexOf(' ')
+  if (lastSpace > max * 0.6) return trimmed.slice(0, lastSpace) + '…'
+  return trimmed.trimEnd() + '…'
 }
 
 function getSectionLabel(section: ArticleSection): string | null {
@@ -25,17 +29,22 @@ function getSectionLabel(section: ArticleSection): string | null {
       return 'Sources'
     case 'price_tier_breakdown':
       return 'Price breakdown'
+    case 'who_this_is_for':
+      return 'Who this is for'
+    case 'head_to_head':
+      return 'Head to head'
     case 'image_section':
-      return null // Skip image sections from nav
-    case 'content_section':
-    case 'bar_chart':
+      return null
     case 'stat_cards':
-    case 'timeline':
+      return 'Key numbers'
+    case 'bar_chart':
     case 'line_chart':
     case 'pie_chart':
     case 'treemap':
-    case 'head_to_head':
-    case 'who_this_is_for':
+      return null // Skip charts from nav — they're visual aids, not destinations
+    case 'timeline':
+      return 'Timeline'
+    case 'content_section':
       return (section as { heading?: string }).heading || null
     default:
       return (section as { heading?: string }).heading || null
@@ -44,16 +53,9 @@ function getSectionLabel(section: ArticleSection): string | null {
 
 /**
  * Build the nav items list from article content.
- * Returns items for quick_verdict, executive_summary, and every
- * section that has a displayable label (skips image_section).
- *
- * The `id` for sections uses the array index to guarantee consistency
- * between the sidebar nav and the section renderer.
+ * Short, clean labels — one line each. Skips charts and image sections.
  */
 export function buildNavItems(article: ArticleContent): NavItem[] {
-  const shouldTruncate = article.sections.length > 10
-  const maxLen = shouldTruncate ? 25 : 40
-
   const items: NavItem[] = [
     { id: 'section-verdict', label: 'Quick verdict' },
     { id: 'section-summary', label: 'Summary' },
@@ -66,7 +68,7 @@ export function buildNavItems(article: ArticleContent): NavItem[] {
 
     items.push({
       id: `section-${i}`,
-      label: truncate(rawLabel, maxLen),
+      label: truncate(rawLabel, 20),
     })
   }
 

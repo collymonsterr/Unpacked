@@ -101,11 +101,11 @@ export default function ArticleSidebarNav({ items }: Props) {
           position: sticky;
           top: 50%;
           transform: translateY(-50%);
-          width: 170px;
+          width: 160px;
           max-height: 70vh;
           overflow-y: auto;
           flex-shrink: 0;
-          padding-right: 16px;
+          padding-right: 12px;
           scrollbar-width: none;
         }
         .article-sidebar-nav::-webkit-scrollbar {
@@ -115,25 +115,28 @@ export default function ArticleSidebarNav({ items }: Props) {
           display: block;
           width: 100%;
           text-align: left;
-          padding: 4px 0 4px 12px;
-          font-size: 12px;
-          line-height: 1.4;
+          padding: 6px 0 6px 14px;
+          font-size: 13px;
+          line-height: 1.3;
           color: #94918D;
           font-weight: 400;
           border: none;
           background: none;
           cursor: pointer;
           position: relative;
-          transition: color 300ms ease, font-weight 300ms ease;
+          transition: color 300ms ease;
           font-family: var(--font-outfit);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .sidebar-nav-item::before {
           content: '';
           position: absolute;
           left: 0;
-          top: 2px;
-          bottom: 2px;
-          width: 2.5px;
+          top: 4px;
+          bottom: 4px;
+          width: 3px;
           border-radius: 2px;
           background: transparent;
           transition: background 300ms ease;
