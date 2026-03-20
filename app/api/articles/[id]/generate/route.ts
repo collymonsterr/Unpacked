@@ -1,10 +1,8 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, after } from 'next/server'
 import { writeArticle } from '@/lib/claude'
 import { enrichArticleWithImages, fetchThumbnailImage } from '@/lib/images'
-import { generateHeroImage, pickBestArticleImage } from '@/lib/imagen'
+import { pickBestArticleImage } from '@/lib/imagen'
 import { getSupabaseAdmin } from '@/lib/supabase'
-
-export const maxDuration = 300 // 5 minutes (Vercel Pro)
 
 export async function POST(
   _request: NextRequest,
@@ -28,39 +26,48 @@ export async function POST(
     return Response.json({ error: 'Article has no plan' }, { status: 400 })
   }
 
-  try {
-    // Step 2: Research & Write
-    const rawArticle = await writeArticle(row.query, row.plan)
+  // Set status to generating immediately so the client can poll
+  await db
+    .from('articles')
+    .update({ status: 'generating' })
+    .eq('id', id)
 
-    // Step 3: Image enrichment + hero image (in parallel)
-    const [enrichedArticle, heroUrl] = await Promise.all([
-      enrichArticleWithImages(
-        rawArticle,
-        row.plan.entities,
-        row.plan.visual_strategy?.image_density
-      ),
-      // Brave search for hero image (real photos look more natural than AI-generated)
-      fetchThumbnailImage(rawArticle.title, rawArticle.article_type),
-    ])
+  // Run the actual generation in the background after responding
+  after(async () => {
+    const bgDb = getSupabaseAdmin()
+    try {
+      // Step 2: Research & Write
+      const rawArticle = await writeArticle(row.query, row.plan)
 
-    enrichedArticle.thumbnail_url = heroUrl ?? pickBestArticleImage(enrichedArticle)
+      // Step 3: Image enrichment + hero image (in parallel)
+      const [enrichedArticle, heroUrl] = await Promise.all([
+        enrichArticleWithImages(
+          rawArticle,
+          row.plan.entities,
+          row.plan.visual_strategy?.image_density
+        ),
+        fetchThumbnailImage(rawArticle.title, rawArticle.article_type),
+      ])
 
-    // Save complete article
-    await db
-      .from('articles')
-      .update({
-        article: enrichedArticle,
-        status: 'complete',
-      })
-      .eq('id', id)
+      enrichedArticle.thumbnail_url = heroUrl ?? pickBestArticleImage(enrichedArticle)
 
-    return Response.json({ success: true })
-  } catch (err) {
-    console.error('[generate]', err)
-    await db
-      .from('articles')
-      .update({ status: 'error' })
-      .eq('id', id)
-    return Response.json({ error: 'Generation failed' }, { status: 500 })
-  }
+      // Save complete article
+      await bgDb
+        .from('articles')
+        .update({
+          article: enrichedArticle,
+          status: 'complete',
+        })
+        .eq('id', id)
+    } catch (err) {
+      console.error('[generate]', err)
+      await bgDb
+        .from('articles')
+        .update({ status: 'error' })
+        .eq('id', id)
+    }
+  })
+
+  // Respond immediately — client will poll for completion
+  return Response.json({ success: true, status: 'generating' })
 }

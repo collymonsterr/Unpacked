@@ -64,16 +64,33 @@ export default function ArticleView({ articleRow, isOwner, isNew }: Props) {
       const res = await fetch(`/api/articles/${articleRow.id}/generate`, {
         method: 'POST',
       })
-      if (!res.ok) throw new Error('Failed')
-      // Re-fetch the full article
-      const articleRes = await fetch(`/api/articles/${articleRow.id}`)
-      if (!articleRes.ok) throw new Error('Failed to fetch')
-      const data = await articleRes.json()
-      setArticle(data.article)
-      setChips(data.suggestion_chips)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      if (!res.ok) throw new Error('Failed to start regeneration')
+
+      // Poll for completion — the endpoint now runs generation in the background
+      const poll = async (): Promise<void> => {
+        const articleRes = await fetch(`/api/articles/${articleRow.id}`)
+        if (!articleRes.ok) throw new Error('Failed to fetch')
+        const data = await articleRes.json()
+
+        if (data.status === 'complete' && data.article) {
+          setArticle(data.article)
+          setChips(data.suggestion_chips)
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+          return
+        }
+        if (data.status === 'error') {
+          throw new Error('Regeneration failed')
+        }
+        // Still generating — wait and poll again
+        await new Promise((r) => setTimeout(r, 3000))
+        return poll()
+      }
+
+      // Wait a moment for generation to start, then begin polling
+      await new Promise((r) => setTimeout(r, 2000))
+      await poll()
     } catch {
-      // silently fail
+      alert('Article regeneration failed. Please try again.')
     } finally {
       setIsRegeneratingArticle(false)
       setToolbarBusy(null)
