@@ -86,6 +86,22 @@ export default function ProductCard({ section, isAdmin, onReplaceImage, onSetPri
         border: '1px solid var(--border)',
       }}
     >
+      {/* Heading + Price — top of card for immediate identification */}
+      <div className="flex items-start justify-between gap-4 p-5 md:p-6 pb-0">
+        <h3
+          className="text-xl font-bold"
+          style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+        >
+          {section.heading}
+        </h3>
+        <p
+          className="text-xl md:text-2xl font-bold shrink-0"
+          style={{ color: 'var(--accent)' }}
+        >
+          {section.price}
+        </p>
+      </div>
+
       {/* Hero Image Container — white bg with padding */}
       <div className="p-4 md:p-5">
         <div
@@ -221,21 +237,6 @@ export default function ProductCard({ section, isAdmin, onReplaceImage, onSetPri
 
       {/* Details */}
       <div className="p-5 md:p-6">
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <h3
-            className="text-xl font-bold"
-            style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
-          >
-            {section.heading}
-          </h3>
-          <p
-            className="text-xl md:text-2xl font-bold shrink-0"
-            style={{ color: 'var(--accent)' }}
-          >
-            {section.price}
-          </p>
-        </div>
-
         {/* Key specs grid */}
         {Object.keys(section.key_specs).length > 0 && (
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
