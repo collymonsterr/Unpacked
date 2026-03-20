@@ -27,6 +27,7 @@ export default function ArticleView({ articleRow, isOwner }: Props) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [toolbarBusy, setToolbarBusy] = useState<string | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const hasMissingImages = useMemo(() => {
     const productCards = article.sections.filter(
@@ -137,78 +138,100 @@ export default function ArticleView({ articleRow, isOwner }: Props) {
 
   return (
     <div className="max-w-[900px] mx-auto px-4 md:px-6 py-10">
-      {/* Admin Toolbar */}
-      {isOwner && (
-        <div
-          className="mb-6 flex flex-wrap items-center gap-2 p-3 rounded-xl"
-          style={{
-            backgroundColor: 'var(--card)',
-            border: '1px solid var(--border)',
-          }}
-        >
-          <ToolbarButton
-            onClick={handleTogglePin}
-            disabled={!!toolbarBusy}
-            active={isPinned}
-          >
-            {isPinned ? 'Pinned' : 'Pin to Homepage'}
-          </ToolbarButton>
-
-          <ToolbarButton
-            onClick={handleRegenerateImages}
-            disabled={!!toolbarBusy}
-            loading={isRegeneratingImages}
-          >
-            Regenerate Images
-          </ToolbarButton>
-
-          <ToolbarButton
-            onClick={handleRegenerateArticle}
-            disabled={!!toolbarBusy}
-            loading={isRegeneratingArticle}
-          >
-            Regenerate Article
-          </ToolbarButton>
-
-          <div className="flex-1" />
-
-          {showDeleteConfirm ? (
-            <div className="flex items-center gap-2">
-              <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                Are you sure?
-              </span>
-              <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white disabled:opacity-50"
-                style={{ backgroundColor: '#dc2626' }}
-              >
-                {isDeleting ? 'Deleting...' : 'Yes, delete'}
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <ToolbarButton
-              onClick={() => setShowDeleteConfirm(true)}
-              disabled={!!toolbarBusy}
-              variant="danger"
-            >
-              Delete
-            </ToolbarButton>
-          )}
-        </div>
-      )}
-
       {/* Header */}
-      <div className="mb-6">
-        <div className="mb-3">
+      <div className="mb-6 relative">
+        <div className="flex items-start justify-between mb-3">
           <ArticleTypeBadge type={article.article_type} />
+
+          {/* Admin menu — small gear icon */}
+          {isOwner && (
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="w-8 h-8 flex items-center justify-center rounded-full transition-colors"
+                style={{
+                  color: 'var(--text-secondary)',
+                  backgroundColor: menuOpen ? 'var(--accent-light)' : 'transparent',
+                }}
+                title="Article settings"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+              </button>
+
+              {menuOpen && (
+                <>
+                  {/* Backdrop to close menu */}
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => { setMenuOpen(false); setShowDeleteConfirm(false) }}
+                  />
+                  <div
+                    className="absolute right-0 top-10 z-20 w-52 rounded-xl overflow-hidden py-1"
+                    style={{
+                      backgroundColor: 'var(--card)',
+                      border: '1px solid var(--border)',
+                      boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+                    }}
+                  >
+                    <MenuItem
+                      onClick={() => { handleTogglePin(); setMenuOpen(false) }}
+                      disabled={!!toolbarBusy}
+                    >
+                      {isPinned ? 'Unpin from Homepage' : 'Pin to Homepage'}
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => { handleRegenerateImages(); setMenuOpen(false) }}
+                      disabled={!!toolbarBusy}
+                      loading={isRegeneratingImages}
+                    >
+                      Regenerate Images
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => { handleRegenerateArticle(); setMenuOpen(false) }}
+                      disabled={!!toolbarBusy}
+                      loading={isRegeneratingArticle}
+                    >
+                      Regenerate Article
+                    </MenuItem>
+                    <div style={{ borderTop: '1px solid var(--border)', margin: '4px 0' }} />
+                    {showDeleteConfirm ? (
+                      <div className="px-3 py-2">
+                        <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>Delete this article?</p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleDelete}
+                            disabled={isDeleting}
+                            className="text-xs font-semibold px-3 py-1 rounded-lg text-white disabled:opacity-50"
+                            style={{ backgroundColor: '#dc2626' }}
+                          >
+                            {isDeleting ? 'Deleting...' : 'Yes, delete'}
+                          </button>
+                          <button
+                            onClick={() => setShowDeleteConfirm(false)}
+                            className="text-xs px-3 py-1 rounded-lg"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <MenuItem
+                        onClick={() => setShowDeleteConfirm(true)}
+                        disabled={!!toolbarBusy}
+                        danger
+                      >
+                        Delete Article
+                      </MenuItem>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
         <h1
           className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-3"
@@ -284,44 +307,36 @@ function LoadingSpinner() {
   )
 }
 
-function ToolbarButton({
+function MenuItem({
   children,
   onClick,
   disabled,
   loading,
-  active,
-  variant = 'default',
+  danger,
 }: {
   children: React.ReactNode
   onClick: () => void
   disabled?: boolean
   loading?: boolean
-  active?: boolean
-  variant?: 'default' | 'danger'
+  danger?: boolean
 }) {
-  const isDanger = variant === 'danger'
-
   return (
     <button
       onClick={onClick}
       disabled={disabled || loading}
-      className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all disabled:opacity-50"
+      className="w-full text-left text-sm px-3 py-2 transition-colors disabled:opacity-40"
       style={{
-        backgroundColor: active
-          ? 'var(--accent)'
-          : isDanger
-            ? 'transparent'
-            : 'var(--accent-light)',
-        color: active
-          ? '#fff'
-          : isDanger
-            ? '#dc2626'
-            : 'var(--accent)',
-        border: isDanger ? '1px solid #fca5a5' : '1px solid transparent',
+        color: danger ? '#dc2626' : 'var(--text-primary)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = danger ? '#fef2f2' : 'var(--accent-light)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'transparent'
       }}
     >
       {loading ? (
-        <span className="flex items-center gap-1.5">
+        <span className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
           Working...
         </span>
