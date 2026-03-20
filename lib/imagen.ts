@@ -1,45 +1,130 @@
 import { getSupabaseAdmin } from '@/lib/supabase'
-import type { ArticleType } from '@/types/article'
+import type { ArticleType, ArticleContent, ProductCard, ImageSection } from '@/types/article'
 
 const IMAGEN_MODEL = 'imagen-4.0-fast-generate-001'
 const IMAGEN_API = `https://generativelanguage.googleapis.com/v1beta/models/${IMAGEN_MODEL}:predict`
 
 /**
- * Build a prompt for Imagen that produces a believable, magazine-quality hero image.
+ * Build an image prompt by analyzing what the article is actually about.
  *
- * Key principles:
- * - Never describe people doing things (looks fake fast)
- * - Focus on objects, environments, textures, and compositions
- * - Describe the PHOTOGRAPH, not the subject — as a photographer would brief a shoot
- * - Emphasize real-world photographic techniques (lens, lighting, film stock)
- * - Avoid AI tell-tales: no "floating" objects, no hyper-saturated colors, no symmetry
+ * Strategy:
+ * - Product articles (buyer_guide, comparison): show the actual products by name
+ * - Place articles (planning): show the destination
+ * - Concept articles (explainer, trend_analysis, news): show a scene that represents the concept
+ * - The quick verdict and entity names tell us exactly what to depict
  */
-function buildImagePrompt(title: string, articleType: ArticleType): string {
-  const typeStyles: Partial<Record<ArticleType, string>> = {
-    buyer_guide:
-      'Overhead flat-lay photograph of premium products arranged on a matte concrete surface. Shot on a 50mm lens, f/2.8, natural window light from the left casting soft directional shadows. Slightly imperfect arrangement — one item rotated, a subtle crease in the backdrop. Warm neutral tones, desaturated palette. Shot on Fujifilm X-T5.',
-    comparison:
-      'Editorial still life of two or three products placed on a worn wooden surface with natural texture. Shallow depth of field, 85mm lens, soft backlight from a window. Muted earth tones, slight vignette. The kind of image you would see in Wirecutter or GQ product reviews. No staging, no props — just the products and the surface.',
-    decision_guide:
-      'Atmospheric lifestyle photograph of the environment related to the topic. Available light, slightly underexposed for mood. Shot on a 35mm lens with natural bokeh in the background. Muted film-like color grading reminiscent of Kodak Portra 400. No people visible, just the setting and objects that tell the story.',
-    explainer:
-      'Clean editorial photograph using a single subject or detail shot to represent the concept. Macro or close-up perspective, 90mm lens, razor-thin depth of field. Neutral background with one subtle accent color. The style of a Bloomberg Businessweek or Wired feature image.',
-    news:
-      'Bold, high-contrast editorial photograph with a photojournalistic feel. Wide-angle perspective, natural available light, strong leading lines. Slightly gritty and immediate — like a Reuters or AP feature photo. Desaturated color palette leaning cool.',
-    planning:
-      'Expansive landscape or destination photograph shot during golden hour. Wide-angle 24mm lens, deep depth of field, natural warmth. The sky takes up two-thirds of the frame. Rich but not oversaturated — the kind of image you see in Condé Nast Traveler or Afar magazine. No people, just the place.',
-    trend_analysis:
-      'Abstract architectural or urban detail photograph with strong geometric lines. Shot from an unusual angle — looking up or down. Cool-toned color grading, high contrast, deep shadows. Minimalist composition with lots of negative space. Bloomberg or Financial Times aesthetic.',
-    tutorial:
-      'Top-down workspace photograph showing tools and materials neatly but naturally arranged. Slight disorder — a pencil at an angle, a smudge on the surface. Warm directional light from one side. Shot on 35mm, f/4, on a lightly textured off-white background. Martha Stewart meets Kinfolk magazine.',
+function buildImagePrompt(article: ArticleContent): string {
+  const { title, article_type, quick_verdict, executive_summary, sections } = article
+
+  // Extract product names if this is a product-focused article
+  const productCards = sections.filter((s): s is ProductCard => s.type === 'product_card')
+  const productNames = productCards.slice(0, 4).map((c) => c.entity_name)
+  const topPick = quick_verdict?.recommendation
+  const oneLiner = quick_verdict?.one_liner
+  const shortAnswer = executive_summary?.short_answer
+
+  // Context string — what the article concluded
+  const context = [oneLiner, shortAnswer].filter(Boolean).join('. ').slice(0, 200)
+
+  // Product-focused articles with actual physical products: show them
+  if (
+    (article_type === 'buyer_guide' || article_type === 'comparison') &&
+    productNames.length > 0
+  ) {
+    const topProducts = productNames.slice(0, 3).join(', ')
+    const surfaceOptions = [
+      'a clean white desk',
+      'a light marble countertop',
+      'a minimal light grey surface',
+      'a clean modern shelf',
+    ]
+    const surface = surfaceOptions[Math.floor(Math.random() * surfaceOptions.length)]
+
+    return `Professional product photography of ${topProducts} arranged together on ${surface}. These are real, commercially available products — show them as they actually look. ${topPick ? `The main featured product is ${topPick}.` : ''}
+
+Bright, even studio lighting. Clean, modern, commercial look. Eye-level angle. Sharp focus on the products. The style of a product review hero image on The Verge, Wirecutter, or TechRadar.
+
+No people, no hands, no text, no words, no logos, no brand names written out, no watermarks. Photorealistic product photography.`
   }
 
-  const style = typeStyles[articleType] ?? 'Editorial still-life photograph with natural window light, shallow depth of field, muted color palette. Shot on a prime lens. Magazine feature quality.'
+  // Non-product comparisons or buyer guides (software, services, abstract topics)
+  if (article_type === 'buyer_guide' || article_type === 'comparison') {
+    return `Modern editorial photograph representing the technology or concept: ${title}. ${context}
 
-  // The core instruction: describe the scene for THIS article topic, keeping it grounded
-  return `${style}
+Show the real-world devices, screens, interfaces, or environments where this technology is used. Bright, clean, modern aesthetic with vibrant accent colors. The style of a feature image on The Verge, Ars Technica, or TechCrunch.
 
-Subject matter: ${title}. Show the objects, environment, or textures that relate to this topic — NOT people, NOT text, NOT logos, NOT watermarks, NOT brand names. The image should feel like it was taken by a professional editorial photographer for a print magazine. Imperfect, natural, and real.`
+No people, no faces, no text, no watermarks. Photorealistic editorial photography.`
+  }
+
+  // Planning/travel articles: show the destination
+  if (article_type === 'planning') {
+    // Extract the place from the title
+    return `Stunning travel photography: ${title}. ${context}
+
+Show the actual destination, landmark, or environment that this article is about. Golden hour natural light, rich warm tones, wide scenic composition. The style of a Condé Nast Traveler or Lonely Planet cover photograph.
+
+No people, no tourists, no text, no watermarks. Photorealistic landscape/travel photography.`
+  }
+
+  // Explainer articles: conceptual but specific to the topic
+  if (article_type === 'explainer') {
+    return `Editorial magazine photograph for an article about: ${title}. ${context}
+
+Show a close-up, detailed scene that visually represents this specific topic. Use a single striking subject or object as the focal point. Dramatic side-lighting, shallow depth of field, vivid detail. The style of a Wired, National Geographic, or Scientific American feature image.
+
+No people, no faces, no text, no watermarks. Photorealistic editorial photography.`
+  }
+
+  // Trend analysis: futuristic, data-driven aesthetic
+  if (article_type === 'trend_analysis') {
+    return `Modern editorial photograph representing the theme: ${title}. ${context}
+
+Show real-world objects, technology, or environments that relate to this trend. Cool blue-teal tones, geometric composition, clean lines, lots of negative space. Shot from an interesting angle. The style of Bloomberg Businessweek or MIT Technology Review.
+
+No people, no text, no watermarks. Photorealistic editorial photography.`
+  }
+
+  // News articles: photojournalistic feel
+  if (article_type === 'news') {
+    return `Photojournalistic editorial photograph about: ${title}. ${context}
+
+Show the real-world scene, technology, or environment this news story is about. Natural available light, wide-angle perspective, cool desaturated tones. Immediate and attention-grabbing. The style of a Reuters, Bloomberg, or New York Times feature photograph.
+
+No people, no faces, no text, no watermarks. Photorealistic editorial photography.`
+  }
+
+  // Decision guide: show the choice being made
+  if (article_type === 'decision_guide') {
+    if (productNames.length > 0) {
+      const items = productNames.slice(0, 3).join(', ')
+      return `Professional product photography showing ${items} in a real-world setting. These are real products — show them as they actually look, in the environment where someone would use them. Natural ambient lighting, warm tones, lifestyle context.
+
+The style of a GQ, Consumer Reports, or Wirecutter buying guide hero image.
+
+No people, no hands, no text, no watermarks. Photorealistic photography.`
+    }
+    return `Atmospheric editorial photograph about: ${title}. ${context}
+
+Show the real-world environment or scene where this decision takes place. Warm ambient lighting, natural depth of field. Moody and aspirational. The style of a Monocle or Kinfolk feature.
+
+No people, no text, no watermarks. Photorealistic editorial photography.`
+  }
+
+  // Tutorial: workspace with relevant tools
+  if (article_type === 'tutorial') {
+    return `Workspace photograph showing the tools and materials for: ${title}. ${context}
+
+Show the actual items, tools, or setup someone would use for this. Arranged on a warm wooden desk with natural window light from the side. Inviting, lived-in, approachable. The style of a Bon Appétit or Kinfolk how-to feature.
+
+No people, no hands, no text, no watermarks. Photorealistic photography.`
+  }
+
+  // Fallback: use the title and context
+  return `Professional editorial magazine photograph for an article titled "${title}". ${context}
+
+Show objects, products, or environments that directly relate to this topic. Clean composition, professional lighting, magazine feature quality.
+
+No people, no text, no watermarks. Photorealistic photography.`
 }
 
 interface ImagenResponse {
@@ -52,10 +137,12 @@ interface ImagenResponse {
 /**
  * Generate a hero image using Google Imagen 4 Fast and upload it to Supabase Storage.
  * Returns the public URL of the uploaded image, or null on failure.
+ *
+ * Pass the full article content so the prompt can be built from actual article data.
+ * Falls back to a title-only prompt if article content isn't available.
  */
 export async function generateHeroImage(
-  title: string,
-  articleType: ArticleType,
+  article: ArticleContent | { title: string; article_type: ArticleType },
   articleId: string
 ): Promise<string | null> {
   const apiKey = process.env.GOOGLE_AI_API_KEY
@@ -65,7 +152,18 @@ export async function generateHeroImage(
   }
 
   try {
-    const prompt = buildImagePrompt(title, articleType)
+    // Build a smart prompt from the article content
+    const fullArticle: ArticleContent = 'sections' in article
+      ? article
+      : {
+          ...article,
+          quick_verdict: { recommendation: '', one_liner: '' },
+          executive_summary: { short_answer: '', key_takeaways: [], watch_out_for: [] },
+          sections: [],
+        }
+
+    const prompt = buildImagePrompt(fullArticle)
+    console.log('[imagen] Prompt:', prompt.substring(0, 150) + '...')
 
     const res = await fetch(`${IMAGEN_API}?key=${apiKey}`, {
       method: 'POST',
@@ -123,4 +221,32 @@ export async function generateHeroImage(
     console.error('[imagen] Error:', err)
     return null
   }
+}
+
+/**
+ * Pick the best existing image from the article to use as a hero.
+ * Priority: first product card image > first image section image.
+ * This is used as a final fallback when both Imagen and Brave fail.
+ */
+export function pickBestArticleImage(article: ArticleContent): string | null {
+  // Try product card images first (the top pick / first product is usually most relevant)
+  const productCards = article.sections.filter(
+    (s): s is ProductCard => s.type === 'product_card'
+  )
+  for (const card of productCards) {
+    if (card.image_url) return card.image_url
+    if (card.image_urls?.[0]) return card.image_urls[0]
+  }
+
+  // Try image sections
+  const imageSections = article.sections.filter(
+    (s): s is ImageSection => s.type === 'image_section'
+  )
+  for (const section of imageSections) {
+    for (const img of section.images) {
+      if (img.image_url) return img.image_url
+    }
+  }
+
+  return null
 }

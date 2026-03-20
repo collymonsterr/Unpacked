@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { writeArticle } from '@/lib/claude'
 import { enrichArticleWithImages, fetchThumbnailImage } from '@/lib/images'
-import { generateHeroImage } from '@/lib/imagen'
+import { generateHeroImage, pickBestArticleImage } from '@/lib/imagen'
 import { getSupabaseAdmin } from '@/lib/supabase'
 
 export const maxDuration = 300 // 5 minutes (Vercel Pro)
@@ -39,12 +39,12 @@ export async function POST(
         row.plan.entities,
         row.plan.visual_strategy?.image_density
       ),
-      // Try AI-generated hero first, fall back to Brave search
-      generateHeroImage(rawArticle.title, rawArticle.article_type, id)
+      // Try AI-generated hero → Brave search → best image from article
+      generateHeroImage(rawArticle, id)
         .then((url) => url ?? fetchThumbnailImage(rawArticle.title, rawArticle.article_type)),
     ])
 
-    enrichedArticle.thumbnail_url = heroUrl
+    enrichedArticle.thumbnail_url = heroUrl ?? pickBestArticleImage(enrichedArticle)
 
     // Save complete article
     await db

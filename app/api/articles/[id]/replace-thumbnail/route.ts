@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { fetchThumbnailImage } from '@/lib/images'
-import { generateHeroImage } from '@/lib/imagen'
+import { generateHeroImage, pickBestArticleImage } from '@/lib/imagen'
 import type { ArticleContent } from '@/types/article'
 
 export async function POST(
@@ -16,9 +16,10 @@ export async function POST(
 
   const article = row.article as ArticleContent
 
-  // Generate a new AI hero image, fall back to Brave search
-  const newUrl = await generateHeroImage(article.title, article.article_type, id)
+  // Generate a new AI hero image → Brave search → best image from article
+  const newUrl = await generateHeroImage(article, id)
     ?? await fetchThumbnailImage(article.title, article.article_type, article.thumbnail_url ?? undefined)
+    ?? pickBestArticleImage(article)
 
   article.thumbnail_url = newUrl
 

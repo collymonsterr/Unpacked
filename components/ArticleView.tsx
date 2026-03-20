@@ -536,19 +536,24 @@ function HeroImage({
           <button
             onClick={handleReplace}
             disabled={replacing}
-            className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-xs font-semibold"
-            style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff' }}
-            title="Replace hero image"
+            className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-opacity text-xs font-semibold"
+            style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: '#fff', opacity: replacing ? 1 : 0.85 }}
+            title="Generate a new hero image"
           >
             {replacing ? (
               <>
                 <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                Replacing…
+                Generating…
               </>
             ) : (
               <>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                Replace image
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21.5 2v6h-6" />
+                  <path d="M2.5 22v-6h6" />
+                  <path d="M2.5 11.5a10 10 0 0 1 18.4-4.5" />
+                  <path d="M21.5 12.5a10 10 0 0 1-18.4 4.5" />
+                </svg>
+                Regenerate
               </>
             )}
           </button>
