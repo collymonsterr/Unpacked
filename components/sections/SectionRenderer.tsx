@@ -120,7 +120,7 @@ export default function SectionRenderer({
         if (!inner) return null
 
         return (
-          <div key={i} className={className} style={style}>
+          <div key={i} id={`section-${i}`} className={className} style={style}>
             {inner}
           </div>
         )

@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import type { ArticleRow, ProductCard, VisualStrategy } from '@/types/article'
 import ArticleTypeBadge from './ui/ArticleTypeBadge'
+import ArticleSidebarNav from './ui/ArticleSidebarNav'
 import QuickVerdict from './sections/QuickVerdict'
 import ExecutiveSummary from './sections/ExecutiveSummary'
 import SectionRenderer from './sections/SectionRenderer'
 import SuggestionChips from './ui/SuggestionChips'
 import RefinementInput from './ui/RefinementInput'
+import { buildNavItems } from '@/lib/section-ids'
 
 interface Props {
   articleRow: ArticleRow
@@ -192,8 +194,14 @@ export default function ArticleView({ articleRow, isOwner, isNew }: Props) {
     day: 'numeric',
   })
 
+  const navItems = useMemo(() => buildNavItems(article), [article])
+
   return (
-    <div className="max-w-[900px] mx-auto px-4 md:px-6 py-10">
+    <div className="article-page-layout">
+      {/* Sidebar navigation — desktop only */}
+      <ArticleSidebarNav items={navItems} />
+
+      <div className="max-w-[900px] mx-auto px-4 md:px-6 py-10">
       {/* Header */}
       <div className="mb-6 relative">
         <div className="flex items-start justify-between mb-3">
@@ -344,10 +352,14 @@ export default function ArticleView({ articleRow, isOwner, isNew }: Props) {
       <div className="mb-8" style={{ borderTop: '1px solid var(--border)' }} />
 
       {/* Quick Verdict */}
-      <QuickVerdict data={article.quick_verdict} />
+      <div id="section-verdict">
+        <QuickVerdict data={article.quick_verdict} />
+      </div>
 
       {/* Executive Summary */}
-      <ExecutiveSummary data={article.executive_summary} />
+      <div id="section-summary">
+        <ExecutiveSummary data={article.executive_summary} />
+      </div>
 
       <div className="mb-8" style={{ borderTop: '1px solid var(--border)' }} />
 
@@ -432,6 +444,7 @@ export default function ArticleView({ articleRow, isOwner, isNew }: Props) {
           )}
         </div>
       )}
+    </div>
     </div>
   )
 }

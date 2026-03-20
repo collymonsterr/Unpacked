@@ -136,3 +136,17 @@ h1, h2, h3, h4, h5, h6 {
 .hero-image-fade {
   animation: heroFade 0.2s ease;
 }
+
+/* Article page layout — sidebar + content */
+.article-page-layout {
+  display: flex;
+  justify-content: center;
+  max-width: 1280px;
+  margin: 0 auto;
+  position: relative;
+}
+@media (max-width: 1024px) {
+  .article-page-layout {
+    display: block;
+  }
+}
