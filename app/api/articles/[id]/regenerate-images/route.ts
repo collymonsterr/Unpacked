@@ -1,0 +1,41 @@
+import { NextRequest } from 'next/server'
+import { enrichArticleWithImages } from '@/lib/images'
+import { getSupabaseAdmin } from '@/lib/supabase'
+
+export const maxDuration = 60
+
+export async function POST(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+
+  const db = getSupabaseAdmin()
+  const { data: row, error: fetchError } = await db
+    .from('articles')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (fetchError || !row) {
+    return Response.json({ error: 'Article not found' }, { status: 404 })
+  }
+
+  if (!row.article || !row.plan) {
+    return Response.json({ error: 'Article not ready' }, { status: 400 })
+  }
+
+  try {
+    const enrichedArticle = await enrichArticleWithImages(row.article, row.plan.entities)
+
+    await db
+      .from('articles')
+      .update({ article: enrichedArticle })
+      .eq('id', id)
+
+    return Response.json({ article: enrichedArticle })
+  } catch (err) {
+    console.error('[regenerate-images]', err)
+    return Response.json({ error: 'Image regeneration failed' }, { status: 500 })
+  }
+}
