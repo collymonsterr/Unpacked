@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server'
 import { after } from 'next/server'
 import { planArticle, writeArticle } from '@/lib/claude'
-import { enrichArticleWithImages } from '@/lib/images'
+import { enrichArticleWithImages, fetchThumbnailImage } from '@/lib/images'
+import { pickBestArticleImage } from '@/lib/imagen'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { generateUniqueSlug } from '@/lib/slug'
 
@@ -41,11 +42,19 @@ export async function POST(request: NextRequest) {
       const db = getSupabaseAdmin()
       try {
         const rawArticle = await writeArticle(trimmedQuery, plan)
-        const enrichedArticle = await enrichArticleWithImages(
-          rawArticle,
-          plan.entities,
-          plan.visual_strategy?.image_density
-        )
+
+        // Enrich product images + fetch hero thumbnail in parallel
+        const [enrichedArticle, heroUrl] = await Promise.all([
+          enrichArticleWithImages(
+            rawArticle,
+            plan.entities,
+            plan.visual_strategy?.image_density
+          ),
+          fetchThumbnailImage(rawArticle.title, rawArticle.article_type),
+        ])
+
+        // Always set a hero image — fall back to best product image if Brave fails
+        enrichedArticle.thumbnail_url = heroUrl ?? pickBestArticleImage(enrichedArticle)
 
         await db
           .from('articles')

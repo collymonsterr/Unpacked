@@ -35,14 +35,18 @@ export async function POST(
     history.push(article.thumbnail_url)
   }
 
+  // Build list of all URLs the user has already seen
+  const allSeenUrls = [...history]
+  if (article.thumbnail_url) allSeenUrls.push(article.thumbnail_url)
+
   let newUrl: string | null = null
 
   if (useAI) {
     newUrl = await generateHeroImage(article, id)
-      ?? await fetchThumbnailImage(article.title, article.article_type, article.thumbnail_url ?? undefined)
+      ?? await fetchThumbnailImage(article.title, article.article_type, allSeenUrls)
       ?? pickBestArticleImage(article)
   } else {
-    newUrl = await fetchThumbnailImage(article.title, article.article_type, article.thumbnail_url ?? undefined)
+    newUrl = await fetchThumbnailImage(article.title, article.article_type, allSeenUrls)
       ?? pickBestArticleImage(article)
   }
 

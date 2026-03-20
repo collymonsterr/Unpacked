@@ -139,39 +139,82 @@ function shortenTitle(title: string): string {
 /**
  * Search for a high-quality thumbnail representing the article topic.
  * Shortens the title to get more relevant image results from Brave.
+ *
+ * Pass `excludeUrls` to avoid repeating images the user has already seen.
+ * Each call with excludeUrls uses a different search angle to maximise variety.
  */
 export async function fetchThumbnailImage(
   title: string,
   articleType: ArticleType,
-  excludeUrl?: string
+  excludeUrls?: string[]
 ): Promise<string | null> {
   const apiKey = process.env.BRAVE_SEARCH_API_KEY
   if (!apiKey) return null
 
   const shortTitle = shortenTitle(title)
+  const isReplacing = excludeUrls && excludeUrls.length > 0
 
-  // Type-specific search hints
-  const typeHints: Record<string, string> = {
-    planning: 'travel photo',
-    explainer: 'photo',
-    trend_analysis: 'photo',
-    news: 'photo',
-    tutorial: 'photo',
-    buyer_guide: 'products',
-    comparison: 'products',
-    decision_guide: 'photo',
-  }
-  const hint = typeHints[articleType] ?? 'photo'
-  // Vary the query when replacing to get different results
-  const modifiers = ['', 'high quality', 'professional', 'hero image', '2024']
-  const modifier = excludeUrl ? modifiers[Math.floor(Math.random() * modifiers.length)] : ''
-  const query = `${shortTitle} ${hint} ${modifier}`.trim()
-  console.log('[thumbnail] Search query:', query)
+  // Different search angles to get genuinely different results each time
+  const searchAngles: Array<{ hint: string; modifier: string }> = (() => {
+    const base: Record<string, Array<{ hint: string; modifier: string }>> = {
+      planning: [
+        { hint: 'travel photography', modifier: '' },
+        { hint: 'aerial view', modifier: '' },
+        { hint: 'landscape beautiful', modifier: '' },
+        { hint: 'street photography', modifier: '' },
+        { hint: 'destination guide', modifier: 'editorial' },
+        { hint: 'scenic view', modifier: '4k' },
+        { hint: 'travel blog', modifier: '' },
+        { hint: 'wanderlust', modifier: 'HD' },
+      ],
+      explainer: [
+        { hint: 'photo', modifier: '' },
+        { hint: 'illustration', modifier: 'editorial' },
+        { hint: 'concept', modifier: 'high quality' },
+        { hint: 'infographic visual', modifier: '' },
+        { hint: 'technology', modifier: 'professional' },
+        { hint: 'abstract', modifier: 'modern' },
+      ],
+      buyer_guide: [
+        { hint: 'products lineup', modifier: '' },
+        { hint: 'product photography', modifier: 'studio' },
+        { hint: 'flatlay', modifier: '' },
+        { hint: 'lifestyle', modifier: '' },
+        { hint: 'product review', modifier: 'editorial' },
+        { hint: 'collection', modifier: 'aesthetic' },
+      ],
+      comparison: [
+        { hint: 'products comparison', modifier: '' },
+        { hint: 'product photography', modifier: '' },
+        { hint: 'side by side', modifier: '' },
+        { hint: 'review roundup', modifier: '' },
+        { hint: 'product lineup', modifier: 'editorial' },
+        { hint: 'studio shot', modifier: '' },
+      ],
+    }
+    return base[articleType] ?? [
+      { hint: 'photo', modifier: '' },
+      { hint: 'photography', modifier: 'editorial' },
+      { hint: 'high quality photo', modifier: '' },
+      { hint: 'professional', modifier: '' },
+      { hint: 'visual', modifier: 'HD' },
+      { hint: 'aesthetic', modifier: '' },
+    ]
+  })()
+
+  // Pick the search angle based on how many images have been excluded
+  // This ensures each "New photo" click uses a different search
+  const angleIndex = isReplacing ? excludeUrls.length % searchAngles.length : 0
+  const angle = searchAngles[angleIndex]
+  const query = `${shortTitle} ${angle.hint} ${angle.modifier}`.trim()
+  console.log('[thumbnail] Search query:', query, `(angle ${angleIndex}/${searchAngles.length})`)
+
+  const excludeSet = new Set(excludeUrls ?? [])
 
   try {
     const url = new URL('https://api.search.brave.com/res/v1/images/search')
     url.searchParams.set('q', query)
-    url.searchParams.set('count', '15')
+    url.searchParams.set('count', '20') // Fetch more to have options after filtering
     url.searchParams.set('safesearch', 'strict')
 
     const res = await fetch(url.toString(), {
@@ -185,11 +228,10 @@ export async function fetchThumbnailImage(
     const data = await res.json()
     const results: BraveImageResult[] = data.results ?? []
 
-    // Filter and pick the first good image that isn't the excluded one
+    // Filter, rank, and exclude already-seen URLs
     const filtered = filterAndRankImageUrls(results)
-    if (excludeUrl) {
-      return filtered.find((u) => u !== excludeUrl) ?? filtered[0] ?? null
-    }
+      .filter((u) => !excludeSet.has(u))
+
     return filtered[0] ?? null
   } catch {
     return null
