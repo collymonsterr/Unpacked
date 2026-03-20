@@ -80,14 +80,20 @@ async function fetchProductImages(
   }
 }
 
-function getImageCount(articleType: ArticleType): number {
+function getImageCount(articleType: ArticleType, productType?: string): number {
+  // Software, services, and places don't need multiple images
+  if (productType === 'software') return 1
+  if (productType === 'service') return 2
+  if (productType === 'place') return 2
+
+  // Physical products benefit from multiple angles
   switch (articleType) {
     case 'buyer_guide':
     case 'comparison':
     case 'decision_guide':
-      return 5
-    default:
       return 3
+    default:
+      return 2
   }
 }
 
@@ -196,7 +202,6 @@ export async function enrichArticleWithImages(
   imageDensity?: ImageDensity
 ): Promise<ArticleContent> {
   const skipProductImages = imageDensity === 'none'
-  const maxImages = skipProductImages ? 0 : getImageCount(article.article_type)
 
   // Build entity -> search_query map
   const entityMap = new Map(entities.map((e) => [e.name.toLowerCase(), e.search_query]))
@@ -206,9 +211,10 @@ export async function enrichArticleWithImages(
     ? []
     : article.sections.filter((s): s is ProductCard => s.type === 'product_card')
 
-  // Fetch images in parallel
+  // Fetch images in parallel — image count varies per product type
   const imageResults = await Promise.all(
     productCards.map(async (card) => {
+      const maxImages = getImageCount(article.article_type, card.product_type)
       const baseQuery =
         entityMap.get(card.entity_name.toLowerCase()) ?? `${card.entity_name} product photo`
       const imageUrls = await fetchProductImages(baseQuery, maxImages)

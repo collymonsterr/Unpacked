@@ -257,7 +257,7 @@ Return a JSON object matching this structure. Return ONLY valid JSON. No preambl
   },
   "sections": [
     { "type": "content_section", "heading": "string", "content": "string" },
-    { "type": "product_card", "heading": "string", "entity_name": "string", "price": "string", "key_specs": { "key": "value" }, "opinion": "string", "verdict": "string", "links": [{ "label": "string", "url": "string" }] },
+    { "type": "product_card", "heading": "string", "entity_name": "string", "product_type": "physical | software | service | place", "price": "string", "key_specs": { "key": "value" }, "opinion": "string", "verdict": "string", "links": [{ "label": "string", "url": "string" }] },
     { "type": "comparison_table", "heading": "string", "columns": ["string"], "rows": [["string"]] },
     { "type": "warning_box", "heading": "string", "items": [{ "name": "string", "reason": "string" }] },
     { "type": "price_tier_breakdown", "heading": "string", "tiers": [{ "range": "string", "summary": "string", "pick": "string" }] },
@@ -290,9 +290,22 @@ Rules for image_section:
 - Use layout "single" for hero/impactful images, "gallery" for showcasing multiple related images (e.g., different destinations), "side-by-side" for comparisons
 - Place the first image_section near the top of the article (after executive summary or first content section) for visual impact
 
+PRODUCT CARD RULES:
+
+Every product_card MUST include a "product_type" field. Choose one:
+- "physical": Tangible products you hold/use (electronics, guitars, headphones, appliances)
+- "software": Apps, SaaS tools, platforms, browser extensions, AI tools
+- "service": Subscriptions, services, memberships (streaming, insurance, courses)
+- "place": Destinations, restaurants, hotels, venues
+
+This matters because different product types need different image treatment:
+- Physical products benefit from multiple angles — the image search will find product photos
+- Software tools only need ONE image (a screenshot or logo) — multiple images of an app UI look repetitive and add no value
+- Services and places need 1-2 images at most
+
 IMPORTANT:
 - Use web search extensively. Do not rely on training data alone.
-- Product cards are ONLY for actual purchasable products. Never use them for abstract concepts.
+- Product cards are ONLY for actual purchasable products/services. Never use them for abstract concepts.
 - For explainers and tutorials: use content_section for explanations, worked examples inline, charts for data, warning_box for key caveats.
 - Sources must be real URLs from your research.
 - Minimum 2 visualisations per article.

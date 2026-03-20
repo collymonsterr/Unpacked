@@ -50,10 +50,13 @@ export interface ArticlePlan {
 
 // ── Article Sections (Step 2 output) ─────────────────────────────────────────
 
+export type ProductType = 'physical' | 'software' | 'service' | 'place'
+
 export interface ProductCard {
   type: 'product_card'
   heading: string
   entity_name: string
+  product_type?: ProductType
   price: string
   key_specs: Record<string, string>
   opinion: string
