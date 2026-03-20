@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { writeArticle } from '@/lib/claude'
-import { enrichArticleWithImages } from '@/lib/images'
+import { enrichArticleWithImages, fetchThumbnailImage } from '@/lib/images'
 import { getSupabaseAdmin } from '@/lib/supabase'
 
 export const maxDuration = 300 // 5 minutes (Vercel Pro)
@@ -31,12 +31,17 @@ export async function POST(
     // Step 2: Research & Write
     const rawArticle = await writeArticle(row.query, row.plan)
 
-    // Step 3: Image enrichment (parallel with write already done)
-    const enrichedArticle = await enrichArticleWithImages(
-      rawArticle,
-      row.plan.entities,
-      row.plan.visual_strategy?.image_density
-    )
+    // Step 3: Image enrichment + thumbnail (in parallel)
+    const [enrichedArticle, thumbnailUrl] = await Promise.all([
+      enrichArticleWithImages(
+        rawArticle,
+        row.plan.entities,
+        row.plan.visual_strategy?.image_density
+      ),
+      fetchThumbnailImage(rawArticle.title, rawArticle.article_type),
+    ])
+
+    enrichedArticle.thumbnail_url = thumbnailUrl
 
     // Save complete article
     await db

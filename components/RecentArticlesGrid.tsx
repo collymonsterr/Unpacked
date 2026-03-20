@@ -7,6 +7,8 @@ interface Props {
 }
 
 function getCardImage(row: ArticleRow): string | null {
+  // Prefer dedicated thumbnail, fall back to first product image
+  if (row.article?.thumbnail_url) return row.article.thumbnail_url
   const sections = row.article?.sections ?? []
   const firstCard = sections.find((s): s is ProductCard => s.type === 'product_card')
   return firstCard?.image_urls?.[0] ?? firstCard?.image_url ?? null

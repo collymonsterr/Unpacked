@@ -74,6 +74,53 @@ function getImageCount(articleType: ArticleType): number {
   }
 }
 
+/**
+ * Search for a high-quality landscape thumbnail representing the article topic.
+ * Uses the article title + a "landscape photo" hint to bias towards editorial images.
+ */
+export async function fetchThumbnailImage(title: string, articleType: ArticleType): Promise<string | null> {
+  const apiKey = process.env.BRAVE_SEARCH_API_KEY
+  if (!apiKey) return null
+
+  // Craft a search query that favours beautiful, editorial landscape images
+  const typeHints: Record<string, string> = {
+    planning: 'beautiful landscape photo',
+    explainer: 'editorial photo',
+    trend_analysis: 'editorial photo',
+    news: 'editorial photo',
+    tutorial: 'editorial photo',
+    buyer_guide: 'product lineup photo',
+    comparison: 'product comparison photo',
+    decision_guide: 'photo',
+  }
+  const hint = typeHints[articleType] ?? 'photo'
+  const query = `${title} ${hint}`
+
+  try {
+    const url = new URL('https://api.search.brave.com/res/v1/images/search')
+    url.searchParams.set('q', query)
+    url.searchParams.set('count', '8')
+    url.searchParams.set('safesearch', 'strict')
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        'Accept': 'application/json',
+        'X-Subscription-Token': apiKey,
+      },
+    })
+    if (!res.ok) return null
+
+    const data = await res.json()
+    const results: BraveImageResult[] = data.results ?? []
+
+    // Filter and pick the first good landscape-oriented image
+    const filtered = filterImageUrls(results)
+    return filtered[0] ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function enrichArticleWithImages(
   article: ArticleContent,
   entities: PlanEntity[],

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { enrichArticleWithImages } from '@/lib/images'
+import { enrichArticleWithImages, fetchThumbnailImage } from '@/lib/images'
 import { getSupabaseAdmin } from '@/lib/supabase'
 
 export const maxDuration = 60
@@ -26,7 +26,12 @@ export async function POST(
   }
 
   try {
-    const enrichedArticle = await enrichArticleWithImages(row.article, row.plan.entities)
+    const [enrichedArticle, thumbnailUrl] = await Promise.all([
+      enrichArticleWithImages(row.article, row.plan.entities),
+      fetchThumbnailImage(row.article.title, row.article.article_type),
+    ])
+
+    enrichedArticle.thumbnail_url = thumbnailUrl
 
     await db
       .from('articles')

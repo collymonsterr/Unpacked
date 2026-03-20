@@ -225,6 +225,7 @@ export interface ArticleContent {
   quick_verdict: QuickVerdict
   executive_summary: ExecutiveSummary
   sections: ArticleSection[]
+  thumbnail_url?: string | null
 }
 
 // ── Database row ─────────────────────────────────────────────────────────────
