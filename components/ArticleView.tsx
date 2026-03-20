@@ -296,7 +296,25 @@ export default function ArticleView({ articleRow, isOwner }: Props) {
       <QuickVerdict data={article.quick_verdict} />
 
       {/* Hero Image */}
-      {article.thumbnail_url && <HeroImage url={article.thumbnail_url} alt={article.title} />}
+      {article.thumbnail_url && (
+        <HeroImage
+          url={article.thumbnail_url}
+          alt={article.title}
+          isAdmin={isOwner}
+          onReplace={async () => {
+            try {
+              const res = await fetch(`/api/articles/${articleRow.id}/replace-thumbnail`, {
+                method: 'POST',
+              })
+              if (!res.ok) throw new Error('Failed')
+              const data = await res.json()
+              if (data.article) setArticle(data.article)
+            } catch {
+              // silently fail
+            }
+          }}
+        />
+      )}
 
       {/* Executive Summary */}
       <ExecutiveSummary data={article.executive_summary} />
@@ -467,15 +485,37 @@ function DebugPanel({
   )
 }
 
-function HeroImage({ url, alt }: { url: string; alt: string }) {
+function HeroImage({
+  url,
+  alt,
+  isAdmin,
+  onReplace,
+}: {
+  url: string
+  alt: string
+  isAdmin?: boolean
+  onReplace?: () => Promise<void>
+}) {
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
+  const [replacing, setReplacing] = useState(false)
 
   if (error) return null
 
+  async function handleReplace() {
+    if (!onReplace || replacing) return
+    setReplacing(true)
+    try {
+      await onReplace()
+      setLoaded(false)
+    } finally {
+      setReplacing(false)
+    }
+  }
+
   return (
     <figure
-      className="rounded-2xl overflow-hidden mb-8"
+      className="rounded-2xl overflow-hidden mb-8 group"
       style={{
         boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.08)',
         border: '1px solid var(--border)',
@@ -492,6 +532,27 @@ function HeroImage({ url, alt }: { url: string; alt: string }) {
           onError={() => setError(true)}
           unoptimized
         />
+        {isAdmin && onReplace && (
+          <button
+            onClick={handleReplace}
+            disabled={replacing}
+            className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-xs font-semibold"
+            style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff' }}
+            title="Replace hero image"
+          >
+            {replacing ? (
+              <>
+                <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                Replacing…
+              </>
+            ) : (
+              <>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                Replace image
+              </>
+            )}
+          </button>
+        )}
       </div>
     </figure>
   )

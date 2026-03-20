@@ -140,7 +140,7 @@ npm run lint     # ESLint
 
 ## Deployment
 
-- Hosted on Vercel at https://articleai-omega.vercel.app
+- Hosted on Vercel at https://articleai-three.vercel.app
 - GitHub: https://github.com/collymonsterr/articleai
 - All env vars must be set in Vercel project settings
 - `NEXT_PUBLIC_*` vars are needed at build time

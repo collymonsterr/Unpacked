@@ -5,7 +5,7 @@ interface BraveImageResult {
   thumbnail: { src: string }
 }
 
-const REJECTED_PATTERNS = /\.svg|\.gif|favicon|icon|logo|pixel|tracking|badge|sprite|placeholder|avatar|profile|thumbs\.redditmedia|external-preview\.redd\.it|preview\.redd\.it/i
+const REJECTED_PATTERNS = /\.svg|\.gif|favicon|icon|logo|pixel|tracking|badge|sprite|placeholder|avatar|profile|thumbs\.redditmedia|external-preview\.redd\.it|preview\.redd\.it|ytimg\.com|youtube\.com\/vi|i\.ytimg|img\.youtube|maxresdefault|hqdefault|mqdefault|sddefault|banner|screenshot|webpage|thumbnail/i
 
 // Official/reputable product image sources — these get priority
 const PREFERRED_HOSTNAMES = new Set([
@@ -95,7 +95,11 @@ function getImageCount(articleType: ArticleType): number {
  * Search for a high-quality landscape thumbnail representing the article topic.
  * Uses the article title + a "landscape photo" hint to bias towards editorial images.
  */
-export async function fetchThumbnailImage(title: string, articleType: ArticleType): Promise<string | null> {
+export async function fetchThumbnailImage(
+  title: string,
+  articleType: ArticleType,
+  excludeUrl?: string
+): Promise<string | null> {
   const apiKey = process.env.BRAVE_SEARCH_API_KEY
   if (!apiKey) return null
 
@@ -111,12 +115,15 @@ export async function fetchThumbnailImage(title: string, articleType: ArticleTyp
     decision_guide: 'photo',
   }
   const hint = typeHints[articleType] ?? 'photo'
-  const query = `${title} ${hint}`
+  // Vary the query when replacing to get different results
+  const modifiers = ['', 'high quality', 'professional', 'editorial', 'stock']
+  const modifier = excludeUrl ? modifiers[Math.floor(Math.random() * modifiers.length)] : ''
+  const query = `${title} ${hint} ${modifier}`.trim()
 
   try {
     const url = new URL('https://api.search.brave.com/res/v1/images/search')
     url.searchParams.set('q', query)
-    url.searchParams.set('count', '8')
+    url.searchParams.set('count', '15')
     url.searchParams.set('safesearch', 'strict')
 
     const res = await fetch(url.toString(), {
@@ -130,8 +137,11 @@ export async function fetchThumbnailImage(title: string, articleType: ArticleTyp
     const data = await res.json()
     const results: BraveImageResult[] = data.results ?? []
 
-    // Filter and pick the first good landscape-oriented image
+    // Filter and pick the first good image that isn't the excluded one
     const filtered = filterAndRankImageUrls(results)
+    if (excludeUrl) {
+      return filtered.find((u) => u !== excludeUrl) ?? filtered[0] ?? null
+    }
     return filtered[0] ?? null
   } catch {
     return null
