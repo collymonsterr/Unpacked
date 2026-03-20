@@ -98,7 +98,7 @@ function ArticleCard({
           </span>
           <h3
             className="font-bold leading-snug line-clamp-3 text-sm"
-            style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+            style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)', minHeight: '3.6em' }}
           >
             {title}
           </h3>
