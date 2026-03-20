@@ -1,4 +1,4 @@
-import type { PlanEntity, ArticleContent, ArticleType, ImageDensity, ProductCard } from '@/types/article'
+import type { PlanEntity, ArticleContent, ArticleType, ImageDensity, ProductCard, ImageSection } from '@/types/article'
 
 interface BraveImageResult {
   properties: { url: string }
@@ -143,19 +143,16 @@ export async function enrichArticleWithImages(
   entities: PlanEntity[],
   imageDensity?: ImageDensity
 ): Promise<ArticleContent> {
-  // Skip image enrichment entirely for articles with no image need
-  if (imageDensity === 'none') {
-    console.log('[images] Skipping image enrichment — image_density is "none"')
-    return article
-  }
-
-  const maxImages = getImageCount(article.article_type)
+  const skipProductImages = imageDensity === 'none'
+  const maxImages = skipProductImages ? 0 : getImageCount(article.article_type)
 
   // Build entity -> search_query map
   const entityMap = new Map(entities.map((e) => [e.name.toLowerCase(), e.search_query]))
 
-  // Find all product cards
-  const productCards = article.sections.filter((s): s is ProductCard => s.type === 'product_card')
+  // Find all product cards (skip if image_density is "none")
+  const productCards = skipProductImages
+    ? []
+    : article.sections.filter((s): s is ProductCard => s.type === 'product_card')
 
   // Fetch images in parallel
   const imageResults = await Promise.all(
@@ -170,14 +167,41 @@ export async function enrichArticleWithImages(
   // Build name -> urls map
   const imageMap = new Map(imageResults.map((r) => [r.entity_name, r.imageUrls]))
 
+  // Find all image_section entries and fetch their images in parallel
+  const imageSections = article.sections
+    .map((s, idx) => ({ section: s, idx }))
+    .filter((x): x is { section: ImageSection; idx: number } => x.section.type === 'image_section')
+
+  const imageSectionResults = await Promise.all(
+    imageSections.map(async ({ section, idx }) => {
+      const enrichedImages = await Promise.all(
+        section.images.map(async (img) => {
+          if (!img.search_query) return img
+          const urls = await fetchProductImages(img.search_query, 1)
+          return { ...img, image_url: urls[0] ?? null }
+        })
+      )
+      return { idx, enrichedImages }
+    })
+  )
+
+  // Build index -> enriched images map
+  const imageSectionMap = new Map(imageSectionResults.map((r) => [r.idx, r.enrichedImages]))
+
   // Merge image URLs into sections
-  const enrichedSections = article.sections.map((section) => {
+  const enrichedSections = article.sections.map((section, idx) => {
     if (section.type === 'product_card') {
       const urls = imageMap.get(section.entity_name) ?? []
       return {
         ...section,
         image_url: urls[0] ?? null,
         image_urls: urls,
+      }
+    }
+    if (section.type === 'image_section' && imageSectionMap.has(idx)) {
+      return {
+        ...section,
+        images: imageSectionMap.get(idx)!,
       }
     }
     return section

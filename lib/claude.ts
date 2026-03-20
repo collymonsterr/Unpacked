@@ -263,9 +263,25 @@ Return a JSON object matching this structure. Return ONLY valid JSON. No preambl
     { "type": "line_chart", "heading": "string", "description": "string (optional)", "x_label": "string (optional)", "y_label": "string (optional)", "series": [{ "name": "string", "data": [{ "x": "string", "y": "number" }] }], "fill_area": "boolean (optional)", "source": "string (optional)" },
     { "type": "stat_cards", "heading": "string", "cards": [{ "value": "string", "label": "string", "trend": "up | down | null (optional)" }], "source": "string (optional)" },
     { "type": "treemap", "heading": "string", "description": "string (optional)", "data": [{ "label": "string", "value": "number", "highlight": "boolean (optional)" }], "unit": "string (optional)", "source": "string (optional)" },
-    { "type": "timeline", "heading": "string", "events": [{ "year": "string", "title": "string", "description": "string" }] }
+    { "type": "timeline", "heading": "string", "events": [{ "year": "string", "title": "string", "description": "string" }] },
+    { "type": "image_section", "heading": "string (optional)", "images": [{ "search_query": "string", "caption": "string (optional)" }], "layout": "single | gallery | side-by-side" }
   ]
 }
+
+IMAGE SECTIONS:
+
+EVERY article should include image_section entries to add editorial-quality photos throughout. These are NOT product images — they are contextual, atmospheric photos that make the article feel like a magazine feature.
+
+Rules for image_section:
+- Include 2-4 image_section entries scattered throughout the article (between other sections, not clumped together)
+- For travel/planning articles: use destination photos, cityscapes, landmarks, street scenes, food culture. Example search queries: "Chiang Mai Thailand beautiful cityscape aerial", "Lisbon Portugal street tram sunset", "Bali rice terraces landscape"
+- For product articles: use lifestyle/contextual shots. Example: "person using laptop at coffee shop", "home office desk setup aesthetic", "gaming setup RGB lighting"
+- For explainer/finance articles: use high-quality stock-style photos. Example: "stock market trading floor", "person reviewing financial documents", "compound interest growth concept illustration"
+- For news/trend articles: use relevant editorial photos. Example: "electric vehicle charging station", "AI technology abstract visualization"
+- NEVER use search queries that will return website screenshots, banners with text, or infographics. Aim for PHOTOGRAPHS, not graphics.
+- The search_query must be specific and descriptive enough to find a beautiful, relevant photo
+- Use layout "single" for hero/impactful images, "gallery" for showcasing multiple related images (e.g., different destinations), "side-by-side" for comparisons
+- Place the first image_section near the top of the article (after executive summary or first content section) for visual impact
 
 IMPORTANT:
 - Use web search extensively. Do not rely on training data alone.

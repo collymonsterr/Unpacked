@@ -188,6 +188,17 @@ export interface TimelineSection {
   }>
 }
 
+export interface ImageSection {
+  type: 'image_section'
+  heading?: string
+  images: Array<{
+    search_query: string
+    caption?: string
+    image_url?: string | null
+  }>
+  layout: 'single' | 'gallery' | 'side-by-side'
+}
+
 export type ArticleSection =
   | ProductCard
   | ComparisonTable
@@ -205,6 +216,7 @@ export type ArticleSection =
   | StatCardsSection
   | TreemapSection
   | TimelineSection
+  | ImageSection
 
 // ── Full Article ─────────────────────────────────────────────────────────────
 

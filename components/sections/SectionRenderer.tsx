@@ -15,6 +15,7 @@ import LineChartSection from './LineChartSection'
 import StatCards from './StatCards'
 import TreemapSection from './TreemapSection'
 import TimelineSection from './TimelineSection'
+import ImageSection from './ImageSection'
 
 interface Props {
   sections: ArticleSection[]
@@ -85,6 +86,8 @@ export default function SectionRenderer({ sections, animated = false }: Props) {
               return <TreemapSection section={section} />
             case 'timeline':
               return <TimelineSection section={section} />
+            case 'image_section':
+              return <ImageSection section={section} />
             default:
               return null
           }
