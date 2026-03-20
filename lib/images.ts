@@ -92,8 +92,32 @@ function getImageCount(articleType: ArticleType): number {
 }
 
 /**
- * Search for a high-quality landscape thumbnail representing the article topic.
- * Uses the article title + a "landscape photo" hint to bias towards editorial images.
+ * Shorten a long article title into a focused image search query.
+ * e.g. "Top 6 Best-Selling Smartphones in 2024: Head-to-Head Comparison" → "Best-Selling Smartphones 2024"
+ */
+function shortenTitle(title: string): string {
+  // Step 1: Take everything before the colon/pipe (these are usually subtitle separators)
+  let short = title.split(/[:|]/)[0].trim()
+
+  // Step 2: Remove filler words at the start
+  short = short
+    .replace(/^(the |a |an |your |our )/i, '')
+    .replace(/\b(complete|ultimate|comprehensive|definitive)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  // Step 3: If still too long, take first 8 words
+  const words = short.split(' ')
+  if (words.length > 8) {
+    short = words.slice(0, 8).join(' ')
+  }
+
+  return short
+}
+
+/**
+ * Search for a high-quality thumbnail representing the article topic.
+ * Shortens the title to get more relevant image results from Brave.
  */
 export async function fetchThumbnailImage(
   title: string,
@@ -103,22 +127,25 @@ export async function fetchThumbnailImage(
   const apiKey = process.env.BRAVE_SEARCH_API_KEY
   if (!apiKey) return null
 
-  // Craft a search query that favours beautiful, editorial landscape images
+  const shortTitle = shortenTitle(title)
+
+  // Type-specific search hints
   const typeHints: Record<string, string> = {
-    planning: 'beautiful landscape photo',
-    explainer: 'editorial photo',
-    trend_analysis: 'editorial photo',
-    news: 'editorial photo',
-    tutorial: 'editorial photo',
-    buyer_guide: 'product lineup photo',
-    comparison: 'product comparison photo',
+    planning: 'travel photo',
+    explainer: 'photo',
+    trend_analysis: 'photo',
+    news: 'photo',
+    tutorial: 'photo',
+    buyer_guide: 'products',
+    comparison: 'products',
     decision_guide: 'photo',
   }
   const hint = typeHints[articleType] ?? 'photo'
   // Vary the query when replacing to get different results
-  const modifiers = ['', 'high quality', 'professional', 'editorial', 'stock']
+  const modifiers = ['', 'high quality', 'professional', 'hero image', '2024']
   const modifier = excludeUrl ? modifiers[Math.floor(Math.random() * modifiers.length)] : ''
-  const query = `${title} ${hint} ${modifier}`.trim()
+  const query = `${shortTitle} ${hint} ${modifier}`.trim()
+  console.log('[thumbnail] Search query:', query)
 
   try {
     const url = new URL('https://api.search.brave.com/res/v1/images/search')
