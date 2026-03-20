@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import type { ArticlePlan, ArticleType } from '@/types/article'
 import ArticleTypeBadge from './ui/ArticleTypeBadge'
+import GeneratingTips from './GeneratingTips'
 
 interface Props {
   plan: ArticlePlan
@@ -226,6 +227,9 @@ export default function ArticleSkeleton({ plan }: Props) {
           </div>
         ))}
       </div>
+
+      {/* Rotating tips while waiting */}
+      <GeneratingTips />
     </div>
   )
 }

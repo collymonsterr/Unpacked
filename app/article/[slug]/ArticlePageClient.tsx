@@ -13,6 +13,9 @@ interface Props {
 
 export default function ArticlePageClient({ initialRow }: Props) {
   const [row, setRow] = useState(initialRow)
+  const [wasGenerating, setWasGenerating] = useState(
+    initialRow.status === 'generating' || initialRow.status === 'planning'
+  )
   const isOwner = useAdminMode()
 
   const poll = useCallback(async () => {
@@ -54,7 +57,7 @@ export default function ArticlePageClient({ initialRow }: Props) {
           </p>
         </div>
       ) : row.status === 'complete' && row.article ? (
-        <ArticleView articleRow={row} isOwner={isOwner} />
+        <ArticleView articleRow={row} isOwner={isOwner} isNew={wasGenerating} />
       ) : row.plan ? (
         <ArticleSkeleton plan={row.plan} />
       ) : (

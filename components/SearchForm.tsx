@@ -78,10 +78,19 @@ const MESSAGES: Record<string, MessageSet> = {
   ],
 }
 
+// Transition messages shown briefly before redirecting to the article
+const TRANSITION_MESSAGES = [
+  { text: 'Your article is being written right now...', icon: '✍️' },
+  { text: 'Taking you there — this is worth the wait.', icon: '🚀' },
+]
+
 export default function SearchForm() {
   const [query, setQuery] = useState('')
   const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0])
   const [isLoading, setIsLoading] = useState(false)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const [transitionIndex, setTransitionIndex] = useState(0)
+  const [transitionVisible, setTransitionVisible] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [statusIndex, setStatusIndex] = useState(0)
   const [statusVisible, setStatusVisible] = useState(true)
@@ -150,14 +159,52 @@ export default function SearchForm() {
         owned.push(id)
         localStorage.setItem('owned_articles', JSON.stringify(owned))
       } catch {}
+
+      // Show transition interstitial before redirecting
+      setIsLoading(false)
+      setIsTransitioning(true)
+      setTransitionIndex(0)
+      setTransitionVisible(true)
+
+      // Show first message, then second, then redirect
+      await new Promise((r) => setTimeout(r, 2500))
+      setTransitionVisible(false)
+      await new Promise((r) => setTimeout(r, 300))
+      setTransitionIndex(1)
+      setTransitionVisible(true)
+      await new Promise((r) => setTimeout(r, 2000))
+
       router.push(`/article/${slug}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
       setIsLoading(false)
+      setIsTransitioning(false)
     }
   }
 
   const currentMessage = activeMessages[statusIndex]
+  const transitionMessage = TRANSITION_MESSAGES[transitionIndex]
+
+  // Transition interstitial replaces the form
+  if (isTransitioning) {
+    return (
+      <div className="w-full flex flex-col items-center gap-4 py-4">
+        <LoadingBar />
+        <p
+          className="text-base font-semibold text-center transition-all duration-300"
+          style={{
+            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-sora)',
+            opacity: transitionVisible ? 1 : 0,
+            transform: transitionVisible ? 'translateY(0)' : 'translateY(6px)',
+          }}
+        >
+          <span className="mr-2">{transitionMessage.icon}</span>
+          {transitionMessage.text}
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="w-full">
