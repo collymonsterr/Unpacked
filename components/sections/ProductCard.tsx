@@ -4,10 +4,19 @@ import Image from 'next/image'
 import { useState, useMemo, useCallback } from 'react'
 import type { ProductCard as ProductCardType } from '@/types/article'
 
-export default function ProductCard({ section }: { section: ProductCardType }) {
+interface Props {
+  section: ProductCardType
+  isAdmin?: boolean
+  sectionIndex?: number
+  onReplaceImage?: (imageIndex: number) => Promise<void>
+  onSetPrimaryImage?: (imageIndex: number) => Promise<void>
+}
+
+export default function ProductCard({ section, isAdmin, onReplaceImage, onSetPrimaryImage }: Props) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [imgErrors, setImgErrors] = useState<Set<number>>(new Set())
   const [heroLoaded, setHeroLoaded] = useState(false)
+  const [replacingIndex, setReplacingIndex] = useState<number | null>(null)
 
   // Build a clean array of loadable images
   const allImages = useMemo(() => {
@@ -30,6 +39,38 @@ export default function ProductCard({ section }: { section: ProductCardType }) {
       }
     },
     [selectedIndex, allImages, imgErrors]
+  )
+
+  const handleReplace = useCallback(
+    async (index: number) => {
+      if (!onReplaceImage || replacingIndex !== null) return
+      setReplacingIndex(index)
+      try {
+        await onReplaceImage(index)
+        // After removing, reset to first image and clear error tracking
+        setSelectedIndex(0)
+        setImgErrors(new Set())
+      } finally {
+        setReplacingIndex(null)
+        setHeroLoaded(false)
+      }
+    },
+    [onReplaceImage, replacingIndex]
+  )
+
+  const handleSetPrimary = useCallback(
+    async (index: number) => {
+      if (!onSetPrimaryImage || replacingIndex !== null) return
+      setReplacingIndex(index)
+      try {
+        await onSetPrimaryImage(index)
+        setSelectedIndex(0)
+        setHeroLoaded(false)
+      } finally {
+        setReplacingIndex(null)
+      }
+    },
+    [onSetPrimaryImage, replacingIndex]
   )
 
   const heroUrl = allImages[selectedIndex] && !imgErrors.has(selectedIndex)
@@ -56,19 +97,40 @@ export default function ProductCard({ section }: { section: ProductCardType }) {
           }}
         >
           {heroUrl ? (
-            <Image
-              key={heroUrl}
-              src={heroUrl}
-              alt={section.entity_name}
-              fill
-              className={`object-contain p-5 md:p-8 transition-all duration-300 group-hover:scale-[1.02] ${heroLoaded ? 'hero-image-fade' : 'opacity-0'}`}
-              onLoad={() => setHeroLoaded(true)}
-              onError={() => {
-                handleImageError(allImages.indexOf(heroUrl))
-                setHeroLoaded(false)
-              }}
-              unoptimized
-            />
+            <>
+              <Image
+                key={heroUrl}
+                src={heroUrl}
+                alt={section.entity_name}
+                fill
+                className={`object-contain p-5 md:p-8 transition-all duration-300 group-hover:scale-[1.02] ${heroLoaded ? 'hero-image-fade' : 'opacity-0'}`}
+                onLoad={() => setHeroLoaded(true)}
+                onError={() => {
+                  handleImageError(allImages.indexOf(heroUrl))
+                  setHeroLoaded(false)
+                }}
+                unoptimized
+              />
+              {/* Admin: X button to replace image */}
+              {isAdmin && onReplaceImage && (
+                <button
+                  onClick={() => handleReplace(allImages.indexOf(heroUrl))}
+                  disabled={replacingIndex !== null}
+                  className="absolute top-2 right-2 z-10 w-7 h-7 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{
+                    backgroundColor: 'rgba(0,0,0,0.6)',
+                    color: '#fff',
+                  }}
+                  title="Replace this image"
+                >
+                  {replacingIndex === allImages.indexOf(heroUrl) ? (
+                    <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                  )}
+                </button>
+              )}
+            </>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center p-6">
               <span
@@ -85,37 +147,70 @@ export default function ProductCard({ section }: { section: ProductCardType }) {
       {/* Thumbnail Strip */}
       {images.length > 1 && (
         <div
-          className="flex gap-3 px-4 md:px-5 pb-4 overflow-x-auto scrollbar-hide"
+          className="grid gap-2 px-4 md:px-5 pb-4"
+          style={{
+            gridTemplateColumns: `repeat(${Math.min(images.length, 5)}, 1fr)`,
+          }}
         >
           {allImages.map((url, i) => {
             if (imgErrors.has(i)) return null
             const isActive = url === heroUrl
             return (
-              <button
-                key={i}
-                onClick={() => {
-                  setSelectedIndex(i)
-                  setHeroLoaded(false)
-                }}
-                className="shrink-0 relative rounded-lg overflow-hidden transition-all duration-200 hover:opacity-100"
-                style={{
-                  width: 64,
-                  height: 64,
-                  backgroundColor: '#ffffff',
-                  border: isActive ? '2px solid var(--accent)' : '1px solid var(--border)',
-                  opacity: isActive ? 1 : 0.65,
-                  boxShadow: isActive ? '0 0 0 1px var(--accent)' : 'none',
-                }}
-              >
-                <Image
-                  src={url}
-                  alt={`${section.entity_name} view ${i + 1}`}
-                  fill
-                  className="object-contain p-1.5 transition-transform duration-200 hover:scale-110"
-                  onError={() => handleImageError(i)}
-                  unoptimized
-                />
-              </button>
+              <div key={i} className="relative group/thumb">
+                <button
+                  onClick={() => {
+                    if (isAdmin && onSetPrimaryImage && i !== 0) {
+                      // In admin mode, clicking a thumbnail sets it as primary
+                      handleSetPrimary(i)
+                    } else {
+                      setSelectedIndex(i)
+                      setHeroLoaded(false)
+                    }
+                  }}
+                  className="relative w-full rounded-xl overflow-hidden transition-all duration-200 hover:opacity-100"
+                  style={{
+                    aspectRatio: '1',
+                    backgroundColor: '#ffffff',
+                    border: isActive ? '2px solid var(--accent)' : '1px solid var(--border)',
+                    opacity: isActive ? 1 : 0.7,
+                    boxShadow: isActive ? '0 0 0 1px var(--accent)' : 'none',
+                  }}
+                >
+                  <Image
+                    src={url}
+                    alt={`${section.entity_name} view ${i + 1}`}
+                    fill
+                    className="object-contain p-2 md:p-3 transition-transform duration-200 hover:scale-105"
+                    onError={() => handleImageError(i)}
+                    unoptimized
+                  />
+                  {/* "Primary" label on first image in admin mode */}
+                  {isAdmin && i === 0 && (
+                    <span
+                      className="absolute bottom-1 left-1 text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                      style={{ backgroundColor: 'var(--accent)', color: '#fff' }}
+                    >
+                      Primary
+                    </span>
+                  )}
+                </button>
+                {/* Admin: X button to remove image */}
+                {isAdmin && onReplaceImage && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleReplace(i) }}
+                    disabled={replacingIndex !== null}
+                    className="absolute top-1 right-1 z-10 w-6 h-6 flex items-center justify-center rounded-full opacity-0 group-hover/thumb:opacity-100 transition-opacity"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff' }}
+                    title="Remove this image"
+                  >
+                    {replacingIndex === i ? (
+                      <span className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    ) : (
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                    )}
+                  </button>
+                )}
+              </div>
             )
           })}
         </div>

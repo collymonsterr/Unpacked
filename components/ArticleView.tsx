@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import type { ArticleRow, ProductCard, VisualStrategy } from '@/types/article'
 import ArticleTypeBadge from './ui/ArticleTypeBadge'
 import QuickVerdict from './sections/QuickVerdict'
@@ -129,6 +130,42 @@ export default function ArticleView({ articleRow, isOwner }: Props) {
       setIsRefining(false)
     }
   }
+
+  const handleReplaceImage = useCallback(
+    async (sectionIndex: number, imageIndex: number) => {
+      try {
+        const res = await fetch(`/api/articles/${articleRow.id}/replace-image`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sectionIndex, imageIndex }),
+        })
+        if (!res.ok) throw new Error('Failed')
+        const data = await res.json()
+        if (data.article) setArticle(data.article)
+      } catch {
+        // silently fail
+      }
+    },
+    [articleRow.id]
+  )
+
+  const handleSetPrimaryImage = useCallback(
+    async (sectionIndex: number, imageIndex: number) => {
+      try {
+        const res = await fetch(`/api/articles/${articleRow.id}/set-primary-image`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sectionIndex, imageIndex }),
+        })
+        if (!res.ok) throw new Error('Failed')
+        const data = await res.json()
+        if (data.article) setArticle(data.article)
+      } catch {
+        // silently fail
+      }
+    },
+    [articleRow.id]
+  )
 
   const formattedDate = new Date(articleRow.created_at).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -258,6 +295,9 @@ export default function ArticleView({ articleRow, isOwner }: Props) {
       {/* Quick Verdict */}
       <QuickVerdict data={article.quick_verdict} />
 
+      {/* Hero Image */}
+      {article.thumbnail_url && <HeroImage url={article.thumbnail_url} alt={article.title} />}
+
       {/* Executive Summary */}
       <ExecutiveSummary data={article.executive_summary} />
 
@@ -272,7 +312,13 @@ export default function ArticleView({ articleRow, isOwner }: Props) {
           </p>
         </div>
       ) : (
-        <SectionRenderer sections={article.sections} animated />
+        <SectionRenderer
+          sections={article.sections}
+          animated
+          isAdmin={isOwner}
+          onReplaceImage={handleReplaceImage}
+          onSetPrimaryImage={handleSetPrimaryImage}
+        />
       )}
 
       {/* Owner-only: refinement controls */}
@@ -418,5 +464,35 @@ function DebugPanel({
         </div>
       )}
     </div>
+  )
+}
+
+function HeroImage({ url, alt }: { url: string; alt: string }) {
+  const [loaded, setLoaded] = useState(false)
+  const [error, setError] = useState(false)
+
+  if (error) return null
+
+  return (
+    <figure
+      className="rounded-2xl overflow-hidden mb-8"
+      style={{
+        boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.08)',
+        border: '1px solid var(--border)',
+      }}
+    >
+      <div className="relative w-full" style={{ aspectRatio: '16 / 9' }}>
+        <Image
+          src={url}
+          alt={alt}
+          fill
+          className="object-cover transition-opacity duration-500"
+          style={{ opacity: loaded ? 1 : 0 }}
+          onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
+          unoptimized
+        />
+      </div>
+    </figure>
   )
 }

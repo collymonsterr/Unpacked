@@ -5,6 +5,7 @@ import type { ArticleRow } from '@/types/article'
 import ArticleSkeleton from '@/components/ArticleSkeleton'
 import ArticleView from '@/components/ArticleView'
 import Logo from '@/components/ui/Logo'
+import { useAdminMode } from '@/hooks/useAdminMode'
 
 interface Props {
   initialRow: ArticleRow
@@ -12,8 +13,7 @@ interface Props {
 
 export default function ArticlePageClient({ initialRow }: Props) {
   const [row, setRow] = useState(initialRow)
-  // Always show admin toolbar — no auth yet
-  const isOwner = true
+  const isOwner = useAdminMode()
 
   const poll = useCallback(async () => {
     try {

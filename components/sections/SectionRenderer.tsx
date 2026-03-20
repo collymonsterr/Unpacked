@@ -20,6 +20,9 @@ import ImageSection from './ImageSection'
 interface Props {
   sections: ArticleSection[]
   animated?: boolean
+  isAdmin?: boolean
+  onReplaceImage?: (sectionIndex: number, imageIndex: number) => Promise<void>
+  onSetPrimaryImage?: (sectionIndex: number, imageIndex: number) => Promise<void>
 }
 
 // Recharts-based sections break when rendered inside opacity:0 containers
@@ -32,7 +35,13 @@ const RECHARTS_TYPES = new Set([
   'treemap',
 ])
 
-export default function SectionRenderer({ sections, animated = false }: Props) {
+export default function SectionRenderer({
+  sections,
+  animated = false,
+  isAdmin,
+  onReplaceImage,
+  onSetPrimaryImage,
+}: Props) {
   return (
     <>
       {sections.map((section, i) => {
@@ -55,7 +64,15 @@ export default function SectionRenderer({ sections, animated = false }: Props) {
         const inner = (() => {
           switch (section.type) {
             case 'product_card':
-              return <ProductCard section={section} />
+              return (
+                <ProductCard
+                  section={section}
+                  isAdmin={isAdmin}
+                  sectionIndex={i}
+                  onReplaceImage={onReplaceImage ? (imgIdx) => onReplaceImage(i, imgIdx) : undefined}
+                  onSetPrimaryImage={onSetPrimaryImage ? (imgIdx) => onSetPrimaryImage(i, imgIdx) : undefined}
+                />
+              )
             case 'comparison_table':
               return <ComparisonTable section={section} />
             case 'warning_box':
@@ -87,7 +104,14 @@ export default function SectionRenderer({ sections, animated = false }: Props) {
             case 'timeline':
               return <TimelineSection section={section} />
             case 'image_section':
-              return <ImageSection section={section} />
+              return (
+                <ImageSection
+                  section={section}
+                  isAdmin={isAdmin}
+                  sectionIndex={i}
+                  onReplaceImage={onReplaceImage ? (imgIdx) => onReplaceImage(i, imgIdx) : undefined}
+                />
+              )
             default:
               return null
           }
