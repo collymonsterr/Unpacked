@@ -238,6 +238,7 @@ export interface ArticleContent {
   executive_summary: ExecutiveSummary
   sections: ArticleSection[]
   thumbnail_url?: string | null
+  thumbnail_history?: string[]
 }
 
 // ── Database row ─────────────────────────────────────────────────────────────

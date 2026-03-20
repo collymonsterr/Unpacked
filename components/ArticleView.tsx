@@ -295,11 +295,23 @@ export default function ArticleView({ articleRow, isOwner }: Props) {
         <HeroImage
           url={article.thumbnail_url}
           alt={article.title}
+          history={article.thumbnail_history ?? []}
           isAdmin={isOwner}
+          articleId={articleRow.id}
           onReplace={async (useAI?: boolean) => {
             try {
               const url = `/api/articles/${articleRow.id}/replace-thumbnail${useAI ? '?ai=true' : ''}`
               const res = await fetch(url, { method: 'POST' })
+              if (!res.ok) throw new Error('Failed')
+              const data = await res.json()
+              if (data.article) setArticle(data.article)
+            } catch {
+              // silently fail
+            }
+          }}
+          onPick={async (index: number) => {
+            try {
+              const res = await fetch(`/api/articles/${articleRow.id}/replace-thumbnail?pick=${index}`, { method: 'POST' })
               if (!res.ok) throw new Error('Failed')
               const data = await res.json()
               if (data.article) setArticle(data.article)
@@ -487,17 +499,24 @@ function DebugPanel({
 function HeroImage({
   url,
   alt,
+  history,
   isAdmin,
+  articleId,
   onReplace,
+  onPick,
 }: {
   url: string
   alt: string
+  history?: string[]
   isAdmin?: boolean
+  articleId?: string
   onReplace?: (useAI?: boolean) => Promise<void>
+  onPick?: (index: number) => Promise<void>
 }) {
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
   const [replacing, setReplacing] = useState<'photo' | 'ai' | null>(null)
+  const [thumbErrors, setThumbErrors] = useState<Set<number>>(new Set())
 
   if (error) return null
 
@@ -512,77 +531,118 @@ function HeroImage({
     }
   }
 
+  // History thumbnails — exclude the current image, filter out errored ones
+  const historyItems = (history ?? [])
+    .map((u, i) => ({ url: u, index: i }))
+    .filter(({ url: u }) => u !== url)
+    .filter(({ index }) => !thumbErrors.has(index))
+
   return (
-    <figure
-      className="rounded-2xl overflow-hidden mb-8"
-      style={{
-        boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.08)',
-        border: '1px solid var(--border)',
-      }}
-    >
-      <div className="relative w-full" style={{ aspectRatio: '16 / 9' }}>
-        <Image
-          src={url}
-          alt={alt}
-          fill
-          className="object-cover transition-opacity duration-500"
-          style={{ opacity: loaded ? 1 : 0 }}
-          onLoad={() => setLoaded(true)}
-          onError={() => setError(true)}
-          unoptimized
-        />
-        {isAdmin && onReplace && (
-          <div className="absolute top-3 right-3 z-10 flex gap-2">
-            <button
-              onClick={() => handleReplace(false)}
-              disabled={!!replacing}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity"
-              style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: '#fff', opacity: replacing ? 0.6 : 0.85 }}
-              title="Find a different photo from the web"
-            >
-              {replacing === 'photo' ? (
-                <>
-                  <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                  Searching…
-                </>
-              ) : (
-                <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21.5 2v6h-6" />
-                    <path d="M2.5 22v-6h6" />
-                    <path d="M2.5 11.5a10 10 0 0 1 18.4-4.5" />
-                    <path d="M21.5 12.5a10 10 0 0 1-18.4 4.5" />
-                  </svg>
-                  New photo
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => handleReplace(true)}
-              disabled={!!replacing}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity"
-              style={{ backgroundColor: 'rgba(100,60,180,0.75)', color: '#fff', opacity: replacing ? 0.6 : 0.85 }}
-              title="Generate an AI image"
-            >
-              {replacing === 'ai' ? (
-                <>
-                  <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                  Generating…
-                </>
-              ) : (
-                <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                    <path d="M2 17l10 5 10-5" />
-                    <path d="M2 12l10 5 10-5" />
-                  </svg>
-                  Generate AI
-                </>
-              )}
-            </button>
+    <div className="mb-8">
+      <figure
+        className="rounded-2xl overflow-hidden"
+        style={{
+          boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.08)',
+          border: '1px solid var(--border)',
+        }}
+      >
+        <div className="relative w-full" style={{ aspectRatio: '16 / 9' }}>
+          <Image
+            src={url}
+            alt={alt}
+            fill
+            className="object-cover transition-opacity duration-500"
+            style={{ opacity: loaded ? 1 : 0 }}
+            onLoad={() => setLoaded(true)}
+            onError={() => setError(true)}
+            unoptimized
+          />
+          {isAdmin && onReplace && (
+            <div className="absolute top-3 right-3 z-10 flex gap-2">
+              <button
+                onClick={() => handleReplace(false)}
+                disabled={!!replacing}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity"
+                style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: '#fff', opacity: replacing ? 0.6 : 0.85 }}
+                title="Find a different photo from the web"
+              >
+                {replacing === 'photo' ? (
+                  <>
+                    <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    Searching…
+                  </>
+                ) : (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21.5 2v6h-6" />
+                      <path d="M2.5 22v-6h6" />
+                      <path d="M2.5 11.5a10 10 0 0 1 18.4-4.5" />
+                      <path d="M21.5 12.5a10 10 0 0 1-18.4 4.5" />
+                    </svg>
+                    New photo
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => handleReplace(true)}
+                disabled={!!replacing}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity"
+                style={{ backgroundColor: 'rgba(100,60,180,0.75)', color: '#fff', opacity: replacing ? 0.6 : 0.85 }}
+                title="Generate an AI image"
+              >
+                {replacing === 'ai' ? (
+                  <>
+                    <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    Generating…
+                  </>
+                ) : (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                      <path d="M2 17l10 5 10-5" />
+                      <path d="M2 12l10 5 10-5" />
+                    </svg>
+                    Generate AI
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+      </figure>
+
+      {/* History thumbnails — only shown in admin mode when there are previous images */}
+      {isAdmin && historyItems.length > 0 && (
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Previous:</span>
+          <div className="flex gap-2 overflow-x-auto">
+            {historyItems.map(({ url: thumbUrl, index }) => (
+              <button
+                key={index}
+                onClick={() => onPick?.(index)}
+                className="flex-shrink-0 rounded-lg overflow-hidden transition-all hover:ring-2"
+                style={{
+                  width: 80,
+                  height: 45,
+                  border: '1px solid var(--border)',
+                  cursor: 'pointer',
+                }}
+                title="Use this image"
+              >
+                <Image
+                  src={thumbUrl}
+                  alt={`Previous hero ${index + 1}`}
+                  width={80}
+                  height={45}
+                  className="object-cover w-full h-full"
+                  onError={() => setThumbErrors((prev) => new Set([...prev, index]))}
+                  unoptimized
+                />
+              </button>
+            ))}
           </div>
-        )}
-      </div>
-    </figure>
+        </div>
+      )}
+    </div>
   )
 }

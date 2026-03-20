@@ -10,27 +10,49 @@ export async function POST(
 ) {
   const { id } = await params
   const useAI = request.nextUrl.searchParams.get('ai') === 'true'
+  // Pick a specific image from history by index
+  const pickIndex = request.nextUrl.searchParams.get('pick')
 
   const db = getSupabaseAdmin()
   const { data: row } = await db.from('articles').select('article').eq('id', id).single()
   if (!row?.article) return Response.json({ error: 'Not found' }, { status: 404 })
 
   const article = row.article as ArticleContent
+  const history = article.thumbnail_history ?? []
+
+  // If picking from history, just set that URL as current
+  if (pickIndex !== null) {
+    const idx = parseInt(pickIndex, 10)
+    if (idx >= 0 && idx < history.length) {
+      article.thumbnail_url = history[idx]
+      await db.from('articles').update({ article }).eq('id', id)
+      return Response.json({ article })
+    }
+  }
+
+  // Save current thumbnail to history before replacing
+  if (article.thumbnail_url && !history.includes(article.thumbnail_url)) {
+    history.push(article.thumbnail_url)
+  }
 
   let newUrl: string | null = null
 
   if (useAI) {
-    // AI-generated → Brave → best article image
     newUrl = await generateHeroImage(article, id)
       ?? await fetchThumbnailImage(article.title, article.article_type, article.thumbnail_url ?? undefined)
       ?? pickBestArticleImage(article)
   } else {
-    // Brave search → best article image (default — more natural looking)
     newUrl = await fetchThumbnailImage(article.title, article.article_type, article.thumbnail_url ?? undefined)
       ?? pickBestArticleImage(article)
   }
 
+  // Add the new URL to history too
+  if (newUrl && !history.includes(newUrl)) {
+    history.push(newUrl)
+  }
+
   article.thumbnail_url = newUrl
+  article.thumbnail_history = history
 
   await db.from('articles').update({ article }).eq('id', id)
 
