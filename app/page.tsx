@@ -36,15 +36,15 @@ export default async function HomePage() {
           className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4 max-w-3xl"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
         >
-          Ask anything.
+          AI answers,
           <br />
-          <span style={{ color: 'var(--accent)' }}>Get the article, not the answer.</span>
+          <span style={{ color: 'var(--accent)' }}>elevated to editorial quality.</span>
         </h1>
         <p
           className="text-lg md:text-xl mb-10 max-w-xl"
           style={{ color: 'var(--text-secondary)' }}
         >
-          Opinionated, researched, beautifully structured — written like a senior product journalist.
+          Turn any prompt into a beautifully written, structured article with visuals, clarity, and a point of view.
         </p>
 
         <div className="w-full max-w-2xl">
