@@ -12,14 +12,8 @@ interface Props {
 
 export default function ArticlePageClient({ initialRow }: Props) {
   const [row, setRow] = useState(initialRow)
-  const [isOwner, setIsOwner] = useState(false)
-
-  useEffect(() => {
-    try {
-      const owned: string[] = JSON.parse(localStorage.getItem('owned_articles') ?? '[]')
-      setIsOwner(owned.includes(initialRow.id))
-    } catch {}
-  }, [initialRow.id])
+  // Always show admin toolbar — no auth yet
+  const isOwner = true
 
   const poll = useCallback(async () => {
     try {
