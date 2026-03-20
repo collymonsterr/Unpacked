@@ -98,7 +98,18 @@ CRITICAL: The search_query for each entity MUST be optimised for finding officia
 
 STEP 4: PLAN SECTIONS
 
-For sections_outline: design the article structure. Available building blocks:
+For sections_outline: design the article structure. Follow this recommended flow for product articles:
+
+1. Quick Verdict (always first)
+2. Executive Summary (key takeaways + warnings)
+3. "What You Need to Know" — a content_section that sets context before diving into products. What's the state of this category? Key things to understand.
+4. Community Insights — EARLY in the article, before or between the first product cards. What Reddit/forums/Twitter says. This is social proof and should not be buried at the end.
+5. Product Cards (the main recommendations)
+6. Data visualisations + Comparison Tables (interspersed with products)
+7. Supporting sections (Warning Box, Price Tiers, Who This Is For)
+8. Sources
+
+Available building blocks:
 - Quick Verdict (always first)
 - Executive Summary (key takeaways + warnings)
 - Content Section (prose paragraphs — use for explanations, context, analysis)
@@ -108,7 +119,7 @@ For sections_outline: design the article structure. Available building blocks:
 - Price Tier Breakdown (for buyer guides spanning a price range)
 - Warning Box (things to avoid)
 - "Who This Is For" Callout
-- Community Insights (Reddit/forum sentiment)
+- Community Insights (Reddit/forum sentiment) — place this EARLY, not at the end
 - Sources
 
 Data visualisation blocks — use the types that match the article's visual_strategy:
@@ -175,6 +186,20 @@ FOR PRODUCT ARTICLES (buyer_guide, comparison, decision_guide):
 - Your #1 pick is the "consensus pick" — most consistently recommended across expert reviews, Reddit, YouTube, real users.
 - Call out products that are overpriced or overhyped.
 - Write like someone who actually uses these products.
+
+ARTICLE STRUCTURE — FLOW AND PACING:
+
+Don't just jump straight into product cards. A great article sets the scene first. Follow this general flow:
+
+1. Quick Verdict + Executive Summary (always first)
+2. "What You Need to Know" — a brief content_section that orients the reader BEFORE the products. What's the state of this category? What should buyers be aware of? What's changed recently? This prevents the article feeling like a raw product dump.
+3. Community Insights — move this EARLY, before or between the first few product cards. Readers want to know: what's the Reddit consensus? Are people split? Is there a clear community favourite? If there are notable threads on Reddit, Hacker News, Twitter/X, or forums — surface them. This social proof is more compelling than specs.
+4. Product Cards — the main recommendations
+5. Data visualisations, comparison tables — interspersed between product cards where they add value
+6. Warning Box, Price Tiers, Who This Is For — supporting sections
+7. Sources at the end
+
+The community_insights section should feel like "here's what real people are saying" — not a footnote. If consensus is strong ("Reddit universally recommends X"), say that upfront. If it's divided, explain the camps. Reference specific subreddits or threads when possible.
 
 FOR KNOWLEDGE ARTICLES (explainer, tutorial):
 - Explain clearly with concrete examples. Avoid abstract hand-waving.
