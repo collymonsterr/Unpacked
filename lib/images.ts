@@ -93,23 +93,38 @@ function getImageCount(articleType: ArticleType): number {
 
 /**
  * Shorten a long article title into a focused image search query.
- * e.g. "Top 6 Best-Selling Smartphones in 2024: Head-to-Head Comparison" → "Best-Selling Smartphones 2024"
+ * Keeps the essential topic words (especially proper nouns and key subjects)
+ * while stripping generic article framing words.
  */
 function shortenTitle(title: string): string {
-  // Step 1: Take everything before the colon/pipe (these are usually subtitle separators)
-  let short = title.split(/[:|]/)[0].trim()
+  // Remove generic subtitle suffixes (after colon/pipe) BUT only if the first
+  // part is substantial enough on its own (> 20 chars). Otherwise keep the full title
+  // because the key subject might be after the colon (e.g. "Holiday in Dubai: The Ultimate Itinerary")
+  let short = title
+  const colonIdx = title.search(/[:|]/)
+  if (colonIdx > 20) {
+    short = title.substring(0, colonIdx).trim()
+  }
 
-  // Step 2: Remove filler words at the start
+  // Remove generic article framing words (but keep proper nouns, numbers, product names)
   short = short
     .replace(/^(the |a |an |your |our )/i, '')
     .replace(/\b(complete|ultimate|comprehensive|definitive)\b/gi, '')
+    .replace(/\b(guide|review|comparison|roundup|breakdown|overview|recommendations?)\b/gi, '')
+    .replace(/[&]/g, 'and')
     .replace(/\s+/g, ' ')
+    .replace(/^\W+/, '') // Remove leading non-word chars (dashes, etc.)
     .trim()
 
-  // Step 3: If still too long, take first 8 words
+  // If still too long, take first 10 words
   const words = short.split(' ')
-  if (words.length > 8) {
-    short = words.slice(0, 8).join(' ')
+  if (words.length > 10) {
+    short = words.slice(0, 10).join(' ')
+  }
+
+  // Safety: if we stripped too much, fall back to original title (first 10 words)
+  if (short.length < 8) {
+    short = title.replace(/\s+/g, ' ').trim().split(' ').slice(0, 10).join(' ')
   }
 
   return short
