@@ -82,6 +82,13 @@ For the entities array: identify every specific product, brand, or item that wil
 - For buyer_guide/comparison/decision_guide: list products with image search queries
 - For explainer/tutorial/trend_analysis/news/planning: entities should be EMPTY or contain only items where a real photograph adds value (e.g., a specific place, a specific device). Do NOT add entities for abstract concepts.
 
+CRITICAL: The search_query for each entity MUST be optimised for finding official product images.
+- Use the full product name + brand (e.g., "Keychron C3 Pro mechanical keyboard official product image")
+- Include "official" or "press image" or "product shot" in the query
+- For tech products, include the brand name to bias towards manufacturer sites
+- Example: "Samsung Galaxy S24 official press image" NOT "Galaxy phone"
+- Example: "Sony WH-1000XM5 headphones official product photo" NOT "noise cancelling headphones"
+
 STEP 4: PLAN SECTIONS
 
 For sections_outline: design the article structure. Available building blocks:

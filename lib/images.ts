@@ -5,11 +5,22 @@ interface BraveImageResult {
   thumbnail: { src: string }
 }
 
-const REJECTED_PATTERNS = /\.svg|\.gif|favicon|icon|logo|pixel|tracking|badge|sprite|placeholder/i
+const REJECTED_PATTERNS = /\.svg|\.gif|favicon|icon|logo|pixel|tracking|badge|sprite|placeholder|avatar|profile|thumbs\.redditmedia|external-preview\.redd\.it|preview\.redd\.it/i
 
-function filterImageUrls(results: BraveImageResult[]): string[] {
+// Official/reputable product image sources — these get priority
+const PREFERRED_HOSTNAMES = new Set([
+  'images-na.ssl-images-amazon.com', 'm.media-amazon.com',
+  'store.storeimages.cdn-apple.com', 'image-us.samsung.com',
+  'pisces.bbystatic.com', // Best Buy
+  'i5.walmartimages.com',
+  'cdn.shopify.com',
+  'static.bhphoto.com',
+])
+
+function filterAndRankImageUrls(results: BraveImageResult[]): string[] {
   const seen = new Set<string>()
-  const filtered: string[] = []
+  const preferred: string[] = []
+  const others: string[] = []
 
   for (const r of results) {
     const url = r.properties?.url
@@ -18,18 +29,25 @@ function filterImageUrls(results: BraveImageResult[]): string[] {
     if (url.length < 30) continue
 
     // Deduplicate by hostname
+    let hostname: string
     try {
-      const hostname = new URL(url).hostname
+      hostname = new URL(url).hostname
       if (seen.has(hostname)) continue
       seen.add(hostname)
     } catch {
       continue
     }
 
-    filtered.push(url)
+    // Sort into preferred vs others
+    if (PREFERRED_HOSTNAMES.has(hostname)) {
+      preferred.push(url)
+    } else {
+      others.push(url)
+    }
   }
 
-  return filtered
+  // Preferred sources first, then the rest
+  return [...preferred, ...others]
 }
 
 async function fetchProductImages(
@@ -42,7 +60,8 @@ async function fetchProductImages(
   try {
     const url = new URL('https://api.search.brave.com/res/v1/images/search')
     url.searchParams.set('q', searchQuery)
-    url.searchParams.set('count', '10')
+    url.searchParams.set('count', '20')
+    url.searchParams.set('safesearch', 'strict')
 
     const res = await fetch(url.toString(), {
       headers: {
@@ -55,7 +74,7 @@ async function fetchProductImages(
     const data = await res.json()
     const results: BraveImageResult[] = data.results ?? []
 
-    return filterImageUrls(results).slice(0, maxImages)
+    return filterAndRankImageUrls(results).slice(0, maxImages)
   } catch {
     return []
   }
@@ -63,14 +82,12 @@ async function fetchProductImages(
 
 function getImageCount(articleType: ArticleType): number {
   switch (articleType) {
-    case 'decision_guide':
-      return 4
     case 'buyer_guide':
-      return 2
     case 'comparison':
-      return 2
+    case 'decision_guide':
+      return 5
     default:
-      return 2
+      return 3
   }
 }
 
@@ -114,7 +131,7 @@ export async function fetchThumbnailImage(title: string, articleType: ArticleTyp
     const results: BraveImageResult[] = data.results ?? []
 
     // Filter and pick the first good landscape-oriented image
-    const filtered = filterImageUrls(results)
+    const filtered = filterAndRankImageUrls(results)
     return filtered[0] ?? null
   } catch {
     return null
