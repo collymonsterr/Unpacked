@@ -290,12 +290,7 @@ export default function ArticleView({ articleRow, isOwner }: Props) {
         />
       )}
 
-      <div className="mb-8" style={{ borderTop: '1px solid var(--border)' }} />
-
-      {/* Quick Verdict */}
-      <QuickVerdict data={article.quick_verdict} />
-
-      {/* Hero Image */}
+      {/* Hero Image — first visual, before any content */}
       {article.thumbnail_url && (
         <HeroImage
           url={article.thumbnail_url}
@@ -315,6 +310,11 @@ export default function ArticleView({ articleRow, isOwner }: Props) {
           }}
         />
       )}
+
+      <div className="mb-8" style={{ borderTop: '1px solid var(--border)' }} />
+
+      {/* Quick Verdict */}
+      <QuickVerdict data={article.quick_verdict} />
 
       {/* Executive Summary */}
       <ExecutiveSummary data={article.executive_summary} />
