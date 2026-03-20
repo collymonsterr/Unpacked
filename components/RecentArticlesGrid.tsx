@@ -33,6 +33,7 @@ function ArticleCard({ row }: { row: ArticleRow }) {
   const title = row.article?.title ?? row.plan?.title ?? row.query
   const verdict = row.article?.quick_verdict?.one_liner ?? row.plan?.quick_verdict_preview ?? ''
   const type = row.article?.article_type ?? row.plan?.article_type ?? 'buyer_guide'
+  const pinned = row.pinned ?? false
 
   return (
     <Link

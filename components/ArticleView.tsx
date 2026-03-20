@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import type { ArticleRow, ProductCard, VisualStrategy } from '@/types/article'
 import ArticleTypeBadge from './ui/ArticleTypeBadge'
 import QuickVerdict from './sections/QuickVerdict'
@@ -15,11 +16,17 @@ interface Props {
 }
 
 export default function ArticleView({ articleRow, isOwner }: Props) {
+  const router = useRouter()
   const [article, setArticle] = useState(articleRow.article!)
   const [chips, setChips] = useState(articleRow.suggestion_chips)
   const [isRefining, setIsRefining] = useState(false)
   const [refineError, setRefineError] = useState<string | null>(null)
   const [isRegeneratingImages, setIsRegeneratingImages] = useState(false)
+  const [isRegeneratingArticle, setIsRegeneratingArticle] = useState(false)
+  const [isPinned, setIsPinned] = useState(articleRow.pinned ?? false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [toolbarBusy, setToolbarBusy] = useState<string | null>(null)
 
   const hasMissingImages = useMemo(() => {
     const productCards = article.sections.filter(
@@ -30,6 +37,7 @@ export default function ArticleView({ articleRow, isOwner }: Props) {
 
   async function handleRegenerateImages() {
     setIsRegeneratingImages(true)
+    setToolbarBusy('images')
     try {
       const res = await fetch(`/api/articles/${articleRow.id}/regenerate-images`, {
         method: 'POST',
@@ -41,6 +49,59 @@ export default function ArticleView({ articleRow, isOwner }: Props) {
       // silently fail
     } finally {
       setIsRegeneratingImages(false)
+      setToolbarBusy(null)
+    }
+  }
+
+  async function handleRegenerateArticle() {
+    setIsRegeneratingArticle(true)
+    setToolbarBusy('article')
+    try {
+      const res = await fetch(`/api/articles/${articleRow.id}/generate`, {
+        method: 'POST',
+      })
+      if (!res.ok) throw new Error('Failed')
+      // Re-fetch the full article
+      const articleRes = await fetch(`/api/articles/${articleRow.id}`)
+      if (!articleRes.ok) throw new Error('Failed to fetch')
+      const data = await articleRes.json()
+      setArticle(data.article)
+      setChips(data.suggestion_chips)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } catch {
+      // silently fail
+    } finally {
+      setIsRegeneratingArticle(false)
+      setToolbarBusy(null)
+    }
+  }
+
+  async function handleTogglePin() {
+    const newPinned = !isPinned
+    setIsPinned(newPinned)
+    try {
+      const res = await fetch(`/api/articles/${articleRow.id}/pin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pinned: newPinned }),
+      })
+      if (!res.ok) setIsPinned(!newPinned) // revert on failure
+    } catch {
+      setIsPinned(!newPinned)
+    }
+  }
+
+  async function handleDelete() {
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`/api/articles/${articleRow.id}/delete`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) throw new Error('Failed')
+      router.push('/')
+    } catch {
+      setIsDeleting(false)
+      setShowDeleteConfirm(false)
     }
   }
 
@@ -76,6 +137,74 @@ export default function ArticleView({ articleRow, isOwner }: Props) {
 
   return (
     <div className="max-w-[900px] mx-auto px-4 md:px-6 py-10">
+      {/* Admin Toolbar */}
+      {isOwner && (
+        <div
+          className="mb-6 flex flex-wrap items-center gap-2 p-3 rounded-xl"
+          style={{
+            backgroundColor: 'var(--card)',
+            border: '1px solid var(--border)',
+          }}
+        >
+          <ToolbarButton
+            onClick={handleTogglePin}
+            disabled={!!toolbarBusy}
+            active={isPinned}
+          >
+            {isPinned ? 'Pinned' : 'Pin to Homepage'}
+          </ToolbarButton>
+
+          <ToolbarButton
+            onClick={handleRegenerateImages}
+            disabled={!!toolbarBusy}
+            loading={isRegeneratingImages}
+          >
+            Regenerate Images
+          </ToolbarButton>
+
+          <ToolbarButton
+            onClick={handleRegenerateArticle}
+            disabled={!!toolbarBusy}
+            loading={isRegeneratingArticle}
+          >
+            Regenerate Article
+          </ToolbarButton>
+
+          <div className="flex-1" />
+
+          {showDeleteConfirm ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                Are you sure?
+              </span>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white disabled:opacity-50"
+                style={{ backgroundColor: '#dc2626' }}
+              >
+                {isDeleting ? 'Deleting...' : 'Yes, delete'}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <ToolbarButton
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={!!toolbarBusy}
+              variant="danger"
+            >
+              Delete
+            </ToolbarButton>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6">
         <div className="mb-3">
@@ -90,19 +219,6 @@ export default function ArticleView({ articleRow, isOwner }: Props) {
         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
           Generated {formattedDate}
         </p>
-        {isOwner && hasMissingImages && (
-          <button
-            onClick={handleRegenerateImages}
-            disabled={isRegeneratingImages}
-            className="mt-3 text-sm font-medium px-4 py-2 rounded-lg transition-opacity disabled:opacity-50"
-            style={{
-              backgroundColor: 'var(--accent-light)',
-              color: 'var(--accent)',
-            }}
-          >
-            {isRegeneratingImages ? 'Fetching images…' : 'Load product images'}
-          </button>
-        )}
       </div>
 
       {/* Debug panel — dev mode only */}
@@ -165,6 +281,54 @@ function LoadingSpinner() {
         style={{ borderColor: 'var(--border)', borderTopColor: 'var(--accent)' }}
       />
     </div>
+  )
+}
+
+function ToolbarButton({
+  children,
+  onClick,
+  disabled,
+  loading,
+  active,
+  variant = 'default',
+}: {
+  children: React.ReactNode
+  onClick: () => void
+  disabled?: boolean
+  loading?: boolean
+  active?: boolean
+  variant?: 'default' | 'danger'
+}) {
+  const isDanger = variant === 'danger'
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled || loading}
+      className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all disabled:opacity-50"
+      style={{
+        backgroundColor: active
+          ? 'var(--accent)'
+          : isDanger
+            ? 'transparent'
+            : 'var(--accent-light)',
+        color: active
+          ? '#fff'
+          : isDanger
+            ? '#dc2626'
+            : 'var(--accent)',
+        border: isDanger ? '1px solid #fca5a5' : '1px solid transparent',
+      }}
+    >
+      {loading ? (
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+          Working...
+        </span>
+      ) : (
+        children
+      )}
+    </button>
   )
 }
 

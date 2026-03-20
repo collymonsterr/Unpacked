@@ -238,6 +238,7 @@ export interface ArticleRow {
   plan: ArticlePlan | null
   article: ArticleContent | null
   suggestion_chips: SuggestionChips | null
+  pinned?: boolean
   created_at: string
   updated_at: string
 }
