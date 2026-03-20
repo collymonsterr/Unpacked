@@ -38,10 +38,14 @@ export default function ArticlePageClient({ initialRow }: Props) {
 
   return (
     <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
-      {/* Nav */}
+      {/* Nav — sticky so the logo is always accessible */}
       <nav
-        className="px-6 py-5 flex items-center gap-3"
-        style={{ borderBottom: '1px solid var(--border)' }}
+        className="px-6 py-4 flex items-center gap-3 sticky top-0 z-50"
+        style={{
+          borderBottom: '1px solid var(--border)',
+          backgroundColor: 'var(--bg)',
+          backdropFilter: 'blur(12px)',
+        }}
       >
         <Logo size="sm" />
       </nav>
