@@ -97,19 +97,11 @@ function ArticleCard({
             {getArticleTypeLabel(type)}
           </span>
           <h3
-            className="font-bold leading-snug mb-1 line-clamp-2 text-sm"
+            className="font-bold leading-snug line-clamp-3 text-sm"
             style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
           >
             {title}
           </h3>
-          {verdict && (
-            <p
-              className="text-xs line-clamp-1"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              {verdict}
-            </p>
-          )}
         </div>
       </Link>
 
