@@ -191,6 +191,30 @@ export interface TimelineSection {
   }>
 }
 
+export interface InteractiveCalculatorSection {
+  type: 'interactive_calculator'
+  heading: string
+  description?: string
+  calculator_type: 'compound_interest' | 'mortgage' | 'roi_comparison' | 'budget' | 'custom'
+  inputs: Array<{
+    id: string
+    label: string
+    type: 'slider'
+    min: number
+    max: number
+    default: number
+    step: number
+    unit?: string
+  }>
+  formula?: string
+  outputs: Array<{
+    id: string
+    label: string
+    format: 'currency' | 'percentage' | 'number'
+  }>
+  source?: string
+}
+
 export interface ImageSection {
   type: 'image_section'
   heading?: string
@@ -220,6 +244,7 @@ export type ArticleSection =
   | TreemapSection
   | TimelineSection
   | ImageSection
+  | InteractiveCalculatorSection
 
 // ── Full Article ─────────────────────────────────────────────────────────────
 

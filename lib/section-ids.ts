@@ -37,6 +37,8 @@ function getSectionLabel(section: ArticleSection): string | null {
       return null
     case 'stat_cards':
       return 'Key numbers'
+    case 'interactive_calculator':
+      return (section as { heading?: string }).heading || 'Calculator'
     case 'bar_chart':
     case 'line_chart':
     case 'pie_chart':

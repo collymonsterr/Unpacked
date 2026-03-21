@@ -130,6 +130,7 @@ Data visualisation blocks — use the types that match the article's visual_stra
 "[COMPARISON MATRIX] description"
 "[LINE CHART] description"
 "[TREEMAP] description"
+"[INTERACTIVE CALCULATOR] description" — for financial/planning topics where readers want to personalise numbers (retirement, mortgages, budgeting, cost comparisons). Include whenever the article involves numbers the reader would want to apply to their own situation.
 
 VISUALISATION RULES BY TYPE:
 - buyer_guide: MUST have 1+ bar_chart AND 1+ comparison_matrix. Use for price/spec comparisons.
@@ -246,7 +247,7 @@ CRITICAL: Only use section types that match the visual_strategy:
 
 DATA VISUALISATION GUIDELINES:
 
-Include visualisations in EVERY article. Chart types: bar_chart, comparison_matrix, pie_chart, line_chart, stat_cards, treemap, timeline.
+Include visualisations in EVERY article. Chart types: bar_chart, comparison_matrix, pie_chart, line_chart, stat_cards, treemap, timeline, interactive_calculator.
 
 MANDATORY MINIMUMS BY TYPE:
 - buyer_guide: 1+ bar_chart + 1+ comparison_matrix
@@ -257,6 +258,15 @@ MANDATORY MINIMUMS BY TYPE:
 - trend_analysis: 3-5 charts (line_chart for trends, pie_chart for share, bar_chart for rankings)
 - news: 1-3 charts (stat_cards for headline numbers, timeline for chronology)
 - planning: 1-3 charts (bar_chart for cost comparisons, stat_cards for key metrics)
+
+INTERACTIVE CALCULATORS:
+For articles about financial topics (retirement, investing, mortgages, budgeting, savings, compound interest), cost comparisons, or planning topics — include an interactive_calculator section. Available calculator_type values: compound_interest, mortgage, roi_comparison, budget, custom.
+Configure the inputs with sensible defaults and ranges relevant to the article topic. The calculator helps the reader apply the article's advice to their own situation.
+Examples:
+- "How much to save for retirement" → compound_interest calculator with starting_age, monthly_savings, annual_return, retirement_age
+- "Rent vs buy" → mortgage calculator with home_price, down_payment, interest_rate, loan_term
+- "Is an EV worth it?" → custom calculator comparing fuel vs electricity costs
+- "Budget guide" → budget calculator with monthly_income and expense category sliders
 
 CHART DATA RULES:
 - Data must be REAL and ACCURATE. Use web search. Do not invent numbers.
@@ -296,7 +306,8 @@ Return a JSON object matching this structure. Return ONLY valid JSON. No preambl
     { "type": "stat_cards", "heading": "string", "cards": [{ "value": "string", "label": "string", "trend": "up | down | null (optional)" }], "source": "string (optional)" },
     { "type": "treemap", "heading": "string", "description": "string (optional)", "data": [{ "label": "string", "value": "number", "highlight": "boolean (optional)" }], "unit": "string (optional)", "source": "string (optional)" },
     { "type": "timeline", "heading": "string", "events": [{ "year": "string", "title": "string", "description": "string" }] },
-    { "type": "image_section", "heading": "string (optional)", "images": [{ "search_query": "string", "caption": "string (optional)" }], "layout": "single | gallery | side-by-side" }
+    { "type": "image_section", "heading": "string (optional)", "images": [{ "search_query": "string", "caption": "string (optional)" }], "layout": "single | gallery | side-by-side" },
+    { "type": "interactive_calculator", "heading": "string", "description": "string (optional)", "calculator_type": "compound_interest | mortgage | roi_comparison | budget | custom", "inputs": [{ "id": "string", "label": "string", "type": "slider", "min": "number", "max": "number", "default": "number", "step": "number", "unit": "string (optional)" }], "outputs": [{ "id": "string", "label": "string", "format": "currency | percentage | number" }], "source": "string (optional)" }
   ]
 }
 

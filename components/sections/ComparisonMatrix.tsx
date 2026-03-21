@@ -4,8 +4,8 @@ import { useRef, useState, useEffect } from 'react'
 import type { ComparisonMatrixSection } from '@/types/article'
 
 const HIGHLIGHT_COLOR = '#E07A3A'
-const NEUTRAL_COLOR = '#8A8580'
-const DOT_BG = '#E8E6E3'
+const NEUTRAL_COLOR = '#D3D1C7'
+const BAR_BG = '#ECEAE6'
 
 export default function ComparisonMatrix({ section }: { section: ComparisonMatrixSection }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -39,23 +39,29 @@ export default function ComparisonMatrix({ section }: { section: ComparisonMatri
           {section.heading}
         </h3>
         {section.description && (
-          <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)' }}>
             {section.description}
           </p>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full" style={{ minWidth: section.items.length > 3 ? 500 : 'auto' }}>
+        <div className="overflow-x-auto -mx-1">
+          <table className="w-full" style={{ minWidth: section.items.length > 3 ? 600 : 'auto', borderCollapse: 'separate', borderSpacing: 0 }}>
             <thead>
               <tr>
-                <th className="text-left text-xs uppercase tracking-wide py-2 pr-4" style={{ color: 'var(--text-secondary)' }}>
+                <th
+                  className="text-left text-xs uppercase tracking-wide py-3 pr-4 pl-1"
+                  style={{ color: 'var(--text-secondary)', width: '20%', minWidth: 100 }}
+                >
                   Metric
                 </th>
                 {section.items.map((item) => (
                   <th
                     key={item}
-                    className="text-center text-xs font-semibold uppercase tracking-wide py-2 px-2"
-                    style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-sora)' }}
+                    className="text-left text-sm font-bold py-3 px-3"
+                    style={{
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-sora)',
+                    }}
                   >
                     {item}
                   </th>
@@ -64,40 +70,46 @@ export default function ComparisonMatrix({ section }: { section: ComparisonMatri
             </thead>
             <tbody>
               {section.metrics.map((metric, mi) => {
-                // Pad scores to match items length (handles AI generating fewer scores than items)
                 const scores = section.items.map((_, i) => metric.scores[i] ?? 0)
                 const maxScore = Math.max(...scores)
                 return (
                   <tr key={metric.name} style={{ borderTop: '1px solid var(--border)' }}>
-                    <td className="text-sm font-medium py-3 pr-4" style={{ color: 'var(--text-primary)' }}>
+                    <td
+                      className="text-sm font-medium py-3 pr-4 pl-1"
+                      style={{ color: 'var(--text-primary)', verticalAlign: 'middle' }}
+                    >
                       {metric.name}
                     </td>
                     {scores.map((score, si) => {
-                      const isHighest = score === maxScore
+                      const isHighest = score === maxScore && score > 0
+                      const pct = metric.max > 0 ? (score / metric.max) * 100 : 0
                       return (
-                        <td key={si} className="py-3 px-2">
-                          <div className="flex justify-center gap-1">
-                            {Array.from({ length: metric.max }, (_, di) => (
+                        <td key={si} className="py-3 px-3" style={{ verticalAlign: 'middle' }}>
+                          <div className="flex items-center gap-2.5">
+                            <div
+                              className="flex-1 rounded-full overflow-hidden"
+                              style={{ backgroundColor: BAR_BG, height: 8 }}
+                            >
                               <div
-                                key={di}
-                                className="rounded-full"
+                                className="h-full rounded-full"
                                 style={{
-                                  width: 8,
-                                  height: 8,
-                                  backgroundColor: di < score
-                                    ? (isHighest ? HIGHLIGHT_COLOR : NEUTRAL_COLOR)
-                                    : DOT_BG,
-                                  transition: visible ? `background-color 0.3s ease ${(mi * metric.max + di) * 30}ms` : 'none',
+                                  width: visible ? `${pct}%` : '0%',
+                                  backgroundColor: isHighest ? HIGHLIGHT_COLOR : NEUTRAL_COLOR,
+                                  transition: `width 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${mi * 120 + si * 60}ms`,
                                 }}
                               />
-                            ))}
+                            </div>
+                            <span
+                              className="text-xs font-semibold tabular-nums whitespace-nowrap"
+                              style={{
+                                color: isHighest ? HIGHLIGHT_COLOR : 'var(--text-secondary)',
+                                minWidth: 36,
+                                textAlign: 'right',
+                              }}
+                            >
+                              {score}/{metric.max}
+                            </span>
                           </div>
-                          <p
-                            className="text-center text-xs font-semibold mt-1"
-                            style={{ color: isHighest ? HIGHLIGHT_COLOR : 'var(--text-secondary)' }}
-                          >
-                            {score}/{metric.max}
-                          </p>
                         </td>
                       )
                     })}

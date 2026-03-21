@@ -16,6 +16,7 @@ import StatCards from './StatCards'
 import TreemapSection from './TreemapSection'
 import TimelineSection from './TimelineSection'
 import ImageSection from './ImageSection'
+import InteractiveCalculator from './InteractiveCalculator'
 
 interface Props {
   sections: ArticleSection[]
@@ -33,6 +34,7 @@ const RECHARTS_TYPES = new Set([
   'line_chart',
   'pie_chart',
   'treemap',
+  'interactive_calculator',
 ])
 
 export default function SectionRenderer({
@@ -112,6 +114,8 @@ export default function SectionRenderer({
                   onReplaceImage={onReplaceImage ? (imgIdx) => onReplaceImage(i, imgIdx) : undefined}
                 />
               )
+            case 'interactive_calculator':
+              return <InteractiveCalculator section={section} />
             default:
               return null
           }
