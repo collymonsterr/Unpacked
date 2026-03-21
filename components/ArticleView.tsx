@@ -37,6 +37,7 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [toolbarBusy, setToolbarBusy] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false)
   const hasMissingImages = useMemo(() => {
     const productCards = article.sections.filter(
       (s): s is ProductCard => s.type === 'product_card'
@@ -114,6 +115,23 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
       if (!res.ok) setIsPinned(!newPinned) // revert on failure
     } catch {
       setIsPinned(!newPinned)
+    }
+  }
+
+  async function handleChangeCategory(newType: string) {
+    const updatedArticle = { ...article, article_type: newType as typeof article.article_type }
+    setArticle(updatedArticle)
+    setShowCategoryPicker(false)
+    setMenuOpen(false)
+    try {
+      await fetch(`/api/articles/${articleRow.id}/update-type`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ article_type: newType }),
+      })
+    } catch {
+      // Revert on failure
+      setArticle(article)
     }
   }
 
@@ -270,6 +288,41 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
                     >
                       {isHidden ? 'Show on Homepage' : 'Hide from Homepage'}
                     </MenuItem>
+                    <div>
+                      <MenuItem
+                        onClick={() => setShowCategoryPicker(!showCategoryPicker)}
+                        disabled={!!toolbarBusy}
+                      >
+                        Change category ›
+                      </MenuItem>
+                      {showCategoryPicker && (
+                        <div className="px-2 py-1 space-y-0.5">
+                          {[
+                            { value: 'buyer_guide', label: 'Buying Guide' },
+                            { value: 'comparison', label: 'Comparison' },
+                            { value: 'decision_guide', label: 'Decision Guide' },
+                            { value: 'explainer', label: 'Explainer' },
+                            { value: 'tutorial', label: 'Tutorial' },
+                            { value: 'planning', label: 'Travel & Living' },
+                            { value: 'trend_analysis', label: 'Trend Analysis' },
+                            { value: 'news', label: 'News' },
+                          ].map(({ value, label }) => (
+                            <button
+                              key={value}
+                              onClick={() => handleChangeCategory(value)}
+                              className="w-full text-left text-xs px-2 py-1.5 rounded-lg transition-colors"
+                              style={{
+                                color: article.article_type === value ? 'var(--accent)' : 'var(--text-secondary)',
+                                fontWeight: article.article_type === value ? 600 : 400,
+                                backgroundColor: article.article_type === value ? 'var(--accent-light)' : 'transparent',
+                              }}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <MenuItem
                       onClick={() => { handleRegenerateImages(); setMenuOpen(false) }}
                       disabled={!!toolbarBusy}
