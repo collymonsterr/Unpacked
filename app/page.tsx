@@ -126,7 +126,7 @@ export default async function HomePage() {
               Researched, not generated
             </h3>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              We research websites, forums, Reddit, and X — combining expert and real user opinions into one clear article.
+              We research websites, forums, Reddit, and X — combining real user opinions into one article.
             </p>
           </div>
 
