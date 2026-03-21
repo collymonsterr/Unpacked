@@ -9,6 +9,9 @@ const REJECTED_PATTERNS = /\.svg|\.gif|favicon|icon|logo|pixel|tracking|badge|sp
 
 const SMALL_IMAGE_PATTERNS = /\/thumb\/|\/small\/|\/s\/|_thumb\.|_small\.|_icon\.|_mini\.|\/64\/|\/96\/|\/128\/|\/150\/|\/100x|\/120x|\/150x|\/160x|\/200x|w_150|w_200|h_150|h_200|size=small|size=thumb/i
 
+// Reject images that are likely infographics, charts with text, or text-heavy images
+const TEXT_IMAGE_PATTERNS = /infographic|chart|diagram|template|checklist|worksheet|printable|slide|presentation|powerpoint|canva\.com|venngage|piktochart|visme|lucidchart/i
+
 // Official/reputable product image sources — these get priority
 const PREFERRED_HOSTNAMES = new Set([
   'images-na.ssl-images-amazon.com', 'm.media-amazon.com',
@@ -29,6 +32,7 @@ function filterAndRankImageUrls(results: BraveImageResult[]): string[] {
     if (!url) continue
     if (REJECTED_PATTERNS.test(url)) continue
     if (SMALL_IMAGE_PATTERNS.test(url)) continue
+    if (TEXT_IMAGE_PATTERNS.test(url)) continue
     if (url.length < 30) continue
 
     // Deduplicate by hostname
@@ -146,6 +150,53 @@ function shortenTitle(title: string): string {
  * Pass `excludeUrls` to avoid repeating images the user has already seen.
  * Each call with excludeUrls uses a different search angle to maximise variety.
  */
+/**
+ * Map article topics to visual subjects for hero image search.
+ * The key insight: search for what the article is ABOUT, not the article title.
+ * "Rent vs Buy" → "beautiful modern house" not "rent vs buy guide"
+ */
+function getHeroSubject(title: string, articleType: ArticleType): string {
+  const t = title.toLowerCase()
+
+  // Topic-specific mappings
+  if (t.includes('rent') && t.includes('buy')) return 'beautiful modern house exterior'
+  if (t.includes('mortgage')) return 'dream home house keys'
+  if (t.includes('house') && t.includes('afford')) return 'beautiful suburban house'
+  if (t.includes('invest') || t.includes('compound interest')) return 'growing savings investment chart'
+  if (t.includes('retire') || t.includes('retirement')) return 'happy retired couple sunset beach'
+  if (t.includes('budget') || t.includes('finance')) return 'personal finance money management'
+  if (t.includes('inflation')) return 'rising prices grocery shopping'
+  if (t.includes('college') || t.includes('university')) return 'beautiful university campus'
+  if (t.includes('commute')) return 'city commuter highway traffic aerial'
+  if (t.includes('freelance')) return 'freelancer laptop coffee shop workspace'
+  if (t.includes('gym') || t.includes('workout')) return 'modern gym equipment fitness'
+  if (t.includes('dog')) return 'happy dog golden retriever park'
+  if (t.includes('cooking') || t.includes('eating')) return 'beautiful home cooking kitchen'
+  if (t.includes('smoking')) return 'money jar savings health'
+  if (t.includes('subscription')) return 'smartphone apps streaming services'
+  if (t.includes('car') && (t.includes('spend') || t.includes('buy'))) return 'luxury car showroom'
+  if (t.includes('airbnb') || t.includes('rental')) return 'beautiful vacation rental property'
+  if (t.includes('london') || t.includes('lisbon')) return `${t.includes('london') ? 'London' : 'Lisbon'} city skyline beautiful`
+  if (t.includes('dubai')) return 'Dubai skyline beautiful sunset'
+  if (t.includes('robot vacuum')) return 'modern clean living room home'
+  if (t.includes('ev') || t.includes('electric')) return 'electric car charging station modern'
+  if (t.includes('ai') || t.includes('llm') || t.includes('chatgpt')) return 'artificial intelligence technology abstract'
+  if (t.includes('vibe coding') || t.includes('programming')) return 'modern code editor developer workspace'
+  if (t.includes('headphone')) return 'premium headphones lifestyle'
+  if (t.includes('keyboard')) return 'mechanical keyboard desk setup'
+  if (t.includes('laptop') || t.includes('macbook')) return 'premium laptop workspace'
+  if (t.includes('guitar')) return 'electric guitar beautiful closeup'
+  if (t.includes('camera')) return 'mirrorless camera photography equipment'
+  if (t.includes('phone') || t.includes('iphone') || t.includes('galaxy')) return 'premium smartphone design'
+  if (t.includes('skincare')) return 'skincare products flatlay clean'
+  if (t.includes('backpack') || t.includes('travel')) return 'travel backpack adventure'
+  if (t.includes('drum')) return 'electronic drum kit studio'
+  if (t.includes('motorbike') || t.includes('motorcycle') || t.includes('superbike')) return 'sports motorcycle dynamic action shot'
+
+  // Fall back to shortened title
+  return shortenTitle(title)
+}
+
 export async function fetchThumbnailImage(
   title: string,
   articleType: ArticleType,
@@ -154,63 +205,24 @@ export async function fetchThumbnailImage(
   const apiKey = process.env.BRAVE_SEARCH_API_KEY
   if (!apiKey) return null
 
-  const shortTitle = shortenTitle(title)
+  const heroSubject = getHeroSubject(title, articleType)
   const isReplacing = excludeUrls && excludeUrls.length > 0
 
-  // Different search angles to get genuinely different results each time
-  const searchAngles: Array<{ hint: string; modifier: string }> = (() => {
-    const base: Record<string, Array<{ hint: string; modifier: string }>> = {
-      planning: [
-        { hint: 'travel photography', modifier: '' },
-        { hint: 'aerial view', modifier: '' },
-        { hint: 'landscape beautiful', modifier: '' },
-        { hint: 'street photography', modifier: '' },
-        { hint: 'destination guide', modifier: 'editorial' },
-        { hint: 'scenic view', modifier: '4k' },
-        { hint: 'travel blog', modifier: '' },
-        { hint: 'wanderlust', modifier: 'HD' },
-      ],
-      explainer: [
-        { hint: 'photo', modifier: '' },
-        { hint: 'illustration', modifier: 'editorial' },
-        { hint: 'concept', modifier: 'high quality' },
-        { hint: 'infographic visual', modifier: '' },
-        { hint: 'technology', modifier: 'professional' },
-        { hint: 'abstract', modifier: 'modern' },
-      ],
-      buyer_guide: [
-        { hint: 'products lineup', modifier: '' },
-        { hint: 'product photography', modifier: 'studio' },
-        { hint: 'flatlay', modifier: '' },
-        { hint: 'lifestyle', modifier: '' },
-        { hint: 'product review', modifier: 'editorial' },
-        { hint: 'collection', modifier: 'aesthetic' },
-      ],
-      comparison: [
-        { hint: 'products comparison', modifier: '' },
-        { hint: 'product photography', modifier: '' },
-        { hint: 'side by side', modifier: '' },
-        { hint: 'review roundup', modifier: '' },
-        { hint: 'product lineup', modifier: 'editorial' },
-        { hint: 'studio shot', modifier: '' },
-      ],
-    }
-    return base[articleType] ?? [
-      { hint: 'photo', modifier: '' },
-      { hint: 'photography', modifier: 'editorial' },
-      { hint: 'high quality photo', modifier: '' },
-      { hint: 'professional', modifier: '' },
-      { hint: 'visual', modifier: 'HD' },
-      { hint: 'aesthetic', modifier: '' },
-    ]
-  })()
+  // Different suffixes for variety on repeat searches
+  const suffixes = [
+    'beautiful high resolution photography',
+    'editorial photograph professional',
+    'stunning HD wallpaper',
+    'aesthetic photography',
+    'cinematic photo',
+    'award winning photography',
+    'magazine quality photo',
+    'premium stock photography',
+  ]
 
-  // Pick the search angle based on how many images have been excluded
-  // This ensures each "New photo" click uses a different search
-  const angleIndex = isReplacing ? excludeUrls.length % searchAngles.length : 0
-  const angle = searchAngles[angleIndex]
-  const query = `${shortTitle} ${angle.hint} ${angle.modifier}`.trim()
-  console.log('[thumbnail] Search query:', query, `(angle ${angleIndex}/${searchAngles.length})`)
+  const angleIndex = isReplacing ? (excludeUrls?.length ?? 0) % suffixes.length : 0
+  const query = `${heroSubject} ${suffixes[angleIndex]}`.trim()
+  console.log('[thumbnail] Search query:', query, `(angle ${angleIndex})`)
 
   const excludeSet = new Set(excludeUrls ?? [])
 
