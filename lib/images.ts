@@ -20,6 +20,8 @@ const PREFERRED_HOSTNAMES = new Set([
   'i5.walmartimages.com',
   'cdn.shopify.com',
   'static.bhphoto.com',
+  'images.unsplash.com', // Unsplash — high quality stock
+  'plus.unsplash.com',
 ])
 
 function filterAndRankImageUrls(results: BraveImageResult[]): string[] {
@@ -200,12 +202,14 @@ function getHeroSubject(title: string, articleType: ArticleType): string {
 export async function fetchThumbnailImage(
   title: string,
   articleType: ArticleType,
-  excludeUrls?: string[]
+  excludeUrls?: string[],
+  heroImageQuery?: string
 ): Promise<string | null> {
   const apiKey = process.env.BRAVE_SEARCH_API_KEY
   if (!apiKey) return null
 
-  const heroSubject = getHeroSubject(title, articleType)
+  // Use AI-generated hero query if available, otherwise fall back to topic mapping
+  const baseQuery = heroImageQuery || getHeroSubject(title, articleType)
   const isReplacing = excludeUrls && excludeUrls.length > 0
 
   // Different suffixes for variety on repeat searches
@@ -221,8 +225,10 @@ export async function fetchThumbnailImage(
   ]
 
   const angleIndex = isReplacing ? (excludeUrls?.length ?? 0) % suffixes.length : 0
-  const query = `${heroSubject} ${suffixes[angleIndex]}`.trim()
-  console.log('[thumbnail] Search query:', query, `(angle ${angleIndex})`)
+  // For the first search, try Unsplash specifically for highest quality
+  const unsplashPrefix = angleIndex === 0 ? 'site:unsplash.com ' : ''
+  const query = `${unsplashPrefix}${baseQuery} ${suffixes[angleIndex]}`.trim()
+  console.log('[thumbnail] Search query:', query, `(angle ${angleIndex}, AI query: ${!!heroImageQuery})`)
 
   const excludeSet = new Set(excludeUrls ?? [])
 

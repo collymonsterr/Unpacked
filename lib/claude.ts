@@ -150,6 +150,8 @@ For research_queries: generate 3-4 short, natural-sounding descriptions of what 
 
 For suggestion_chips: generate 3 refinements (modify this article) and 3 related (generate a new article on a naturally connected topic).
 
+For hero_image_query: generate a single search query (5-8 words) that would find a beautiful, magazine-quality hero photograph for this article. Think: what would a photo editor at a premium magazine search for? The image should be aspirational, high-resolution, and have NO text or infographics. Examples: "Rent vs Buy" → "beautiful modern house exterior golden hour", "Best Headphones" → "premium headphones lifestyle minimal desk", "Dubai Travel" → "Dubai marina skyline sunset aerial", "How to Budget" → "elegant notebook pen coffee flatlay". Do NOT include words like "article", "guide", "review", "infographic", or "chart".
+
 For loading_messages: generate 6-8 short, specific status messages describing what research will be done for THIS article. These are shown to the user while the article generates. Be specific to the query — reference actual product names, subreddits, source types, and data being gathered. Do NOT use generic messages like "Researching..." or "Nearly there". Each message should describe a concrete research action. Examples for "Best noise-cancelling headphones under $300": "Checking what audiophile forums say about ANC performance...", "Comparing noise cancellation test results from rtings.com...", "Reading 6-month owner reviews on Reddit r/headphones...", "Pulling current prices from Amazon and Best Buy..."
 
 Respond ONLY with valid JSON matching this schema exactly. No preamble, no markdown fences:
@@ -172,6 +174,7 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
   "entities": [{ "name": "string", "search_query": "string" }],
   "sections_outline": ["string"],
   "research_queries": ["string"],
+  "hero_image_query": "string",
   "loading_messages": ["string"],
   "suggestion_chips": {
     "refinements": ["string"],

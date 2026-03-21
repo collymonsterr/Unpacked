@@ -46,6 +46,7 @@ export interface ArticlePlan {
   sections_outline: string[]
   research_queries: string[]
   loading_messages?: string[]
+  hero_image_query?: string
   suggestion_chips: SuggestionChips
 }
 

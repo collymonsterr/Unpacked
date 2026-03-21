@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
             plan.entities,
             plan.visual_strategy?.image_density
           ),
-          fetchThumbnailImage(rawArticle.title, rawArticle.article_type),
+          fetchThumbnailImage(rawArticle.title, rawArticle.article_type, undefined, plan.hero_image_query),
         ])
 
         enrichedArticle.thumbnail_url = heroUrl ?? pickBestArticleImage(enrichedArticle)
