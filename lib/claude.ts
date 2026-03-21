@@ -268,6 +268,9 @@ Examples:
 - "Is an EV worth it?" → custom calculator comparing fuel vs electricity costs
 - "Budget guide" → budget calculator with monthly_income and expense category sliders
 
+CRITICAL — NO CITATION MARKUP:
+Do NOT include <cite>, </cite>, or any HTML citation tags in the article text. Write clean prose only. Source attribution goes in the "sources" section, not inline. If web search returns citation-annotated text, strip the tags before including it.
+
 CHART DATA RULES:
 - Data must be REAL and ACCURATE. Use web search. Do not invent numbers.
 - If exact figures unavailable, use estimates and note it in the description.
@@ -415,7 +418,8 @@ ${JSON.stringify(plan, null, 2)}`,
     console.log('[writeArticle] stop_reason:', message.stop_reason, 'text_blocks:', textBlocks.length, 'text_length:', text.length)
 
     try {
-      return JSON.parse(extractJSON(text)) as ArticleContent
+      const article = JSON.parse(extractJSON(text)) as ArticleContent
+      return stripCitations(article)
     } catch (e) {
       console.error('[writeArticle] JSON parse failed, text preview:', text.substring(0, 500))
       lastError = e as Error
@@ -423,6 +427,42 @@ ${JSON.stringify(plan, null, 2)}`,
   }
 
   throw lastError ?? new Error('Failed to parse article JSON after retries')
+}
+
+/**
+ * Strip <cite> tags and other markup artefacts from all text fields.
+ * Claude's web search tool sometimes leaks citation markup into the output.
+ */
+function stripCitations(article: ArticleContent): ArticleContent {
+  const clean = (s: string): string =>
+    s.replace(/<cite[^>]*>|<\/cite>/gi, '')
+      .replace(/<\/?turn_search_quality_indicator[^>]*>/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+
+  return {
+    ...article,
+    quick_verdict: {
+      recommendation: clean(article.quick_verdict.recommendation),
+      one_liner: clean(article.quick_verdict.one_liner),
+    },
+    executive_summary: {
+      short_answer: clean(article.executive_summary.short_answer),
+      key_takeaways: article.executive_summary.key_takeaways.map(clean),
+      watch_out_for: article.executive_summary.watch_out_for.map(clean),
+    },
+    sections: article.sections.map((section) => {
+      const cleaned = { ...section }
+      // Clean all string fields
+      for (const key of Object.keys(cleaned)) {
+        const val = (cleaned as Record<string, unknown>)[key]
+        if (typeof val === 'string') {
+          (cleaned as Record<string, unknown>)[key] = clean(val)
+        }
+      }
+      return cleaned
+    }),
+  }
 }
 
 export async function refineArticle(
@@ -465,7 +505,7 @@ Apply the refinement and return the full updated article JSON. Also append a "su
 
   const { suggestion_chips, ...article } = parsed
   return {
-    article: article as ArticleContent,
+    article: stripCitations(article as ArticleContent),
     suggestion_chips: suggestion_chips ?? { refinements: [], related: [] },
   }
 }

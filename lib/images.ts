@@ -5,7 +5,7 @@ interface BraveImageResult {
   thumbnail: { src: string }
 }
 
-const REJECTED_PATTERNS = /\.svg|\.gif|favicon|icon|logo|pixel|tracking|badge|sprite|placeholder|avatar|profile|thumbs\.redditmedia|external-preview\.redd\.it|preview\.redd\.it|ytimg\.com|youtube\.com\/vi|i\.ytimg|img\.youtube|maxresdefault|hqdefault|mqdefault|sddefault|banner|screenshot|webpage|thumbnail/i
+const REJECTED_PATTERNS = /\.svg|\.gif|favicon|icon|logo|pixel|tracking|badge|sprite|placeholder|avatar|profile|thumbs\.redditmedia|external-preview\.redd\.it|preview\.redd\.it|ytimg\.com|youtube\.com\/vi|i\.ytimg|img\.youtube|maxresdefault|hqdefault|mqdefault|sddefault|banner|screenshot|webpage|thumbnail|clipart|cartoon|illustration|vector|stock|watermark|shutterstock|istockphoto|gettyimages|dreamstime|depositphotos|123rf|fotolia|alamy/i
 
 // Official/reputable product image sources — these get priority
 const PREFERRED_HOSTNAMES = new Set([
@@ -238,6 +238,19 @@ export async function fetchThumbnailImage(
   }
 }
 
+/**
+ * Returns a search hint based on product type to improve image relevance.
+ * e.g. "motorcycle" for a physical product named "Kawasaki ZX-10R"
+ */
+function getProductTypeHint(productType?: string): string {
+  switch (productType) {
+    case 'software': return 'app screenshot logo'
+    case 'service': return 'official website'
+    case 'place': return 'photo'
+    default: return 'official product photo'
+  }
+}
+
 export async function enrichArticleWithImages(
   article: ArticleContent,
   entities: PlanEntity[],
@@ -257,8 +270,15 @@ export async function enrichArticleWithImages(
   const imageResults = await Promise.all(
     productCards.map(async (card) => {
       const maxImages = getImageCount(article.article_type, card.product_type)
-      const baseQuery =
-        entityMap.get(card.entity_name.toLowerCase()) ?? `${card.entity_name} product photo`
+      const planQuery = entityMap.get(card.entity_name.toLowerCase())
+      // Build a search query that includes the product type for better relevance
+      const typeHint = getProductTypeHint(card.product_type)
+      const baseQuery = planQuery
+        ? (typeHint && !planQuery.toLowerCase().includes(typeHint.toLowerCase())
+          ? `${planQuery} ${typeHint}`
+          : planQuery)
+        : `${card.entity_name} ${typeHint || 'product photo'}`
+      console.log(`[images] Searching for "${card.entity_name}": "${baseQuery}"`)
       const imageUrls = await fetchProductImages(baseQuery, maxImages)
       return { entity_name: card.entity_name, imageUrls }
     })
