@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 
 // Large pool of diverse prompts across all article types
 const ALL_EXAMPLES = [
@@ -60,20 +60,19 @@ interface Props {
 export default function ExampleChips({ existingQueries = [] }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
+  const [examples, setExamples] = useState<string[]>([])
 
-  // Pick 6 random examples on mount, excluding any that match existing articles
-  const examples = useMemo(() => {
+  // Randomize on client mount only to avoid hydration mismatch
+  useEffect(() => {
     const existing = existingQueries.map(q => q.toLowerCase().trim())
     const available = ALL_EXAMPLES.filter(ex => {
       const lower = ex.toLowerCase()
-      // Exclude if any existing article query/title closely matches
       return !existing.some(eq =>
         eq.includes(lower) || lower.includes(eq) ||
-        // Also check if key words overlap significantly
         eq.split(/\s+/).filter(w => w.length > 3).filter(w => lower.includes(w)).length >= 3
       )
     })
-    return shuffleAndPick(available.length >= 6 ? available : ALL_EXAMPLES, 6)
+    setExamples(shuffleAndPick(available.length >= 6 ? available : ALL_EXAMPLES, 6))
   }, [existingQueries])
 
   async function handleClick(query: string) {
@@ -101,6 +100,8 @@ export default function ExampleChips({ existingQueries = [] }: Props) {
       setLoading(null)
     }
   }
+
+  if (examples.length === 0) return <div className="h-10 mt-4" /> // Reserve space during SSR
 
   return (
     <div className="flex flex-wrap justify-center gap-2 mt-4">
