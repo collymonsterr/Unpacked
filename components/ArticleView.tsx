@@ -511,12 +511,6 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
         />
       )}
 
-      {/* Related Articles */}
-      <RelatedArticles
-        articleId={articleRow.id}
-        articleType={article.article_type}
-      />
-
       {/* Feedback */}
       <ArticleFeedback articleId={articleRow.id} />
 
@@ -544,6 +538,12 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
           )}
         </div>
       )}
+
+      {/* Related Articles — bottom of page */}
+      <RelatedArticles
+        articleId={articleRow.id}
+        articleType={article.article_type}
+      />
     </div>
     </div>
   )
