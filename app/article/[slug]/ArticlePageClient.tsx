@@ -66,8 +66,11 @@ export default function ArticlePageClient({ initialRow }: Props) {
 
   // Detect fact-check status
   const factCheckStatus: 'none' | 'checking' | 'verified' = (() => {
-    if (row.status === 'verified') return 'verified'
+    if (row.status === 'verified' && wasGenerating) return 'verified'
+    if (row.status === 'verified' && row.fact_check) return 'verified'
     if (row.status === 'complete' && wasGenerating && !row.fact_check) return 'checking'
+    // If article was just generated and is complete but fact-check hasn't started yet
+    if (row.status === 'complete' && wasGenerating) return 'checking'
     return 'none'
   })()
 
@@ -130,8 +133,8 @@ export default function ArticlePageClient({ initialRow }: Props) {
         </div>
       )}
 
-      {/* Fixed bottom fact-check bar */}
-      {showArticle && factCheckStatus !== 'none' && (
+      {/* Fixed bottom fact-check bar — show whenever we're fact-checking or verified for a fresh article */}
+      {factCheckStatus !== 'none' && (
         <FactCheckBar
           status={factCheckStatus}
           factCheck={row.fact_check}
