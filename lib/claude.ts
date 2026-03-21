@@ -106,7 +106,7 @@ For sections_outline: design the article structure. Follow this recommended flow
 
 1. Quick Verdict (always first)
 2. Executive Summary (key takeaways + warnings)
-3. "What You Need to Know" — a content_section that sets context before diving into products. What's the state of this category? Key things to understand.
+3. "What You Need to Know" — MANDATORY. A content_section that sets expert context before diving into recommendations. Talk like a trusted friend: what would you tell someone FIRST? What traps should they avoid? What do most people get wrong? What specs/features actually matter vs marketing? This section is what makes the article feel like expert advice, not a product dump.
 4. Community Insights — EARLY in the article, before or between the first product cards. What Reddit/forums/Twitter says. This is social proof and should not be buried at the end.
 5. Product Cards (the main recommendations)
 6. Data visualisations + Comparison Tables (interspersed with products)
@@ -205,7 +205,16 @@ ARTICLE STRUCTURE — FLOW AND PACING:
 Don't just jump straight into product cards. A great article sets the scene first. Follow this general flow:
 
 1. Quick Verdict + Executive Summary (always first)
-2. "What You Need to Know" — a brief content_section that orients the reader BEFORE the products. What's the state of this category? What should buyers be aware of? What's changed recently? This prevents the article feeling like a raw product dump.
+2. "What You Need to Know" — a MANDATORY content_section that orients the reader BEFORE any products, recommendations, or data. This is the section where you talk like a trusted expert friend. Imagine the reader asked you for advice over coffee — what would you tell them FIRST, before recommending anything?
+
+   EVERY article MUST include this section. It should cover:
+   - For buyer guides: What separates good products from bad in this category? What specs actually matter vs marketing nonsense? What mistakes do first-time buyers make? What's changed recently in this market?
+   - For finance/money articles: What are the key concepts the reader needs to understand? What common misconceptions will trip them up? What do most guides get wrong?
+   - For comparisons: What are the real differences that matter? What should you ignore? What questions should you ask yourself before choosing?
+   - For travel/planning: What do locals know that tourists don't? What's overrated? What's the #1 mistake people make?
+   - For explainers: What's the simplest way to think about this? What analogy makes it click?
+
+   This section should be 2-3 paragraphs of genuinely useful context — not filler. Write it like you're saving the reader from making a costly mistake. Be specific: name the mistakes, the traps, the things nobody tells you.
 3. Community Insights — move this EARLY, before or between the first few product cards. Readers want to know: what's the Reddit consensus? Are people split? Is there a clear community favourite? If there are notable threads on Reddit, Hacker News, Twitter/X, or forums — surface them. This social proof is more compelling than specs.
 4. Product Cards — the main recommendations
 5. Data visualisations, comparison tables — interspersed between product cards where they add value
