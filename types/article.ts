@@ -8,7 +8,7 @@ export type ArticleType =
   | 'trend_analysis'
   | 'tutorial'
 
-export type ArticleStatus = 'planning' | 'generating' | 'complete' | 'error'
+export type ArticleStatus = 'planning' | 'generating' | 'complete' | 'verified' | 'error'
 
 export type ImageDensity = 'none' | 'low' | 'medium' | 'high'
 
@@ -269,6 +269,24 @@ export interface ArticleContent {
   thumbnail_history?: string[]
 }
 
+// ── Fact Check ──────────────────────────────────────────────────────────────
+
+export interface FactCheckIssue {
+  section_type: string
+  entity_name?: string
+  original_claim: string
+  finding: string
+  correction: string
+  severity: 'critical' | 'minor' | 'note'
+}
+
+export interface FactCheckResult {
+  issues_found: boolean
+  total_issues: number
+  checks_performed: number
+  issues: FactCheckIssue[]
+}
+
 // ── Database row ─────────────────────────────────────────────────────────────
 
 export interface ArticleRow {
@@ -283,6 +301,8 @@ export interface ArticleRow {
   user_id?: string | null
   user_name?: string | null
   user_avatar?: string | null
+  fact_check?: FactCheckResult | null
+  verified_at?: string | null
   created_at: string
   updated_at: string
 }

@@ -33,12 +33,30 @@ export default function ArticlePageClient({ initialRow }: Props) {
     }
   }, [initialRow.id])
 
+  // Poll while generating OR while waiting for fact-check (complete → verified)
   useEffect(() => {
-    if (row.status === 'complete' || row.status === 'error') return
+    if (row.status === 'verified' || row.status === 'error') return
+    // Don't poll for old articles that are already 'complete' and weren't just generated
+    if (row.status === 'complete' && !wasGenerating) return
 
     const interval = setInterval(poll, 2500)
     return () => clearInterval(interval)
-  }, [row.status, poll])
+  }, [row.status, wasGenerating, poll])
+
+  // Detect the transition to 'complete' (article ready, fact-check starting)
+  useEffect(() => {
+    if (row.status === 'complete' && wasGenerating) {
+      // Article just finished generating — fact-check is now running in background
+      // Keep polling to detect verified status
+    }
+  }, [row.status, wasGenerating])
+
+  // Determine fact-check status for the UI
+  const factCheckStatus: 'none' | 'checking' | 'verified' = (() => {
+    if (row.status === 'verified') return 'verified'
+    if (row.status === 'complete' && wasGenerating && !row.fact_check) return 'checking'
+    return 'none'
+  })()
 
   return (
     <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
@@ -67,8 +85,13 @@ export default function ArticlePageClient({ initialRow }: Props) {
             We couldn&apos;t generate this article. Please go back and try again.
           </p>
         </div>
-      ) : row.status === 'complete' && row.article ? (
-        <ArticleView articleRow={row} isOwner={isOwner} isNew={wasGenerating} />
+      ) : (row.status === 'complete' || row.status === 'verified') && row.article ? (
+        <ArticleView
+          articleRow={row}
+          isOwner={isOwner}
+          isNew={wasGenerating}
+          factCheckStatus={factCheckStatus}
+        />
       ) : row.plan ? (
         <ArticleSkeleton plan={row.plan} />
       ) : (

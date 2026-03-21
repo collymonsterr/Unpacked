@@ -271,6 +271,16 @@ Examples:
 CRITICAL — NO CITATION MARKUP:
 Do NOT include <cite>, </cite>, or any HTML citation tags in the article text. Write clean prose only. Source attribution goes in the "sources" section, not inline. If web search returns citation-annotated text, strip the tags before including it.
 
+ACCURACY RULES:
+- If you cannot verify a current price through web search, prefix it with "approximately" or "around" — never state an unverified price as exact.
+- If product specs conflict across sources, mention the discrepancy: "Most sources list X, though some report Y."
+- Never fabricate Reddit quotes. Summarise the sentiment you actually find, attributed to the correct subreddit.
+- If a product appears to be discontinued or out of stock at major retailers, note this clearly.
+- Include the date or recency of your sources when stating prices: "Around $299 as of early 2026."
+- Do not present estimated or approximate market data as precise figures. Use ranges.
+- For health claims, reference the source: "According to the NHS..." or "A 2024 study in The Lancet found..."
+- For financial figures, note the date: "As of Q1 2026, the national debt stands at approximately..."
+
 CHART DATA RULES:
 - Data must be REAL and ACCURATE. Use web search. Do not invent numbers.
 - If exact figures unavailable, use estimates and note it in the description.

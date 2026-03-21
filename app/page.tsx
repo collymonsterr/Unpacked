@@ -84,7 +84,7 @@ export default async function HomePage() {
 
       {/* How it works — above articles */}
       <section className="w-full max-w-5xl mx-auto px-4 md:px-6 pb-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-6">
           <div className="text-center">
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
@@ -149,6 +149,27 @@ export default async function HomePage() {
             </h3>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               AI gives you safe, neutral answers. We surface real opinions on what people actually recommend.
+            </p>
+          </div>
+
+          <div className="text-center">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
+              style={{ backgroundColor: '#f0fdf4' }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+            </div>
+            <h3
+              className="text-base font-bold mb-1.5"
+              style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+            >
+              Fact-checked, not hallucinated
+            </h3>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              Every article is automatically verified after generation. Prices, specs, and claims are cross-checked against live sources.
             </p>
           </div>
         </div>

@@ -59,6 +59,18 @@ export async function POST(
           status: 'complete',
         })
         .eq('id', id)
+
+      // Kick off fact-check in the background (non-blocking)
+      try {
+        const baseUrl = process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : process.env.NEXT_PUBLIC_SUPABASE_URL
+            ? 'http://localhost:3000'
+            : 'http://localhost:3000'
+        fetch(`${baseUrl}/api/articles/${id}/fact-check`, { method: 'POST' }).catch(() => {})
+      } catch {
+        // Fact-check failure should never break article generation
+      }
     } catch (err) {
       console.error('[generate]', err)
       await bgDb

@@ -13,15 +13,17 @@ import SectionRenderer from './sections/SectionRenderer'
 import SuggestionChips from './ui/SuggestionChips'
 import RefinementInput from './ui/RefinementInput'
 import ShareButton from './ui/ShareButton'
+import FactCheckBar, { FactCheckBadge } from './ui/FactCheckBar'
 import { buildNavItems } from '@/lib/section-ids'
 
 interface Props {
   articleRow: ArticleRow
   isOwner: boolean
   isNew?: boolean
+  factCheckStatus?: 'none' | 'checking' | 'verified'
 }
 
-export default function ArticleView({ articleRow, isOwner, isNew }: Props) {
+export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatus = 'none' }: Props) {
   const router = useRouter()
   const [article, setArticle] = useState(articleRow.article!)
   const [chips, setChips] = useState(articleRow.suggestion_chips)
@@ -332,6 +334,12 @@ export default function ArticleView({ articleRow, isOwner, isNew }: Props) {
           </p>
           <span style={{ color: 'var(--border)' }}>·</span>
           <ShareButton title={article.title} url={`https://articleai-three.vercel.app/article/${articleRow.slug}`} />
+          {(articleRow.status === 'verified' || articleRow.fact_check) && (
+            <>
+              <span style={{ color: 'var(--border)' }}>·</span>
+              <FactCheckBadge factCheck={articleRow.fact_check} />
+            </>
+          )}
         </div>
       </div>
 
@@ -452,6 +460,14 @@ export default function ArticleView({ articleRow, isOwner, isNew }: Props) {
             </li>
           </ul>
         </div>
+      )}
+
+      {/* Fact-check bar */}
+      {factCheckStatus !== 'none' && (
+        <FactCheckBar
+          status={factCheckStatus}
+          factCheck={articleRow.fact_check}
+        />
       )}
 
       {/* Share button at bottom */}
