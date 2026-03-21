@@ -40,7 +40,9 @@ export default function ArticleGenerating({ row, onReady }: Props) {
   const isNewUser = useMemo(() => {
     if (typeof window === 'undefined') return true
     try {
-      return parseInt(localStorage.getItem('articles_generated') ?? '0', 10) < 3
+      // Show education card for users with fewer than 10 articles
+      // (keeps showing until they're clearly a power user)
+      return parseInt(localStorage.getItem('articles_generated') ?? '0', 10) < 10
     } catch { return true }
   }, [])
 
