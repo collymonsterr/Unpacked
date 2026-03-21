@@ -298,7 +298,7 @@ Return a JSON object matching this structure. Return ONLY valid JSON. No preambl
   "title": "string",
   "article_type": "buyer_guide | comparison | decision_guide | explainer | news | planning | trend_analysis | tutorial",
   "quick_verdict": {
-    "recommendation": "string (the main answer, recommendation, or key takeaway)",
+    "recommendation": "string (the main answer or key takeaway — if it has multiple parts, separate them with semicolons so they display as bullet points, e.g. 'Do X; avoid Y; consider Z')",
     "one_liner": "string"
   },
   "executive_summary": {
