@@ -13,9 +13,13 @@ import SectionRenderer from './sections/SectionRenderer'
 import SuggestionChips from './ui/SuggestionChips'
 import RefinementInput from './ui/RefinementInput'
 import ShareButton from './ui/ShareButton'
+import BookmarkButton from './ui/BookmarkButton'
+import RelatedArticles from './RelatedArticles'
 import ArticleFeedback from './ui/ArticleFeedback'
 import FactCheckBar, { FactCheckBadge } from './ui/FactCheckBar'
 import { buildNavItems } from '@/lib/section-ids'
+import { getReadingTime } from '@/lib/reading-time'
+import { useUser } from '@/hooks/useUser'
 
 interface Props {
   articleRow: ArticleRow
@@ -26,6 +30,7 @@ interface Props {
 
 export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatus = 'none' }: Props) {
   const router = useRouter()
+  const { user } = useUser()
   const [article, setArticle] = useState(articleRow.article!)
   const [chips, setChips] = useState(articleRow.suggestion_chips)
   const [isRefining, setIsRefining] = useState(false)
@@ -230,6 +235,7 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
     month: 'long',
     day: 'numeric',
   })
+  const readingTime = getReadingTime(article)
 
   const navItems = useMemo(() => buildNavItems(article), [article])
 
@@ -417,10 +423,12 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
             </>
           )}
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            {formattedDate}
+            {formattedDate} · {readingTime} min read
           </p>
           <span style={{ color: 'var(--border)' }}>·</span>
           <ShareButton title={article.title} url={`https://articleai-three.vercel.app/article/${articleRow.slug}`} />
+          <span style={{ color: 'var(--border)' }}>·</span>
+          <BookmarkButton articleId={articleRow.id} user={user} />
           {(articleRow.status === 'verified' || articleRow.fact_check) && (
             <>
               <span style={{ color: 'var(--border)' }}>·</span>
@@ -502,6 +510,12 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
           onSetPrimaryImage={handleSetPrimaryImage}
         />
       )}
+
+      {/* Related Articles */}
+      <RelatedArticles
+        articleId={articleRow.id}
+        articleType={article.article_type}
+      />
 
       {/* Feedback */}
       <ArticleFeedback articleId={articleRow.id} />

@@ -20,6 +20,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import type { ArticleRow, ProductCard } from '@/types/article'
 import { useAdminMode } from '@/hooks/useAdminMode'
+import { getReadingTime } from '@/lib/reading-time'
 
 interface Props {
   articles: ArticleRow[]
@@ -72,6 +73,7 @@ function SortableArticleCard({
   const imageUrl = getCardImage(row)
   const title = row.article?.title ?? row.plan?.title ?? row.query
   const type = row.article?.article_type ?? row.plan?.article_type ?? 'buyer_guide'
+  const readTime = row.article ? getReadingTime(row.article) : 0
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -129,6 +131,14 @@ function SortableArticleCard({
             >
               {getCategoryLabel(type)}
             </span>
+            {readTime > 0 && (
+              <span
+                className="text-xs"
+                style={{ color: 'var(--text-secondary)', opacity: 0.7 }}
+              >
+                {readTime} min
+              </span>
+            )}
             {(row.view_count ?? 0) > 10 && (
               <span
                 className="text-xs"
