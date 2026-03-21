@@ -3,6 +3,8 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import type { ArticleRow } from '@/types/article'
 import ArticleTypeBadge from './ui/ArticleTypeBadge'
+import SignInNudge from './ui/SignInNudge'
+import { useUser } from '@/hooks/useUser'
 
 interface Props {
   row: ArticleRow
@@ -27,7 +29,9 @@ export default function ArticleGenerating({ row, onReady }: Props) {
   const [planRevealed, setPlanRevealed] = useState(false)
   const [showEducation, setShowEducation] = useState(false)
   const [articleReady, setArticleReady] = useState(false)
+  const [showSignIn, setShowSignIn] = useState(false)
   const readyFired = useRef(false)
+  const { user } = useUser()
 
   const plan = row.plan
   const isComplete = row.status === 'complete' || row.status === 'verified'
@@ -71,6 +75,13 @@ export default function ArticleGenerating({ row, onReady }: Props) {
       return () => clearTimeout(timer)
     }
   }, [planRevealed, isNewUser])
+
+  // Show sign-in nudge ~45s in (only if not signed in)
+  useEffect(() => {
+    if (user || !planRevealed) return
+    const timer = setTimeout(() => setShowSignIn(true), 40000)
+    return () => clearTimeout(timer)
+  }, [user, planRevealed])
 
   // Build post-plan status messages
   const messages = useMemo(() => {
@@ -341,6 +352,13 @@ export default function ArticleGenerating({ row, onReady }: Props) {
                   <span><strong style={{ color: 'var(--text-primary)' }}>Independently fact-checked</strong> — a second AI verifies prices, specs, and claims.</span>
                 </li>
               </ul>
+            </div>
+          )}
+
+          {/* Sign-in nudge — only for unauthenticated users, after ~45s */}
+          {showSignIn && !articleReady && (
+            <div className="mt-4">
+              <SignInNudge user={user} articleId={row.id} />
             </div>
           )}
 
