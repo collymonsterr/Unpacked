@@ -48,7 +48,7 @@ export default async function HomePage() {
         <div className="flex items-center gap-3">
           <a
             href="/creators"
-            className="text-xs font-medium no-underline hidden sm:block"
+            className="text-sm font-medium no-underline hidden sm:block"
             style={{ color: 'var(--text-secondary)' }}
           >
             For Creators
@@ -87,7 +87,7 @@ export default async function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           <div className="text-center">
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3"
+              className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
               style={{ backgroundColor: 'var(--accent-light)' }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -96,19 +96,19 @@ export default async function HomePage() {
               </svg>
             </div>
             <h3
-              className="text-sm font-bold mb-1"
+              className="text-base font-bold mb-1.5"
               style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
             >
               Researched, not generated
             </h3>
-            <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               Built from live web searches — expert reviews, Reddit threads, real user opinions.
             </p>
           </div>
 
           <div className="text-center">
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3"
+              className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
               style={{ backgroundColor: 'var(--accent-light)' }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -117,19 +117,19 @@ export default async function HomePage() {
               </svg>
             </div>
             <h3
-              className="text-sm font-bold mb-1"
+              className="text-base font-bold mb-1.5"
               style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
             >
               Opinionated, not neutral
             </h3>
-            <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               Picks winners, calls out overpriced products, takes a clear position.
             </p>
           </div>
 
           <div className="text-center">
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3"
+              className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
               style={{ backgroundColor: 'var(--accent-light)' }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -140,12 +140,12 @@ export default async function HomePage() {
               </svg>
             </div>
             <h3
-              className="text-sm font-bold mb-1"
+              className="text-base font-bold mb-1.5"
               style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
             >
               Visual, not walls of text
             </h3>
-            <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               Product cards, comparison charts, data visualisations, and editorial photos.
             </p>
           </div>

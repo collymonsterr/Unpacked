@@ -47,7 +47,7 @@ export default function ExampleChips() {
           key={example}
           onClick={() => handleClick(example)}
           disabled={!!loading}
-          className="px-3.5 py-1.5 rounded-full text-xs font-medium transition-all hover:scale-105 disabled:opacity-50"
+          className="px-4 py-2 rounded-full text-sm font-medium transition-all hover:scale-105 disabled:opacity-50"
           style={{
             backgroundColor: 'var(--card)',
             color: loading === example ? 'var(--accent)' : 'var(--text-secondary)',
