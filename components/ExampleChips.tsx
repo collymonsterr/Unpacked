@@ -4,10 +4,12 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 const EXAMPLES = [
-  'Best laptops under $1000',
+  'Best noise-cancelling headphones under $300',
   'iPhone 17 vs Galaxy S26',
-  'Best coffee machines for beginners',
-  'Are robot vacuums worth it?',
+  'Should I rent or buy in 2026?',
+  'How to start investing with $500',
+  'Is an MBA still worth it?',
+  'Best cities for remote workers in Europe',
 ]
 
 export default function ExampleChips() {
