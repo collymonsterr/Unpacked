@@ -207,8 +207,11 @@ The entire point of this product is that articles are built from LIVE research, 
 SEARCH STRATEGY: You have 10 web searches. USE THEM ALL. Suggested approach:
 - Search 1-2: "[topic] best ${new Date().getFullYear()}" and "[topic] latest ${new Date().getFullYear()}" — find what's current
 - Search 3-4: "[topic] reddit" and "[topic] reviews" — find real user opinions
-- Search 5-7: Individual product/entity searches for specs, prices, and availability
-- Search 8-10: Verify specific claims, fill gaps, check for newer alternatives
+- Search 5: "[topic] site:x.com OR site:twitter.com" — find what people are saying on Twitter/X. Look for hot takes, complaints, praise, and trending opinions. Twitter is where real unfiltered opinions live.
+- Search 6-8: Individual product/entity searches for specs, prices, and availability
+- Search 9-10: Verify specific claims, fill gaps, check for newer alternatives
+
+TWITTER/X IS A MANDATORY SOURCE: You MUST search Twitter/X for every article. Real people share unfiltered opinions there — complaints about products, praise for hidden gems, warnings about issues. If you find relevant tweets, weave them into the community insights or opinion sections naturally (e.g. "users on X have been complaining about…", "the consensus on Twitter is…"). Do not skip this search.
 ═══════════════════════════════════════════════════════════════
 
 YOUR EDITORIAL PRINCIPLES:
