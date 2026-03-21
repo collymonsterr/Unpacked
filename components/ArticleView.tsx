@@ -36,8 +36,6 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [toolbarBusy, setToolbarBusy] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [showTips, setShowTips] = useState(isNew ?? false)
-
   const hasMissingImages = useMemo(() => {
     const productCards = article.sections.filter(
       (s): s is ProductCard => s.type === 'product_card'
@@ -414,52 +412,6 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
           onReplaceImage={handleReplaceImage}
           onSetPrimaryImage={handleSetPrimaryImage}
         />
-      )}
-
-      {/* Tips banner — shown after a freshly generated article */}
-      {showTips && (
-        <div
-          className="mt-8 rounded-xl px-5 py-5 relative"
-          style={{
-            backgroundColor: 'var(--accent-light)',
-            border: '1px solid #f0d5be',
-          }}
-        >
-          <button
-            onClick={() => setShowTips(false)}
-            className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full text-sm"
-            style={{ color: 'var(--accent)', opacity: 0.6 }}
-            title="Dismiss"
-          >
-            ✕
-          </button>
-          <p
-            className="text-sm font-bold mb-1"
-            style={{ fontFamily: 'var(--font-sora)', color: 'var(--accent)' }}
-          >
-            This is your article — make it yours.
-          </p>
-          <p
-            className="text-xs mb-4"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            It&apos;s not set in stone. Here are a few things you can do from here:
-          </p>
-          <ul className="space-y-3 text-sm" style={{ color: 'var(--text-primary)' }}>
-            <li className="flex items-start gap-2.5">
-              <span className="mt-0.5">✏️</span>
-              <span><strong>Rewrite or refine</strong> — use the box below to change the tone, rewrite a section you don&apos;t like, add more detail, or shift the whole angle. Try things like &quot;make it more opinionated&quot; or &quot;rewrite the intro to be shorter.&quot;</span>
-            </li>
-            <li className="flex items-start gap-2.5">
-              <span className="mt-0.5">🖼️</span>
-              <span><strong>Swap out images</strong> — not happy with a product photo? Click the refresh icon on any image to pull a different one from the web.</span>
-            </li>
-            <li className="flex items-start gap-2.5">
-              <span className="mt-0.5">🔀</span>
-              <span><strong>Spin off a new article</strong> — curious about something related? Head back to the homepage and try a follow-up prompt — like a deeper dive on one product, or a different angle on the same topic.</span>
-            </li>
-          </ul>
-        </div>
       )}
 
       {/* Share button at bottom */}

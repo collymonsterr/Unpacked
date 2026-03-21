@@ -3,6 +3,7 @@ import { after } from 'next/server'
 import { planArticle, writeArticle } from '@/lib/claude'
 import { enrichArticleWithImages, fetchThumbnailImage } from '@/lib/images'
 import { pickBestArticleImage } from '@/lib/imagen'
+import { runFactCheck, applyCorrections } from '@/lib/fact-check'
 import { getSupabaseAdmin, createServerSupabase } from '@/lib/supabase'
 import { generateUniqueSlug } from '@/lib/slug'
 
@@ -29,24 +30,19 @@ export async function POST(request: NextRequest) {
         userAvatar = user.user_metadata?.avatar_url ?? undefined
       }
     } catch {
-      // Not authenticated — that's fine, continue as anonymous
+      // Not authenticated — continue as anonymous
     }
 
-    // Step 1: Plan the article
-    const plan = await planArticle(trimmedQuery)
+    // Generate slug from the query (not the title — we don't have it yet)
+    const slug = await generateUniqueSlug(trimmedQuery)
 
-    // Generate unique slug from the planned title
-    const slug = await generateUniqueSlug(plan.title)
-
-    // Save to Supabase
+    // Save to Supabase immediately with status 'planning' — no plan yet
     const { data, error } = await getSupabaseAdmin()
       .from('articles')
       .insert({
         slug,
         query: trimmedQuery,
-        status: 'generating',
-        plan,
-        suggestion_chips: plan.suggestion_chips,
+        status: 'planning',
         ...(userId ? { user_id: userId, user_name: userName, user_avatar: userAvatar } : {}),
       })
       .select('id, slug')
@@ -54,13 +50,31 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error
 
-    // Run generation after the response is sent
+    // Respond immediately — user navigates to article page in <1s
+    // ALL work (plan, write, images, fact-check) runs in the background
     after(async () => {
       const db = getSupabaseAdmin()
       try {
+        // Phase 1: Plan the article
+        console.log('[create] Planning article for:', trimmedQuery.slice(0, 50))
+        const plan = await planArticle(trimmedQuery)
+
+        // Update with plan data — client sees this via polling
+        await db
+          .from('articles')
+          .update({
+            plan,
+            suggestion_chips: plan.suggestion_chips,
+            status: 'generating',
+          })
+          .eq('id', data.id)
+
+        console.log('[create] Plan complete, now writing:', plan.title.slice(0, 50))
+
+        // Phase 2: Write the article
         const rawArticle = await writeArticle(trimmedQuery, plan)
 
-        // Enrich product images + fetch hero thumbnail in parallel
+        // Phase 3: Enrich images + hero thumbnail (parallel)
         const [enrichedArticle, heroUrl] = await Promise.all([
           enrichArticleWithImages(
             rawArticle,
@@ -70,15 +84,38 @@ export async function POST(request: NextRequest) {
           fetchThumbnailImage(rawArticle.title, rawArticle.article_type),
         ])
 
-        // Always set a hero image — fall back to best product image if Brave fails
         enrichedArticle.thumbnail_url = heroUrl ?? pickBestArticleImage(enrichedArticle)
 
+        // Save complete article
         await db
           .from('articles')
           .update({ article: enrichedArticle, status: 'complete' })
           .eq('id', data.id)
+
+        console.log('[create] Article complete, starting fact-check')
+
+        // Phase 4: Fact-check (non-blocking — article is already readable)
+        try {
+          const factCheckResult = await runFactCheck(enrichedArticle)
+          let finalArticle = enrichedArticle
+          if (factCheckResult.issues_found && factCheckResult.issues.length > 0) {
+            finalArticle = applyCorrections(enrichedArticle, factCheckResult)
+          }
+          await db
+            .from('articles')
+            .update({
+              article: finalArticle,
+              fact_check: factCheckResult,
+              verified_at: new Date().toISOString(),
+              status: 'verified',
+            })
+            .eq('id', data.id)
+          console.log('[create] Fact-check done:', factCheckResult.total_issues, 'issues')
+        } catch (fcErr) {
+          console.error('[create] Fact-check failed:', fcErr)
+        }
       } catch (err) {
-        console.error('[generate]', err)
+        console.error('[create] Generation failed:', err)
         await db
           .from('articles')
           .update({ status: 'error' })
@@ -86,7 +123,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return Response.json({ id: data.id, slug: data.slug, plan })
+    return Response.json({ id: data.id, slug: data.slug })
   } catch (err) {
     console.error('[create]', err)
     return Response.json({ error: 'Failed to create article' }, { status: 500 })

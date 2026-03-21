@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import type { ArticleRow } from '@/types/article'
-import ArticleSkeleton from '@/components/ArticleSkeleton'
+import ArticleGenerating from '@/components/ArticleGenerating'
 import ArticleView from '@/components/ArticleView'
 import Logo from '@/components/ui/Logo'
 import UserMenu from '@/components/ui/UserMenu'
@@ -16,8 +16,15 @@ interface Props {
 
 export default function ArticlePageClient({ initialRow }: Props) {
   const [row, setRow] = useState(initialRow)
-  const [wasGenerating, setWasGenerating] = useState(
+  const [wasGenerating] = useState(
     initialRow.status === 'generating' || initialRow.status === 'planning'
+  )
+  const [showArticle, setShowArticle] = useState(
+    // If we load a completed article directly (not freshly generated), show it immediately
+    (initialRow.status === 'complete' || initialRow.status === 'verified') && !!initialRow.article
+  )
+  const [fadeState, setFadeState] = useState<'generating' | 'transitioning' | 'article'>(
+    showArticle ? 'article' : 'generating'
   )
   const isAdmin = useAdminMode()
   const { user } = useUser()
@@ -34,25 +41,25 @@ export default function ArticlePageClient({ initialRow }: Props) {
     }
   }, [initialRow.id])
 
-  // Poll while generating OR while waiting for fact-check (complete → verified)
+  // Poll while planning, generating, or waiting for fact-check
   useEffect(() => {
     if (row.status === 'verified' || row.status === 'error') return
-    // Don't poll for old articles that are already 'complete' and weren't just generated
-    if (row.status === 'complete' && !wasGenerating) return
+    if (showArticle && row.status === 'complete' && !wasGenerating) return
 
     const interval = setInterval(poll, 2500)
     return () => clearInterval(interval)
-  }, [row.status, wasGenerating, poll])
+  }, [row.status, wasGenerating, showArticle, poll])
 
-  // Detect the transition to 'complete' (article ready, fact-check starting)
-  useEffect(() => {
-    if (row.status === 'complete' && wasGenerating) {
-      // Article just finished generating — fact-check is now running in background
-      // Keep polling to detect verified status
-    }
-  }, [row.status, wasGenerating])
+  // Handle the transition from generating to article
+  const handleArticleReady = useCallback(() => {
+    setFadeState('transitioning')
+    setTimeout(() => {
+      setShowArticle(true)
+      setFadeState('article')
+    }, 500)
+  }, [])
 
-  // Determine fact-check status for the UI
+  // Detect fact-check status
   const factCheckStatus: 'none' | 'checking' | 'verified' = (() => {
     if (row.status === 'verified') return 'verified'
     if (row.status === 'complete' && wasGenerating && !row.fact_check) return 'checking'
@@ -61,7 +68,7 @@ export default function ArticlePageClient({ initialRow }: Props) {
 
   return (
     <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
-      {/* Nav — sticky so the logo is always accessible */}
+      {/* Nav — sticky */}
       <nav
         className="px-6 py-4 flex items-center gap-3 sticky top-0 z-50"
         style={{
@@ -82,27 +89,44 @@ export default function ArticlePageClient({ initialRow }: Props) {
           <p className="text-2xl font-bold mb-2" style={{ fontFamily: 'var(--font-sora)' }}>
             Something went wrong
           </p>
-          <p style={{ color: 'var(--text-secondary)' }}>
-            We couldn&apos;t generate this article. Please go back and try again.
+          <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
+            We couldn&apos;t generate this article. This sometimes happens with complex queries.
           </p>
+          <a
+            href="/"
+            className="inline-block px-5 py-2.5 rounded-xl text-sm font-semibold"
+            style={{ backgroundColor: 'var(--accent)', color: '#fff' }}
+          >
+            Go back and try again
+          </a>
         </div>
-      ) : (row.status === 'complete' || row.status === 'verified') && row.article ? (
-        <ArticleView
-          articleRow={row}
-          isOwner={isOwner}
-          isNew={wasGenerating}
-          factCheckStatus={factCheckStatus}
-        />
-      ) : row.plan ? (
-        <ArticleSkeleton plan={row.plan} />
+      ) : showArticle && row.article ? (
+        <div
+          style={{
+            opacity: fadeState === 'article' ? 1 : 0,
+            transition: 'opacity 0.4s ease',
+          }}
+        >
+          <ArticleView
+            articleRow={row}
+            isOwner={isOwner}
+            isNew={wasGenerating}
+            factCheckStatus={factCheckStatus}
+          />
+        </div>
       ) : (
-        <div className="max-w-[900px] mx-auto px-4 py-20 text-center">
-          <p style={{ color: 'var(--text-secondary)' }}>Preparing your article…</p>
+        <div
+          style={{
+            opacity: fadeState === 'transitioning' ? 0 : 1,
+            transition: 'opacity 0.4s ease',
+          }}
+        >
+          <ArticleGenerating row={row} onReady={handleArticleReady} />
         </div>
       )}
 
       {/* Fixed bottom fact-check bar */}
-      {factCheckStatus !== 'none' && (
+      {showArticle && factCheckStatus !== 'none' && (
         <FactCheckBar
           status={factCheckStatus}
           factCheck={row.fact_check}

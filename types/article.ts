@@ -45,6 +45,7 @@ export interface ArticlePlan {
   entities: PlanEntity[]
   sections_outline: string[]
   research_queries: string[]
+  loading_messages?: string[]
   suggestion_chips: SuggestionChips
 }
 
