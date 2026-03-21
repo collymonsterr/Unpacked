@@ -2,6 +2,7 @@ import { NextRequest, after } from 'next/server'
 import { writeArticle } from '@/lib/claude'
 import { enrichArticleWithImages, fetchThumbnailImage } from '@/lib/images'
 import { pickBestArticleImage } from '@/lib/imagen'
+import { runFactCheck, applyCorrections } from '@/lib/fact-check'
 import { getSupabaseAdmin } from '@/lib/supabase'
 
 export async function POST(
@@ -60,16 +61,27 @@ export async function POST(
         })
         .eq('id', id)
 
-      // Kick off fact-check in the background (non-blocking)
+      // Run fact-check directly (still inside after(), non-blocking to the user)
       try {
-        const baseUrl = process.env.VERCEL_URL
-          ? `https://${process.env.VERCEL_URL}`
-          : process.env.NEXT_PUBLIC_SUPABASE_URL
-            ? 'http://localhost:3000'
-            : 'http://localhost:3000'
-        fetch(`${baseUrl}/api/articles/${id}/fact-check`, { method: 'POST' }).catch(() => {})
-      } catch {
-        // Fact-check failure should never break article generation
+        console.log('[generate] Starting fact-check for', id.slice(0, 8))
+        const factCheckResult = await runFactCheck(enrichedArticle)
+        let finalArticle = enrichedArticle
+        if (factCheckResult.issues_found && factCheckResult.issues.length > 0) {
+          finalArticle = applyCorrections(enrichedArticle, factCheckResult)
+        }
+        await bgDb
+          .from('articles')
+          .update({
+            article: finalArticle,
+            fact_check: factCheckResult,
+            verified_at: new Date().toISOString(),
+            status: 'verified',
+          })
+          .eq('id', id)
+        console.log('[generate] Fact-check done:', factCheckResult.total_issues, 'issues')
+      } catch (fcErr) {
+        console.error('[generate] Fact-check failed (article still complete):', fcErr)
+        // Article stays at "complete" — fact-check is optional
       }
     } catch (err) {
       console.error('[generate]', err)
