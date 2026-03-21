@@ -98,6 +98,11 @@ export async function POST(request: NextRequest) {
 
         enrichedArticle.thumbnail_url = heroUrl ?? pickBestArticleImage(enrichedArticle)
 
+        // Store hero_image_query on article for future thumbnail replacements
+        if (plan.hero_image_query) {
+          (enrichedArticle as unknown as Record<string, unknown>).hero_image_query = plan.hero_image_query
+        }
+
         // Save complete article
         await db
           .from('articles')

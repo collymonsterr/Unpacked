@@ -41,12 +41,15 @@ export async function POST(
 
   let newUrl: string | null = null
 
+  // Use stored hero_image_query if available for smarter searches
+  const heroQuery = (article as unknown as Record<string, unknown>).hero_image_query as string | undefined
+
   if (useAI) {
     newUrl = await generateHeroImage(article, id)
-      ?? await fetchThumbnailImage(article.title, article.article_type, allSeenUrls)
+      ?? await fetchThumbnailImage(article.title, article.article_type, allSeenUrls, heroQuery)
       ?? pickBestArticleImage(article)
   } else {
-    newUrl = await fetchThumbnailImage(article.title, article.article_type, allSeenUrls)
+    newUrl = await fetchThumbnailImage(article.title, article.article_type, allSeenUrls, heroQuery)
       ?? pickBestArticleImage(article)
   }
 

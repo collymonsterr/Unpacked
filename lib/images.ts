@@ -191,7 +191,8 @@ function getHeroSubject(title: string, articleType: ArticleType): string {
   if (t.includes('camera')) return 'mirrorless camera photography equipment'
   if (t.includes('phone') || t.includes('iphone') || t.includes('galaxy')) return 'premium smartphone design'
   if (t.includes('skincare')) return 'skincare products flatlay clean'
-  if (t.includes('backpack') || t.includes('travel')) return 'travel backpack adventure'
+  if (t.includes('backpack')) return 'premium travel backpack product photography'
+  if (t.includes('travel') && !t.includes('backpack')) return 'beautiful travel destination landscape'
   if (t.includes('drum')) return 'electronic drum kit studio'
   if (t.includes('motorbike') || t.includes('motorcycle') || t.includes('superbike')) return 'sports motorcycle dynamic action shot'
 
