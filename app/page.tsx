@@ -78,7 +78,7 @@ export default async function HomePage() {
 
         <div className="w-full max-w-2xl">
           <SearchForm />
-          <ExampleChips />
+          <ExampleChips existingQueries={recentArticles.map(a => a.query)} />
         </div>
       </section>
 
