@@ -18,17 +18,27 @@ async function getRecentArticles(): Promise<ArticleRow[]> {
       .order('created_at', { ascending: false })
       .limit(100)
 
-    // Filter out hidden articles, then sort
+    // Filter out hidden articles, then sort:
+    // 1. Pinned articles first
+    // 2. New articles (no sort_order) by newest first
+    // 3. Manually ordered articles by sort_order
     const visible = (data ?? []).filter(a => !(a.article as Record<string, unknown>)?.hidden_from_homepage)
     const articles = visible.sort((a, b) => {
       const aPinned = a.pinned ? 1 : 0
       const bPinned = b.pinned ? 1 : 0
       if (aPinned !== bPinned) return bPinned - aPinned
+
       const aOrder = (a.article as Record<string, unknown>)?.sort_order as number | undefined
       const bOrder = (b.article as Record<string, unknown>)?.sort_order as number | undefined
+
+      // New articles (no sort_order) come before manually ordered ones
+      if (aOrder == null && bOrder != null) return -1
+      if (aOrder != null && bOrder == null) return 1
+
+      // Both have sort_order — use it
       if (aOrder != null && bOrder != null) return aOrder - bOrder
-      if (aOrder != null) return -1
-      if (bOrder != null) return 1
+
+      // Neither has sort_order — newest first
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
 
