@@ -101,7 +101,7 @@ ${articleJson}`
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: userMessage }] }],
-        tools: [{ google_search_retrieval: {} }],
+        tools: [{ google_search: {} }],
         generationConfig: { temperature: 0.1 },
       }),
     })
