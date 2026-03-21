@@ -255,6 +255,9 @@ export interface ArticleRow {
   article: ArticleContent | null
   suggestion_chips: SuggestionChips | null
   pinned?: boolean
+  user_id?: string | null
+  user_name?: string | null
+  user_avatar?: string | null
   created_at: string
   updated_at: string
 }

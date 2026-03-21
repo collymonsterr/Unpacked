@@ -3,7 +3,7 @@ import { after } from 'next/server'
 import { planArticle, writeArticle } from '@/lib/claude'
 import { enrichArticleWithImages, fetchThumbnailImage } from '@/lib/images'
 import { pickBestArticleImage } from '@/lib/imagen'
-import { getSupabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdmin, createServerSupabase } from '@/lib/supabase'
 import { generateUniqueSlug } from '@/lib/slug'
 
 export async function POST(request: NextRequest) {
@@ -15,6 +15,22 @@ export async function POST(request: NextRequest) {
     }
 
     const trimmedQuery = query.trim()
+
+    // Check if user is authenticated
+    let userId: string | undefined
+    let userName: string | undefined
+    let userAvatar: string | undefined
+    try {
+      const supabase = await createServerSupabase()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        userId = user.id
+        userName = user.user_metadata?.full_name ?? undefined
+        userAvatar = user.user_metadata?.avatar_url ?? undefined
+      }
+    } catch {
+      // Not authenticated — that's fine, continue as anonymous
+    }
 
     // Step 1: Plan the article
     const plan = await planArticle(trimmedQuery)
@@ -31,6 +47,7 @@ export async function POST(request: NextRequest) {
         status: 'generating',
         plan,
         suggestion_chips: plan.suggestion_chips,
+        ...(userId ? { user_id: userId, user_name: userName, user_avatar: userAvatar } : {}),
       })
       .select('id, slug')
       .single()

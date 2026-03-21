@@ -304,11 +304,29 @@ export default function ArticleView({ articleRow, isOwner, isNew }: Props) {
         >
           {article.title}
         </h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {articleRow.user_name && (
+            <>
+              <div className="flex items-center gap-1.5">
+                {articleRow.user_avatar && (
+                  <img
+                    src={articleRow.user_avatar}
+                    alt=""
+                    className="w-5 h-5 rounded-full"
+                    referrerPolicy="no-referrer"
+                  />
+                )}
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  {articleRow.user_name}
+                </span>
+              </div>
+              <span style={{ color: 'var(--border)' }}>·</span>
+            </>
+          )}
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Generated {formattedDate}
+            {formattedDate}
           </p>
-          <span style={{ color: 'var(--border)' }}>|</span>
+          <span style={{ color: 'var(--border)' }}>·</span>
           <ShareButton title={article.title} url={`https://articleai-three.vercel.app/article/${articleRow.slug}`} />
         </div>
       </div>

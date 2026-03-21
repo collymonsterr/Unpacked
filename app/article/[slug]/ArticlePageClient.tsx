@@ -5,7 +5,9 @@ import type { ArticleRow } from '@/types/article'
 import ArticleSkeleton from '@/components/ArticleSkeleton'
 import ArticleView from '@/components/ArticleView'
 import Logo from '@/components/ui/Logo'
+import UserMenu from '@/components/ui/UserMenu'
 import { useAdminMode } from '@/hooks/useAdminMode'
+import { useUser } from '@/hooks/useUser'
 
 interface Props {
   initialRow: ArticleRow
@@ -16,7 +18,9 @@ export default function ArticlePageClient({ initialRow }: Props) {
   const [wasGenerating, setWasGenerating] = useState(
     initialRow.status === 'generating' || initialRow.status === 'planning'
   )
-  const isOwner = useAdminMode()
+  const isAdmin = useAdminMode()
+  const { user } = useUser()
+  const isOwner = isAdmin || (user != null && row.user_id === user.id)
 
   const poll = useCallback(async () => {
     try {
@@ -48,6 +52,9 @@ export default function ArticlePageClient({ initialRow }: Props) {
         }}
       >
         <Logo size="sm" />
+        <div className="ml-auto">
+          <UserMenu />
+        </div>
       </nav>
 
       {/* Content */}

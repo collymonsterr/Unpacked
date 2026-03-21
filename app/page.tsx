@@ -1,4 +1,5 @@
 import Logo from '@/components/ui/Logo'
+import UserMenu from '@/components/ui/UserMenu'
 import SearchForm from '@/components/SearchForm'
 import ExampleChips from '@/components/ExampleChips'
 import RecentArticlesGrid from '@/components/RecentArticlesGrid'
@@ -44,6 +45,7 @@ export default async function HomePage() {
       {/* Nav */}
       <nav className="px-6 py-5 flex items-center justify-between max-w-6xl mx-auto">
         <Logo size="md" />
+        <UserMenu />
       </nav>
 
       {/* Hero */}
