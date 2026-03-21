@@ -135,21 +135,32 @@ export default function ArticleGenerating({ row, onReady }: Props) {
     return msgs
   }, [plan])
 
-  // Simple interval: show a new message every 7 seconds
+  // Tick messages with accelerating start, then steady pace
   useEffect(() => {
     if (!plan || messages.length === 0 || isComplete) return
 
-    // Show first message immediately
-    setCompletedMsgs(1)
+    // Show first 2 immediately (user already saw 7 pre-plan messages, keep momentum)
+    setCompletedMsgs(2)
 
-    const timer = setInterval(() => {
-      setCompletedMsgs(prev => {
-        if (prev >= messages.length) return prev
-        return prev + 1
-      })
-    }, 7000) // New message every 7 seconds
+    // Schedule remaining messages: fast start, then steady
+    const timers: ReturnType<typeof setTimeout>[] = []
+    let delay = 0
+    for (let i = 3; i <= messages.length; i++) {
+      // First 5 post-plan messages: every 3 seconds (feels active)
+      // Next 5: every 6 seconds
+      // Rest: every 10 seconds
+      const msgNum = i - 2 // 1-based count of post-plan messages
+      if (msgNum <= 5) delay += 3000
+      else if (msgNum <= 10) delay += 6000
+      else delay += 10000
 
-    return () => clearInterval(timer)
+      const idx = i
+      timers.push(setTimeout(() => {
+        setCompletedMsgs(prev => Math.max(prev, idx))
+      }, delay))
+    }
+
+    return () => timers.forEach(t => clearTimeout(t))
   }, [plan, messages.length, isComplete])
 
   // When article ready — trigger transition
