@@ -307,8 +307,8 @@ Return a JSON object matching this structure. Return ONLY valid JSON. No preambl
   "title": "string",
   "article_type": "buyer_guide | comparison | decision_guide | explainer | news | planning | trend_analysis | tutorial",
   "quick_verdict": {
-    "recommendation": "string (the main answer or key takeaway — if it has multiple parts, separate them with semicolons so they display as bullet points, e.g. 'Do X; avoid Y; consider Z')",
-    "one_liner": "string"
+    "bullets": ["string (3-4 short, punchy bullet points — each one a standalone takeaway. NOT a sentence split up. Each bullet should be a distinct, actionable point like 'The Yamaha Pacifica 112V is the best value under $300' or 'Avoid anything without a humbucker pickup'. Keep each bullet under 15 words.)"],
+    "one_liner": "string (a single-sentence summary of the verdict, used for metadata and sharing)"
   },
   "executive_summary": {
     "short_answer": "string",
@@ -465,7 +465,8 @@ function stripCitations(article: ArticleContent): ArticleContent {
   return {
     ...article,
     quick_verdict: {
-      recommendation: clean(article.quick_verdict.recommendation),
+      recommendation: article.quick_verdict.recommendation ? clean(article.quick_verdict.recommendation) : undefined,
+      bullets: article.quick_verdict.bullets?.map(clean),
       one_liner: clean(article.quick_verdict.one_liner),
     },
     executive_summary: {

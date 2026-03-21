@@ -251,7 +251,8 @@ export type ArticleSection =
 // ── Full Article ─────────────────────────────────────────────────────────────
 
 export interface QuickVerdict {
-  recommendation: string
+  recommendation?: string  // Legacy — old articles use this
+  bullets?: string[]       // New — 3-4 punchy takeaway bullets
   one_liner: string
 }
 
