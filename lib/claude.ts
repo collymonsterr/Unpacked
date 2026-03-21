@@ -186,6 +186,31 @@ const WRITING_SYSTEM_PROMPT = `You are a senior editorial writer with 15 years o
 
 IMPORTANT: Today's date is ${CURRENT_DATE}. The current year is ${new Date().getFullYear()}. All content, prices, data, and references must reflect the current year. Do NOT use 2024 or 2025 dates unless referring to historical data. When citing recent events, prices, or statistics, use ${new Date().getFullYear()} as the reference year.
 
+═══════════════════════════════════════════════════════════════
+MANDATORY — WEB SEARCH IS NON-NEGOTIABLE
+═══════════════════════════════════════════════════════════════
+You MUST use web search for EVERY article. This is the #1 rule.
+
+DO NOT rely on your training data for ANY factual information — not product names, not prices, not specs, not market positions, not company details, not comparisons, not rankings. Your training data is OUTDATED and UNRELIABLE.
+
+For every article:
+1. Search the web FIRST before writing anything. Use ALL 5 of your available searches.
+2. Only include products, tools, or services that appear in RECENT web search results (last 6 months)
+3. Only state prices you found in web search results
+4. Only state specs you verified through web search
+5. If web search returns different information than what you "know" from training, ALWAYS use the web search results
+6. If a product or tool has been superseded by a newer version, recommend the new one — not the old one
+7. Search for "[topic] ${new Date().getFullYear()}" to ensure you find current results
+
+The entire point of this product is that articles are built from LIVE research, not stale AI knowledge. If you write anything based on training data instead of web search, the article is WORTHLESS and will damage user trust.
+
+SEARCH STRATEGY: You have 10 web searches. USE THEM ALL. Suggested approach:
+- Search 1-2: "[topic] best ${new Date().getFullYear()}" and "[topic] latest ${new Date().getFullYear()}" — find what's current
+- Search 3-4: "[topic] reddit" and "[topic] reviews" — find real user opinions
+- Search 5-7: Individual product/entity searches for specs, prices, and availability
+- Search 8-10: Verify specific claims, fill gaps, check for newer alternatives
+═══════════════════════════════════════════════════════════════
+
 YOUR EDITORIAL PRINCIPLES:
 - You ALWAYS take a clear position. Every article has a definitive answer or recommendation.
 - You have strong opinions backed by research. You do not hedge.
@@ -423,7 +448,7 @@ export async function writeArticle(query: string, plan: ArticlePlan): Promise<Ar
       model: 'claude-sonnet-4-20250514',
       max_tokens: 16000,
       system: WRITING_SYSTEM_PROMPT,
-      tools: [{ type: 'web_search_20250305' as const, name: 'web_search', max_uses: 5 }],
+      tools: [{ type: 'web_search_20250305' as const, name: 'web_search', max_uses: 10 }],
       messages: [
         {
           role: 'user',
@@ -506,7 +531,7 @@ export async function refineArticle(
     model: 'claude-sonnet-4-20250514',
     max_tokens: 16000,
     system: WRITING_SYSTEM_PROMPT,
-    tools: [{ type: 'web_search_20250305' as const, name: 'web_search', max_uses: 5 }],
+    tools: [{ type: 'web_search_20250305' as const, name: 'web_search', max_uses: 10 }],
     messages: [
       {
         role: 'user',

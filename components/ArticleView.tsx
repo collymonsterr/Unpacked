@@ -13,6 +13,7 @@ import SectionRenderer from './sections/SectionRenderer'
 import SuggestionChips from './ui/SuggestionChips'
 import RefinementInput from './ui/RefinementInput'
 import ShareButton from './ui/ShareButton'
+import ArticleFeedback from './ui/ArticleFeedback'
 import FactCheckBar, { FactCheckBadge } from './ui/FactCheckBar'
 import { buildNavItems } from '@/lib/section-ids'
 
@@ -501,6 +502,9 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
           onSetPrimaryImage={handleSetPrimaryImage}
         />
       )}
+
+      {/* Feedback */}
+      <ArticleFeedback articleId={articleRow.id} />
 
       {/* Share button at bottom */}
       <ShareButton
