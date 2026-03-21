@@ -14,7 +14,7 @@ const PLACEHOLDERS = [
   'Best robot vacuums for pet hair...',
 ]
 
-export default function SearchForm() {
+export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean } = {}) {
   const [query, setQuery] = useState('')
   const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0])
   const [isLoading, setIsLoading] = useState(false)
@@ -106,7 +106,7 @@ export default function SearchForm() {
               color: 'var(--text-primary)',
               fontFamily: 'var(--font-outfit)',
             }}
-            autoFocus
+            autoFocus={autoFocus}
           />
           <button
             type="submit"

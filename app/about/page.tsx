@@ -306,7 +306,7 @@ export default function AboutPage() {
         >
           Try it. Takes 2 minutes.
         </h2>
-        <SearchForm />
+        <SearchForm autoFocus={false} />
         <ExampleChips existingQueries={[]} />
       </section>
     </div>
