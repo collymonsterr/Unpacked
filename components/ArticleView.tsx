@@ -207,7 +207,7 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
       {/* Header */}
       <div className="mb-6 relative">
         <div className="flex items-start justify-between mb-3">
-          <ArticleTypeBadge type={article.article_type} />
+          <div /> {/* Spacer */}
 
           {/* Admin menu — small gear icon */}
           {isOwner && (
@@ -300,11 +300,24 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
           )}
         </div>
         <h1
-          className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-3"
+          className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-2"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
         >
           {article.title}
         </h1>
+        <p
+          className="text-sm font-medium uppercase tracking-wide mb-3"
+          style={{ color: '#E07A3A' }}
+        >
+          {(() => {
+            const labels: Record<string, string> = {
+              buyer_guide: 'Buying Guide', comparison: 'Comparison', decision_guide: 'Decision Guide',
+              explainer: 'Explainer', news: 'News', planning: 'Travel & Living',
+              trend_analysis: 'Trend Analysis', tutorial: 'Tutorial',
+            }
+            return labels[article.article_type] ?? article.article_type.replace(/_/g, ' ')
+          })()}
+        </p>
         <div className="flex items-center gap-3 flex-wrap">
           {articleRow.user_name && (
             <>

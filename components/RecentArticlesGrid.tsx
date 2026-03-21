@@ -32,16 +32,16 @@ function getCardImage(row: ArticleRow): string | null {
   return firstCard?.image_urls?.[0] ?? firstCard?.image_url ?? null
 }
 
-function getArticleTypeLabel(type: string) {
+function getCategoryLabel(type: string) {
   const labels: Record<string, string> = {
-    buyer_guide: 'Buyer Guide',
+    buyer_guide: 'Buying Guide',
     comparison: 'Comparison',
     decision_guide: 'Decision Guide',
     explainer: 'Explainer',
     news: 'News',
-    planning: 'Planning Guide',
+    planning: 'Travel & Living',
     trend_analysis: 'Trend Analysis',
-    tutorial: 'Tutorial',
+    tutorial: 'Money & Finance',
   }
   return labels[type] ?? type.replace(/_/g, ' ')
 }
@@ -111,18 +111,18 @@ function SortableArticleCard({
         </div>
 
         <div className="p-4">
-          <span
-            className="inline-block text-xs font-semibold uppercase tracking-widest px-2.5 py-0.5 rounded-full mb-2"
-            style={{ backgroundColor: 'var(--accent)', color: '#fff' }}
-          >
-            {getArticleTypeLabel(type)}
-          </span>
           <h3
-            className="font-bold leading-snug line-clamp-3 text-sm"
+            className="font-bold leading-snug line-clamp-3 text-sm mb-1.5"
             style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)', minHeight: '3.6em' }}
           >
             {title}
           </h3>
+          <span
+            className="text-xs font-medium"
+            style={{ color: '#E07A3A' }}
+          >
+            {getCategoryLabel(type)}
+          </span>
         </div>
       </Link>
 
@@ -152,12 +152,14 @@ function SortableArticleCard({
 
 // ── Type Filters ─────────────────────────────────────────────────────────────
 
-const TYPE_FILTERS: Array<{ label: string; value: string | null }> = [
-  { label: 'All', value: null },
-  { label: 'Buyer Guides', value: 'buyer_guide' },
-  { label: 'Comparisons', value: 'comparison' },
-  { label: 'Decision Guides', value: 'decision_guide' },
-  { label: 'Explainers', value: 'explainer' },
+const TYPE_FILTERS: Array<{ label: string; types: string[] | null }> = [
+  { label: 'All', types: null },
+  { label: 'Buying Guides', types: ['buyer_guide', 'comparison', 'decision_guide'] },
+  { label: 'Finance', types: ['tutorial'] },
+  { label: 'Tech', types: ['trend_analysis'] },
+  { label: 'Health', types: [] },
+  { label: 'Travel', types: ['planning'] },
+  { label: 'Explainers', types: ['explainer', 'news'] },
 ]
 
 // ── Main Grid Component ──────────────────────────────────────────────────────
@@ -165,7 +167,8 @@ const TYPE_FILTERS: Array<{ label: string; value: string | null }> = [
 export default function RecentArticlesGrid({ articles: initialArticles }: Props) {
   const isAdmin = useAdminMode()
   const [articles, setArticles] = useState(initialArticles)
-  const [activeFilter, setActiveFilter] = useState<string | null>(null)
+  const [activeFilter, setActiveFilter] = useState<string[] | null>(null)
+  const [activeFilterLabel, setActiveFilterLabel] = useState<string>('All')
   const [sortMode, setSortMode] = useState<'manual' | 'newest'>('manual')
   const [saving, setSaving] = useState(false)
   const [visibleCount, setVisibleCount] = useState(24)
@@ -178,10 +181,10 @@ export default function RecentArticlesGrid({ articles: initialArticles }: Props)
     ? [...articles].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     : articles
 
-  const filteredArticles = activeFilter
+  const filteredArticles = activeFilter && activeFilter.length > 0
     ? sortedArticles.filter((a) => {
-        const type = a.article?.article_type ?? a.plan?.article_type
-        return type === activeFilter
+        const type = a.article?.article_type ?? a.plan?.article_type ?? ''
+        return activeFilter.includes(type)
       })
     : sortedArticles
 
@@ -262,14 +265,14 @@ export default function RecentArticlesGrid({ articles: initialArticles }: Props)
             </div>
           )}
 
-          {/* Type filters */}
+          {/* Category filters */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            {TYPE_FILTERS.map(({ label, value }) => {
-              const isActive = activeFilter === value
+            {TYPE_FILTERS.map(({ label, types }) => {
+              const isActive = activeFilterLabel === label
               return (
                 <button
                   key={label}
-                  onClick={() => setActiveFilter(value)}
+                  onClick={() => { setActiveFilter(types); setActiveFilterLabel(label) }}
                   className="px-3 py-1 rounded-full text-xs font-medium transition-all"
                   style={{
                     backgroundColor: isActive ? 'var(--accent)' : 'transparent',
@@ -344,7 +347,7 @@ export default function RecentArticlesGrid({ articles: initialArticles }: Props)
 
       {filteredArticles.length === 0 && activeFilter && (
         <p className="text-center py-12 text-sm" style={{ color: 'var(--text-secondary)' }}>
-          No {TYPE_FILTERS.find((f) => f.value === activeFilter)?.label.toLowerCase()} yet.
+          No {activeFilterLabel.toLowerCase()} articles yet.
         </p>
       )}
     </section>
