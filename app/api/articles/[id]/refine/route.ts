@@ -12,11 +12,11 @@ export async function POST(
 ) {
   const { id } = await params
 
-  // Rate limiting
-  const { key, limit } = getRateLimitInfo(request)
-  const rateResult = checkRateLimit(key, limit)
+  // Rate limiting — refine is cheaper, allow more
+  const { key } = getRateLimitInfo(request)
+  const rateResult = checkRateLimit(`refine:${key}`, 20)
   if (!rateResult.allowed) {
-    return Response.json({ error: "You've reached the generation limit. Try again in a bit." }, { status: 429 })
+    return Response.json({ error: "You've reached the refinement limit. Try again in a bit." }, { status: 429 })
   }
 
   const { instruction } = await request.json()

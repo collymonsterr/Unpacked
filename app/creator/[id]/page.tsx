@@ -32,9 +32,16 @@ function getArticleTypeLabel(type: string) {
   return labels[type] ?? type.replace(/_/g, ' ')
 }
 
+async function getProfile(supabase: ReturnType<typeof getSupabaseAdmin>, userId: string) {
+  const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
+  return data as { display_name?: string; bio?: string; website?: string } | null
+}
+
 export async function generateMetadata({ params }: Props) {
   const { id } = await params
   const supabase = getSupabaseAdmin()
+
+  const profile = await getProfile(supabase, id)
 
   // Get creator info from their first article
   const { data } = await supabase
@@ -44,11 +51,11 @@ export async function generateMetadata({ params }: Props) {
     .limit(1)
     .single()
 
-  const name = data?.user_name ?? 'Creator'
+  const name = profile?.display_name || data?.user_name || 'Creator'
 
   return {
     title: `${name} — ArticleAI`,
-    description: `Articles created by ${name} on ArticleAI.`,
+    description: profile?.bio || `Articles created by ${name} on ArticleAI.`,
   }
 }
 
@@ -75,6 +82,8 @@ export default async function CreatorProfilePage({ params }: Props) {
 
     if (!anyArticle) notFound()
 
+    const emptyProfile = await getProfile(supabase, id)
+
     // User exists but has no complete articles
     return (
       <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
@@ -83,9 +92,11 @@ export default async function CreatorProfilePage({ params }: Props) {
         </nav>
         <div className="max-w-3xl mx-auto px-4 py-20 text-center">
           <ProfileHeader
-            name={anyArticle.user_name ?? 'Creator'}
+            name={emptyProfile?.display_name || anyArticle.user_name || 'Creator'}
             avatar={anyArticle.user_avatar}
             articleCount={0}
+            bio={emptyProfile?.bio}
+            website={emptyProfile?.website}
           />
           <p className="mt-8 text-sm" style={{ color: 'var(--text-secondary)' }}>
             This creator hasn&apos;t published any articles yet.
@@ -95,9 +106,10 @@ export default async function CreatorProfilePage({ params }: Props) {
     )
   }
 
-  // Get creator info from the first article
+  // Get creator info
   const firstArticle = articles[0] as ArticleRow
-  const creatorName = firstArticle.user_name ?? 'Creator'
+  const profile = await getProfile(supabase, id)
+  const creatorName = profile?.display_name || firstArticle.user_name || 'Creator'
   const creatorAvatar = firstArticle.user_avatar ?? null
 
   return (
@@ -113,6 +125,8 @@ export default async function CreatorProfilePage({ params }: Props) {
           name={creatorName}
           avatar={creatorAvatar}
           articleCount={articles.length}
+          bio={profile?.bio}
+          website={profile?.website}
         />
       </div>
 
@@ -186,13 +200,17 @@ function ProfileHeader({
   name,
   avatar,
   articleCount,
+  bio,
+  website,
 }: {
   name: string
   avatar: string | null
   articleCount: number
+  bio?: string
+  website?: string
 }) {
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-start gap-4">
       {avatar ? (
         <img
           src={avatar}
@@ -219,6 +237,26 @@ function ProfileHeader({
         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
           {articleCount} {articleCount === 1 ? 'article' : 'articles'} published
         </p>
+        {bio && (
+          <p className="text-sm mt-2" style={{ color: 'var(--text-primary)' }}>
+            {bio}
+          </p>
+        )}
+        {website && (
+          <a
+            href={website.startsWith('http') ? website : `https://${website}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm mt-1 inline-flex items-center gap-1 no-underline hover:underline"
+            style={{ color: 'var(--accent)' }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+            {website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+          </a>
+        )}
       </div>
     </div>
   )

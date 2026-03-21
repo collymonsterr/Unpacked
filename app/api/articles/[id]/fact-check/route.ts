@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { runFactCheck, applyCorrections } from '@/lib/fact-check'
-import { checkRateLimit, getRateLimitInfo } from '@/lib/rate-limit'
 
 export const maxDuration = 120
 
@@ -10,13 +9,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-
-  // Rate limiting
-  const { key, limit } = getRateLimitInfo(_request)
-  const rateResult = checkRateLimit(key, limit)
-  if (!rateResult.allowed) {
-    return NextResponse.json({ error: "You've reached the generation limit. Try again in a bit." }, { status: 429 })
-  }
+  // No rate limiting — fact-check is system-triggered after generation
 
   try {
     const supabase = getSupabaseAdmin()
