@@ -215,19 +215,271 @@ function calcBudget(inputs: Record<string, number>): CalcResult {
   }
 }
 
+/**
+ * Generic custom calculator — infers calculations from input/output IDs.
+ * Handles commute costs, subscription totals, cooking comparisons,
+ * home gym vs membership, smoking costs, house affordability, etc.
+ */
+function calcCustom(inputs: Record<string, number>, outputIds: string[]): CalcResult {
+  const out: Record<string, number> = {}
+  const vals = inputs
+
+  // ── Commute calculator ──
+  if (vals.miles_one_way != null && vals.commute_time != null) {
+    const milesDay = (vals.miles_one_way ?? 15) * 2
+    const days = vals.work_days ?? 250
+    const wage = vals.hourly_wage ?? 25
+    const commuteMinutes = (vals.commute_time ?? 30) * 2
+    const annualMiles = milesDay * days
+    const vehicleCost = annualMiles * 0.67 // IRS rate approx
+    const timeCost = (commuteMinutes / 60) * days * wage
+    out.annual_vehicle_cost = Math.round(vehicleCost)
+    out.annual_time_cost = Math.round(timeCost)
+    out.total_annual_cost = Math.round(vehicleCost + timeCost)
+    out.monthly_cost = Math.round((vehicleCost + timeCost) / 12)
+  }
+
+  // ── Subscription calculator ──
+  if (vals.streaming_count != null || vals.avg_streaming_cost != null) {
+    const streaming = (vals.streaming_count ?? 3) * (vals.avg_streaming_cost ?? 15)
+    const software = (vals.software_count ?? 2) * (vals.avg_software_cost ?? 12)
+    const other = (vals.other_count ?? 1) * (vals.avg_other_cost ?? 10)
+    const forgotten = (vals.forgotten_factor ?? 1.15)
+    const monthly = (streaming + software + other) * forgotten
+    out.monthly_total = Math.round(monthly)
+    out.annual_total = Math.round(monthly * 12)
+    out.vs_average = Math.round(monthly - 91) // avg US household ~$91/mo
+  }
+
+  // ── Cooking vs eating out ──
+  if (vals.restaurant_meals_week != null && vals.home_cooking_cost != null) {
+    const size = vals.household_size ?? 1
+    const eatOutWeekly = (vals.restaurant_meals_week ?? 5) * (vals.avg_meal_cost ?? 15) * size
+    const cookWeekly = (7 - (vals.restaurant_meals_week ?? 5)) * (vals.home_cooking_cost ?? 5) * size
+    const currentAnnual = (eatOutWeekly + cookWeekly) * 52
+    const allCookAnnual = 7 * (vals.home_cooking_cost ?? 5) * size * 52
+    out.annual_savings = Math.round(currentAnnual - allCookAnnual)
+    out.cost_difference = Math.round((eatOutWeekly - cookWeekly) * 52 / 12)
+    out.weekly_eating_out = Math.round(eatOutWeekly)
+    out.weekly_cooking = Math.round(cookWeekly)
+  }
+
+  // ── Home gym vs membership ──
+  if (vals.monthly_gym_cost != null && vals.home_gym_cost != null) {
+    const gymMonthly = (vals.monthly_gym_cost ?? 50) + (vals.travel_costs ?? 20)
+    const gymAnnual = gymMonthly * 12 + (vals.annual_fees ?? 50)
+    const gym5yr = gymAnnual * 5
+    const homeGym5yr = (vals.home_gym_cost ?? 2000) + (200 * 5) // maintenance
+    const visits = (vals.visits_per_month ?? 12) * 12 * 5
+    out.gym_total_5yr = Math.round(gym5yr)
+    out.home_gym_total_5yr = Math.round(homeGym5yr)
+    out.savings = Math.round(gym5yr - homeGym5yr)
+    out.cost_per_workout_gym = visits > 0 ? Math.round((gym5yr / visits) * 100) / 100 : 0
+  }
+
+  // ── Smoking cost ──
+  if (vals.packs_per_day != null && vals.pack_price != null) {
+    const dailyCost = (vals.packs_per_day ?? 1) * (vals.pack_price ?? 8)
+    const years = vals.years_smoking ?? 30
+    const directCost = dailyCost * 365 * years
+    const r = (vals.investment_return ?? 7) / 100
+    let opportunity = 0
+    const monthlyAmount = dailyCost * 30
+    if (r > 0) {
+      const mr = r / 12
+      const months = years * 12
+      opportunity = monthlyAmount * ((Math.pow(1 + mr, months) - 1) / mr)
+    }
+    out.direct_cost = Math.round(directCost)
+    out.opportunity_cost = Math.round(opportunity)
+    out.total_cost = Math.round(directCost + opportunity)
+  }
+
+  // ── House affordability ──
+  if (vals.annual_income != null && vals.mortgage_rate != null && outputIds.includes('max_house_price')) {
+    const monthlyIncome = (vals.annual_income ?? 80000) / 12
+    const maxPayment = monthlyIncome * 0.28 - (vals.monthly_debts ?? 0)
+    const downPct = (vals.down_payment ?? 20) / 100
+    const r = (vals.mortgage_rate ?? 6.5) / 100 / 12
+    const n = 360
+    let maxLoan = 0
+    if (r > 0) {
+      maxLoan = maxPayment * (Math.pow(1 + r, n) - 1) / (r * Math.pow(1 + r, n))
+    }
+    const maxPrice = maxLoan / (1 - downPct)
+    out.max_house_price = Math.round(maxPrice)
+    out.monthly_payment = Math.round(maxPayment)
+    out.front_end_ratio = Math.round((maxPayment / monthlyIncome) * 100)
+  }
+
+  // ── Freelance vs full-time ──
+  if (vals.salary != null && vals.hourly_rate != null) {
+    const salary = vals.salary ?? 80000
+    const taxRate = 0.25
+    const employeeTakeHome = salary * (1 - taxRate)
+    const freelanceGross = (vals.hourly_rate ?? 75) * (vals.billable_hours ?? 1500)
+    const seTax = freelanceGross * 0.153
+    const healthIns = (vals.health_insurance ?? 500) * 12
+    const freelanceTakeHome = freelanceGross * (1 - taxRate) - seTax - healthIns
+    out.employee_takehome = Math.round(employeeTakeHome)
+    out.freelance_takehome = Math.round(freelanceTakeHome)
+    out.difference = Math.round(freelanceTakeHome - employeeTakeHome)
+  }
+
+  // ── Dog ownership ──
+  if (vals.dog_size != null && vals.lifespan != null) {
+    const annualCost = vals.annual_cost ?? 2000
+    const multiplier = vals.region_multiplier ?? 1
+    const lifetime = annualCost * multiplier * (vals.lifespan ?? 12)
+    out.lifetime_cost = Math.round(lifetime)
+    out.monthly_budget = Math.round((annualCost * multiplier) / 12)
+  }
+
+  // ── London vs Lisbon ──
+  if (vals.monthly_salary != null && outputIds.includes('london_disposable')) {
+    const salary = vals.monthly_salary ?? 5000
+    const rentPref = vals.rent_preference ?? 2 // 1=budget, 2=mid, 3=premium
+    const lifestyle = vals.lifestyle_spending ?? 500
+    const londonRent = [1200, 1800, 2800][Math.min(2, Math.max(0, rentPref - 1))]
+    const lisbonRent = [600, 900, 1500][Math.min(2, Math.max(0, rentPref - 1))]
+    const londonTax = salary * 0.25
+    const lisbonTax = salary * 0.15 // NHR regime approx
+    const londonDisp = salary - londonTax - londonRent - lifestyle * 1.3
+    const lisbonDisp = salary - lisbonTax - lisbonRent - lifestyle * 0.7
+    out.london_disposable = Math.round(londonDisp)
+    out.lisbon_disposable = Math.round(lisbonDisp)
+    out.savings_difference = Math.round(lisbonDisp - londonDisp)
+  }
+
+  // ── Airbnb vs long-term rental ──
+  if (vals.nightly_rate != null && vals.monthly_rent != null) {
+    const occ = (vals.occupancy_rate ?? 65) / 100
+    const strGross = (vals.nightly_rate ?? 150) * 30 * occ
+    const strExpenses = strGross * 0.35 // cleaning, platform fees, turnover
+    const strNet = strGross - strExpenses
+    const ltrNet = (vals.monthly_rent ?? 2000) * 0.9 // 10% for maintenance/vacancy
+    out.str_monthly = Math.round(strGross)
+    out.str_net = Math.round(strNet)
+    out.ltr_net = Math.round(ltrNet)
+    out.annual_difference = Math.round((strNet - ltrNet) * 12)
+  }
+
+  // ── Mortgage early payoff ──
+  if (vals.mortgage_balance != null && vals.extra_payment != null) {
+    const balance = vals.mortgage_balance ?? 250000
+    const rate = (vals.mortgage_rate ?? 6) / 100 / 12
+    const extra = vals.extra_payment ?? 500
+    const investReturn = (vals.investment_return ?? 8) / 100
+    // Standard payoff
+    const stdPayment = balance * (rate * Math.pow(1 + rate, 360)) / (Math.pow(1 + rate, 360) - 1)
+    let bal = balance; let totalInterest = 0; let months = 0
+    while (bal > 0 && months < 360) {
+      const int = bal * rate; totalInterest += int; bal -= (stdPayment - int); months++
+    }
+    // With extra payment
+    let bal2 = balance; let totalInterest2 = 0; let months2 = 0
+    while (bal2 > 0 && months2 < 360) {
+      const int = bal2 * rate; totalInterest2 += int; bal2 -= (stdPayment + extra - int); months2++
+    }
+    const interestSaved = totalInterest - totalInterest2
+    // Investment alternative
+    const mr = investReturn / 12
+    const investValue = extra * ((Math.pow(1 + mr, months) - 1) / mr)
+    out.payoff_savings = Math.round(interestSaved)
+    out.investment_value = Math.round(investValue)
+    out.opportunity_cost = Math.round(investValue - interestSaved)
+    out.interest_saved = Math.round(interestSaved)
+    out.time_saved = Math.round((months - months2))
+    out.effective_return = Math.round((vals.mortgage_rate ?? 6) * (1 - (vals.tax_bracket ?? 22) / 100) * 10) / 10
+  }
+
+  // ── College savings ──
+  if (vals.child_age != null && outputIds.includes('monthly_savings')) {
+    const age = vals.child_age ?? 5
+    const yearsToCollege = Math.max(1, 18 - age)
+    const collegeCosts: Record<number, number> = { 1: 120000, 2: 200000, 3: 300000 }
+    const target = collegeCosts[vals.college_type ?? 2] ?? 200000
+    const coverage = (vals.target_coverage ?? 75) / 100
+    const needed = target * coverage
+    const r = (vals.annual_return ?? 7) / 100 / 12
+    const months = yearsToCollege * 12
+    let monthly = 0
+    if (r > 0) { monthly = needed * r / (Math.pow(1 + r, months) - 1) }
+    else { monthly = needed / months }
+    out.monthly_savings = Math.round(monthly)
+    out.total_saved = Math.round(monthly * months)
+    out.projected_cost = Math.round(target)
+  }
+
+  // ── Car budgeting ──
+  if (vals.gross_income != null && vals.take_home_percentage != null) {
+    const takeHome = (vals.gross_income ?? 80000) * ((vals.take_home_percentage ?? 70) / 100) / 12
+    const maxTransport = takeHome * 0.175 // 15-20% midpoint
+    const max110th = (vals.gross_income ?? 80000) / 10
+    const ins = vals.insurance_monthly ?? 150
+    const fuel = vals.fuel_monthly ?? 150
+    out.monthly_take_home = Math.round(takeHome)
+    out.max_transportation_budget = Math.round(maxTransport)
+    out.max_payment_110th = Math.round(max110th)
+    out.available_for_payment = Math.round(maxTransport - ins - fuel)
+  }
+
+  // ── Dubai salary / generic salary calculator ──
+  if (outputIds.includes('monthly_salary') && vals.family_size != null) {
+    const base = 15000 // Base salary AED
+    const familyAdj = (vals.family_size ?? 1) * 3000
+    const childrenAdj = (vals.children ?? 0) * 5000
+    const areaAdj = [0, 3000, 6000, 10000][Math.min(3, vals.area_preference ?? 2)]
+    const lifestyleAdj = [0, 2000, 5000, 10000][Math.min(3, vals.lifestyle ?? 2)]
+    const total = base + familyAdj + childrenAdj + areaAdj + lifestyleAdj
+    out.monthly_salary = Math.round(total)
+    out.housing_budget = Math.round(total * 0.3)
+    out.school_costs = Math.round((vals.children ?? 0) * 4000)
+    out.monthly_salary_needed = Math.round(total)
+    out.annual_salary_needed = Math.round(total * 12)
+  }
+
+  // ── Mortgage principal vs interest (how it works) ──
+  if (vals.loan_amount != null && outputIds.includes('interest_saved')) {
+    const loan = vals.loan_amount ?? 300000
+    const rate = (vals.interest_rate ?? 6) / 100 / 12
+    const stdPayment = loan * (rate * Math.pow(1 + rate, 360)) / (Math.pow(1 + rate, 360) - 1)
+    const extra = vals.extra_payment ?? 200
+    const lump = vals.lump_sum ?? 0
+    let bal = loan - lump; let totalInt = 0; let m1 = 0
+    while (bal > 0 && m1 < 360) { const i = bal * rate; totalInt += i; bal -= (stdPayment - i); m1++ }
+    let bal2 = loan - lump; let totalInt2 = 0; let m2 = 0
+    while (bal2 > 0 && m2 < 360) { const i = bal2 * rate; totalInt2 += i; bal2 -= (stdPayment + extra - i); m2++ }
+    out.interest_saved = Math.round(totalInt - totalInt2)
+    out.time_saved = Math.round(m1 - m2)
+    out.effective_return = Math.round((vals.interest_rate ?? 6) * 10) / 10
+  }
+
+  // Build simple chart data if we have outputs
+  const chartData: Array<Record<string, number | string>> = []
+  const outKeys = Object.keys(out)
+  if (outKeys.length > 0) {
+    outKeys.slice(0, 4).forEach(key => {
+      chartData.push({ year: key.replace(/_/g, ' '), value: out[key] })
+    })
+  }
+
+  return { outputs: out, chartData }
+}
+
 function runCalculation(
   type: string,
   inputs: Record<string, number>,
-  _formula?: string
+  _formula?: string,
+  outputIds?: string[]
 ): CalcResult {
   switch (type) {
     case 'compound_interest': return calcCompoundInterest(inputs)
     case 'mortgage': return calcMortgage(inputs)
     case 'roi_comparison': return calcRoiComparison(inputs)
     case 'budget': return calcBudget(inputs)
-    default:
-      // Custom — try to evaluate formula or return empty
-      return { outputs: {}, chartData: [] }
+    case 'custom': return calcCustom(inputs, outputIds ?? [])
+    default: return calcCustom(inputs, outputIds ?? [])
   }
 }
 
@@ -294,7 +546,7 @@ export default function InteractiveCalculator({ section }: { section: Interactiv
   }, [])
 
   const result = useMemo(
-    () => runCalculation(section.calculator_type, values, section.formula),
+    () => runCalculation(section.calculator_type, values, section.formula, section.outputs?.map(o => o.id)),
     [section.calculator_type, section.formula, values]
   )
 
