@@ -200,6 +200,23 @@ export default function UserMenu() {
             </Link>
 
             {canBeAdmin && (
+              <Link
+                href="/admin"
+                onClick={() => setMenuOpen(false)}
+                className="block w-full text-left text-sm px-3 py-2 transition-colors"
+                style={{ color: 'var(--text-primary)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--accent-light)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+              >
+                Admin dashboard
+              </Link>
+            )}
+
+            {canBeAdmin && (
               <button
                 onClick={() => {
                   if (isAdmin) {

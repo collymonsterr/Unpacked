@@ -7,7 +7,7 @@ export async function GET() {
     .in('status', ['complete', 'verified'])
     .order('pinned', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
-    .limit(20)
+    .limit(100)
 
   if (error) {
     return Response.json({ error: 'Failed to fetch articles' }, { status: 500 })
