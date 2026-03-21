@@ -85,12 +85,13 @@ export default async function HomePage() {
       {/* How it works — above articles */}
       <section className="w-full max-w-5xl mx-auto px-4 md:px-6 pb-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-6">
+          {/* Visual — orange */}
           <div className="text-center">
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
-              style={{ backgroundColor: 'var(--accent-light)' }}
+              style={{ backgroundColor: 'rgba(224, 122, 58, 0.1)' }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E07A3A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="7" height="7" />
                 <rect x="14" y="3" width="7" height="7" />
                 <rect x="3" y="14" width="7" height="7" />
@@ -104,17 +105,17 @@ export default async function HomePage() {
               Visual, not walls of text
             </h3>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              Beautiful, structured articles with images, charts, and interactive tools that bring the answer to life.
+              Beautiful, structured articles with images, charts, and interactive tools.
             </p>
-
           </div>
 
+          {/* Researched — blue */}
           <div className="text-center">
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
-              style={{ backgroundColor: 'var(--accent-light)' }}
+              style={{ backgroundColor: 'rgba(45, 125, 154, 0.1)' }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2D7D9A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8" />
                 <path d="M21 21l-4.35-4.35" />
               </svg>
@@ -126,16 +127,17 @@ export default async function HomePage() {
               Researched, not generated
             </h3>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              We research websites, forums, Reddit, and X — combining real user opinions into one article.
+              We research websites, forums, Reddit, and X — bringing real opinions into one clear article.
             </p>
           </div>
 
+          {/* Decisive — purple */}
           <div className="text-center">
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
-              style={{ backgroundColor: 'var(--accent-light)' }}
+              style={{ backgroundColor: 'rgba(139, 109, 176, 0.1)' }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B6DB0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <circle cx="12" cy="12" r="6" />
                 <circle cx="12" cy="12" r="2" />
@@ -148,14 +150,15 @@ export default async function HomePage() {
               Decisive, not generic
             </h3>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              AI gives you safe, neutral answers. We surface real opinions on what people actually recommend.
+              AI gives safe, neutral answers. We show what people actually recommend.
             </p>
           </div>
 
+          {/* Verified — green */}
           <div className="text-center">
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
-              style={{ backgroundColor: '#f0fdf4' }}
+              style={{ backgroundColor: 'rgba(22, 163, 74, 0.1)' }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
@@ -166,10 +169,10 @@ export default async function HomePage() {
               className="text-base font-bold mb-1.5"
               style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
             >
-              Fact-checked, not hallucinated
+              Verified, not guessed
             </h3>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              Every article is automatically verified after generation. Prices, specs, and claims are cross-checked against live sources.
+              Each article is independently verified against real sources.
             </p>
           </div>
         </div>
