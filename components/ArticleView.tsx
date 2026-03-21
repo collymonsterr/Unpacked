@@ -11,6 +11,7 @@ import ExecutiveSummary from './sections/ExecutiveSummary'
 import SectionRenderer from './sections/SectionRenderer'
 import SuggestionChips from './ui/SuggestionChips'
 import RefinementInput from './ui/RefinementInput'
+import ShareButton from './ui/ShareButton'
 import { buildNavItems } from '@/lib/section-ids'
 
 interface Props {
@@ -303,9 +304,13 @@ export default function ArticleView({ articleRow, isOwner, isNew }: Props) {
         >
           {article.title}
         </h1>
-        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-          Generated {formattedDate}
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            Generated {formattedDate}
+          </p>
+          <span style={{ color: 'var(--border)' }}>|</span>
+          <ShareButton title={article.title} url={`https://articleai-three.vercel.app/article/${articleRow.slug}`} />
+        </div>
       </div>
 
       {/* Debug panel — dev mode only */}
@@ -426,6 +431,13 @@ export default function ArticleView({ articleRow, isOwner, isNew }: Props) {
           </ul>
         </div>
       )}
+
+      {/* Share button at bottom */}
+      <ShareButton
+        title={article.title}
+        url={`https://articleai-three.vercel.app/article/${articleRow.slug}`}
+        variant="bottom"
+      />
 
       {/* Owner-only: refinement controls */}
       {isOwner && (
