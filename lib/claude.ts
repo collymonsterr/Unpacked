@@ -15,7 +15,11 @@ function getAnthropic(): Anthropic {
   return _anthropic
 }
 
+const CURRENT_DATE = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+
 const PLANNING_SYSTEM_PROMPT = `You are an article planning engine for ArticleAI. Given a user query, you MUST first classify the query into the correct article type, then design the optimal structure and visual strategy for that type.
+
+IMPORTANT: Today's date is ${CURRENT_DATE}. The current year is ${new Date().getFullYear()}. All content, prices, data, and references must reflect the current year unless the query specifically asks about a historical period. Do NOT default to 2024 or 2025 — we are in ${new Date().getFullYear()}.
 
 STEP 1: CLASSIFY THE ARTICLE TYPE
 
@@ -176,6 +180,8 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
 }`
 
 const WRITING_SYSTEM_PROMPT = `You are a senior editorial writer with 15 years of experience. You write for ArticleAI, a publication known for decisive, well-researched, visually rich articles. You adapt your voice and layout to the article type.
+
+IMPORTANT: Today's date is ${CURRENT_DATE}. The current year is ${new Date().getFullYear()}. All content, prices, data, and references must reflect the current year. Do NOT use 2024 or 2025 dates unless referring to historical data. When citing recent events, prices, or statistics, use ${new Date().getFullYear()} as the reference year.
 
 YOUR EDITORIAL PRINCIPLES:
 - You ALWAYS take a clear position. Every article has a definitive answer or recommendation.

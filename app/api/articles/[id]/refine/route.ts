@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { refineArticle } from '@/lib/claude'
 import { enrichArticleWithImages } from '@/lib/images'
 import { getSupabaseAdmin } from '@/lib/supabase'
+import { checkRateLimit, getRateLimitInfo } from '@/lib/rate-limit'
 
 export const maxDuration = 300
 
@@ -10,6 +11,14 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+
+  // Rate limiting
+  const { key, limit } = getRateLimitInfo(request)
+  const rateResult = checkRateLimit(key, limit)
+  if (!rateResult.allowed) {
+    return Response.json({ error: "You've reached the generation limit. Try again in a bit." }, { status: 429 })
+  }
+
   const { instruction } = await request.json()
 
   if (!instruction || typeof instruction !== 'string') {

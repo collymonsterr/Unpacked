@@ -6,10 +6,12 @@ import { pickBestArticleImage } from '@/lib/imagen'
 import { runFactCheck, applyCorrections } from '@/lib/fact-check'
 import { getSupabaseAdmin, createServerSupabase } from '@/lib/supabase'
 import { generateUniqueSlug } from '@/lib/slug'
+import { checkRateLimit, getRateLimitInfo } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
-    const { query } = await request.json()
+    const body = await request.json()
+    const query = body?.query
 
     if (!query || typeof query !== 'string' || query.trim().length < 3) {
       return Response.json({ error: 'Query must be at least 3 characters' }, { status: 400 })
@@ -31,6 +33,16 @@ export async function POST(request: NextRequest) {
       }
     } catch {
       // Not authenticated — continue as anonymous
+    }
+
+    // Rate limiting
+    const { key, limit } = getRateLimitInfo(request, userId)
+    const rateResult = checkRateLimit(key, limit)
+    if (!rateResult.allowed) {
+      return Response.json(
+        { error: "You've reached the generation limit. Try again in a bit." },
+        { status: 429 }
+      )
     }
 
     // Generate slug from the query (not the title — we don't have it yet)
