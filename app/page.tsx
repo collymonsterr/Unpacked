@@ -63,11 +63,11 @@ export default async function HomePage() {
           className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4 max-w-3xl"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
         >
-          Type a question.
+          Type a Question.
           <br />
-          Get a complete
+          Get a Complete
           <br />
-          <span style={{ color: 'var(--accent)' }}>visual article.</span>
+          <span style={{ color: 'var(--accent)' }}>Visual Article.</span>
         </h1>
         <p
           className="text-lg md:text-xl mb-10 max-w-xl"

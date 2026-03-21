@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
 const PLACEHOLDERS = [
@@ -217,13 +217,24 @@ export default function SearchForm() {
             border: '1px solid var(--border)',
           }}
         >
-          <input
-            type="text"
+          <textarea
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              // Auto-resize
+              e.target.style.height = 'auto'
+              e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSubmit(e as unknown as React.FormEvent)
+              }
+            }}
             placeholder={placeholder}
             disabled={isLoading}
-            className="flex-1 px-4 py-3 text-base outline-none bg-transparent disabled:opacity-50"
+            rows={1}
+            className="flex-1 px-4 py-3 text-base outline-none bg-transparent disabled:opacity-50 resize-none"
             style={{
               color: 'var(--text-primary)',
               fontFamily: 'var(--font-outfit)',
