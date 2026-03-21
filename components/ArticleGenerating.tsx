@@ -32,7 +32,7 @@ export default function ArticleGenerating({ row, onReady }: Props) {
   const [articleReady, setArticleReady] = useState(false)
   const [showSignIn, setShowSignIn] = useState(false)
   const readyFired = useRef(false)
-  const timersStarted = useRef(false)
+  const messageIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const { user } = useUser()
 
   const plan = row.plan
@@ -136,31 +136,43 @@ export default function ArticleGenerating({ row, onReady }: Props) {
     return msgs
   }, [plan])
 
-  // Tick messages — only start once, never restart
+  // Tick messages using setInterval — immune to polling re-renders
+  // The key insight: useEffect cleanup runs when deps change, which kills setTimeout timers.
+  // Polling updates `plan` reference every 2.5s, so setTimeout-based approaches break.
+  // setInterval with a ref guard ensures we only create one interval, ever.
   useEffect(() => {
-    if (!plan || messages.length === 0 || timersStarted.current) return
-    timersStarted.current = true
+    if (!plan || messages.length === 0) return
+    // Don't start a second interval
+    if (messageIntervalRef.current) return
 
     // Show first 2 immediately
     setCompletedMsgs(2)
 
-    // Schedule ALL remaining messages with absolute delays
-    const timers: ReturnType<typeof setTimeout>[] = []
-    let delay = 0
-    for (let i = 3; i <= messages.length; i++) {
-      const msgNum = i - 2
-      if (msgNum <= 5) delay += 3000
-      else if (msgNum <= 10) delay += 6000
-      else delay += 10000
+    // Tick one message every 7 seconds
+    const totalMsgs = messages.length
+    messageIntervalRef.current = setInterval(() => {
+      setCompletedMsgs(prev => {
+        const next = prev + 1
+        // Stop interval when all messages shown
+        if (next >= totalMsgs) {
+          if (messageIntervalRef.current) {
+            clearInterval(messageIntervalRef.current)
+            messageIntervalRef.current = null
+          }
+        }
+        return next
+      })
+    }, 7000)
 
-      const idx = i
-      timers.push(setTimeout(() => {
-        setCompletedMsgs(prev => Math.max(prev, idx))
-      }, delay))
+    // Cleanup only on unmount
+    return () => {
+      if (messageIntervalRef.current) {
+        clearInterval(messageIntervalRef.current)
+        messageIntervalRef.current = null
+      }
     }
-
-    return () => timers.forEach(t => clearTimeout(t))
-  }, [plan, messages.length])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!plan, messages.length])
 
   // When article ready — trigger transition
   const triggerReady = useCallback(() => {
