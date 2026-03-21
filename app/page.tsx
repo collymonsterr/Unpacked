@@ -135,18 +135,17 @@ export default async function HomePage() {
               style={{ backgroundColor: 'var(--accent-light)' }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
             </div>
             <h3
               className="text-base font-bold mb-1.5"
               style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
             >
-              Decisive, not generic
+              Opinionated, not neutral
             </h3>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              AI gives you &ldquo;it depends.&rdquo; We show you what people actually recommend — so you can make a confident decision.
+              AI gives you &ldquo;it depends.&rdquo; We pick winners, call out the overpriced, and tell you what to actually buy.
             </p>
           </div>
         </div>
