@@ -28,34 +28,32 @@ export default function QuickVerdict({ data }: { data: QuickVerdictType }) {
       className="rounded-2xl p-6 md:p-8 mb-8"
       style={{ backgroundColor: 'var(--accent-light)', border: '1px solid #f0d5be' }}
     >
-      <div className="flex items-start gap-3">
+      <div>
         <span
-          className="text-xs font-semibold uppercase tracking-widest px-3 py-1 rounded-full shrink-0 mt-1"
+          className="inline-block text-xs font-semibold uppercase tracking-widest px-3 py-1 rounded-full mb-4"
           style={{ backgroundColor: 'var(--accent)', color: '#fff' }}
         >
           Verdict
         </span>
-        <div className="flex-1">
-          <ul className="space-y-2">
-            {bullets.map((point, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-2.5"
+        <ul className="space-y-2">
+          {bullets.map((point, i) => (
+            <li
+              key={i}
+              className="flex items-start gap-2.5"
+            >
+              <span
+                className="mt-2 w-2 h-2 rounded-full flex-shrink-0"
+                style={{ backgroundColor: 'var(--accent)' }}
+              />
+              <span
+                className="text-sm md:text-lg font-bold leading-snug"
+                style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
               >
-                <span
-                  className="mt-2.5 w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: 'var(--accent)' }}
-                />
-                <span
-                  className="text-lg md:text-xl font-bold leading-snug"
-                  style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
-                >
-                  {point}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+                {point}
+              </span>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   )
