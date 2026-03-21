@@ -136,12 +136,28 @@ function ArticleCard({
   )
 }
 
+const TYPE_FILTERS: Array<{ label: string; value: string | null }> = [
+  { label: 'All', value: null },
+  { label: 'Buyer Guides', value: 'buyer_guide' },
+  { label: 'Comparisons', value: 'comparison' },
+  { label: 'Decision Guides', value: 'decision_guide' },
+  { label: 'Explainers', value: 'explainer' },
+]
+
 export default function RecentArticlesGrid({ articles: initialArticles }: Props) {
   const isAdmin = useAdminMode()
   const [articles, setArticles] = useState(initialArticles)
   const [moving, setMoving] = useState<string | null>(null)
+  const [activeFilter, setActiveFilter] = useState<string | null>(null)
 
   if (articles.length === 0) return null
+
+  const filteredArticles = activeFilter
+    ? articles.filter((a) => {
+        const type = a.article?.article_type ?? a.plan?.article_type
+        return type === activeFilter
+      })
+    : articles
 
   async function handleMove(articleId: string, direction: 'up' | 'down') {
     setMoving(articleId)
@@ -176,25 +192,55 @@ export default function RecentArticlesGrid({ articles: initialArticles }: Props)
 
   return (
     <section className="w-full max-w-6xl mx-auto px-4 md:px-6 pb-16">
-      <h2
-        className="text-lg font-bold mb-6"
-        style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-secondary)' }}
-      >
-        Recent Articles
-      </h2>
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <h2
+          className="text-lg font-bold"
+          style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-secondary)' }}
+        >
+          Recent Articles
+        </h2>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {TYPE_FILTERS.map(({ label, value }) => {
+            const isActive = activeFilter === value
+            return (
+              <button
+                key={label}
+                onClick={() => setActiveFilter(value)}
+                className="px-3 py-1 rounded-full text-xs font-medium transition-all"
+                style={{
+                  backgroundColor: isActive ? 'var(--accent)' : 'transparent',
+                  color: isActive ? '#fff' : 'var(--text-secondary)',
+                  border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
+                  cursor: 'pointer',
+                }}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {articles.map((row, i) => (
+        {filteredArticles.map((row, i) => (
           <ArticleCard
             key={row.id}
             row={row}
             index={i}
-            total={articles.length}
+            total={filteredArticles.length}
             isAdmin={isAdmin}
             onMove={handleMove}
             moving={moving}
           />
         ))}
       </div>
+      {filteredArticles.length === 0 && activeFilter && (
+        <p
+          className="text-center py-12 text-sm"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          No {TYPE_FILTERS.find((f) => f.value === activeFilter)?.label.toLowerCase()} yet.
+        </p>
+      )}
     </section>
   )
 }

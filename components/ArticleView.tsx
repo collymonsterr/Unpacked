@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import type { ArticleRow, ProductCard, VisualStrategy } from '@/types/article'
 import ArticleTypeBadge from './ui/ArticleTypeBadge'
 import ArticleSidebarNav from './ui/ArticleSidebarNav'
@@ -307,7 +308,10 @@ export default function ArticleView({ articleRow, isOwner, isNew }: Props) {
         <div className="flex items-center gap-3 flex-wrap">
           {articleRow.user_name && (
             <>
-              <div className="flex items-center gap-1.5">
+              <Link
+                href={`/creator/${articleRow.user_id}`}
+                className="flex items-center gap-1.5 no-underline hover:opacity-80 transition-opacity"
+              >
                 {articleRow.user_avatar && (
                   <img
                     src={articleRow.user_avatar}
@@ -319,7 +323,7 @@ export default function ArticleView({ articleRow, isOwner, isNew }: Props) {
                 <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                   {articleRow.user_name}
                 </span>
-              </div>
+              </Link>
               <span style={{ color: 'var(--border)' }}>·</span>
             </>
           )}

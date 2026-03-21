@@ -45,7 +45,16 @@ export default async function HomePage() {
       {/* Nav */}
       <nav className="px-6 py-5 flex items-center justify-between max-w-6xl mx-auto">
         <Logo size="md" />
-        <UserMenu />
+        <div className="flex items-center gap-3">
+          <a
+            href="/creators"
+            className="text-xs font-medium no-underline hidden sm:block"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            For Creators
+          </a>
+          <UserMenu />
+        </div>
       </nav>
 
       {/* Hero */}
