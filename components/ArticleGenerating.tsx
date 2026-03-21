@@ -11,12 +11,12 @@ interface Props {
   onReady?: () => void
 }
 
-// Fun, personality-driven messages shown immediately while plan is loading
+// Fun messages shown immediately while plan is loading
 const PRE_PLAN_MESSAGES = [
   { text: 'Analysing your query...', delay: 0 },
   { text: 'Searching the internet for answers...', delay: 2000 },
   { text: 'Browsing review sites and expert opinions...', delay: 4500 },
-  { text: 'Doom-scrolling Reddit for real opinions...', delay: 7000 },
+  { text: 'Doom-scrolling Reddit for the real takes...', delay: 7000 },
   { text: 'Checking what Twitter/X has to say...', delay: 9500 },
   { text: 'Consulting with the AI hive mind...', delay: 12000 },
   { text: 'Separating the good advice from the noise...', delay: 14500 },
@@ -28,6 +28,7 @@ export default function ArticleGenerating({ row, onReady }: Props) {
   const [completedMsgs, setCompletedMsgs] = useState(0)
   const [planRevealed, setPlanRevealed] = useState(false)
   const [showEducation, setShowEducation] = useState(false)
+  const [showStructure, setShowStructure] = useState(false)
   const [articleReady, setArticleReady] = useState(false)
   const [showSignIn, setShowSignIn] = useState(false)
   const readyFired = useRef(false)
@@ -36,7 +37,6 @@ export default function ArticleGenerating({ row, onReady }: Props) {
   const plan = row.plan
   const isComplete = row.status === 'complete' || row.status === 'verified'
 
-  // Check if user is new
   const isNewUser = useMemo(() => {
     if (typeof window === 'undefined') return true
     try {
@@ -50,17 +50,17 @@ export default function ArticleGenerating({ row, onReady }: Props) {
     return () => clearInterval(interval)
   }, [])
 
-  // Pre-plan: stack fun messages on a timer
+  // Pre-plan: stack fun messages
   useEffect(() => {
-    if (plan) return // Stop once plan arrives
+    if (plan) return
     const timers = PRE_PLAN_MESSAGES.map((msg, i) => {
-      if (i === 0) return null // First one shows immediately
+      if (i === 0) return null
       return setTimeout(() => setPrePlanMsgCount(i + 1), msg.delay)
     })
     return () => timers.forEach(t => t && clearTimeout(t))
   }, [plan])
 
-  // When plan arrives, trigger reveal
+  // When plan arrives, reveal
   useEffect(() => {
     if (plan && !planRevealed) {
       const timer = setTimeout(() => setPlanRevealed(true), 300)
@@ -68,15 +68,15 @@ export default function ArticleGenerating({ row, onReady }: Props) {
     }
   }, [plan, planRevealed])
 
-  // Show education card
+  // Show education card after a short delay
   useEffect(() => {
     if (planRevealed && isNewUser) {
-      const timer = setTimeout(() => setShowEducation(true), 2000)
+      const timer = setTimeout(() => setShowEducation(true), 3000)
       return () => clearTimeout(timer)
     }
   }, [planRevealed, isNewUser])
 
-  // Show sign-in nudge ~45s in (only if not signed in)
+  // Show sign-in nudge ~45s in
   useEffect(() => {
     if (user || !planRevealed) return
     const timer = setTimeout(() => setShowSignIn(true), 40000)
@@ -98,7 +98,7 @@ export default function ArticleGenerating({ row, onReady }: Props) {
     return msgs
   }, [plan])
 
-  // Progress messages paced evenly across ~120s
+  // Progress messages paced across ~120s
   useEffect(() => {
     if (!plan || messages.length === 0 || isComplete) return
     const interval = Math.max(8, Math.floor(120 / messages.length))
@@ -108,19 +108,17 @@ export default function ArticleGenerating({ row, onReady }: Props) {
     return () => clearInterval(timer)
   }, [plan, messages.length, isComplete])
 
-  // When article is ready — trigger transition
+  // When article ready — trigger transition
   const triggerReady = useCallback(() => {
     if (readyFired.current) return
     readyFired.current = true
-    setCompletedMsgs(999) // Mark all messages done
+    setCompletedMsgs(999)
     setArticleReady(true)
     setTimeout(() => onReady?.(), 1500)
   }, [onReady])
 
   useEffect(() => {
-    if (isComplete && !readyFired.current) {
-      triggerReady()
-    }
+    if (isComplete && !readyFired.current) triggerReady()
   }, [isComplete, triggerReady])
 
   const minutes = Math.floor(elapsed / 60)
@@ -132,13 +130,13 @@ export default function ArticleGenerating({ row, onReady }: Props) {
   return (
     <div className="max-w-[700px] mx-auto px-4 md:px-6 py-12">
 
-      {/* ── PRE-PLAN: Fun stacking messages ── */}
+      {/* ══════════════════════════════════════════════════════════════════
+          PRE-PLAN: Before we know anything about the article
+          ══════════════════════════════════════════════════════════════════ */}
       {!plan && (
         <div className="py-8">
           <div className="text-center mb-8">
-            <div className="mb-5">
-              <PulsingIcon />
-            </div>
+            <div className="mb-5"><PulsingIcon /></div>
             <h1
               className="text-2xl md:text-3xl font-extrabold mb-2"
               style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
@@ -153,54 +151,25 @@ export default function ArticleGenerating({ row, onReady }: Props) {
             </p>
           </div>
 
-          {/* Stacking pre-plan messages */}
           <div className="space-y-2.5 max-w-md mx-auto">
-            {PRE_PLAN_MESSAGES.slice(0, prePlanMsgCount).map((msg, i) => {
-              const isLatest = i === prePlanMsgCount - 1
-              return (
-                <div
-                  key={i}
-                  className="flex items-center gap-3 generation-fade-in"
-                >
-                  {isLatest ? (
-                    <div
-                      className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin flex-shrink-0"
-                      style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
-                    />
-                  ) : (
-                    <span className="flex-shrink-0 check-pop">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 6L9 17l-5-5" />
-                      </svg>
-                    </span>
-                  )}
-                  <span
-                    className="text-sm"
-                    style={{
-                      color: isLatest ? 'var(--text-primary)' : 'var(--text-secondary)',
-                      fontWeight: isLatest ? 500 : 400,
-                    }}
-                  >
-                    {msg.text}
-                  </span>
-                </div>
-              )
-            })}
+            {PRE_PLAN_MESSAGES.slice(0, prePlanMsgCount).map((msg, i) => (
+              <StatusMessage key={i} text={msg.text} done={i < prePlanMsgCount - 1} current={i === prePlanMsgCount - 1} />
+            ))}
           </div>
 
-          <div className="text-center mt-6">
-            <span className="text-xs font-mono tabular-nums" style={{ color: 'var(--text-secondary)', opacity: 0.4 }}>
-              {timeStr}
-            </span>
-          </div>
+          <Timer timeStr={timeStr} />
         </div>
       )}
 
-      {/* ── POST-PLAN: Title + entities + stacking messages ── */}
+      {/* ══════════════════════════════════════════════════════════════════
+          POST-PLAN: We know what we're building
+          ORDER: 1. Title  2. Status messages  3. Education  4. Sign-in  5. Structure
+          ══════════════════════════════════════════════════════════════════ */}
       {plan && (
         <div className={planRevealed ? 'generation-fade-in' : 'opacity-0'}>
-          {/* Title + badge */}
-          <div className="mb-5">
+
+          {/* ─── 1. TITLE + BADGE ─── */}
+          <div className="mb-6">
             <div className="mb-2">
               <ArticleTypeBadge type={plan.article_type} />
             </div>
@@ -212,89 +181,17 @@ export default function ArticleGenerating({ row, onReady }: Props) {
             </h1>
           </div>
 
-          {/* Entities */}
-          {plan.entities.length > 0 && (
-            <div className="mb-4">
-              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>
-                Researching
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {plan.entities.map((entity, i) => (
-                  <span
-                    key={entity.name}
-                    className="px-3 py-1 rounded-full text-sm font-medium generation-stagger"
-                    style={{
-                      backgroundColor: 'var(--accent-light)',
-                      color: 'var(--accent)',
-                      animationDelay: `${i * 150}ms`,
-                    }}
-                  >
-                    {entity.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Sections outline */}
-          <div className="mb-5">
-            <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>
-              Building
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {plan.sections_outline.map((section, i) => (
-                <span
-                  key={i}
-                  className="text-xs px-2.5 py-1 rounded-lg generation-stagger"
-                  style={{
-                    backgroundColor: 'var(--card)',
-                    color: 'var(--text-secondary)',
-                    border: '1px solid var(--border)',
-                    animationDelay: `${(plan.entities.length + i) * 80 + 300}ms`,
-                  }}
-                >
-                  {section}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ borderTop: '1px solid var(--border)' }} className="mb-5" />
-
-          {/* Stacking status messages */}
+          {/* ─── 2. LIVE STATUS MESSAGES (most important — directly under title) ─── */}
           <div className="space-y-2.5 mb-6">
-            {messages.slice(0, completedMsgs + 1).map((msg, i) => {
-              const isDone = i < completedMsgs || articleReady
-              const isCurrent = i === completedMsgs && !articleReady
+            {messages.slice(0, completedMsgs + 1).map((msg, i) => (
+              <StatusMessage
+                key={i}
+                text={msg}
+                done={i < completedMsgs || articleReady}
+                current={i === completedMsgs && !articleReady}
+              />
+            ))}
 
-              return (
-                <div key={i} className="flex items-center gap-3 generation-fade-in">
-                  {isDone ? (
-                    <span className="flex-shrink-0 check-pop">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 6L9 17l-5-5" />
-                      </svg>
-                    </span>
-                  ) : isCurrent ? (
-                    <div
-                      className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin flex-shrink-0"
-                      style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
-                    />
-                  ) : null}
-                  <span
-                    className="text-sm"
-                    style={{
-                      color: isDone ? 'var(--text-secondary)' : 'var(--text-primary)',
-                      fontWeight: isCurrent ? 500 : 400,
-                    }}
-                  >
-                    {msg}
-                  </span>
-                </div>
-              )
-            })}
-
-            {/* Article ready! */}
             {articleReady && (
               <div className="flex items-center gap-3 generation-fade-in mt-3">
                 <span className="flex-shrink-0 check-pop">
@@ -309,67 +206,153 @@ export default function ArticleGenerating({ row, onReady }: Props) {
               </div>
             )}
 
-            {/* Timeout */}
             {elapsed > 180 && !isComplete && (
               <div className="mt-4 p-4 rounded-xl" style={{ backgroundColor: 'var(--accent-light)', border: '1px solid #f0d5be' }}>
-                <p className="text-sm font-semibold mb-1" style={{ color: 'var(--accent)' }}>
-                  Taking longer than expected
-                </p>
-                <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
-                  Complex topics sometimes need a bit more time. Hang tight or head home.
-                </p>
-                <a href="/" className="text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
-                  Go home
-                </a>
+                <p className="text-sm font-semibold mb-1" style={{ color: 'var(--accent)' }}>Taking longer than expected</p>
+                <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>Complex topics sometimes need a bit more time. Hang tight or head home.</p>
+                <a href="/" className="text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Go home</a>
               </div>
             )}
           </div>
 
-          {/* Education card */}
+          {/* ─── 3. EDUCATION CARD ─── */}
           {showEducation && !articleReady && (
             <div
-              className="rounded-xl p-5 generation-fade-in"
+              className="rounded-xl p-5 mb-4 generation-fade-in"
               style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
             >
               <p className="text-sm font-bold mb-3" style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}>
-                While you wait — here&apos;s what you can do once it&apos;s ready:
+                Did you know? Once your article is ready, you can make it yours:
               </p>
-              <ul className="space-y-2.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5">✏️</span>
-                  <span><strong style={{ color: 'var(--text-primary)' }}>Rewrite or refine</strong> — change the tone, rewrite a section, or shift the whole angle.</span>
+              <ul className="space-y-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                <li className="flex items-start gap-2.5">
+                  <span className="mt-0.5 flex-shrink-0">🖼️</span>
+                  <span><strong style={{ color: 'var(--text-primary)' }}>Pick your own images</strong> — AI doesn&apos;t always find the perfect photo. Click any image to pick another.</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5">🖼️</span>
-                  <span><strong style={{ color: 'var(--text-primary)' }}>Swap out images</strong> — click the refresh icon on any image to pull a different one.</span>
+                <li className="flex items-start gap-2.5">
+                  <span className="mt-0.5 flex-shrink-0">✏️</span>
+                  <span><strong style={{ color: 'var(--text-primary)' }}>Rewrite anything</strong> — adjust a single section or the whole article. Change the tone, length, or angle.</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5">🔄</span>
-                  <span><strong style={{ color: 'var(--text-primary)' }}>Spin off a new article</strong> — use the suggestion chips to explore related topics.</span>
+                <li className="flex items-start gap-2.5">
+                  <span className="mt-0.5 flex-shrink-0">📊</span>
+                  <span><strong style={{ color: 'var(--text-primary)' }}>Explore further</strong> — at the bottom of your article, you&apos;ll find suggestions to refine or spin off something new.</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5">✅</span>
-                  <span><strong style={{ color: 'var(--text-primary)' }}>Independently fact-checked</strong> — a second AI verifies prices, specs, and claims.</span>
+                <li className="flex items-start gap-2.5">
+                  <span className="mt-0.5 flex-shrink-0">✅</span>
+                  <span><strong style={{ color: 'var(--text-primary)' }}>Independently fact-checked</strong> — a second AI verifies every price, spec, and claim against live sources.</span>
                 </li>
               </ul>
             </div>
           )}
 
-          {/* Sign-in nudge — only for unauthenticated users, after ~45s */}
+          {/* ─── 4. SIGN-IN NUDGE ─── */}
           {showSignIn && !articleReady && (
-            <div className="mt-4">
+            <div className="mb-4">
               <SignInNudge user={user} articleId={row.id} />
             </div>
           )}
 
-          {/* Timer */}
-          <div className="text-center mt-6">
-            <span className="text-xs font-mono tabular-nums" style={{ color: 'var(--text-secondary)', opacity: 0.4 }}>
-              {timeStr}
-            </span>
-          </div>
+          {/* ─── 5. ARTICLE STRUCTURE (quiet, at the bottom) ─── */}
+          {(plan.entities.length > 0 || plan.sections_outline.length > 0) && !articleReady && (
+            <div className="mt-6 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+              <button
+                onClick={() => setShowStructure(!showStructure)}
+                className="flex items-center gap-1.5 text-xs font-medium mb-2"
+                style={{ color: 'var(--text-secondary)', opacity: 0.6, cursor: 'pointer' }}
+              >
+                <svg
+                  width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  style={{ transform: showStructure ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+                See article structure
+              </button>
+
+              {showStructure && (
+                <div className="generation-fade-in space-y-3">
+                  {plan.entities.length > 0 && (
+                    <div>
+                      <p className="text-xs mb-1.5" style={{ color: 'var(--text-secondary)', opacity: 0.5 }}>
+                        Topics we&apos;re covering
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {plan.entities.map((entity) => (
+                          <span
+                            key={entity.name}
+                            className="px-2 py-0.5 rounded text-xs"
+                            style={{ backgroundColor: 'var(--bg)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+                          >
+                            {entity.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs mb-1.5" style={{ color: 'var(--text-secondary)', opacity: 0.5 }}>
+                      Article sections
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {plan.sections_outline.map((section, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-0.5 rounded text-xs"
+                          style={{ backgroundColor: 'var(--bg)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+                        >
+                          {section}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <Timer timeStr={timeStr} />
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Reusable sub-components ──────────────────────────────────────────────────
+
+function StatusMessage({ text, done, current }: { text: string; done: boolean; current: boolean }) {
+  return (
+    <div className="flex items-center gap-3 generation-fade-in">
+      {done ? (
+        <span className="flex-shrink-0 check-pop">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+        </span>
+      ) : current ? (
+        <div
+          className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin flex-shrink-0"
+          style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
+        />
+      ) : null}
+      <span
+        className="text-sm"
+        style={{
+          color: done ? 'var(--text-secondary)' : 'var(--text-primary)',
+          fontWeight: current ? 500 : 400,
+        }}
+      >
+        {text}
+      </span>
+    </div>
+  )
+}
+
+function Timer({ timeStr }: { timeStr: string }) {
+  return (
+    <div className="text-center mt-6">
+      <span className="text-xs font-mono tabular-nums" style={{ color: 'var(--text-secondary)', opacity: 0.4 }}>
+        {timeStr}
+      </span>
     </div>
   )
 }
