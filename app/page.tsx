@@ -58,6 +58,13 @@ export default async function HomePage() {
         <Logo size="md" />
         <div className="flex items-center gap-3">
           <a
+            href="/about"
+            className="text-sm font-medium no-underline hidden sm:block"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            About
+          </a>
+          <a
             href="/creators"
             className="text-sm font-medium no-underline hidden sm:block"
             style={{ color: 'var(--text-secondary)' }}
