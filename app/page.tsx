@@ -5,7 +5,15 @@ import ExampleChips from '@/components/ExampleChips'
 import RecentArticlesGrid from '@/components/RecentArticlesGrid'
 import type { ArticleRow } from '@/types/article'
 
+import type { Metadata } from 'next'
+
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: 'https://articleai-three.vercel.app',
+  },
+}
 
 async function getRecentArticles(): Promise<ArticleRow[]> {
   try {

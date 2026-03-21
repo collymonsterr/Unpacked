@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import Logo from '@/components/ui/Logo'
+import AdminAnalytics from '@/components/AdminAnalytics'
 import { useAdminMode } from '@/hooks/useAdminMode'
 import type { ArticleRow } from '@/types/article'
 import { ARTICLE_TYPE_LABELS } from '@/lib/article-config'
@@ -204,6 +205,9 @@ export default function AdminDashboard() {
             {articles.length} article{articles.length !== 1 ? 's' : ''}
           </span>
         </div>
+
+        {/* Analytics charts */}
+        <AdminAnalytics />
 
         {loading ? (
           <div className="flex justify-center py-20">

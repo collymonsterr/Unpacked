@@ -3,7 +3,8 @@ import type { ArticleContent, ProductCard } from '@/types/article'
 export function generateArticleJsonLd(
   article: ArticleContent,
   slug: string,
-  createdAt: string
+  createdAt: string,
+  updatedAt?: string
 ) {
   const canonicalUrl = `https://articleai-three.vercel.app/article/${slug}`
 
@@ -17,11 +18,19 @@ export function generateArticleJsonLd(
       '',
     url: canonicalUrl,
     datePublished: createdAt,
-    dateModified: createdAt,
+    dateModified: updatedAt ?? createdAt,
+    author: {
+      '@type': 'Organization',
+      name: 'ArticleAI',
+    },
     publisher: {
       '@type': 'Organization',
       name: 'ArticleAI',
       url: 'https://articleai-three.vercel.app',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://articleai-three.vercel.app/favicon-192.png',
+      },
     },
   }
 

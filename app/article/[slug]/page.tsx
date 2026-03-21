@@ -32,7 +32,7 @@ export default async function ArticlePage({ params }: Props) {
   // JSON-LD structured data
   const jsonLdScripts: Record<string, unknown>[] = []
   if (row.article) {
-    jsonLdScripts.push(generateArticleJsonLd(row.article, row.slug, row.created_at))
+    jsonLdScripts.push(generateArticleJsonLd(row.article, row.slug, row.created_at, row.updated_at))
     jsonLdScripts.push(generateBreadcrumbJsonLd(row.article.title, row.slug))
 
     // Add product schema for the top pick
@@ -82,6 +82,8 @@ export async function generateMetadata({ params }: Props) {
       url: canonicalUrl,
       siteName: 'ArticleAI',
       type: 'article',
+      publishedTime: row.created_at,
+      modifiedTime: row.updated_at ?? row.created_at,
       images: [
         {
           url: ogImage,
@@ -96,6 +98,7 @@ export async function generateMetadata({ params }: Props) {
       title,
       description,
       images: [ogImage],
+      site: '@articleai',
     },
   }
 }

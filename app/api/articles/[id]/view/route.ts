@@ -7,7 +7,7 @@ export async function POST(
   const { id } = await params
   const supabase = getSupabaseAdmin()
 
-  // Read current count then increment (slightly racy but fine for view counts)
+  // Read current count then increment
   const { data } = await supabase
     .from('articles')
     .select('view_count')
@@ -25,6 +25,13 @@ export async function POST(
 
   if (error) {
     return Response.json({ error: 'Failed to increment view' }, { status: 500 })
+  }
+
+  // Also insert into article_views for time-series tracking (table may not exist yet)
+  try {
+    await supabase.from('article_views').insert({ article_id: id })
+  } catch {
+    // Table may not exist yet
   }
 
   return Response.json({ ok: true })

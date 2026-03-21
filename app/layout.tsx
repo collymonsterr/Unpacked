@@ -41,6 +41,7 @@ export const metadata: Metadata = {
     title: 'ArticleAI — Type a question. Get a complete visual article.',
     description: 'Researched from real sources. Written with a clear opinion. Ready in under two minutes.',
     images: ['/og-default.png'],
+    site: '@articleai',
   },
   icons: {
     icon: [
