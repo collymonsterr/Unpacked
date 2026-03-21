@@ -52,12 +52,17 @@ export default function ArticlePageClient({ initialRow }: Props) {
 
   // Handle the transition from generating to article
   const handleArticleReady = useCallback(() => {
+    if (showArticle) return // Already showing
     setFadeState('transitioning')
     setTimeout(() => {
+      window.scrollTo({ top: 0 })
       setShowArticle(true)
-      setFadeState('article')
+      // Small delay so the DOM renders before we fade in
+      requestAnimationFrame(() => {
+        setFadeState('article')
+      })
     }, 500)
-  }, [])
+  }, [showArticle])
 
   // Detect fact-check status
   const factCheckStatus: 'none' | 'checking' | 'verified' = (() => {
