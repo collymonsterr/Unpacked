@@ -13,10 +13,10 @@ async function getRecentArticles(): Promise<ArticleRow[]> {
     const { data } = await getSupabaseAdmin()
       .from('articles')
       .select('id, slug, query, status, plan, article, pinned, created_at')
-      .eq('status', 'complete')
+      .in('status', ['complete', 'verified'])
       .order('pinned', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
-      .limit(20)
+      .limit(50)
 
     // Sort by sort_order (stored in article JSONB), then by created_at
     const articles = (data ?? []).sort((a, b) => {

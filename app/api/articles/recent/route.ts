@@ -4,7 +4,7 @@ export async function GET() {
   const { data, error } = await getSupabaseAdmin()
     .from('articles')
     .select('id, slug, query, status, plan, article, pinned, created_at')
-    .eq('status', 'complete')
+    .in('status', ['complete', 'verified'])
     .order('pinned', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
     .limit(20)

@@ -15,7 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const { data } = await getSupabaseAdmin()
       .from('articles')
       .select('slug, updated_at, created_at')
-      .eq('status', 'complete')
+      .in('status', ['complete', 'verified'])
       .order('created_at', { ascending: false })
       .limit(500)
 
