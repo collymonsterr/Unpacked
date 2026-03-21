@@ -101,21 +101,23 @@ export default function ProductCard({ section, isAdmin, onReplaceImage, onSetPri
       </div>
 
       {/* Title + Price */}
-      <div className="flex items-start justify-between gap-4 px-5 md:px-6 pt-3 pb-1">
-        <h3
-          className="text-2xl md:text-3xl font-bold leading-tight"
-          style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
-        >
-          {section.heading}
-        </h3>
-        {section.price && (
-          <p
-            className="text-lg md:text-xl font-bold shrink-0 mt-1"
-            style={{ color: 'var(--accent)' }}
+      <div className="px-5 md:px-6 pt-3 pb-1">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between md:gap-4">
+          <h3
+            className="text-xl md:text-3xl font-bold leading-tight"
+            style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
           >
-            {section.price}
-          </p>
-        )}
+            {section.heading}
+          </h3>
+          {section.price && (
+            <p
+              className="text-base md:text-xl font-bold shrink-0 mt-1"
+              style={{ color: 'var(--accent)' }}
+            >
+              {section.price}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Image area — layout depends on product type */}
