@@ -108,17 +108,17 @@ export default function ArticleSkeleton({ plan }: Props) {
     [plan.article_type, plan.research_queries]
   )
 
-  // Cycle through status messages
+  // Cycle through status messages — 5s per message, loops back from start
   useEffect(() => {
     const cycle = () => {
       setVisible(false)
       setTimeout(() => {
-        setMsgIndex((i) => Math.min(i + 1, messages.length - 1))
+        setMsgIndex((i) => (i + 1) % messages.length)
         setVisible(true)
       }, 300)
     }
 
-    const interval = setInterval(cycle, 3000)
+    const interval = setInterval(cycle, 5000)
     return () => clearInterval(interval)
   }, [messages.length])
 
@@ -172,16 +172,18 @@ export default function ArticleSkeleton({ plan }: Props) {
           </span>
         </div>
 
-        {/* Progress bar */}
+        {/* Progress bar — time-based, designed for 2-3 minute generation */}
         <div
           className="h-1 rounded-full mb-3 overflow-hidden"
           style={{ backgroundColor: 'rgba(224, 122, 58, 0.15)' }}
         >
           <div
-            className="h-full rounded-full transition-all duration-1000 ease-out"
+            className="h-full rounded-full transition-all duration-[2000ms] ease-out"
             style={{
               backgroundColor: 'var(--accent)',
-              width: `${Math.min(95, (msgIndex / messages.length) * 100 + 5)}%`,
+              // Logarithmic curve: fast start, slows dramatically
+              // 30s → ~35%, 60s → ~55%, 90s → ~67%, 120s → ~75%, 180s → ~85%, never exceeds 92%
+              width: `${Math.min(92, 20 * Math.log(1 + elapsed / 15))}%`,
             }}
           />
         </div>
