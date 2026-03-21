@@ -32,6 +32,7 @@ export default function ArticleGenerating({ row, onReady }: Props) {
   const [articleReady, setArticleReady] = useState(false)
   const [showSignIn, setShowSignIn] = useState(false)
   const readyFired = useRef(false)
+  const timersStarted = useRef(false)
   const { user } = useUser()
 
   const plan = row.plan
@@ -135,21 +136,19 @@ export default function ArticleGenerating({ row, onReady }: Props) {
     return msgs
   }, [plan])
 
-  // Tick messages with accelerating start, then steady pace
+  // Tick messages — only start once, never restart
   useEffect(() => {
-    if (!plan || messages.length === 0 || isComplete) return
+    if (!plan || messages.length === 0 || timersStarted.current) return
+    timersStarted.current = true
 
-    // Show first 2 immediately (user already saw 7 pre-plan messages, keep momentum)
+    // Show first 2 immediately
     setCompletedMsgs(2)
 
-    // Schedule remaining messages: fast start, then steady
+    // Schedule ALL remaining messages with absolute delays
     const timers: ReturnType<typeof setTimeout>[] = []
     let delay = 0
     for (let i = 3; i <= messages.length; i++) {
-      // First 5 post-plan messages: every 3 seconds (feels active)
-      // Next 5: every 6 seconds
-      // Rest: every 10 seconds
-      const msgNum = i - 2 // 1-based count of post-plan messages
+      const msgNum = i - 2
       if (msgNum <= 5) delay += 3000
       else if (msgNum <= 10) delay += 6000
       else delay += 10000
@@ -161,7 +160,7 @@ export default function ArticleGenerating({ row, onReady }: Props) {
     }
 
     return () => timers.forEach(t => clearTimeout(t))
-  }, [plan, messages.length, isComplete])
+  }, [plan, messages.length])
 
   // When article ready — trigger transition
   const triggerReady = useCallback(() => {
