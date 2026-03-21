@@ -126,7 +126,7 @@ export default async function HomePage() {
               Researched, not generated
             </h3>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              We do the digging for you — across websites, Reddit, X, expert reviews, and real user opinions — then turn it into one clear article.
+              We research websites, forums, Reddit, and X — combining expert and real user opinions into one clear article.
             </p>
           </div>
 
@@ -148,7 +148,7 @@ export default async function HomePage() {
               Decisive, not generic
             </h3>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              AI gives you &ldquo;it depends.&rdquo; We show you what people actually recommend — so you can make a confident decision.
+              AI gives you safe, neutral answers. We surface real opinions on what people actually recommend.
             </p>
           </div>
         </div>
