@@ -41,6 +41,19 @@ export default function ArticlePageClient({ initialRow }: Props) {
     }
   }, [initialRow.id])
 
+  // Track view (debounced: 1 view per article per 5 minutes via localStorage)
+  useEffect(() => {
+    if (!showArticle || !row.article) return
+
+    const key = `viewed_${initialRow.id}`
+    const lastViewed = localStorage.getItem(key)
+    const now = Date.now()
+    if (lastViewed && now - parseInt(lastViewed, 10) < 5 * 60 * 1000) return
+
+    localStorage.setItem(key, String(now))
+    fetch(`/api/articles/${initialRow.id}/view`, { method: 'POST' }).catch(() => {})
+  }, [showArticle, row.article, initialRow.id])
+
   // Poll while planning, generating, or waiting for fact-check
   useEffect(() => {
     if (row.status === 'verified' || row.status === 'error') return

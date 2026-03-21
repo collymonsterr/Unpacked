@@ -32,6 +32,11 @@ function getCardImage(row: ArticleRow): string | null {
   return firstCard?.image_urls?.[0] ?? firstCard?.image_url ?? null
 }
 
+function formatViewCount(count: number): string {
+  if (count >= 1000) return `${(count / 1000).toFixed(1).replace(/\.0$/, '')}k views`
+  return `${count} views`
+}
+
 function getCategoryLabel(type: string) {
   const labels: Record<string, string> = {
     buyer_guide: 'Buying Guide',
@@ -117,12 +122,22 @@ function SortableArticleCard({
           >
             {title}
           </h3>
-          <span
-            className="text-xs font-medium"
-            style={{ color: '#E07A3A' }}
-          >
-            {getCategoryLabel(type)}
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              className="text-xs font-medium"
+              style={{ color: '#E07A3A' }}
+            >
+              {getCategoryLabel(type)}
+            </span>
+            {(row.view_count ?? 0) > 10 && (
+              <span
+                className="text-xs"
+                style={{ color: 'var(--text-secondary)', opacity: 0.7 }}
+              >
+                {formatViewCount(row.view_count!)}
+              </span>
+            )}
+          </div>
         </div>
       </Link>
 

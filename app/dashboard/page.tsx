@@ -28,11 +28,12 @@ export default async function DashboardPage() {
   // Fetch user's articles
   const { data: articles } = await getSupabaseAdmin()
     .from('articles')
-    .select('id, slug, query, status, plan, article, pinned, user_name, user_avatar, created_at')
+    .select('id, slug, query, status, plan, article, pinned, user_name, user_avatar, view_count, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
   const rows = (articles ?? []) as ArticleRow[]
+  const totalViews = rows.reduce((sum, r) => sum + (r.view_count ?? 0), 0)
 
   return (
     <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
@@ -44,12 +45,24 @@ export default async function DashboardPage() {
 
       {/* Content */}
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-10">
-        <h1
-          className="text-2xl md:text-3xl font-bold mb-1"
-          style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
-        >
-          My Articles
-        </h1>
+        <div className="flex items-baseline justify-between mb-1">
+          <h1
+            className="text-2xl md:text-3xl font-bold"
+            style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+          >
+            My Articles
+          </h1>
+          {rows.length > 0 && (
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Total views</p>
+                <p className="text-lg font-bold tabular-nums" style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}>
+                  {totalViews.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
         <p className="text-sm mb-8" style={{ color: 'var(--text-secondary)' }}>
           Articles you&apos;ve created
         </p>
@@ -154,9 +167,16 @@ export default async function DashboardPage() {
                     >
                       {title}
                     </h3>
-                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                      {date}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        {date}
+                      </p>
+                      {(row.view_count ?? 0) > 0 && (
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)', opacity: 0.7 }}>
+                          {(row.view_count ?? 0).toLocaleString()} views
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </Link>
               )

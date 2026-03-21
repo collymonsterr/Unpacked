@@ -306,6 +306,7 @@ export interface ArticleRow {
   user_avatar?: string | null
   fact_check?: FactCheckResult | null
   verified_at?: string | null
+  view_count?: number
   created_at: string
   updated_at: string
 }

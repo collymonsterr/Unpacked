@@ -21,7 +21,9 @@ export default function AdminDashboard() {
       const res = await fetch('/api/articles/recent')
       if (!res.ok) throw new Error('Failed to fetch')
       const data = await res.json()
-      setArticles(data)
+      // Sort by view count descending (most popular first)
+      const sorted = [...data].sort((a: ArticleRow, b: ArticleRow) => (b.view_count ?? 0) - (a.view_count ?? 0))
+      setArticles(sorted)
     } catch {
       // silently fail
     } finally {
@@ -240,6 +242,12 @@ export default function AdminDashboard() {
                       Type
                     </th>
                     <th
+                      className="text-right text-xs font-semibold uppercase tracking-wider px-4 py-3"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      Views
+                    </th>
+                    <th
                       className="text-left text-xs font-semibold uppercase tracking-wider px-4 py-3"
                       style={{ color: 'var(--text-secondary)' }}
                     >
@@ -335,6 +343,14 @@ export default function AdminDashboard() {
                                 articleType.replace(/_/g, ' ')}
                             </span>
                           )}
+                        </td>
+
+                        {/* Views */}
+                        <td
+                          className="px-4 py-3 text-sm text-right tabular-nums"
+                          style={{ color: 'var(--text-secondary)' }}
+                        >
+                          {(row.view_count ?? 0).toLocaleString()}
                         </td>
 
                         {/* Created */}
@@ -504,6 +520,12 @@ export default function AdminDashboard() {
                             style={{ color: 'var(--text-secondary)' }}
                           >
                             {createdDate}
+                          </span>
+                          <span
+                            className="text-xs"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
+                            {(row.view_count ?? 0).toLocaleString()} views
                           </span>
                           {row.pinned && (
                             <span
