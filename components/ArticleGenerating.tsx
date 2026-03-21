@@ -85,43 +85,71 @@ export default function ArticleGenerating({ row, onReady }: Props) {
     return () => clearTimeout(timer)
   }, [user, planRevealed])
 
-  // Build post-plan status messages
+  // Build post-plan status messages — aim for 15-20 to fill a 2-3 min wait
   const messages = useMemo(() => {
     if (!plan) return []
     const msgs: string[] = []
+
+    // Start with AI-generated loading messages
     if (plan.loading_messages?.length) {
       msgs.push(...plan.loading_messages)
-    } else {
-      for (const q of plan.research_queries ?? []) msgs.push(`Researching: ${q}`)
-      for (const e of (plan.entities ?? []).slice(0, 3)) msgs.push(`Looking up ${e.name}...`)
     }
+
+    // Add entity-specific messages
+    for (const e of plan.entities ?? []) {
+      msgs.push(`Looking up ${e.name}...`)
+    }
+
+    // Add research query messages
+    for (const q of plan.research_queries ?? []) {
+      if (!msgs.some(m => m.includes(q))) {
+        msgs.push(`Researching: ${q}`)
+      }
+    }
+
+    // Pad with generic-but-relevant messages to reach 15+
+    const padding = [
+      'Cross-referencing sources for accuracy...',
+      'Reading expert reviews and opinions...',
+      'Checking Reddit for real user experiences...',
+      'Comparing data across multiple sources...',
+      'Building data visualisations...',
+      'Structuring the article for clarity...',
+      'Finding the best images...',
+      'Deciding what deserves the top spot...',
+      'Writing the verdict...',
+      'Formatting charts and comparison tables...',
+      'Adding editorial commentary...',
+      'Polishing the final draft...',
+    ]
+
+    let padIdx = 0
+    while (msgs.length < 15 && padIdx < padding.length) {
+      msgs.push(padding[padIdx++])
+    }
+
+    // Always end with these
     msgs.push('Forming an editorial opinion...')
-    msgs.push('Writing your article — the good part...')
+    msgs.push('Writing your article — almost there...')
+
     return msgs
   }, [plan])
 
-  // Progress messages — fast at start (feels active), slows down later
-  // First 3 messages: every 4s. Next 3: every 8s. Rest: every 15s.
+  // Simple interval: show a new message every 7 seconds
   useEffect(() => {
     if (!plan || messages.length === 0 || isComplete) return
 
-    // Build schedule of delays for each message
-    const delays: number[] = []
-    let cumulative = 2000 // Start 2s after plan reveals
-    for (let i = 0; i < messages.length; i++) {
-      delays.push(cumulative)
-      if (i < 3) cumulative += 4000       // First 3: every 4s
-      else if (i < 6) cumulative += 8000  // Next 3: every 8s
-      else cumulative += 15000            // Rest: every 15s
-    }
+    // Show first message immediately
+    setCompletedMsgs(1)
 
-    const timers = delays.map((delay, i) =>
-      setTimeout(() => {
-        setCompletedMsgs(prev => Math.max(prev, i + 1))
-      }, delay)
-    )
+    const timer = setInterval(() => {
+      setCompletedMsgs(prev => {
+        if (prev >= messages.length) return prev
+        return prev + 1
+      })
+    }, 7000) // New message every 7 seconds
 
-    return () => timers.forEach(t => clearTimeout(t))
+    return () => clearInterval(timer)
   }, [plan, messages.length, isComplete])
 
   // When article ready — trigger transition
