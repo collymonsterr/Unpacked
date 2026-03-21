@@ -17,11 +17,74 @@ const ACCENT_LIGHT = '#FEF3EC'
 
 // ── Built-in formulas ────────────────────────────────────────────────────────
 
-function calcCompoundInterest(inputs: Record<string, number>) {
-  const startAge = inputs.starting_age ?? 25
-  const monthly = inputs.monthly_savings ?? 300
+type CalcResult = { outputs: Record<string, number>; chartData: Array<Record<string, number | string>> }
+
+function calcCompoundInterest(inputs: Record<string, number>): CalcResult {
+  // Detect which variant we're dealing with based on available inputs
+  const hasAges = inputs.starting_age != null && inputs.retirement_age != null
+  const hasInitialAmount = inputs.initial_amount != null || inputs.initial_investment != null
+  const hasInflation = inputs.inflation_rate != null
+
+  // Lump-sum investment variant (e.g. inflation calculator, investment growth)
+  if (hasInitialAmount && !hasAges) {
+    const initial = inputs.initial_amount ?? inputs.initial_investment ?? 10000
+    const annualReturn = (inputs.annual_return ?? inputs.rate ?? 7) / 100
+    const inflationRate = (inputs.inflation_rate ?? 0) / 100
+    const years = inputs.time_period ?? inputs.years ?? 20
+    const monthly = inputs.monthly_savings ?? inputs.monthly_contribution ?? 0
+
+    // Nominal value: initial * (1+r)^years + monthly contributions
+    let nominalValue = initial * Math.pow(1 + annualReturn, years)
+    if (monthly > 0) {
+      const r = annualReturn / 12
+      const months = years * 12
+      if (r > 0) {
+        nominalValue += monthly * ((Math.pow(1 + r, months) - 1) / r)
+      } else {
+        nominalValue += monthly * months
+      }
+    }
+
+    // Real value adjusted for inflation
+    const realValue = nominalValue / Math.pow(1 + inflationRate, years)
+    const realAnnualReturn = hasInflation
+      ? Math.round(((1 + annualReturn) / (1 + inflationRate) - 1) * 1000) / 10
+      : Math.round(annualReturn * 1000) / 10
+
+    const chartData = []
+    const step = Math.max(1, Math.floor(years / 20))
+    for (let y = 0; y <= years; y += step) {
+      let nv = initial * Math.pow(1 + annualReturn, y)
+      if (monthly > 0) {
+        const r = annualReturn / 12
+        const m = y * 12
+        if (r > 0) nv += monthly * ((Math.pow(1 + r, m) - 1) / r)
+        else nv += monthly * m
+      }
+      chartData.push({ year: `Year ${y}`, value: Math.round(nv) })
+    }
+    if (chartData[chartData.length - 1]?.year !== `Year ${years}`) {
+      chartData.push({ year: `Year ${years}`, value: Math.round(nominalValue) })
+    }
+
+    return {
+      outputs: {
+        nominal_value: Math.round(nominalValue),
+        real_value: Math.round(realValue),
+        real_annual_return: Math.round(realAnnualReturn),
+        total_saved: Math.round(nominalValue),
+        total_contributed: Math.round(initial + monthly * years * 12),
+        interest_earned: Math.round(nominalValue - initial - monthly * years * 12),
+      },
+      chartData,
+    }
+  }
+
+  // Age-based savings variant (retirement, college, etc.)
+  const startAge = inputs.starting_age ?? inputs.current_age ?? 25
+  const monthly = inputs.monthly_savings ?? inputs.monthly_contribution ?? 300
   const annualReturn = (inputs.annual_return ?? 7) / 100
-  const retireAge = inputs.retirement_age ?? 65
+  const retireAge = inputs.retirement_age ?? inputs.target_age ?? 65
   const months = Math.max(0, (retireAge - startAge) * 12)
   const r = annualReturn / 12
 
@@ -33,10 +96,10 @@ function calcCompoundInterest(inputs: Record<string, number>) {
     total = totalContributed
   }
 
-  // Build growth curve data
   const years = retireAge - startAge
   const chartData = []
-  for (let y = 0; y <= years; y += Math.max(1, Math.floor(years / 20))) {
+  const step = Math.max(1, Math.floor(years / 20))
+  for (let y = 0; y <= years; y += step) {
     const m = y * 12
     let val = 0
     if (r > 0) {
@@ -44,11 +107,10 @@ function calcCompoundInterest(inputs: Record<string, number>) {
     } else {
       val = monthly * m
     }
-    chartData.push({ year: `Age ${startAge + y}`, value: Math.round(val), contributed: monthly * m })
+    chartData.push({ year: `Age ${startAge + y}`, value: Math.round(val) })
   }
-  // Ensure final point
   if (chartData.length === 0 || chartData[chartData.length - 1].year !== `Age ${retireAge}`) {
-    chartData.push({ year: `Age ${retireAge}`, value: Math.round(total), contributed: totalContributed })
+    chartData.push({ year: `Age ${retireAge}`, value: Math.round(total) })
   }
 
   return {
@@ -61,7 +123,7 @@ function calcCompoundInterest(inputs: Record<string, number>) {
   }
 }
 
-function calcMortgage(inputs: Record<string, number>) {
+function calcMortgage(inputs: Record<string, number>): CalcResult {
   const principal = inputs.home_price ?? inputs.principal ?? 300000
   const downPct = (inputs.down_payment ?? inputs.down_payment_pct ?? 20) / 100
   const annualRate = (inputs.interest_rate ?? inputs.annual_rate ?? 6) / 100
@@ -103,7 +165,7 @@ function calcMortgage(inputs: Record<string, number>) {
   }
 }
 
-function calcRoiComparison(inputs: Record<string, number>) {
+function calcRoiComparison(inputs: Record<string, number>): CalcResult {
   const investment = inputs.investment ?? inputs.initial_investment ?? 10000
   const rateA = (inputs.return_a ?? inputs.rate_a ?? 5) / 100
   const rateB = (inputs.return_b ?? inputs.rate_b ?? 8) / 100
@@ -128,7 +190,7 @@ function calcRoiComparison(inputs: Record<string, number>) {
   }
 }
 
-function calcBudget(inputs: Record<string, number>) {
+function calcBudget(inputs: Record<string, number>): CalcResult {
   const income = inputs.monthly_income ?? inputs.income ?? 5000
   const allKeys = Object.keys(inputs).filter(k => k !== 'monthly_income' && k !== 'income')
   let totalExpenses = 0
@@ -157,7 +219,7 @@ function runCalculation(
   type: string,
   inputs: Record<string, number>,
   _formula?: string
-): { outputs: Record<string, number>; chartData: Array<Record<string, number | string>> } {
+): CalcResult {
   switch (type) {
     case 'compound_interest': return calcCompoundInterest(inputs)
     case 'mortgage': return calcMortgage(inputs)
