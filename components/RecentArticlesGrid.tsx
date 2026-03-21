@@ -1,8 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import type { ArticleRow, ProductCard } from '@/types/article'
 import { useAdminMode } from '@/hooks/useAdminMode'
 
@@ -31,44 +46,50 @@ function getArticleTypeLabel(type: string) {
   return labels[type] ?? type.replace(/_/g, ' ')
 }
 
-function ArticleCard({
+// ── Sortable Article Card ────────────────────────────────────────────────────
+
+function SortableArticleCard({
   row,
-  index,
-  total,
   isAdmin,
-  onMove,
-  moving,
 }: {
   row: ArticleRow
-  index: number
-  total: number
   isAdmin: boolean
-  onMove: (id: string, direction: 'up' | 'down') => void
-  moving: string | null
 }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: row.id })
+
   const imageUrl = getCardImage(row)
   const title = row.article?.title ?? row.plan?.title ?? row.query
-  const verdict = row.article?.quick_verdict?.one_liner ?? row.plan?.quick_verdict_preview ?? ''
   const type = row.article?.article_type ?? row.plan?.article_type ?? 'buyer_guide'
-  const isMoving = moving === row.id
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : 'auto' as const,
+  }
 
   return (
-    <div className="relative group">
+    <div ref={setNodeRef} style={style} className="relative group">
       <Link
         href={`/article/${row.slug}`}
         className="block rounded-2xl overflow-hidden no-underline"
         style={{
           backgroundColor: 'var(--card)',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)',
+          boxShadow: isDragging
+            ? '0 8px 32px rgba(0,0,0,0.15)'
+            : '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)',
           border: '1px solid var(--border)',
-          transition: 'box-shadow 0.2s ease, transform 0.2s ease',
-          opacity: isMoving ? 0.6 : 1,
+          transition: 'box-shadow 0.2s ease',
         }}
       >
-        <div
-          className="relative overflow-hidden"
-          style={{ aspectRatio: '4/3' }}
-        >
+        <div className="relative overflow-hidden" style={{ aspectRatio: '4/3' }}>
           {imageUrl ? (
             <Image
               src={imageUrl}
@@ -105,36 +126,31 @@ function ArticleCard({
         </div>
       </Link>
 
-      {/* Admin reorder buttons */}
+      {/* Admin: drag handle */}
       {isAdmin && (
-        <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
-          {index > 0 && (
-            <button
-              onClick={(e) => { e.preventDefault(); onMove(row.id, 'up') }}
-              disabled={!!moving}
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold"
-              style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: '#fff' }}
-              title="Move up"
-            >
-              ▲
-            </button>
-          )}
-          {index < total - 1 && (
-            <button
-              onClick={(e) => { e.preventDefault(); onMove(row.id, 'down') }}
-              disabled={!!moving}
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold"
-              style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: '#fff' }}
-              title="Move down"
-            >
-              ▼
-            </button>
-          )}
-        </div>
+        <button
+          {...attributes}
+          {...listeners}
+          className="absolute top-2 left-2 z-10 w-8 h-8 flex items-center justify-center rounded-lg cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+          style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: '#fff' }}
+          title="Drag to reorder"
+          onClick={(e) => e.preventDefault()}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="9" cy="5" r="1.5" />
+            <circle cx="15" cy="5" r="1.5" />
+            <circle cx="9" cy="12" r="1.5" />
+            <circle cx="15" cy="12" r="1.5" />
+            <circle cx="9" cy="19" r="1.5" />
+            <circle cx="15" cy="19" r="1.5" />
+          </svg>
+        </button>
       )}
     </div>
   )
 }
+
+// ── Type Filters ─────────────────────────────────────────────────────────────
 
 const TYPE_FILTERS: Array<{ label: string; value: string | null }> = [
   { label: 'All', value: null },
@@ -144,100 +160,163 @@ const TYPE_FILTERS: Array<{ label: string; value: string | null }> = [
   { label: 'Explainers', value: 'explainer' },
 ]
 
+// ── Main Grid Component ──────────────────────────────────────────────────────
+
 export default function RecentArticlesGrid({ articles: initialArticles }: Props) {
   const isAdmin = useAdminMode()
   const [articles, setArticles] = useState(initialArticles)
-  const [moving, setMoving] = useState<string | null>(null)
   const [activeFilter, setActiveFilter] = useState<string | null>(null)
+  const [sortMode, setSortMode] = useState<'manual' | 'newest'>('manual')
+  const [saving, setSaving] = useState(false)
 
-  if (articles.length === 0) return null
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  )
+
+  const sortedArticles = sortMode === 'newest'
+    ? [...articles].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    : articles
 
   const filteredArticles = activeFilter
-    ? articles.filter((a) => {
+    ? sortedArticles.filter((a) => {
         const type = a.article?.article_type ?? a.plan?.article_type
         return type === activeFilter
       })
-    : articles
+    : sortedArticles
 
-  async function handleMove(articleId: string, direction: 'up' | 'down') {
-    setMoving(articleId)
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
 
-    // Optimistic reorder in UI
-    const idx = articles.findIndex((a) => a.id === articleId)
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1
-    if (swapIdx < 0 || swapIdx >= articles.length) {
-      setMoving(null)
-      return
-    }
+    const oldIndex = articles.findIndex((a) => a.id === active.id)
+    const newIndex = articles.findIndex((a) => a.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
 
-    const newArticles = [...articles]
-    const temp = newArticles[idx]
-    newArticles[idx] = newArticles[swapIdx]
-    newArticles[swapIdx] = temp
+    // Optimistic reorder
+    const newArticles = arrayMove(articles, oldIndex, newIndex)
     setArticles(newArticles)
+    setSortMode('manual') // Switch to manual mode after drag
 
+    // Save new order to API
+    setSaving(true)
     try {
+      const orderedIds = newArticles.map((a) => a.id)
       await fetch('/api/articles/reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ articleId, direction }),
+        body: JSON.stringify({ orderedIds }),
       })
     } catch {
       // Revert on failure
       setArticles(articles)
     } finally {
-      setMoving(null)
+      setSaving(false)
     }
-  }
+  }, [articles])
+
+  if (articles.length === 0) return null
 
   return (
     <section className="w-full max-w-6xl mx-auto px-4 md:px-6 pb-16">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h2
-          className="text-lg font-bold"
-          style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-secondary)' }}
-        >
-          Recent Articles
-        </h2>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {TYPE_FILTERS.map(({ label, value }) => {
-            const isActive = activeFilter === value
-            return (
+        <div className="flex items-center gap-3">
+          <h2
+            className="text-lg font-bold"
+            style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-secondary)' }}
+          >
+            Recent Articles
+          </h2>
+          {saving && (
+            <span className="text-xs" style={{ color: 'var(--accent)' }}>Saving...</span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Sort toggle — admin only */}
+          {isAdmin && (
+            <div
+              className="flex rounded-lg overflow-hidden"
+              style={{ border: '1px solid var(--border)' }}
+            >
               <button
-                key={label}
-                onClick={() => setActiveFilter(value)}
-                className="px-3 py-1 rounded-full text-xs font-medium transition-all"
+                onClick={() => setSortMode('manual')}
+                className="px-3 py-1 text-xs font-medium transition-colors"
                 style={{
-                  backgroundColor: isActive ? 'var(--accent)' : 'transparent',
-                  color: isActive ? '#fff' : 'var(--text-secondary)',
-                  border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
-                  cursor: 'pointer',
+                  backgroundColor: sortMode === 'manual' ? 'var(--accent)' : 'transparent',
+                  color: sortMode === 'manual' ? '#fff' : 'var(--text-secondary)',
                 }}
               >
-                {label}
+                Manual order
               </button>
-            )
-          })}
+              <button
+                onClick={() => setSortMode('newest')}
+                className="px-3 py-1 text-xs font-medium transition-colors"
+                style={{
+                  backgroundColor: sortMode === 'newest' ? 'var(--accent)' : 'transparent',
+                  color: sortMode === 'newest' ? '#fff' : 'var(--text-secondary)',
+                }}
+              >
+                Newest first
+              </button>
+            </div>
+          )}
+
+          {/* Type filters */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {TYPE_FILTERS.map(({ label, value }) => {
+              const isActive = activeFilter === value
+              return (
+                <button
+                  key={label}
+                  onClick={() => setActiveFilter(value)}
+                  className="px-3 py-1 rounded-full text-xs font-medium transition-all"
+                  style={{
+                    backgroundColor: isActive ? 'var(--accent)' : 'transparent',
+                    color: isActive ? '#fff' : 'var(--text-secondary)',
+                    border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filteredArticles.map((row, i) => (
-          <ArticleCard
-            key={row.id}
-            row={row}
-            index={i}
-            total={filteredArticles.length}
-            isAdmin={isAdmin}
-            onMove={handleMove}
-            moving={moving}
-          />
-        ))}
-      </div>
-      {filteredArticles.length === 0 && activeFilter && (
-        <p
-          className="text-center py-12 text-sm"
-          style={{ color: 'var(--text-secondary)' }}
+
+      {isAdmin && sortMode === 'manual' && !activeFilter ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
         >
+          <SortableContext items={filteredArticles.map(a => a.id)} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredArticles.map((row) => (
+                <SortableArticleCard
+                  key={row.id}
+                  row={row}
+                  isAdmin={isAdmin}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredArticles.map((row) => (
+            <SortableArticleCard
+              key={row.id}
+              row={row}
+              isAdmin={false}
+            />
+          ))}
+        </div>
+      )}
+
+      {filteredArticles.length === 0 && activeFilter && (
+        <p className="text-center py-12 text-sm" style={{ color: 'var(--text-secondary)' }}>
           No {TYPE_FILTERS.find((f) => f.value === activeFilter)?.label.toLowerCase()} yet.
         </p>
       )}
