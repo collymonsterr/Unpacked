@@ -462,14 +462,6 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
         </div>
       )}
 
-      {/* Fact-check bar */}
-      {factCheckStatus !== 'none' && (
-        <FactCheckBar
-          status={factCheckStatus}
-          factCheck={articleRow.fact_check}
-        />
-      )}
-
       {/* Share button at bottom */}
       <ShareButton
         title={article.title}

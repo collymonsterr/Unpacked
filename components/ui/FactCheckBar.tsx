@@ -9,132 +9,208 @@ interface Props {
 }
 
 export default function FactCheckBar({ status, factCheck }: Props) {
-  const [visible, setVisible] = useState(true)
+  const [dismissed, setDismissed] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const [slideIn, setSlideIn] = useState(false)
 
-  // Auto-hide after 10s if no issues
+  // Animate in on mount
+  useEffect(() => {
+    const timer = setTimeout(() => setSlideIn(true), 100)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Auto-dismiss after 8s if verified with no issues
   useEffect(() => {
     if (status === 'verified' && !factCheck?.issues_found) {
-      const timer = setTimeout(() => setVisible(false), 10000)
+      const timer = setTimeout(() => setDismissed(true), 8000)
       return () => clearTimeout(timer)
     }
   }, [status, factCheck])
 
-  if (!visible) return null
+  if (dismissed) return null
 
-  // Currently checking
-  if (status === 'checking') {
-    return (
-      <div
-        className="mt-8 rounded-xl px-5 py-4 flex items-center gap-3"
-        style={{
-          backgroundColor: 'var(--accent-light)',
-          border: '1px solid #f0d5be',
-        }}
-      >
-        <div
-          className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin flex-shrink-0"
-          style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
-        />
-        <p className="text-sm" style={{ color: 'var(--text-primary)' }}>
-          <span className="font-semibold" style={{ fontFamily: 'var(--font-sora)' }}>
-            Fact-checking this article
-          </span>
-          <span style={{ color: 'var(--text-secondary)' }}>
-            {' '}against live sources...
-          </span>
-        </p>
-      </div>
-    )
-  }
-
-  // Verified — no issues
-  if (!factCheck?.issues_found) {
-    return (
-      <div
-        className="mt-8 rounded-xl px-5 py-4 flex items-center gap-3 transition-opacity duration-1000"
-        style={{
-          backgroundColor: '#f0fdf4',
-          border: '1px solid #bbf7d0',
-        }}
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-          <polyline points="22 4 12 14.01 9 11.01" />
-        </svg>
-        <p className="text-sm" style={{ color: '#15803d' }}>
-          <span className="font-semibold" style={{ fontFamily: 'var(--font-sora)' }}>
-            Fact-check complete
-          </span>
-          {' — no issues found. Prices, specs, and claims verified.'}
-        </p>
-      </div>
-    )
-  }
-
-  // Verified — with corrections
-  const corrections = factCheck.issues.filter(i => i.severity !== 'note')
-  const notes = factCheck.issues.filter(i => i.severity === 'note')
+  const corrections = factCheck?.issues?.filter(i => i.severity !== 'note') ?? []
 
   return (
-    <div
-      className="mt-8 rounded-xl px-5 py-4"
-      style={{
-        backgroundColor: 'var(--accent-light)',
-        border: '1px solid #f0d5be',
-      }}
-    >
-      <div className="flex items-center gap-3">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="12" y1="8" x2="12" y2="12" />
-          <line x1="12" y1="16" x2="12.01" y2="16" />
-        </svg>
-        <p className="text-sm flex-1" style={{ color: 'var(--text-primary)' }}>
-          <span className="font-semibold" style={{ fontFamily: 'var(--font-sora)' }}>
-            Fact-check complete
-          </span>
-          {' — we found and corrected '}
-          <span className="font-bold" style={{ color: 'var(--accent)' }}>
-            {corrections.length} issue{corrections.length !== 1 ? 's' : ''}
-          </span>
-          .{notes.length > 0 && ` ${notes.length} additional note${notes.length !== 1 ? 's' : ''}.`}
-        </p>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="text-xs font-semibold flex-shrink-0 underline"
-          style={{ color: 'var(--accent)' }}
+    <>
+      {/* Fixed bottom bar */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-50 transition-transform duration-500 ease-out"
+        style={{
+          transform: slideIn ? 'translateY(0)' : 'translateY(100%)',
+        }}
+      >
+        {/* Main bar */}
+        <div
+          className="px-4 py-3"
+          style={{
+            backgroundColor: status === 'verified' && !factCheck?.issues_found
+              ? '#f0fdf4'
+              : status === 'verified'
+                ? 'var(--card)'
+                : 'var(--card)',
+            borderTop: status === 'verified' && !factCheck?.issues_found
+              ? '1px solid #bbf7d0'
+              : '1px solid var(--border)',
+            boxShadow: '0 -2px 16px rgba(0,0,0,0.08)',
+          }}
         >
-          {expanded ? 'Hide details' : 'See what changed'}
-        </button>
+          <div className="max-w-[900px] mx-auto flex items-center gap-3">
+            {status === 'checking' ? (
+              <>
+                <div
+                  className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin flex-shrink-0"
+                  style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
+                />
+                <p className="text-sm flex-1" style={{ color: 'var(--text-primary)' }}>
+                  <span className="font-semibold" style={{ fontFamily: 'var(--font-sora)' }}>
+                    Fact-checking
+                  </span>
+                  <span className="hidden sm:inline" style={{ color: 'var(--text-secondary)' }}>
+                    {' '}— verifying prices, specs, and claims against live sources...
+                  </span>
+                  <span className="sm:hidden" style={{ color: 'var(--text-secondary)' }}>
+                    {' '}against live sources...
+                  </span>
+                </p>
+                {/* Subtle animated dots */}
+                <span className="text-sm" style={{ color: 'var(--accent)' }}>
+                  <span className="animate-pulse">···</span>
+                </span>
+              </>
+            ) : !factCheck?.issues_found ? (
+              <>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                  <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+                <p className="text-sm flex-1" style={{ color: '#15803d' }}>
+                  <span className="font-semibold" style={{ fontFamily: 'var(--font-sora)' }}>
+                    Fact-check complete
+                  </span>
+                  <span className="hidden sm:inline">
+                    {' '}— {factCheck?.checks_performed ?? 0} claims verified. No issues found.
+                  </span>
+                  <span className="sm:hidden">
+                    {' '}— all verified.
+                  </span>
+                </p>
+                <button
+                  onClick={() => setDismissed(true)}
+                  className="text-xs px-2 py-1 rounded-lg flex-shrink-0"
+                  style={{ color: '#15803d', opacity: 0.6 }}
+                >
+                  ✕
+                </button>
+              </>
+            ) : (
+              <>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <p className="text-sm flex-1" style={{ color: 'var(--text-primary)' }}>
+                  <span className="font-semibold" style={{ fontFamily: 'var(--font-sora)' }}>
+                    Fact-check complete
+                  </span>
+                  {' — '}
+                  <span className="font-bold" style={{ color: 'var(--accent)' }}>
+                    {corrections.length} correction{corrections.length !== 1 ? 's' : ''}
+                  </span>
+                  <span className="hidden sm:inline"> applied to this article.</span>
+                  <span className="sm:hidden"> applied.</span>
+                </p>
+                <button
+                  onClick={() => setExpanded(!expanded)}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0"
+                  style={{
+                    backgroundColor: 'var(--accent)',
+                    color: '#fff',
+                  }}
+                >
+                  {expanded ? 'Close' : 'See changes'}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
-      {expanded && (
-        <div className="mt-3 pt-3 space-y-2" style={{ borderTop: '1px solid #f0d5be' }}>
-          {factCheck.issues.map((issue, i) => (
-            <div key={i} className="flex items-start gap-2 text-xs">
-              <span
-                className="mt-0.5 flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-white font-bold"
-                style={{
-                  backgroundColor: issue.severity === 'critical' ? '#dc2626'
-                    : issue.severity === 'minor' ? 'var(--accent)'
-                    : '#94918D',
-                  fontSize: 8,
-                }}
+      {/* Expanded corrections panel — slides up from bar */}
+      {expanded && factCheck?.issues_found && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40"
+            style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}
+            onClick={() => setExpanded(false)}
+          />
+          {/* Panel */}
+          <div
+            className="fixed bottom-12 left-0 right-0 z-50 px-4 pb-2"
+          >
+            <div
+              className="max-w-[600px] mx-auto rounded-xl p-5"
+              style={{
+                backgroundColor: 'var(--card)',
+                border: '1px solid var(--border)',
+                boxShadow: '0 -4px 32px rgba(0,0,0,0.15)',
+              }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h4
+                  className="text-sm font-bold"
+                  style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+                >
+                  What we corrected
+                </h4>
+                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  {factCheck.checks_performed} claims checked
+                </span>
+              </div>
+              <div className="space-y-2.5 max-h-64 overflow-y-auto">
+                {factCheck.issues.map((issue, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-2.5 text-sm"
+                  >
+                    <span
+                      className="mt-1 flex-shrink-0 w-2 h-2 rounded-full"
+                      style={{
+                        backgroundColor: issue.severity === 'critical' ? '#dc2626'
+                          : issue.severity === 'minor' ? 'var(--accent)'
+                          : '#94918D',
+                      }}
+                    />
+                    <div>
+                      {issue.entity_name && (
+                        <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          {issue.entity_name}:{' '}
+                        </span>
+                      )}
+                      <span style={{ color: 'var(--text-secondary)' }}>
+                        {issue.correction}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => { setExpanded(false); setDismissed(true) }}
+                className="mt-4 w-full text-center text-xs font-semibold py-2 rounded-lg"
+                style={{ backgroundColor: 'var(--accent-light)', color: 'var(--accent)' }}
               >
-                {issue.severity === 'critical' ? '!' : issue.severity === 'minor' ? '~' : 'i'}
-              </span>
-              <span style={{ color: 'var(--text-primary)' }}>
-                {issue.entity_name && (
-                  <span className="font-semibold">{issue.entity_name}: </span>
-                )}
-                {issue.correction}
-              </span>
+                Got it, dismiss
+              </button>
             </div>
-          ))}
-        </div>
+          </div>
+        </>
       )}
-    </div>
+
+      {/* Spacer so content isn't hidden behind the fixed bar */}
+      <div className="h-12" />
+    </>
   )
 }
 

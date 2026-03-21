@@ -6,6 +6,7 @@ import ArticleSkeleton from '@/components/ArticleSkeleton'
 import ArticleView from '@/components/ArticleView'
 import Logo from '@/components/ui/Logo'
 import UserMenu from '@/components/ui/UserMenu'
+import FactCheckBar from '@/components/ui/FactCheckBar'
 import { useAdminMode } from '@/hooks/useAdminMode'
 import { useUser } from '@/hooks/useUser'
 
@@ -98,6 +99,14 @@ export default function ArticlePageClient({ initialRow }: Props) {
         <div className="max-w-[900px] mx-auto px-4 py-20 text-center">
           <p style={{ color: 'var(--text-secondary)' }}>Preparing your article…</p>
         </div>
+      )}
+
+      {/* Fixed bottom fact-check bar */}
+      {factCheckStatus !== 'none' && (
+        <FactCheckBar
+          status={factCheckStatus}
+          factCheck={row.fact_check}
+        />
       )}
     </div>
   )
