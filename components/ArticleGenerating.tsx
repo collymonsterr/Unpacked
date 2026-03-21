@@ -296,6 +296,10 @@ export default function ArticleGenerating({ row, onReady }: Props) {
                   <span className="mt-0.5 flex-shrink-0">✅</span>
                   <span><strong style={{ color: 'var(--text-primary)' }}>Independently fact-checked</strong> — a second AI verifies every price, spec, and claim against live sources.</span>
                 </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="mt-0.5 flex-shrink-0">💰</span>
+                  <span><strong style={{ color: 'var(--text-primary)' }}>Earn from your articles</strong> — coming soon: affiliate links on every product recommendation. Share your article, and earn when readers buy.</span>
+                </li>
               </ul>
             </div>
           )}
