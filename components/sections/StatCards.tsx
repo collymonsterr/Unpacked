@@ -91,32 +91,49 @@ export default function StatCards({ section }: { section: StatCardsSection }) {
         {section.heading}
       </h3>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {section.cards.map((card, i) => (
-          <div
-            key={i}
-            className="rounded-xl p-4 text-center"
-            style={{
-              backgroundColor: 'var(--card)',
-              border: '1px solid var(--border)',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)',
-              opacity: visible ? 1 : 0,
-              transform: visible ? 'translateY(0)' : 'translateY(12px)',
-              transition: `opacity 0.4s ease ${i * 100}ms, transform 0.4s ease ${i * 100}ms`,
-            }}
-          >
-            <p
-              className="text-2xl md:text-3xl font-extrabold mb-1"
-              style={{ fontFamily: 'var(--font-sora)', color: 'var(--accent)' }}
+      <div className={`grid gap-3 ${(() => {
+        const count = section.cards.length
+        // Pick the best column layout to avoid orphan cards
+        if (count <= 2) return 'grid-cols-2'
+        if (count === 3) return 'grid-cols-2 md:grid-cols-3'
+        if (count === 4) return 'grid-cols-2 md:grid-cols-4'
+        if (count === 5) return 'grid-cols-2 md:grid-cols-3'
+        if (count === 6) return 'grid-cols-2 md:grid-cols-3'
+        if (count === 7) return 'grid-cols-2 md:grid-cols-4'
+        if (count === 8) return 'grid-cols-2 md:grid-cols-4'
+        return 'grid-cols-2 md:grid-cols-3'
+      })()}`}>
+        {section.cards.map((card, i) => {
+          // Scale font size down for long values to prevent overflow
+          const valueLen = card.value.length
+          const fontSize = valueLen > 10 ? 'text-lg md:text-xl' : valueLen > 7 ? 'text-xl md:text-2xl' : 'text-2xl md:text-3xl'
+
+          return (
+            <div
+              key={i}
+              className="rounded-xl p-4 text-center overflow-hidden"
+              style={{
+                backgroundColor: 'var(--card)',
+                border: '1px solid var(--border)',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)',
+                opacity: visible ? 1 : 0,
+                transform: visible ? 'translateY(0)' : 'translateY(12px)',
+                transition: `opacity 0.4s ease ${i * 100}ms, transform 0.4s ease ${i * 100}ms`,
+              }}
             >
-              <AnimatedValue value={card.value} visible={visible} />
-              {trendArrow(card.trend)}
-            </p>
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-              {card.label}
-            </p>
-          </div>
-        ))}
+              <p
+                className={`${fontSize} font-extrabold mb-1`}
+                style={{ fontFamily: 'var(--font-sora)', color: 'var(--accent)', wordBreak: 'break-word' }}
+              >
+                <AnimatedValue value={card.value} visible={visible} />
+                {trendArrow(card.trend)}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                {card.label}
+              </p>
+            </div>
+          )
+        })}
       </div>
 
       {section.source && (
