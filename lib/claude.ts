@@ -247,7 +247,8 @@ Don't just jump straight into product cards. A great article sets the scene firs
 4. Product Cards — the main recommendations
 5. Data visualisations, comparison tables — interspersed between product cards where they add value
 6. Warning Box, Price Tiers, Who This Is For — supporting sections
-7. Sources at the end
+7. Further Reading — 4-6 curated links to the best external resources for diving deeper (expert review sites, official pages, relevant subreddits, YouTube channels). Each with a one-line description of why it's worth visiting. These are NOT your sources — they're recommendations for the reader who wants to explore further.
+8. Sources at the end
 
 The community_insights section should feel like "here's what real people are saying" — not a footnote. If consensus is strong ("Reddit universally recommends X"), say that upfront. If it's divided, explain the camps. Reference specific subreddits or threads when possible.
 
@@ -360,6 +361,7 @@ Return a JSON object matching this structure. Return ONLY valid JSON. No preambl
     { "type": "price_tier_breakdown", "heading": "string", "tiers": [{ "range": "string", "summary": "string", "pick": "string" }] },
     { "type": "community_insights", "heading": "string", "consensus": "strong | mixed | divided", "consensus_summary": "string", "insights": [{ "source": "string", "summary": "string", "sentiment": "positive | negative | mixed" }] },
     { "type": "who_this_is_for", "heading": "string", "profiles": [{ "user_type": "string", "recommendation": "string" }] },
+    { "type": "further_reading", "items": [{ "title": "string", "url": "string", "description": "string — one line on why this resource is worth visiting" }] },
     { "type": "sources", "items": [{ "title": "string", "url": "string" }] },
     { "type": "bar_chart", "heading": "string", "description": "string (optional)", "orientation": "vertical | horizontal", "x_label": "string (optional)", "y_label": "string (optional)", "data": [{ "label": "string", "value": "number", "highlight": "boolean (optional)" }], "source": "string (optional)" },
     { "type": "comparison_matrix", "heading": "string", "description": "string (optional)", "items": ["string"], "metrics": [{ "name": "string", "scores": ["number"], "max": "number" }] },

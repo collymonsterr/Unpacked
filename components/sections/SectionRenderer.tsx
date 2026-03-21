@@ -6,6 +6,7 @@ import ContentSection from './ContentSection'
 import PriceTierBreakdown from './PriceTierBreakdown'
 import CommunityInsights from './CommunityInsights'
 import Sources from './Sources'
+import FurtherReading from './FurtherReading'
 import HeadToHead from './HeadToHead'
 import WhoThisIsFor from './WhoThisIsFor'
 import BarChartSection from './BarChartSection'
@@ -87,6 +88,8 @@ export default function SectionRenderer({
               return <CommunityInsights section={section} />
             case 'sources':
               return <Sources section={section} />
+            case 'further_reading':
+              return <FurtherReading section={section} />
             case 'head_to_head':
               return <HeadToHead section={section} />
             case 'who_this_is_for':

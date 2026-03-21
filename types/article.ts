@@ -106,6 +106,11 @@ export interface Sources {
   items: Array<{ title: string; url: string }>
 }
 
+export interface FurtherReading {
+  type: 'further_reading'
+  items: Array<{ title: string; url: string; description: string }>
+}
+
 export interface HeadToHeadShowdown {
   type: 'head_to_head'
   heading: string
@@ -236,6 +241,7 @@ export type ArticleSection =
   | PriceTierBreakdown
   | CommunityInsights
   | Sources
+  | FurtherReading
   | HeadToHeadShowdown
   | WhoThisIsFor
   | BarChartSection
