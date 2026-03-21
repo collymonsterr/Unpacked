@@ -91,48 +91,6 @@ export default async function HomePage() {
               style={{ backgroundColor: 'var(--accent-light)' }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" />
-                <path d="M21 21l-4.35-4.35" />
-              </svg>
-            </div>
-            <h3
-              className="text-base font-bold mb-1.5"
-              style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
-            >
-              Researched, not generated
-            </h3>
-            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              Built from live web searches — expert reviews, Reddit threads, real user opinions.
-            </p>
-          </div>
-
-          <div className="text-center">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
-              style={{ backgroundColor: 'var(--accent-light)' }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </svg>
-            </div>
-            <h3
-              className="text-base font-bold mb-1.5"
-              style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
-            >
-              Opinionated, not neutral
-            </h3>
-            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              Picks winners, calls out overpriced products, takes a clear position.
-            </p>
-          </div>
-
-          <div className="text-center">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
-              style={{ backgroundColor: 'var(--accent-light)' }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="7" height="7" />
                 <rect x="14" y="3" width="7" height="7" />
                 <rect x="3" y="14" width="7" height="7" />
@@ -146,7 +104,49 @@ export default async function HomePage() {
               Visual, not walls of text
             </h3>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              Product cards, comparison charts, data visualisations, and editorial photos.
+              Beautiful, structured articles with images, charts, and interactive tools that bring the answer to life.
+            </p>
+          </div>
+
+          <div className="text-center">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
+              style={{ backgroundColor: 'var(--accent-light)' }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+            </div>
+            <h3
+              className="text-base font-bold mb-1.5"
+              style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+            >
+              Researched, not generated
+            </h3>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              We do the digging for you — across websites, Reddit, X, expert reviews, and real user opinions — then turn it into one clear article.
+            </p>
+          </div>
+
+          <div className="text-center">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
+              style={{ backgroundColor: 'var(--accent-light)' }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+            </div>
+            <h3
+              className="text-base font-bold mb-1.5"
+              style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+            >
+              Decisive, not generic
+            </h3>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              AI gives you &ldquo;it depends.&rdquo; We show you what people actually recommend — so you can make a confident decision.
             </p>
           </div>
         </div>
