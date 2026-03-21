@@ -136,7 +136,7 @@ export default function AdminAnalytics() {
           )}
         </div>
 
-        {/* Articles by type — donut */}
+        {/* Articles by category — bar chart */}
         <div
           className="rounded-xl p-5"
           style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
@@ -145,33 +145,24 @@ export default function AdminAnalytics() {
             Articles by Category
           </h3>
           <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                innerRadius={50}
-                outerRadius={80}
-                paddingAngle={2}
-                dataKey="value"
-              >
-                {pieData.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
+            <BarChart data={pieData.sort((a, b) => b.value - a.value)} layout="vertical" margin={{ left: 10 }}>
+              <XAxis type="number" tick={{ fontSize: 10, fill: '#94918D' }} allowDecimals={false} />
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={120}
+                tick={{ fontSize: 11, fill: '#6B6B6B' }}
+              />
               <Tooltip
                 contentStyle={{ fontSize: 12, backgroundColor: '#fff', border: '1px solid #E8E8E5', borderRadius: 8 }}
               />
-            </PieChart>
+              <Bar dataKey="value" name="Articles" radius={[0, 4, 4, 0]}>
+                {pieData.sort((a, b) => b.value - a.value).map((_, i) => (
+                  <Cell key={i} fill={i === 0 ? '#E07A3A' : '#D3D1C7'} />
+                ))}
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center mt-2">
-            {pieData.map((entry, i) => (
-              <div key={entry.name} className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                {entry.name} ({entry.value})
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Views by type */}
