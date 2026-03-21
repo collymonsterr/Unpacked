@@ -98,14 +98,28 @@ export default function ArticleGenerating({ row, onReady }: Props) {
     return msgs
   }, [plan])
 
-  // Progress messages paced across ~120s
+  // Progress messages — fast at start (feels active), slows down later
+  // First 3 messages: every 4s. Next 3: every 8s. Rest: every 15s.
   useEffect(() => {
     if (!plan || messages.length === 0 || isComplete) return
-    const interval = Math.max(8, Math.floor(120 / messages.length))
-    const timer = setInterval(() => {
-      setCompletedMsgs(prev => prev < messages.length - 1 ? prev + 1 : prev)
-    }, interval * 1000)
-    return () => clearInterval(timer)
+
+    // Build schedule of delays for each message
+    const delays: number[] = []
+    let cumulative = 2000 // Start 2s after plan reveals
+    for (let i = 0; i < messages.length; i++) {
+      delays.push(cumulative)
+      if (i < 3) cumulative += 4000       // First 3: every 4s
+      else if (i < 6) cumulative += 8000  // Next 3: every 8s
+      else cumulative += 15000            // Rest: every 15s
+    }
+
+    const timers = delays.map((delay, i) =>
+      setTimeout(() => {
+        setCompletedMsgs(prev => Math.max(prev, i + 1))
+      }, delay)
+    )
+
+    return () => timers.forEach(t => clearTimeout(t))
   }, [plan, messages.length, isComplete])
 
   // When article ready — trigger transition
