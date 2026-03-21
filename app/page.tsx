@@ -146,7 +146,7 @@ export default async function HomePage() {
               Verified, not guessed
             </h3>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              Each article is independently verified against real sources.
+              Each article is independently verified against real sources by a dedicated agent.
             </p>
           </div>
         </div>
