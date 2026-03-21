@@ -16,7 +16,7 @@ async function getRecentArticles(): Promise<ArticleRow[]> {
       .in('status', ['complete', 'verified'])
       .order('pinned', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
-      .limit(50)
+      .limit(100)
 
     // Sort by sort_order (stored in article JSONB), then by created_at
     const articles = (data ?? []).sort((a, b) => {

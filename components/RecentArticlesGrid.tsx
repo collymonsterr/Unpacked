@@ -168,6 +168,7 @@ export default function RecentArticlesGrid({ articles: initialArticles }: Props)
   const [activeFilter, setActiveFilter] = useState<string | null>(null)
   const [sortMode, setSortMode] = useState<'manual' | 'newest'>('manual')
   const [saving, setSaving] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(24)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -285,35 +286,61 @@ export default function RecentArticlesGrid({ articles: initialArticles }: Props)
         </div>
       </div>
 
-      {isAdmin && sortMode === 'manual' && !activeFilter ? (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext items={filteredArticles.map(a => a.id)} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filteredArticles.map((row) => (
-                <SortableArticleCard
-                  key={row.id}
-                  row={row}
-                  isAdmin={isAdmin}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredArticles.map((row) => (
-            <SortableArticleCard
-              key={row.id}
-              row={row}
-              isAdmin={false}
-            />
-          ))}
-        </div>
-      )}
+      {(() => {
+        const visibleArticles = filteredArticles.slice(0, visibleCount)
+        const hasMore = filteredArticles.length > visibleCount
+
+        return (
+          <>
+            {isAdmin && sortMode === 'manual' && !activeFilter ? (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext items={visibleArticles.map(a => a.id)} strategy={rectSortingStrategy}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {visibleArticles.map((row) => (
+                      <SortableArticleCard
+                        key={row.id}
+                        row={row}
+                        isAdmin={isAdmin}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {visibleArticles.map((row) => (
+                  <SortableArticleCard
+                    key={row.id}
+                    row={row}
+                    isAdmin={false}
+                  />
+                ))}
+              </div>
+            )}
+
+            {hasMore && (
+              <div className="text-center mt-8">
+                <button
+                  onClick={() => setVisibleCount(prev => prev + 24)}
+                  className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105"
+                  style={{
+                    backgroundColor: 'var(--card)',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid var(--border)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Show more ({filteredArticles.length - visibleCount} remaining)
+                </button>
+              </div>
+            )}
+          </>
+        )
+      })()}
 
       {filteredArticles.length === 0 && activeFilter && (
         <p className="text-center py-12 text-sm" style={{ color: 'var(--text-secondary)' }}>
