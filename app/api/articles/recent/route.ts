@@ -13,8 +13,9 @@ export async function GET() {
     return Response.json({ error: 'Failed to fetch articles' }, { status: 500 })
   }
 
-  // Sort by sort_order (stored in article JSONB), then by created_at
-  const articles = (data ?? []).sort((a, b) => {
+  // Filter out hidden articles, then sort
+  const visible = (data ?? []).filter(a => !(a.article as Record<string, unknown>)?.hidden_from_homepage)
+  const articles = visible.sort((a, b) => {
     // Pinned first
     const aPinned = a.pinned ? 1 : 0
     const bPinned = b.pinned ? 1 : 0

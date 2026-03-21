@@ -32,6 +32,7 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
   const [isRegeneratingImages, setIsRegeneratingImages] = useState(false)
   const [isRegeneratingArticle, setIsRegeneratingArticle] = useState(false)
   const [isPinned, setIsPinned] = useState(articleRow.pinned ?? false)
+  const [isHidden, setIsHidden] = useState(!!(articleRow.article as unknown as Record<string, unknown>)?.hidden_from_homepage)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [toolbarBusy, setToolbarBusy] = useState<string | null>(null)
@@ -113,6 +114,21 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
       if (!res.ok) setIsPinned(!newPinned) // revert on failure
     } catch {
       setIsPinned(!newPinned)
+    }
+  }
+
+  async function handleToggleHidden() {
+    const newHidden = !isHidden
+    setIsHidden(newHidden)
+    try {
+      const res = await fetch(`/api/articles/${articleRow.id}/visibility`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hidden: newHidden }),
+      })
+      if (!res.ok) setIsHidden(!newHidden)
+    } catch {
+      setIsHidden(!newHidden)
     }
   }
 
@@ -247,6 +263,12 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
                       disabled={!!toolbarBusy}
                     >
                       {isPinned ? 'Unpin from Homepage' : 'Pin to Homepage'}
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => { handleToggleHidden(); setMenuOpen(false) }}
+                      disabled={!!toolbarBusy}
+                    >
+                      {isHidden ? 'Show on Homepage' : 'Hide from Homepage'}
                     </MenuItem>
                     <MenuItem
                       onClick={() => { handleRegenerateImages(); setMenuOpen(false) }}

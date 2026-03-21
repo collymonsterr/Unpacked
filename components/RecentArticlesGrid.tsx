@@ -236,35 +236,6 @@ export default function RecentArticlesGrid({ articles: initialArticles }: Props)
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Sort toggle — admin only */}
-          {isAdmin && (
-            <div
-              className="flex rounded-lg overflow-hidden"
-              style={{ border: '1px solid var(--border)' }}
-            >
-              <button
-                onClick={() => setSortMode('manual')}
-                className="px-3 py-1 text-xs font-medium transition-colors"
-                style={{
-                  backgroundColor: sortMode === 'manual' ? 'var(--accent)' : 'transparent',
-                  color: sortMode === 'manual' ? '#fff' : 'var(--text-secondary)',
-                }}
-              >
-                Manual order
-              </button>
-              <button
-                onClick={() => setSortMode('newest')}
-                className="px-3 py-1 text-xs font-medium transition-colors"
-                style={{
-                  backgroundColor: sortMode === 'newest' ? 'var(--accent)' : 'transparent',
-                  color: sortMode === 'newest' ? '#fff' : 'var(--text-secondary)',
-                }}
-              >
-                Newest first
-              </button>
-            </div>
-          )}
-
           {/* Category filters */}
           <div className="flex items-center gap-1.5 flex-wrap">
             {TYPE_FILTERS.map(({ label, types }) => {

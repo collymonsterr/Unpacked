@@ -18,8 +18,9 @@ async function getRecentArticles(): Promise<ArticleRow[]> {
       .order('created_at', { ascending: false })
       .limit(100)
 
-    // Sort by sort_order (stored in article JSONB), then by created_at
-    const articles = (data ?? []).sort((a, b) => {
+    // Filter out hidden articles, then sort
+    const visible = (data ?? []).filter(a => !(a.article as Record<string, unknown>)?.hidden_from_homepage)
+    const articles = visible.sort((a, b) => {
       const aPinned = a.pinned ? 1 : 0
       const bPinned = b.pinned ? 1 : 0
       if (aPinned !== bPinned) return bPinned - aPinned
