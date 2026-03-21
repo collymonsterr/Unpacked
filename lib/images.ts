@@ -2,10 +2,12 @@ import type { PlanEntity, ArticleContent, ArticleType, ImageDensity, ProductCard
 
 interface BraveImageResult {
   properties: { url: string }
-  thumbnail: { src: string }
+  thumbnail: { src: string; width?: number; height?: number }
 }
 
 const REJECTED_PATTERNS = /\.svg|\.gif|favicon|icon|logo|pixel|tracking|badge|sprite|placeholder|avatar|profile|thumbs\.redditmedia|external-preview\.redd\.it|preview\.redd\.it|ytimg\.com|youtube\.com\/vi|i\.ytimg|img\.youtube|maxresdefault|hqdefault|mqdefault|sddefault|banner|screenshot|webpage|thumbnail|clipart|cartoon|illustration|vector|stock|watermark|shutterstock|istockphoto|gettyimages|dreamstime|depositphotos|123rf|fotolia|alamy/i
+
+const SMALL_IMAGE_PATTERNS = /\/thumb\/|\/small\/|\/s\/|_thumb\.|_small\.|_icon\.|_mini\.|\/64\/|\/96\/|\/128\/|\/150\/|\/100x|\/120x|\/150x|\/160x|\/200x|w_150|w_200|h_150|h_200|size=small|size=thumb/i
 
 // Official/reputable product image sources — these get priority
 const PREFERRED_HOSTNAMES = new Set([
@@ -26,6 +28,7 @@ function filterAndRankImageUrls(results: BraveImageResult[]): string[] {
     const url = r.properties?.url
     if (!url) continue
     if (REJECTED_PATTERNS.test(url)) continue
+    if (SMALL_IMAGE_PATTERNS.test(url)) continue
     if (url.length < 30) continue
 
     // Deduplicate by hostname
