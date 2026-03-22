@@ -3,6 +3,9 @@ import type { PlanEntity, ArticleContent, ArticleType, ImageDensity, ProductCard
 interface BraveImageResult {
   properties: { url: string }
   thumbnail: { src: string; width?: number; height?: number }
+  title?: string
+  width?: number
+  height?: number
 }
 
 const REJECTED_PATTERNS = /\.svg|\.gif|favicon|icon|logo|pixel|tracking|badge|sprite|placeholder|avatar|profile|thumbs\.redditmedia|external-preview\.redd\.it|preview\.redd\.it|ytimg\.com|youtube\.com\/vi|i\.ytimg|img\.youtube|maxresdefault|hqdefault|mqdefault|sddefault|banner|screenshot|webpage|thumbnail|clipart|cartoon|illustration|vector|stock|watermark|shutterstock|istockphoto|gettyimages|dreamstime|depositphotos|123rf|fotolia|alamy/i
@@ -24,7 +27,7 @@ const PREFERRED_HOSTNAMES = new Set([
   'plus.unsplash.com',
 ])
 
-function filterAndRankImageUrls(results: BraveImageResult[]): string[] {
+function filterAndRankImageUrls(results: BraveImageResult[], allowDuplicateHosts = false): string[] {
   const seen = new Set<string>()
   const preferred: string[] = []
   const others: string[] = []
@@ -37,12 +40,25 @@ function filterAndRankImageUrls(results: BraveImageResult[]): string[] {
     if (TEXT_IMAGE_PATTERNS.test(url)) continue
     if (url.length < 30) continue
 
-    // Deduplicate by hostname
+    // Skip tiny images based on metadata
+    if (r.width && r.width < 400) continue
+    if (r.height && r.height < 300) continue
+
+    // Skip images with comparison/infographic titles
+    const title = (r.title || '').toLowerCase()
+    if (title.includes(' vs ') || title.includes('comparison') || title.includes('infographic')) continue
+
+    // Deduplicate by hostname (unless allowing duplicates for product searches)
     let hostname: string
     try {
       hostname = new URL(url).hostname
-      if (seen.has(hostname)) continue
+      if (!allowDuplicateHosts) {
+        if (seen.has(hostname)) continue
+      }
+      // Always deduplicate exact URLs
+      if (seen.has(url)) continue
       seen.add(hostname)
+      seen.add(url)
     } catch {
       continue
     }
@@ -59,17 +75,14 @@ function filterAndRankImageUrls(results: BraveImageResult[]): string[] {
   return [...preferred, ...others]
 }
 
-async function fetchProductImages(
-  searchQuery: string,
-  maxImages: number
-): Promise<string[]> {
+async function searchBraveImages(query: string, count = 20): Promise<BraveImageResult[]> {
   const apiKey = process.env.BRAVE_SEARCH_API_KEY
   if (!apiKey) return []
 
   try {
     const url = new URL('https://api.search.brave.com/res/v1/images/search')
-    url.searchParams.set('q', searchQuery)
-    url.searchParams.set('count', '20')
+    url.searchParams.set('q', query)
+    url.searchParams.set('count', String(count))
     url.searchParams.set('safesearch', 'strict')
 
     const res = await fetch(url.toString(), {
@@ -81,28 +94,46 @@ async function fetchProductImages(
     if (!res.ok) return []
 
     const data = await res.json()
-    const results: BraveImageResult[] = data.results ?? []
-
-    return filterAndRankImageUrls(results).slice(0, maxImages)
+    return data.results ?? []
   } catch {
     return []
   }
+}
+
+async function fetchProductImages(
+  searchQuery: string,
+  maxImages: number,
+  entityName?: string
+): Promise<string[]> {
+  // Primary search
+  const primaryResults = await searchBraveImages(searchQuery, 20)
+
+  // Secondary search with a variation for more variety
+  let secondaryResults: BraveImageResult[] = []
+  if (maxImages > 2 && entityName) {
+    const secondaryQuery = `${entityName} review photo high quality`
+    secondaryResults = await searchBraveImages(secondaryQuery, 10)
+  }
+
+  // Combine, filter, and deduplicate — allow multiple from same host for product images
+  const allResults = [...primaryResults, ...secondaryResults]
+  return filterAndRankImageUrls(allResults, true).slice(0, maxImages)
 }
 
 function getImageCount(articleType: ArticleType, productType?: string): number {
   // Software, services, and places don't need multiple images
   if (productType === 'software') return 1
   if (productType === 'service') return 2
-  if (productType === 'place') return 2
+  if (productType === 'place') return 3
 
-  // Physical products benefit from multiple angles
+  // Physical products get 5 images for a proper gallery
   switch (articleType) {
     case 'buyer_guide':
     case 'comparison':
     case 'decision_guide':
-      return 3
+      return 5
     default:
-      return 2
+      return 3
   }
 }
 
@@ -302,8 +333,8 @@ export async function enrichArticleWithImages(
           ? `${planQuery} ${typeHint}`
           : planQuery)
         : `${card.entity_name} ${typeHint || 'product photo'}`
-      console.log(`[images] Searching for "${card.entity_name}": "${baseQuery}"`)
-      const imageUrls = await fetchProductImages(baseQuery, maxImages)
+      console.log(`[images] Searching for "${card.entity_name}": "${baseQuery}" (max: ${maxImages})`)
+      const imageUrls = await fetchProductImages(baseQuery, maxImages, card.entity_name)
       return { entity_name: card.entity_name, imageUrls }
     })
   )

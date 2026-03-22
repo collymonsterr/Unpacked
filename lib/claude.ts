@@ -148,6 +148,14 @@ VISUALISATION RULES BY TYPE:
 
 For research_queries: generate 3-4 short, natural-sounding descriptions of what the system will research. These are shown to the user during loading.
 
+For entities search_query: this is used to find PRODUCT IMAGES via image search. Follow these rules:
+- Always append "official product photo" to specific product names: "iRobot Roomba j7+ official product photo"
+- Use the FULL official name including model number: "Sony WH-1000XM5 official product photo" not just "Sony headphones"
+- For places: "{place name} photography": "Dubai Marina photography"
+- For software: "{software name} app screenshot": "Notion app screenshot"
+- NEVER just search the product name alone — you'll get random accessories, cases, and junk
+- For product CATEGORIES (not specific products): "{category} lineup editorial photo"
+
 For suggestion_chips: generate 3 refinements (modify this article) and 3 related (generate a new article on a naturally connected topic).
 
 For hero_image_query: generate a single search query (5-8 words) that would find a beautiful, magazine-quality hero photograph for this article. Think: what would a photo editor at a premium magazine search for? The image should be aspirational, high-resolution, and have NO text or infographics. Examples: "Rent vs Buy" → "beautiful modern house exterior golden hour", "Best Headphones" → "premium headphones lifestyle minimal desk", "Dubai Travel" → "Dubai marina skyline sunset aerial", "How to Budget" → "elegant notebook pen coffee flatlay". Do NOT include words like "article", "guide", "review", "infographic", or "chart".
@@ -395,18 +403,18 @@ Return a JSON object matching this structure. Return ONLY valid JSON. No preambl
 
 IMAGE SECTIONS:
 
-EVERY article should include image_section entries to add editorial-quality photos throughout. These are NOT product images — they are contextual, atmospheric photos that make the article feel like a magazine feature.
-
-Rules for image_section:
-- Include 2-4 image_section entries scattered throughout the article (between other sections, not clumped together)
-- For travel/planning articles: use destination photos, cityscapes, landmarks, street scenes, food culture. Example search queries: "Chiang Mai Thailand beautiful cityscape aerial", "Lisbon Portugal street tram sunset", "Bali rice terraces landscape"
-- For product articles: use lifestyle/contextual shots. Example: "person using laptop at coffee shop", "home office desk setup aesthetic", "gaming setup RGB lighting"
-- For explainer/finance articles: use high-quality stock-style photos. Example: "stock market trading floor", "person reviewing financial documents", "compound interest growth concept illustration"
-- For news/trend articles: use relevant editorial photos. Example: "electric vehicle charging station", "AI technology abstract visualization"
-- NEVER use search queries that will return website screenshots, banners with text, or infographics. Aim for PHOTOGRAPHS, not graphics.
-- The search_query must be specific and descriptive enough to find a beautiful, relevant photo
-- Use layout "single" for hero/impactful images, "gallery" for showcasing multiple related images (e.g., different destinations), "side-by-side" for comparisons
-- Place the first image_section near the top of the article (after executive summary or first content section) for visual impact
+SECTION IMAGES: Only include image_section entries when you can describe a specific, relevant photograph. Quality over quantity.
+- Only include a section image if you can describe a specific, photographable scene
+- The search_query must be specific enough to find a good result: "close-up of mesh drum pad being played with drumstick" NOT "electronic drums"
+- If you can't think of a specific relevant image for a section, DON'T include one. No bad images is better than random irrelevant images.
+- Never use generic concepts: "technology background", "person thinking", "abstract finance"
+- Product cards already have their own images — sections BETWEEN product cards do NOT need additional images
+- Include 1-3 image_section entries maximum, only where they genuinely add value
+- For travel/planning: destination photos, cityscapes, landmarks. Example: "Chiang Mai Thailand night market street food stalls"
+- For product articles: lifestyle context shots. Example: "mechanical keyboard on wooden desk with coffee cup morning light"
+- For explainer/finance: tangible representations. Example: "shopping cart in supermarket aisle with price tags visible"
+- NEVER use queries that return screenshots, banners with text, or infographics. PHOTOGRAPHS only.
+- Use layout "single" for impactful images, "gallery" for showcasing variety, "side-by-side" for comparisons
 
 PRODUCT CARD RULES:
 

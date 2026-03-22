@@ -210,13 +210,23 @@ export default function ProductCard({ section, isAdmin, onReplaceImage, onSetPri
                   )}
                 </>
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center p-6">
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 gap-2" style={{ backgroundColor: '#f5f5f3' }}>
                   <span
-                    className="text-center text-lg font-semibold leading-snug"
+                    className="text-center text-base font-semibold leading-snug"
                     style={{ color: 'var(--text-secondary)' }}
                   >
                     {section.entity_name}
                   </span>
+                  {isAdmin && onReplaceImage && (
+                    <button
+                      onClick={() => handleReplace(0)}
+                      disabled={replacingIndex !== null}
+                      className="text-xs font-medium px-3 py-1.5 rounded-lg transition-opacity"
+                      style={{ backgroundColor: 'var(--accent)', color: '#fff' }}
+                    >
+                      {replacingIndex === 0 ? 'Searching...' : 'Find image'}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -225,16 +235,14 @@ export default function ProductCard({ section, isAdmin, onReplaceImage, onSetPri
           {/* Thumbnail Strip — only for physical products with multiple images */}
           {images.length > 1 && (
             <div
-              className="grid gap-2 px-4 md:px-5 pb-4"
-              style={{
-                gridTemplateColumns: `repeat(${Math.min(images.length, 4)}, 1fr)`,
-              }}
+              className="flex gap-2 px-4 md:px-5 pb-4 overflow-x-auto"
+              style={{ scrollbarWidth: 'none' }}
             >
               {allImages.map((url, i) => {
                 if (imgErrors.has(i)) return null
                 const isActive = url === heroUrl
                 return (
-                  <div key={i} className="relative group/thumb">
+                  <div key={i} className="relative group/thumb flex-1 min-w-0" style={{ maxWidth: `${100 / Math.min(images.length, 5)}%` }}>
                     <button
                       onClick={() => {
                         if (isAdmin && onSetPrimaryImage && i !== 0) {
