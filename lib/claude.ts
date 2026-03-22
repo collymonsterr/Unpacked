@@ -530,7 +530,7 @@ General rule: ask "what are the 3-4 things the reader absolutely needs?" and bui
   }
 
   if (options.location && locationLabels[options.location]) {
-    prefParts.push(`The user is located in ${locationLabels[options.location]}. Prioritise products, services, and retailers available in this region. Use region-appropriate examples and references.`)
+    prefParts.push(`The user is based in ${locationLabels[options.location]}. Use this ONLY when the topic is genuinely location-sensitive — such as product availability, local retailers, regulations, taxes, salaries, real estate, or travel. For general explainers, educational topics, or universal concepts, do NOT force a regional perspective. Let the topic determine whether location matters.`)
   }
   if (options.currency && options.currency !== 'USD' && currencyLabels[options.currency]) {
     prefParts.push(`Show ALL prices in ${currencyLabels[options.currency]}. Convert any USD prices you find to ${options.currency} using current exchange rates from your web search. Do not show prices in USD unless specifically comparing international pricing.`)
