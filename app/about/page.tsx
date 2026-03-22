@@ -155,7 +155,7 @@ export default function AboutPage() {
                 </div>
 
                 <p className="text-[11px] leading-[1.7] mb-2.5" style={{ color: '#374151' }}>
-                  Here are some of the <strong>best beginner electric guitars under $500</strong> that are widely recommended by players and instructors: 🎸
+                  Here are some of the <strong>best electric guitars under $500</strong> that are widely recommended by players and instructors: 🎸
                 </p>
                 <p className="text-[11px] leading-[1.7] mb-2" style={{ color: '#374151' }}>
                   <strong>1. Squier Classic Vibe &apos;60s Stratocaster</strong> — Great all-rounder with alnico pickups and a vintage-tint gloss neck. The Classic Vibe series offers excellent build quality at an affordable price point, and many players consider it one of the best value options in this range. It comes in several colour options including Lake Placid Blue, 3-Colour Sunburst, and Olympic White.
@@ -207,7 +207,7 @@ export default function AboutPage() {
                 <div>
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--accent)', color: '#fff' }}>BUYER GUIDE</span>
                   <p className="text-[13px] font-bold mt-1.5" style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}>
-                    Best Beginner Electric Guitars Under $500
+                    Best Electric Guitars Under $500
                   </p>
                 </div>
 
@@ -224,8 +224,8 @@ export default function AboutPage() {
 
                 {/* Product cards with real images */}
                 {[
-                  { name: 'Fender Player Stratocaster', price: '$849', badge: 'TOP PICK', badgeColor: 'var(--accent)', img: 'https://m.media-amazon.com/images/I/61rRsFFYl-L._AC_SL1500_.jpg', desc: 'The gold standard. HSS versatility.' },
-                  { name: 'Gibson Les Paul Standard', price: '$2,499', badge: 'PREMIUM', badgeColor: '#94918D', img: 'https://m.media-amazon.com/images/I/71lJGGn0R9L._AC_SL1500_.jpg', desc: 'Iconic tone, premium build quality' },
+                  { name: 'Yamaha Pacifica 112V', price: '$299', badge: 'TOP PICK', badgeColor: 'var(--accent)', img: 'https://m.media-amazon.com/images/I/61rRsFFYl-L._AC_SL1500_.jpg', desc: 'Best all-rounder. HSS versatility.' },
+                  { name: 'Epiphone Les Paul Standard', price: '$449', badge: 'RUNNER UP', badgeColor: '#94918D', img: 'https://m.media-amazon.com/images/I/71lJGGn0R9L._AC_SL1500_.jpg', desc: 'Classic tone, great build quality' },
                 ].map((p, i) => (
                   <div key={i} className="flex gap-2.5 p-2 rounded-lg" style={{ border: '1px solid var(--border)' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
