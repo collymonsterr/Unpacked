@@ -143,33 +143,30 @@ export default function AboutPage() {
               {/* Content */}
               <div className="p-4 flex-1" style={{ backgroundColor: '#ffffff' }}>
                 <p className="text-[11px] leading-[1.7] mb-2.5" style={{ color: '#374151' }}>
-                  Here are some of the <strong>best electric guitars under $500</strong> that are widely recommended by players and instructors: 🎸
+                  Great question! Both the <strong>iPhone 17</strong> and the <strong>Samsung Galaxy S26</strong> are excellent flagship smartphones. Here&apos;s a comparison to help you decide: 📱
                 </p>
                 <p className="text-[11px] leading-[1.7] mb-2" style={{ color: '#374151' }}>
-                  <strong>1. Squier Classic Vibe &apos;60s Stratocaster</strong> — Great all-rounder with alnico pickups and a vintage-tint gloss neck. The Classic Vibe series offers excellent build quality at an affordable price point, and many players consider it one of the best value options in this range. It comes in several colour options including Lake Placid Blue, 3-Colour Sunburst, and Olympic White.
+                  <strong>iPhone 17</strong> — Apple&apos;s latest flagship features the A19 Pro chip, a 48MP main camera with improved computational photography, and the familiar iOS ecosystem. It offers excellent performance, strong privacy features, and seamless integration with other Apple devices like MacBooks, AirPods, and Apple Watch. The build quality is premium with a titanium frame and ceramic shield front. ✅
                 </p>
                 <p className="text-[11px] leading-[1.7] mb-2" style={{ color: '#374151' }}>
-                  <strong>2. Yamaha Pacifica 112V</strong> — A go-to recommendation for beginners with its HSS pickup configuration, comfortable body shape, and reliable tuning stability. The Pacifica series has been consistently popular for over two decades and offers great versatility across genres. ✅
+                  <strong>Samsung Galaxy S26</strong> — Samsung&apos;s flagship comes with the Snapdragon 8 Elite Gen 2 processor, a versatile triple camera system with a 200MP main sensor, and a stunning Dynamic AMOLED display. Galaxy AI features are deeply integrated, and the phone offers more customisation options than iOS. The S26 Ultra model adds an S Pen and a 5x optical zoom camera. 📸
                 </p>
                 <p className="text-[11px] leading-[1.7] mb-2" style={{ color: '#374151' }}>
-                  <strong>3. Epiphone Les Paul Standard</strong> — If you prefer warmer, thicker tones, the Epiphone Les Paul is a solid choice. It features dual ProBucker humbuckers, a mahogany body, and the iconic Les Paul shape that&apos;s been a staple of rock music for decades. 🎵
+                  <strong>Key differences:</strong> The iPhone excels in video recording, app optimisation, and ecosystem integration. The Galaxy S26 offers more camera flexibility (especially zoom), a brighter display, and more storage options. Both have similar battery life, though the S26 charges slightly faster. 🔋
                 </p>
                 <p className="text-[11px] leading-[1.7] mb-2" style={{ color: '#374151' }}>
-                  <strong>4. Ibanez GRX70QA</strong> — Known for its slim, fast neck profile, the Ibanez is particularly good for players interested in rock, metal, and shred genres. It offers good value with its quilted art grain top and versatile Infinity pickup configuration. 🎶
+                  <strong>Pricing:</strong> The iPhone 17 starts at around $799 for the base model and goes up to $1,199 for the Pro Max. The Galaxy S26 starts at $799 and the Ultra goes up to $1,299. Both phones are available on most major carriers with trade-in deals. 💰
                 </p>
                 <p className="text-[11px] leading-[1.7] mb-2" style={{ color: '#374151' }}>
-                  <strong>5. Harley Benton SC-450</strong> — A budget-friendly option from Thomann that punches well above its weight. Great for players who want a Les Paul style without the premium price tag. Some players report needing a setup out of the box, but the value is hard to beat at this price point.
+                  Ultimately, the best phone for you <span style={{ backgroundColor: '#fee2e2', padding: '1px 3px', borderRadius: '2px', color: '#991b1b' }}>depends on your personal preferences</span> and which ecosystem you&apos;re already invested in. If you use a Mac and AirPods, the iPhone makes more sense. If you prefer customisation and flexibility, the Galaxy S26 is the better choice. 😊
                 </p>
-                <p className="text-[11px] leading-[1.7] mb-2" style={{ color: '#374151' }}>
-                  <strong>Key things to consider:</strong> When choosing your first electric guitar, think about the neck profile (thinner necks are easier for small hands), the pickup configuration (HSS is most versatile, HH is warmer), and whether you prefer a bolt-on or set neck construction. Each has pros and cons.
-                </p>
-                <p className="text-[11px] leading-[1.7] mb-2" style={{ color: '#374151' }}>
-                  Ultimately, the best guitar for you <span style={{ backgroundColor: '#fee2e2', padding: '1px 3px', borderRadius: '2px', color: '#991b1b' }}>depends on your personal preferences</span>, playing style, and the genres you&apos;re most interested in. I&apos;d recommend visiting a local music store to try out a few models before making your final decision. 😊
+                <p className="text-[11px] leading-[1.7]" style={{ color: '#374151' }}>
+                  You might also want to consider what accessories you&apos;ll need — a good case ($20–60), screen protector ($10–30), and possibly wireless earbuds if you don&apos;t already have them. Both phones support fast charging, but you&apos;ll need to buy a charger separately as neither includes one in the box.
                 </p>
               </div>
             </div>
             <p className="text-xs text-center mt-3" style={{ color: '#8a8580' }}>
-              Plain text. Random images. No data. No verdict.
+              Plain text. No images. No data. No verdict.
             </p>
           </div>
 
@@ -190,9 +187,9 @@ export default function AboutPage() {
               <div className="p-4 space-y-2.5 flex-1">
                 {/* Badge + title */}
                 <div>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--accent)', color: '#fff' }}>BUYER GUIDE</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--accent)', color: '#fff' }}>COMPARISON</span>
                   <p className="text-[13px] font-bold mt-1.5" style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}>
-                    Best Electric Guitars Under $500
+                    iPhone 17 vs Samsung Galaxy S26
                   </p>
                 </div>
 
@@ -200,17 +197,17 @@ export default function AboutPage() {
                 <div className="rounded-lg p-2.5" style={{ backgroundColor: 'var(--accent-light)', borderLeft: '3px solid var(--accent)' }}>
                   <span className="text-[9px] font-bold" style={{ color: 'var(--accent)' }}>VERDICT</span>
                   <p className="text-[11px] font-semibold mt-0.5" style={{ color: 'var(--text-primary)' }}>
-                    Get the Yamaha Pacifica 112V
+                    Get the iPhone 17
                   </p>
                   <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                    Best all-round value with HSS versatility. Reddit&apos;s top pick by a wide margin.
+                    Unless you want the best camera zoom, in which case the S26 Ultra edges it.
                   </p>
                 </div>
 
                 {/* Product cards with real images */}
                 {[
-                  { name: 'Yamaha Pacifica 112V', price: '$299', badge: 'TOP PICK', badgeColor: 'var(--accent)', img: '/about/yamaha-pacifica.jpg', desc: 'Best all-rounder. HSS versatility.' },
-                  { name: 'Epiphone Les Paul Standard', price: '$449', badge: 'RUNNER UP', badgeColor: '#94918D', img: '/about/epiphone-les-paul.jpg', desc: 'Classic tone, great build quality' },
+                  { name: 'iPhone 17', price: 'From $799', badge: 'WINNER', badgeColor: 'var(--accent)', img: '/about/iphone-17.jpg', desc: 'Best ecosystem, video, and resale value' },
+                  { name: 'Samsung Galaxy S26', price: 'From $799', badge: 'BEST ZOOM', badgeColor: '#94918D', img: '/about/galaxy-s26.jpg', desc: 'Best camera zoom and display brightness' },
                 ].map((p, i) => (
                   <div key={i} className="flex gap-2.5 p-2 rounded-lg" style={{ border: '1px solid var(--border)' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -228,78 +225,100 @@ export default function AboutPage() {
 
                 {/* Community recommendation donut */}
                 <div className="rounded-lg p-2.5" style={{ backgroundColor: '#fafaf8' }}>
-                  <p className="text-[9px] font-bold mb-1.5" style={{ color: 'var(--text-secondary)' }}>COMMUNITY RECOMMENDATION</p>
+                  <p className="text-[9px] font-bold mb-1.5" style={{ color: 'var(--text-secondary)' }}>COMMUNITY PREFERENCE</p>
                   <div className="flex items-center gap-3">
-                    {/* Simple donut via SVG */}
                     <svg width="48" height="48" viewBox="0 0 36 36">
                       <circle cx="18" cy="18" r="14" fill="none" stroke="#D3D1C7" strokeWidth="5" />
-                      <circle cx="18" cy="18" r="14" fill="none" stroke="#94918D" strokeWidth="5" strokeDasharray="10.56 77.44" strokeDashoffset="25" />
-                      <circle cx="18" cy="18" r="14" fill="none" stroke="#D4A843" strokeWidth="5" strokeDasharray="24.64 63.36" strokeDashoffset="14.44" />
-                      <circle cx="18" cy="18" r="14" fill="none" stroke="var(--accent)" strokeWidth="5" strokeDasharray="45.76 42.24" strokeDashoffset="89.08" />
+                      <circle cx="18" cy="18" r="14" fill="none" stroke="#D4A843" strokeWidth="5" strokeDasharray="33.43 54.57" strokeDashoffset="25" />
+                      <circle cx="18" cy="18" r="14" fill="none" stroke="var(--accent)" strokeWidth="5" strokeDasharray="48.38 39.62" strokeDashoffset="58.43" />
                     </svg>
                     <div className="space-y-0.5 text-[8px]">
-                      <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm" style={{ backgroundColor: 'var(--accent)' }} /> <span style={{ color: 'var(--text-primary)' }}>Pacifica <strong>52%</strong></span></div>
-                      <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm" style={{ backgroundColor: '#D4A843' }} /> <span style={{ color: 'var(--text-primary)' }}>Squier <strong>28%</strong></span></div>
-                      <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm" style={{ backgroundColor: '#94918D' }} /> <span style={{ color: 'var(--text-primary)' }}>Epiphone <strong>12%</strong></span></div>
-                      <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm" style={{ backgroundColor: '#D3D1C7' }} /> <span style={{ color: 'var(--text-primary)' }}>Other <strong>8%</strong></span></div>
+                      <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm" style={{ backgroundColor: 'var(--accent)' }} /> <span style={{ color: 'var(--text-primary)' }}>iPhone <strong>55%</strong></span></div>
+                      <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm" style={{ backgroundColor: '#D4A843' }} /> <span style={{ color: 'var(--text-primary)' }}>Samsung <strong>38%</strong></span></div>
+                      <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm" style={{ backgroundColor: '#D3D1C7' }} /> <span style={{ color: 'var(--text-primary)' }}>Other <strong>7%</strong></span></div>
                     </div>
                   </div>
                 </div>
 
-                {/* Value score bar chart */}
+                {/* Head-to-head bar chart */}
                 <div>
-                  <p className="text-[9px] font-bold mb-1" style={{ color: 'var(--text-secondary)' }}>VALUE SCORE</p>
+                  <p className="text-[9px] font-bold mb-1" style={{ color: 'var(--text-secondary)' }}>HEAD TO HEAD</p>
                   <div className="space-y-1">
                     {[
-                      { name: 'Pacifica', w: '92%', winner: true },
-                      { name: 'Squier CV', w: '84%', winner: false },
-                      { name: 'Epiphone', w: '72%', winner: false },
-                      { name: 'Ibanez', w: '65%', winner: false },
+                      { name: 'Camera', iphone: '88%', samsung: '92%', iphoneWins: false },
+                      { name: 'Battery', iphone: '85%', samsung: '82%', iphoneWins: true },
+                      { name: 'Display', iphone: '90%', samsung: '95%', iphoneWins: false },
+                      { name: 'Performance', iphone: '94%', samsung: '90%', iphoneWins: true },
+                      { name: 'Value', iphone: '78%', samsung: '82%', iphoneWins: false },
                     ].map((b, i) => (
-                      <div key={i} className="flex items-center gap-1.5">
-                        <span className="text-[8px] w-12 text-right flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{b.name}</span>
-                        <div className="flex-1 h-2 rounded-full" style={{ backgroundColor: 'var(--border)' }}>
-                          <div className="h-full rounded-full" style={{ width: b.w, backgroundColor: b.winner ? 'var(--accent)' : '#D3D1C7' }} />
+                      <div key={i} className="flex items-center gap-1">
+                        <span className="text-[7px] w-14 text-right flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{b.name}</span>
+                        <div className="flex-1 flex gap-0.5">
+                          <div className="flex-1 h-1.5 rounded-full flex justify-end" style={{ backgroundColor: 'var(--border)' }}>
+                            <div className="h-full rounded-full" style={{ width: b.iphone, backgroundColor: b.iphoneWins ? 'var(--accent)' : '#D3D1C7' }} />
+                          </div>
+                          <div className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: 'var(--border)' }}>
+                            <div className="h-full rounded-full" style={{ width: b.samsung, backgroundColor: !b.iphoneWins ? '#D4A843' : '#D3D1C7' }} />
+                          </div>
                         </div>
                       </div>
                     ))}
+                    <div className="flex justify-between text-[7px] px-14" style={{ color: 'var(--text-secondary)' }}>
+                      <span style={{ color: 'var(--accent)' }}>iPhone</span>
+                      <span style={{ color: '#D4A843' }}>Samsung</span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Comparison table */}
                 <div className="rounded-lg overflow-hidden text-[8px]" style={{ border: '1px solid var(--border)' }}>
-                  <div className="grid grid-cols-4 gap-0" style={{ backgroundColor: '#f5f4f0' }}>
+                  <div className="grid grid-cols-3 gap-0" style={{ backgroundColor: '#f5f4f0' }}>
                     <div className="p-1 font-bold" style={{ color: 'var(--text-secondary)' }}></div>
-                    <div className="p-1 font-bold text-center" style={{ color: 'var(--accent)' }}>Pacifica</div>
-                    <div className="p-1 font-bold text-center" style={{ color: 'var(--text-secondary)' }}>Squier</div>
-                    <div className="p-1 font-bold text-center" style={{ color: 'var(--text-secondary)' }}>Epiphone</div>
+                    <div className="p-1 font-bold text-center" style={{ color: 'var(--accent)' }}>iPhone 17</div>
+                    <div className="p-1 font-bold text-center" style={{ color: '#D4A843' }}>Galaxy S26</div>
                   </div>
                   {[
-                    { metric: 'Price', vals: ['$299', '$449', '$399'] },
-                    { metric: 'Pickups', vals: ['HSS', 'SSS', 'HH'] },
-                    { metric: 'Best for', vals: ['All genres', 'Blues/rock', 'Rock/jazz'] },
+                    { metric: 'Camera', vals: ['48MP', '200MP'] },
+                    { metric: 'Battery', vals: ['All day', 'All day'] },
+                    { metric: 'Display', vals: ['6.3" OLED', '6.2" AMOLED'] },
+                    { metric: 'Storage', vals: ['128–512GB', '128GB–1TB'] },
+                    { metric: 'Price', vals: ['From $799', 'From $799'] },
                   ].map((row, i) => (
-                    <div key={i} className="grid grid-cols-4 gap-0" style={{ borderTop: '1px solid var(--border)' }}>
+                    <div key={i} className="grid grid-cols-3 gap-0" style={{ borderTop: '1px solid var(--border)' }}>
                       <div className="p-1" style={{ color: 'var(--text-secondary)' }}>{row.metric}</div>
                       {row.vals.map((v, j) => (
-                        <div key={j} className="p-1 text-center" style={{ color: j === 0 ? 'var(--accent)' : 'var(--text-primary)', fontWeight: j === 0 ? 600 : 400 }}>{v}</div>
+                        <div key={j} className="p-1 text-center" style={{ color: 'var(--text-primary)' }}>{v}</div>
                       ))}
                     </div>
                   ))}
                 </div>
 
-                {/* Reddit quote */}
-                <div className="rounded-lg p-2" style={{ backgroundColor: '#f8f7f5', borderLeft: '2px solid #FF4500' }}>
-                  <p className="text-[9px] italic" style={{ color: 'var(--text-secondary)' }}>
-                    &ldquo;The Pacifica gets recommended more than anything else in beginner threads.&rdquo;
-                  </p>
-                  <p className="text-[8px] mt-0.5" style={{ color: '#FF4500' }}>— r/guitar</p>
+                {/* Community quotes */}
+                <div className="space-y-1.5">
+                  <div className="rounded-lg p-2" style={{ backgroundColor: '#f8f7f5', borderLeft: '2px solid #FF4500' }}>
+                    <p className="text-[9px] italic" style={{ color: 'var(--text-secondary)' }}>
+                      &ldquo;Switched from Samsung to iPhone and the ecosystem just works. But I miss the S Pen.&rdquo;
+                    </p>
+                    <p className="text-[8px] mt-0.5" style={{ color: '#FF4500' }}>— r/smartphones</p>
+                  </div>
+                  <div className="rounded-lg p-2" style={{ backgroundColor: '#f8f7f5', borderLeft: '2px solid #FF4500' }}>
+                    <p className="text-[9px] italic" style={{ color: 'var(--text-secondary)' }}>
+                      &ldquo;The S26 camera in low light is unreal. iPhone still can&apos;t touch it for night photos.&rdquo;
+                    </p>
+                    <p className="text-[8px] mt-0.5" style={{ color: '#FF4500' }}>— r/Android</p>
+                  </div>
+                  <div className="rounded-lg p-2" style={{ backgroundColor: '#f8f7f5', borderLeft: '2px solid #1DA1F2' }}>
+                    <p className="text-[9px] italic" style={{ color: 'var(--text-secondary)' }}>
+                      &ldquo;Just got the iPhone 17 and the build quality is insane. Samsung feels like plastic in comparison.&rdquo;
+                    </p>
+                    <p className="text-[8px] mt-0.5" style={{ color: '#1DA1F2' }}>— @techreviewer on X</p>
+                  </div>
                 </div>
 
                 {/* Fact-check badge */}
                 <div className="flex items-center gap-1.5 rounded-lg px-2 py-1.5" style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                  <span className="text-[9px]" style={{ color: '#16a34a' }}>3 prices corrected, all specs verified</span>
+                  <span className="text-[9px]" style={{ color: '#16a34a' }}>2 prices verified, all specs confirmed</span>
                 </div>
               </div>
             </div>
