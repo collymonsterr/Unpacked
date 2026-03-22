@@ -22,6 +22,9 @@ export async function GET() {
       display_name: profile?.display_name ?? '',
       bio: profile?.bio ?? '',
       website: profile?.website ?? '',
+      location: profile?.location ?? '',
+      currency: profile?.currency ?? 'USD',
+      language: profile?.language ?? 'en',
     })
   } catch {
     return Response.json({ error: 'Failed to load profile' }, { status: 500 })
@@ -38,6 +41,9 @@ export async function POST(request: NextRequest) {
     const displayName = typeof body.display_name === 'string' ? body.display_name.trim().slice(0, 100) : undefined
     const bio = typeof body.bio === 'string' ? body.bio.trim().slice(0, 160) : undefined
     const website = typeof body.website === 'string' ? body.website.trim().slice(0, 200) : undefined
+    const location = typeof body.location === 'string' ? body.location.trim().slice(0, 100) : undefined
+    const currency = typeof body.currency === 'string' ? body.currency.trim().slice(0, 10) : undefined
+    const language = typeof body.language === 'string' ? body.language.trim().slice(0, 10) : undefined
 
     const db = getSupabaseAdmin()
 
@@ -49,6 +55,9 @@ export async function POST(request: NextRequest) {
         display_name: displayName ?? '',
         bio: bio ?? '',
         website: website ?? '',
+        location: location ?? '',
+        currency: currency ?? 'USD',
+        language: language ?? 'en',
         updated_at: new Date().toISOString(),
       }, { onConflict: 'id' })
 

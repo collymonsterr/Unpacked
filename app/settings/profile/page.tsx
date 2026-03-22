@@ -14,6 +14,9 @@ interface ProfileData {
   display_name: string
   bio: string
   website: string
+  location: string
+  currency: string
+  language: string
 }
 
 export default function ProfileSettingsPage() {
@@ -26,6 +29,9 @@ export default function ProfileSettingsPage() {
   const [displayName, setDisplayName] = useState('')
   const [bio, setBio] = useState('')
   const [website, setWebsite] = useState('')
+  const [location, setLocation] = useState('')
+  const [currency, setCurrency] = useState('USD')
+  const [language, setLanguage] = useState('en')
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -41,6 +47,9 @@ export default function ProfileSettingsPage() {
         setDisplayName(data.display_name || data.full_name || '')
         setBio(data.bio || '')
         setWebsite(data.website || '')
+        setLocation(data.location || '')
+        setCurrency(data.currency || 'USD')
+        setLanguage(data.language || 'en')
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -53,7 +62,7 @@ export default function ProfileSettingsPage() {
       const res = await fetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ display_name: displayName, bio, website }),
+        body: JSON.stringify({ display_name: displayName, bio, website, location, currency, language }),
       })
       if (res.ok) {
         setSaved(true)
@@ -237,27 +246,33 @@ export default function ProfileSettingsPage() {
               Location
             </label>
             <select
-              className="w-full px-3 py-2 rounded-lg text-sm outline-none appearance-none"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none"
               style={{
                 backgroundColor: 'var(--card)',
                 border: '1px solid var(--border)',
-                color: 'var(--text-secondary)',
+                color: 'var(--text-primary)',
               }}
-              disabled
             >
-              <option>Not set — articles use global defaults</option>
-              <option>United States</option>
-              <option>United Kingdom</option>
-              <option>United Arab Emirates</option>
-              <option>Australia</option>
-              <option>Canada</option>
-              <option>Germany</option>
-              <option>France</option>
-              <option>Singapore</option>
-              <option>Ireland</option>
+              <option value="">Not set — articles use global defaults</option>
+              <option value="US">United States</option>
+              <option value="GB">United Kingdom</option>
+              <option value="AE">United Arab Emirates</option>
+              <option value="AU">Australia</option>
+              <option value="CA">Canada</option>
+              <option value="DE">Germany</option>
+              <option value="FR">France</option>
+              <option value="SG">Singapore</option>
+              <option value="IE">Ireland</option>
+              <option value="IN">India</option>
+              <option value="NZ">New Zealand</option>
+              <option value="NL">Netherlands</option>
+              <option value="SE">Sweden</option>
+              <option value="JP">Japan</option>
             </select>
             <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-              Affects product availability and regional recommendations. Coming soon.
+              Affects product availability and regional recommendations.
             </p>
           </div>
 
@@ -267,24 +282,29 @@ export default function ProfileSettingsPage() {
               Currency
             </label>
             <select
-              className="w-full px-3 py-2 rounded-lg text-sm outline-none appearance-none"
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none"
               style={{
                 backgroundColor: 'var(--card)',
                 border: '1px solid var(--border)',
-                color: 'var(--text-secondary)',
+                color: 'var(--text-primary)',
               }}
-              disabled
             >
-              <option>USD ($) — default</option>
-              <option>GBP (£)</option>
-              <option>EUR (€)</option>
-              <option>AED (د.إ)</option>
-              <option>AUD (A$)</option>
-              <option>CAD (C$)</option>
-              <option>SGD (S$)</option>
+              <option value="USD">USD ($)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="AED">AED (د.إ)</option>
+              <option value="AUD">AUD (A$)</option>
+              <option value="CAD">CAD (C$)</option>
+              <option value="SGD">SGD (S$)</option>
+              <option value="INR">INR (₹)</option>
+              <option value="NZD">NZD (NZ$)</option>
+              <option value="SEK">SEK (kr)</option>
+              <option value="JPY">JPY (¥)</option>
             </select>
             <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-              All prices in your articles will be shown in this currency. Coming soon.
+              Prices in your articles will be shown in this currency.
             </p>
           </div>
 
@@ -294,18 +314,26 @@ export default function ProfileSettingsPage() {
               Language
             </label>
             <select
-              className="w-full px-3 py-2 rounded-lg text-sm outline-none appearance-none"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none"
               style={{
                 backgroundColor: 'var(--card)',
                 border: '1px solid var(--border)',
-                color: 'var(--text-secondary)',
+                color: 'var(--text-primary)',
               }}
-              disabled
             >
-              <option>English — default</option>
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="ar">Arabic</option>
+              <option value="pt">Portuguese</option>
+              <option value="ja">Japanese</option>
+              <option value="zh">Chinese (Simplified)</option>
             </select>
             <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-              More languages coming soon.
+              Articles will be written in this language.
             </p>
           </div>
         </div>
