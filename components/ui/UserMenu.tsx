@@ -6,15 +6,12 @@ import { useAdminMode } from '@/hooks/useAdminMode'
 import { createBrowserSupabase } from '@/lib/supabase'
 import Link from 'next/link'
 
-const ADMIN_EMAILS = ['colinfitz@gmail.com']
-
 export default function UserMenu() {
   const { user, loading } = useUser()
   const isAdmin = useAdminMode()
   const [menuOpen, setMenuOpen] = useState(false)
   const [signingIn, setSigningIn] = useState(false)
   const claimedRef = useRef(false)
-  const canBeAdmin = user?.email && ADMIN_EMAILS.includes(user.email)
 
   // Claim anonymous articles on sign-in
   useEffect(() => {
@@ -213,12 +210,13 @@ export default function UserMenu() {
               Profile settings
             </Link>
 
-            {canBeAdmin && (
+            {/* Admin-only links */}
+            {isAdmin && (
               <Link
                 href="/admin"
                 onClick={() => setMenuOpen(false)}
                 className="block w-full text-left text-sm px-3 py-2 transition-colors"
-                style={{ color: 'var(--text-primary)' }}
+                style={{ color: 'var(--accent)' }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = 'var(--accent-light)'
                 }}
@@ -228,39 +226,6 @@ export default function UserMenu() {
               >
                 Admin dashboard
               </Link>
-            )}
-
-            {canBeAdmin && (
-              <button
-                onClick={() => {
-                  if (isAdmin) {
-                    localStorage.removeItem('admin_mode')
-                  } else {
-                    localStorage.setItem('admin_mode', 'true')
-                  }
-                  setMenuOpen(false)
-                  window.location.reload()
-                }}
-                className="w-full text-left text-sm px-3 py-2 transition-colors flex items-center justify-between"
-                style={{ color: isAdmin ? 'var(--accent)' : 'var(--text-primary)' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--accent-light)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent'
-                }}
-              >
-                <span>Admin mode</span>
-                <span
-                  className="text-xs px-1.5 py-0.5 rounded font-medium"
-                  style={{
-                    backgroundColor: isAdmin ? 'var(--accent)' : 'var(--border)',
-                    color: isAdmin ? '#fff' : 'var(--text-secondary)',
-                  }}
-                >
-                  {isAdmin ? 'ON' : 'OFF'}
-                </span>
-              </button>
             )}
 
             <div style={{ borderTop: '1px solid var(--border)', margin: '2px 0' }} />

@@ -1,32 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useUser } from './useUser'
 
+/**
+ * Returns true if the current authenticated user is the platform admin.
+ * Checks user ID against NEXT_PUBLIC_ADMIN_USER_ID env var.
+ * No localStorage, no URL params — real server-aligned admin check.
+ */
 export function useAdminMode(): boolean {
-  const [isAdmin, setIsAdmin] = useState(false)
-
-  useEffect(() => {
-    // Check URL for ?admin=true and persist to localStorage
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('admin') === 'true') {
-      localStorage.setItem('admin_mode', 'true')
-      // Strip the param from URL
-      params.delete('admin')
-      const newUrl = params.toString()
-        ? `${window.location.pathname}?${params}`
-        : window.location.pathname
-      window.history.replaceState({}, '', newUrl)
-    } else if (params.get('admin') === 'false') {
-      localStorage.removeItem('admin_mode')
-      params.delete('admin')
-      const newUrl = params.toString()
-        ? `${window.location.pathname}?${params}`
-        : window.location.pathname
-      window.history.replaceState({}, '', newUrl)
-    }
-
-    setIsAdmin(localStorage.getItem('admin_mode') === 'true')
-  }, [])
-
-  return isAdmin
+  const { user } = useUser()
+  if (!user) return false
+  const adminId = process.env.NEXT_PUBLIC_ADMIN_USER_ID
+  return !!adminId && user.id === adminId
 }

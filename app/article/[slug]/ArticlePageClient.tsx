@@ -131,6 +131,7 @@ export default function ArticlePageClient({ initialRow }: Props) {
           <ArticleView
             articleRow={row}
             isOwner={isOwner}
+            isAdmin={isAdmin}
             isNew={wasGenerating}
             factCheckStatus={factCheckStatus}
           />

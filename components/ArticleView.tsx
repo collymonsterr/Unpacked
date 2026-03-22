@@ -24,11 +24,12 @@ import { useUser } from '@/hooks/useUser'
 interface Props {
   articleRow: ArticleRow
   isOwner: boolean
+  isAdmin?: boolean
   isNew?: boolean
   factCheckStatus?: 'none' | 'checking' | 'verified'
 }
 
-export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatus = 'none' }: Props) {
+export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNew, factCheckStatus = 'none' }: Props) {
   const router = useRouter()
   const { user } = useUser()
   const [article, setArticle] = useState(articleRow.article!)
@@ -291,18 +292,24 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
                       boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
                     }}
                   >
+                    {/* Admin-only actions */}
+                    {isAdmin && (
                     <MenuItem
                       onClick={() => { handleTogglePin(); setMenuOpen(false) }}
                       disabled={!!toolbarBusy}
                     >
                       {isPinned ? 'Unpin from Homepage' : 'Pin to Homepage'}
                     </MenuItem>
+                    )}
+                    {isAdmin && (
                     <MenuItem
                       onClick={() => { handleToggleHidden(); setMenuOpen(false) }}
                       disabled={!!toolbarBusy}
                     >
                       {isHidden ? 'Show on Homepage' : 'Hide from Homepage'}
                     </MenuItem>
+                    )}
+                    {isAdmin && (
                     <div>
                       <MenuItem
                         onClick={() => setShowCategoryPicker(!showCategoryPicker)}
@@ -338,6 +345,8 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
                         </div>
                       )}
                     </div>
+                    )}
+                    {/* Owner + admin: image management */}
                     <MenuItem
                       onClick={() => { handleRegenerateImages(); setMenuOpen(false) }}
                       disabled={!!toolbarBusy}
@@ -345,6 +354,8 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
                     >
                       Regenerate Images
                     </MenuItem>
+                    {/* Admin-only: regenerate article + delete */}
+                    {isAdmin && (
                     <MenuItem
                       onClick={() => { handleRegenerateArticle(); setMenuOpen(false) }}
                       disabled={!!toolbarBusy}
@@ -352,6 +363,9 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
                     >
                       Regenerate Article
                     </MenuItem>
+                    )}
+                    {isAdmin && (
+                    <>
                     <div style={{ borderTop: '1px solid var(--border)', margin: '4px 0' }} />
                     {showDeleteConfirm ? (
                       <div className="px-3 py-2">
@@ -382,6 +396,8 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
                       >
                         Delete Article
                       </MenuItem>
+                    )}
+                    </>
                     )}
                   </div>
                 </>
