@@ -467,7 +467,28 @@ function buildOptionsPrompt(options: GenOptions): string {
 
   // Length
   if (options.length === 'quick') {
-    parts.push('LENGTH: Write a concise, quick-read article. Verdict, top 3 picks max, short comparison, no deep sections. Target 800-1200 words total.')
+    parts.push(`LENGTH: Write a quick-read article. The reader wants a fast, clear answer — not a compressed version of a long article. Same research quality, fewer sections, tighter writing. Target 800-1200 words total.
+
+Intelligently reduce sections based on article type:
+
+For PRODUCT articles (buyer guides, comparisons, decision guides):
+- Keep: Quick Verdict, Executive Summary (2-3 bullets, one warning), top 3 product cards with concise 2-3 sentence opinions, one comparison table, sources
+- Skip: community insights, warning boxes, price tier breakdowns, calculators, section break images
+
+For EXPLAINER and HOW-IT-WORKS articles:
+- Keep: the core explanation with key concepts, one or two data visualisations that genuinely aid understanding, sources
+- Skip: deep background context, historical timelines, tangential sections, calculators
+- Think "explain it in 2 minutes" not "explain it in 10 minutes"
+
+For FINANCE and MONEY articles:
+- Keep: the key numbers, one calculator if central to the topic, core advice, sources
+- Skip: extended scenarios, multiple breakdowns, lengthy comparisons
+
+For TRAVEL and LIFESTYLE articles:
+- Keep: top recommendations, key practical info (costs, timing, tips), one overview comparison, sources
+- Skip: deep neighbourhood breakdowns, extended itineraries, multiple accommodation options
+
+General rule: ask "what are the 3-4 things the reader absolutely needs?" and build only those sections. Every section that makes the cut should still be well-written and well-researched — just fewer of them.`)
   } else if (options.length === 'deep') {
     parts.push('LENGTH: Write a comprehensive deep-dive article. Cover more products/topics, more detail per item, more sections, more data visualisations. Target 4000-6000 words.')
   }
