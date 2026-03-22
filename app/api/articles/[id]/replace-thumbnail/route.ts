@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase'
 import { fetchThumbnailImage } from '@/lib/images'
 import { generateHeroImage, pickBestArticleImage } from '@/lib/imagen'
 import { requireArticleOwner } from '@/lib/auth-check'
+import { isValidUUID } from '@/lib/validate'
 import type { ArticleContent } from '@/types/article'
 
 export async function POST(
@@ -12,6 +13,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+  if (!isValidUUID(id)) return Response.json({ error: 'Invalid article ID' }, { status: 400 })
 
   const auth = await requireArticleOwner(id)
   if (!auth.authorized) return auth.error!

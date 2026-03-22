@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase'
 import { checkRateLimit, getRateLimitInfo } from '@/lib/rate-limit'
 import { generateUniqueSlug } from '@/lib/slug'
 import { requireAuth } from '@/lib/auth-check'
+import { isValidUUID } from '@/lib/validate'
 
 export const maxDuration = 300
 
@@ -13,6 +14,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+  if (!isValidUUID(id)) return Response.json({ error: 'Invalid article ID' }, { status: 400 })
 
   // Refine creates a fork — any authenticated user can do this
   const auth = await requireAuth()

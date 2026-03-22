@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { requireArticleOwner } from '@/lib/auth-check'
+import { isValidUUID, isNonNegativeInt } from '@/lib/validate'
 import type { ArticleContent, ProductCard, ImageSection } from '@/types/article'
 
 const BRAVE_API = 'https://api.search.brave.com/res/v1/images/search'
@@ -101,11 +102,15 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+  if (!isValidUUID(id)) return Response.json({ error: 'Invalid article ID' }, { status: 400 })
 
   const auth = await requireArticleOwner(id)
   if (!auth.authorized) return auth.error!
 
   const { sectionIndex, imageIndex } = await request.json()
+  if (!isNonNegativeInt(sectionIndex) || !isNonNegativeInt(imageIndex)) {
+    return Response.json({ error: 'sectionIndex and imageIndex must be non-negative integers' }, { status: 400 })
+  }
 
   const db = getSupabaseAdmin()
   const { data: row } = await db.from('articles').select('article').eq('id', id).single()

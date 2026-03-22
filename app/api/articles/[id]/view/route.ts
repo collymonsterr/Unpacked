@@ -1,10 +1,12 @@
 import { getSupabaseAdmin } from '@/lib/supabase'
+import { isValidUUID } from '@/lib/validate'
 
 export async function POST(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+  if (!isValidUUID(id)) return Response.json({ error: 'Invalid article ID' }, { status: 400 })
   const supabase = getSupabaseAdmin()
 
   // Read current count then increment

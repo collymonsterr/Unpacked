@@ -1,11 +1,14 @@
 import { NextRequest } from 'next/server'
 import { getSupabaseAdmin, createServerSupabase } from '@/lib/supabase'
+import { isValidUUID } from '@/lib/validate'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+  if (!isValidUUID(id)) return Response.json({ error: 'Invalid article ID' }, { status: 400 })
+
   const body = await request.json()
   const { rating, reason } = body
 
@@ -60,6 +63,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+  if (!isValidUUID(id)) return Response.json({ error: 'Invalid article ID' }, { status: 400 })
   const db = getSupabaseAdmin()
 
   const { data } = await db

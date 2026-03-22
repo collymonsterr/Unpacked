@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { runFactCheck, applyCorrections } from '@/lib/fact-check'
+import { isValidUUID } from '@/lib/validate'
 
 export const maxDuration = 120
 
@@ -9,6 +10,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+  if (!isValidUUID(id)) return NextResponse.json({ error: 'Invalid article ID' }, { status: 400 })
   // No rate limiting — fact-check is system-triggered after generation
 
   try {

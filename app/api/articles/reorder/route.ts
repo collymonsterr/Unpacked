@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { requireAuth } from '@/lib/auth-check'
+import { isValidUUID } from '@/lib/validate'
 
 /**
  * POST /api/articles/reorder
@@ -18,6 +19,10 @@ export async function POST(request: NextRequest) {
 
   if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
     return Response.json({ error: 'orderedIds array required' }, { status: 400 })
+  }
+
+  if (orderedIds.some((id: unknown) => typeof id !== 'string' || !isValidUUID(id as string))) {
+    return Response.json({ error: 'All orderedIds must be valid UUIDs' }, { status: 400 })
   }
 
   const db = getSupabaseAdmin()

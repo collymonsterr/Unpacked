@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { requireArticleOwner } from '@/lib/auth-check'
+import { isValidUUID } from '@/lib/validate'
 
 const VALID_TYPES = ['buyer_guide', 'comparison', 'decision_guide', 'explainer', 'news', 'planning', 'trend_analysis', 'tutorial']
 
@@ -9,6 +10,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+  if (!isValidUUID(id)) return Response.json({ error: 'Invalid article ID' }, { status: 400 })
 
   const auth = await requireArticleOwner(id)
   if (!auth.authorized) return auth.error!
