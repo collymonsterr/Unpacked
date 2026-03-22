@@ -127,44 +127,40 @@ export default function AboutPage() {
 
       {/* ═══ Section 5: Side-by-Side Comparison ═══ */}
       <section className="max-w-5xl mx-auto px-4 md:px-6 pb-24">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
 
-          {/* Left — Typical AI response */}
+          {/* Left — Typical AI response (ChatGPT style) */}
           <div>
             <div
-              className="rounded-xl overflow-hidden flex flex-col"
-              style={{ border: '1px solid #d5d5d2', height: '520px' }}
+              className="rounded-xl overflow-hidden"
+              style={{ border: '1px solid #e5e5e5' }}
             >
-              {/* Header */}
-              <div className="px-4 py-2.5 flex items-center gap-2" style={{ backgroundColor: '#e8e8e5', borderBottom: '1px solid #d5d5d2' }}>
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#c4c2be' }} />
-                <span className="text-[11px] font-bold tracking-wider" style={{ color: '#8a8580' }}>TYPICAL AI RESPONSE</span>
+              {/* Header — ChatGPT style */}
+              <div className="px-4 py-2.5 flex items-center gap-2" style={{ backgroundColor: '#f7f7f8', borderBottom: '1px solid #e5e5e5' }}>
+                <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: '#10a37f' }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M22.2 7.6c.4-1.3.1-2.7-.9-3.6-1.3-1.2-3.2-1.4-4.7-.5l-.5.3C14.8 2.6 13.4 2 12 2s-2.8.6-4.1 1.8l-.5-.3C5.9 2.6 4 2.8 2.7 4c-1 .9-1.3 2.3-.9 3.6l.2.6C.7 9.5 0 10.7 0 12s.7 2.5 2 3.8l-.2.6c-.4 1.3-.1 2.7.9 3.6 1.3 1.2 3.2 1.4 4.7.5l.5-.3C9.2 21.4 10.6 22 12 22s2.8-.6 4.1-1.8l.5.3c1.5.9 3.4.7 4.7-.5 1-.9 1.3-2.3.9-3.6l-.2-.6C23.3 14.5 24 13.3 24 12s-.7-2.5-2-3.8l.2-.6z"/></svg>
+                </div>
+                <span className="text-[11px] font-semibold" style={{ color: '#6e6e80' }}>TYPICAL AI RESPONSE</span>
               </div>
-              {/* Content — scrollable */}
-              <div className="flex-1 overflow-y-auto p-4" style={{ backgroundColor: '#f5f5f0' }}>
-                <p className="text-[11px] leading-relaxed mb-3" style={{ color: '#6b6965', fontFamily: 'ui-monospace, monospace' }}>
-                  <strong>Best Beginner Electric Guitars Under $500</strong>
+              {/* Content */}
+              <div className="p-4" style={{ backgroundColor: '#ffffff' }}>
+                <p className="text-[11px] leading-[1.7] mb-3" style={{ color: '#374151' }}>
+                  Here are some of the <strong>best beginner electric guitars under $500</strong> that are widely recommended: 🎸
                 </p>
-                <p className="text-[11px] leading-relaxed mb-3" style={{ color: '#6b6965', fontFamily: 'ui-monospace, monospace' }}>
-                  When it comes to choosing a beginner electric guitar, there are several great options available under $500. Here are some popular choices that are well-regarded by beginners and experienced players alike:
+                <p className="text-[11px] leading-[1.7] mb-2.5" style={{ color: '#374151' }}>
+                  <strong>1. Squier Classic Vibe &apos;60s Stratocaster</strong> — Great all-rounder with alnico pickups and a vintage-tint neck. Many players consider it one of the best value options in this price range.
                 </p>
-                <p className="text-[11px] leading-relaxed mb-3" style={{ color: '#6b6965', fontFamily: 'ui-monospace, monospace' }}>
-                  <strong>1. Squier Classic Vibe Stratocaster</strong> — The Squier Classic Vibe series offers excellent build quality at an affordable price point. It features alnico pickups, a vintage-tint gloss neck, and comfortable playability. Many players consider it one of the best value options in this range.
+                <p className="text-[11px] leading-[1.7] mb-2.5" style={{ color: '#374151' }}>
+                  <strong>2. Yamaha Pacifica 112V</strong> — A go-to recommendation for beginners with its HSS pickup configuration and comfortable body shape. Very versatile. ✅
                 </p>
-                <p className="text-[11px] leading-relaxed mb-3" style={{ color: '#6b6965', fontFamily: 'ui-monospace, monospace' }}>
-                  <strong>2. Yamaha Pacifica 112V</strong> — The Pacifica series has been a go-to recommendation for beginners for many years. It offers versatile tones with its HSS pickup configuration, a comfortable body shape, and reliable tuning stability.
+                <p className="text-[11px] leading-[1.7] mb-2.5" style={{ color: '#374151' }}>
+                  <strong>3. Epiphone Les Paul Standard</strong> — If you prefer warmer tones, this is a solid choice with dual humbuckers and the iconic Les Paul shape.
                 </p>
-                <p className="text-[11px] leading-relaxed mb-3" style={{ color: '#6b6965', fontFamily: 'ui-monospace, monospace' }}>
-                  <strong>3. Epiphone Les Paul Standard</strong> — If you prefer a warmer, thicker tone, the Epiphone Les Paul is a solid choice. It features dual humbuckers, a mahogany body, and the iconic Les Paul shape.
+                <p className="text-[11px] leading-[1.7] mb-2.5" style={{ color: '#374151' }}>
+                  <strong>4. Ibanez GRX70QA</strong> — Known for its slim, fast neck. Particularly good for rock and metal genres. 🎶
                 </p>
-                <p className="text-[11px] leading-relaxed mb-3" style={{ color: '#6b6965', fontFamily: 'ui-monospace, monospace' }}>
-                  <strong>4. Ibanez GRX70QA</strong> — Known for its slim, fast neck profile, the Ibanez is particularly good for players interested in rock and metal genres. It offers good value with its quilted art grain top and versatile pickup configuration.
-                </p>
-                <p className="text-[11px] leading-relaxed mb-2" style={{ color: '#6b6965', fontFamily: 'ui-monospace, monospace' }}>
-                  Ultimately, the best guitar for you <span style={{ backgroundColor: '#fef08a', padding: '0 2px' }}>depends on your personal preferences</span>, playing style, and the genres you&apos;re most interested in. I&apos;d recommend visiting a local music store to try out a few models before making your decision.
-                </p>
-                <p className="text-[10px] mt-3" style={{ color: '#a8a5a0', fontFamily: 'ui-monospace, monospace', fontStyle: 'italic' }}>
-                  No images. No prices. No sources. No verdict.
+                <p className="text-[11px] leading-[1.7] mb-1" style={{ color: '#374151' }}>
+                  Ultimately, the best guitar for you <span style={{ backgroundColor: '#fee2e2', padding: '1px 3px', borderRadius: '2px', color: '#991b1b' }}>depends on your personal preferences</span>, playing style, and the genres you&apos;re most interested in. I&apos;d recommend trying a few models before deciding. 😊
                 </p>
               </div>
             </div>
@@ -176,16 +172,18 @@ export default function AboutPage() {
           {/* Right — ArticleAI */}
           <div>
             <div
-              className="rounded-xl overflow-hidden flex flex-col"
-              style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', height: '520px' }}
+              className="rounded-xl overflow-hidden"
+              style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}
             >
               {/* Header */}
               <div className="px-4 py-2.5 flex items-center gap-2" style={{ backgroundColor: 'var(--accent-light)', borderBottom: '1px solid #f0d5be' }}>
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'var(--accent)' }} />
+                <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--accent)' }}>
+                  <span style={{ color: '#fff', fontSize: '10px', fontWeight: 800 }}>A</span>
+                </div>
                 <span className="text-[11px] font-bold tracking-wider" style={{ color: 'var(--accent)' }}>ARTICLEAI</span>
               </div>
-              {/* Content — scrollable */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {/* Content */}
+              <div className="p-4 space-y-3">
                 {/* Badge + title */}
                 <div>
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--accent)', color: '#fff' }}>BUYER GUIDE</span>
