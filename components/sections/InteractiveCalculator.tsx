@@ -843,6 +843,35 @@ function calcBabyCost(inputs: Record<string, number>): CalcResult {
   }
 }
 
+function calcEngagementRingBudget(inputs: Record<string, number>): CalcResult {
+  const annualIncome = inputs.annual_income ?? 75000
+  const monthlyIncome = annualIncome / 12
+  const rent = inputs.monthly_rent_mortgage ?? inputs.monthly_expenses ?? 1800
+  const debt = inputs.monthly_debt_payments ?? inputs.debt_payments ?? 400
+  const other = inputs.monthly_other_expenses ?? 1500
+  const savingsGoal = inputs.monthly_savings_goal ?? 800
+  const currentSavings = inputs.current_ring_savings ?? inputs.current_savings ?? 2000
+  const tax = monthlyIncome * 0.25
+  const disposable = monthlyIncome - tax - rent - debt - other - savingsGoal
+  const conservative = Math.max(0, disposable) // 1 month disposable
+  const comfortable = Math.max(0, disposable * 2) // 2 months
+  return {
+    outputs: {
+      monthly_disposable_income: Math.round(disposable),
+      recommended_budget: Math.round(conservative + currentSavings),
+      conservative_budget: Math.round(conservative + currentSavings),
+      max_budget: Math.round(comfortable + currentSavings),
+      comfortable_budget: Math.round(comfortable + currentSavings),
+      total_available_budget: Math.round(comfortable + currentSavings),
+      monthly_savings_needed: Math.round(comfortable > 0 ? (comfortable - currentSavings) / 6 : 0),
+    },
+    chartData: [
+      { year: 'Conservative', value: Math.round(conservative + currentSavings) },
+      { year: 'Comfortable', value: Math.round(comfortable + currentSavings) },
+    ],
+  }
+}
+
 // ── Calculator dispatcher ────────────────────────────────────────────────────
 
 function runCalculation(
@@ -873,6 +902,7 @@ function runCalculation(
     case 'car_budget': return calcCarBudget(inputs)
     case 'salary_calculator': return calcSalaryCalculator(inputs)
     case 'baby_cost': return calcBabyCost(inputs)
+    case 'engagement_ring_budget': return calcEngagementRingBudget(inputs)
     // Legacy fallback — pattern matching for old articles
     case 'custom':
     default:
