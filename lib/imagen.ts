@@ -1,9 +1,6 @@
 import { getSupabaseAdmin } from '@/lib/supabase'
 import type { ArticleType, ArticleContent, ProductCard, ImageSection } from '@/types/article'
 
-const IMAGEN_MODEL = 'imagen-4.0-fast-generate-001'
-const IMAGEN_API = `https://generativelanguage.googleapis.com/v1beta/models/${IMAGEN_MODEL}:predict`
-
 /**
  * Build an image prompt by analyzing what the article is actually about.
  *
@@ -58,7 +55,6 @@ No people, no faces, no text, no watermarks. Photorealistic editorial photograph
 
   // Planning/travel articles: show the destination
   if (article_type === 'planning') {
-    // Extract the place from the title
     return `Stunning travel photography: ${title}. ${context}
 
 Show the actual destination, landmark, or environment that this article is about. Golden hour natural light, rich warm tones, wide scenic composition. The style of a Condé Nast Traveler or Lonely Planet cover photograph.
@@ -127,27 +123,19 @@ Show objects, products, or environments that directly relate to this topic. Clea
 No people, no text, no watermarks. Photorealistic photography.`
 }
 
-interface ImagenResponse {
-  predictions?: Array<{
-    bytesBase64Encoded: string
-    mimeType: string
-  }>
-}
-
 /**
- * Generate a hero image using Google Imagen 4 Fast and upload it to Supabase Storage.
+ * Generate a hero image using OpenAI GPT Image (gpt-image-1) and upload to Supabase Storage.
  * Returns the public URL of the uploaded image, or null on failure.
  *
  * Pass the full article content so the prompt can be built from actual article data.
- * Falls back to a title-only prompt if article content isn't available.
  */
 export async function generateHeroImage(
   article: ArticleContent | { title: string; article_type: ArticleType },
   articleId: string
 ): Promise<string | null> {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
-    console.warn('[imagen] GOOGLE_AI_API_KEY not set, skipping image generation')
+    console.warn('[gpt-image] OPENAI_API_KEY not set, skipping image generation')
     return null
   }
 
@@ -163,40 +151,56 @@ export async function generateHeroImage(
         }
 
     const prompt = buildImagePrompt(fullArticle)
-    console.log('[imagen] Prompt:', prompt.substring(0, 150) + '...')
+    console.log('[gpt-image] Prompt:', prompt.substring(0, 150) + '...')
 
-    const res = await fetch(`${IMAGEN_API}?key=${apiKey}`, {
+    const res = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
       body: JSON.stringify({
-        instances: [{ prompt }],
-        parameters: {
-          sampleCount: 1,
-          aspectRatio: '16:9',
-          personGeneration: 'dont_allow',
-          outputOptions: {
-            mimeType: 'image/jpeg',
-            compressionQuality: 85,
-          },
-        },
+        model: 'gpt-image-1',
+        prompt,
+        n: 1,
+        size: '1536x1024', // landscape, close to 16:9
+        quality: 'high',
+        output_format: 'jpeg',
       }),
     })
 
     if (!res.ok) {
       const text = await res.text()
-      console.error('[imagen] API error:', res.status, text)
+      console.error('[gpt-image] API error:', res.status, text)
       return null
     }
 
-    const data: ImagenResponse = await res.json()
-    const prediction = data.predictions?.[0]
-    if (!prediction?.bytesBase64Encoded) {
-      console.error('[imagen] No image in response')
+    const data = await res.json()
+    const imageData = data.data?.[0]
+
+    if (!imageData) {
+      console.error('[gpt-image] No image in response')
+      return null
+    }
+
+    // GPT Image returns base64 in b64_json or a URL
+    let buffer: Buffer
+    if (imageData.b64_json) {
+      buffer = Buffer.from(imageData.b64_json, 'base64')
+    } else if (imageData.url) {
+      // Download from URL
+      const imgRes = await fetch(imageData.url)
+      if (!imgRes.ok) {
+        console.error('[gpt-image] Failed to download image from URL')
+        return null
+      }
+      buffer = Buffer.from(await imgRes.arrayBuffer())
+    } else {
+      console.error('[gpt-image] No image data in response')
       return null
     }
 
     // Upload to Supabase Storage
-    const buffer = Buffer.from(prediction.bytesBase64Encoded, 'base64')
     const fileName = `heroes/${articleId}-${Date.now()}.jpg`
 
     const db = getSupabaseAdmin()
@@ -208,7 +212,7 @@ export async function generateHeroImage(
       })
 
     if (uploadError) {
-      console.error('[imagen] Upload error:', uploadError.message)
+      console.error('[gpt-image] Upload error:', uploadError.message)
       return null
     }
 
@@ -216,9 +220,10 @@ export async function generateHeroImage(
       .from('article-images')
       .getPublicUrl(fileName)
 
+    console.log('[gpt-image] Generated and uploaded:', urlData.publicUrl)
     return urlData.publicUrl
   } catch (err) {
-    console.error('[imagen] Error:', err)
+    console.error('[gpt-image] Error:', err)
     return null
   }
 }
@@ -226,7 +231,7 @@ export async function generateHeroImage(
 /**
  * Pick the best existing image from the article to use as a hero.
  * Priority: first product card image > first image section image.
- * This is used as a final fallback when both Imagen and Brave fail.
+ * This is used as a final fallback when both AI generation and Brave fail.
  */
 export function pickBestArticleImage(article: ArticleContent): string | null {
   // Try product card images first (the top pick / first product is usually most relevant)
