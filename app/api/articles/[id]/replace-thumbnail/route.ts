@@ -1,3 +1,5 @@
+export const maxDuration = 120 // GPT Image can take 60+ seconds
+
 import { NextRequest } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { fetchThumbnailImage } from '@/lib/images'
