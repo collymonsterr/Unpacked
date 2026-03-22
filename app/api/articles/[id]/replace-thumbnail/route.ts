@@ -4,6 +4,7 @@ import { NextRequest } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { fetchThumbnailImage } from '@/lib/images'
 import { generateHeroImage, pickBestArticleImage } from '@/lib/imagen'
+import { requireArticleOwner } from '@/lib/auth-check'
 import type { ArticleContent } from '@/types/article'
 
 export async function POST(
@@ -11,6 +12,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+
+  const auth = await requireArticleOwner(id)
+  if (!auth.authorized) return auth.error!
+
   const useAI = request.nextUrl.searchParams.get('ai') === 'true'
   const isPreview = request.nextUrl.searchParams.get('preview') === 'true'
   // Pick a specific image from history by index

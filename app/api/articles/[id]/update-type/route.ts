@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
+import { requireArticleOwner } from '@/lib/auth-check'
 
 const VALID_TYPES = ['buyer_guide', 'comparison', 'decision_guide', 'explainer', 'news', 'planning', 'trend_analysis', 'tutorial']
 
@@ -8,6 +9,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+
+  const auth = await requireArticleOwner(id)
+  if (!auth.authorized) return auth.error!
+
   const { article_type } = await request.json()
 
   if (!article_type || !VALID_TYPES.includes(article_type)) {

@@ -4,6 +4,7 @@ import { enrichArticleWithImages } from '@/lib/images'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { checkRateLimit, getRateLimitInfo } from '@/lib/rate-limit'
 import { generateUniqueSlug } from '@/lib/slug'
+import { requireAuth } from '@/lib/auth-check'
 
 export const maxDuration = 300
 
@@ -12,6 +13,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+
+  // Refine creates a fork — any authenticated user can do this
+  const auth = await requireAuth()
+  if (!auth.authorized) return auth.error!
 
   // Rate limiting — refine is cheaper, allow more
   const { key } = getRateLimitInfo(request)

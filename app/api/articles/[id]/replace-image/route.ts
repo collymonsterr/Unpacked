@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
+import { requireArticleOwner } from '@/lib/auth-check'
 import type { ArticleContent, ProductCard, ImageSection } from '@/types/article'
 
 const BRAVE_API = 'https://api.search.brave.com/res/v1/images/search'
@@ -100,6 +101,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+
+  const auth = await requireArticleOwner(id)
+  if (!auth.authorized) return auth.error!
+
   const { sectionIndex, imageIndex } = await request.json()
 
   const db = getSupabaseAdmin()

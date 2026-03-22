@@ -4,12 +4,16 @@ import { enrichArticleWithImages, fetchThumbnailImage } from '@/lib/images'
 import { pickBestArticleImage } from '@/lib/imagen'
 import { runFactCheck, applyCorrections } from '@/lib/fact-check'
 import { getSupabaseAdmin } from '@/lib/supabase'
+import { requireArticleOwner } from '@/lib/auth-check'
 
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+
+  const auth = await requireArticleOwner(id)
+  if (!auth.authorized) return auth.error!
 
   // Fetch article record
   const db = getSupabaseAdmin()

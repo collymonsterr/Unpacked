@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { enrichArticleWithImages, fetchThumbnailImage } from '@/lib/images'
 import { getSupabaseAdmin } from '@/lib/supabase'
+import { requireArticleOwner } from '@/lib/auth-check'
 
 export const maxDuration = 60
 
@@ -9,6 +10,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+
+  const auth = await requireArticleOwner(id)
+  if (!auth.authorized) return auth.error!
 
   const db = getSupabaseAdmin()
   const { data: row, error: fetchError } = await db

@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
+import { requireAuth } from '@/lib/auth-check'
 
 /**
  * POST /api/articles/reorder
@@ -9,6 +10,10 @@ import { getSupabaseAdmin } from '@/lib/supabase'
  * sort_order is stored in the article JSONB (no schema migration needed).
  */
 export async function POST(request: NextRequest) {
+  // Reorder is an admin action — require authentication
+  const auth = await requireAuth()
+  if (!auth.authorized) return auth.error!
+
   const { orderedIds } = await request.json()
 
   if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
