@@ -3,6 +3,7 @@ import { refineArticle } from '@/lib/claude'
 import { enrichArticleWithImages } from '@/lib/images'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { checkRateLimit, getRateLimitInfo } from '@/lib/rate-limit'
+import { generateUniqueSlug } from '@/lib/slug'
 
 export const maxDuration = 300
 
@@ -37,9 +38,6 @@ export async function POST(
   }
 
   try {
-    // Mark as regenerating
-    await db.from('articles').update({ status: 'generating' }).eq('id', id)
-
     const { article: refined, suggestion_chips } = await refineArticle(
       row.query,
       row.article,
@@ -48,15 +46,47 @@ export async function POST(
 
     const enriched = await enrichArticleWithImages(refined, row.plan?.entities ?? [])
 
-    await db
-      .from('articles')
-      .update({ article: enriched, suggestion_chips, status: 'complete' })
-      .eq('id', id)
+    // Preserve hero image from parent
+    if (!enriched.thumbnail_url && row.article.thumbnail_url) {
+      enriched.thumbnail_url = row.article.thumbnail_url
+    }
 
-    return Response.json({ article: enriched, suggestion_chips })
+    // Determine the root article ID
+    const rootId = row.root_article_id ?? row.id
+
+    // Create a new child article instead of modifying in-place
+    const newSlug = await generateUniqueSlug(enriched.title ?? row.article.title)
+    const { data: newArticle, error: insertError } = await db
+      .from('articles')
+      .insert({
+        slug: newSlug,
+        query: row.query,
+        status: 'complete',
+        plan: row.plan,
+        article: enriched,
+        suggestion_chips,
+        user_id: row.user_id,
+        user_name: row.user_name,
+        user_avatar: row.user_avatar,
+        parent_article_id: id,
+        root_article_id: rootId,
+      })
+      .select('id, slug, article, suggestion_chips')
+      .single()
+
+    if (insertError || !newArticle) {
+      console.error('[refine] Insert error:', insertError?.message)
+      return Response.json({ error: 'Failed to save refined article' }, { status: 500 })
+    }
+
+    return Response.json({
+      article: newArticle.article,
+      suggestion_chips: newArticle.suggestion_chips,
+      newArticleId: newArticle.id,
+      newSlug: newArticle.slug,
+    })
   } catch (err) {
     console.error('[refine]', err)
-    await db.from('articles').update({ status: 'complete' }).eq('id', id)
     return Response.json({ error: 'Refinement failed' }, { status: 500 })
   }
 }

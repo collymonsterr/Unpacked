@@ -20,17 +20,25 @@ async function getRecentArticles(): Promise<ArticleRow[]> {
     const { getSupabaseAdmin } = await import('@/lib/supabase')
     const { data } = await getSupabaseAdmin()
       .from('articles')
-      .select('id, slug, query, status, plan, article, pinned, created_at')
+      .select('id, slug, query, status, plan, article, pinned, root_article_id, parent_article_id, created_at')
       .in('status', ['complete', 'verified'])
       .order('pinned', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
-      .limit(100)
+      .limit(200)
 
-    // Filter out hidden articles, then sort:
-    // 1. Pinned articles first
-    // 2. New articles (no sort_order) by newest first
-    // 3. Manually ordered articles by sort_order
-    const visible = (data ?? []).filter(a => !(a.article as Record<string, unknown>)?.hidden_from_homepage)
+    // For each article chain (grouped by root_article_id), only show the latest version
+    const allArticles = data ?? []
+    const latestByChain = new Map<string, typeof allArticles[0]>()
+    for (const a of allArticles) {
+      const chainKey = (a.root_article_id ?? a.id) as string
+      const existing = latestByChain.get(chainKey)
+      if (!existing || new Date(a.created_at) > new Date(existing.created_at)) {
+        latestByChain.set(chainKey, a)
+      }
+    }
+
+    // Filter out hidden articles
+    const visible = Array.from(latestByChain.values()).filter(a => !(a.article as Record<string, unknown>)?.hidden_from_homepage)
     const articles = visible.sort((a, b) => {
       const aPinned = a.pinned ? 1 : 0
       const bPinned = b.pinned ? 1 : 0
@@ -89,11 +97,11 @@ export default async function HomePage() {
           className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4 max-w-3xl"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
         >
-          Type a Question.
+          Type a Question
           <br />
           Get a Complete
           <br />
-          <span style={{ color: 'var(--accent)' }}>Visual Article.</span>
+          <span style={{ color: 'var(--accent)' }}>Visual Article</span>
         </h1>
         <p
           className="text-lg md:text-xl mb-10 max-w-xl"

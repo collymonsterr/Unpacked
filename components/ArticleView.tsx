@@ -184,6 +184,14 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
       if (!res.ok) throw new Error('Refinement failed')
 
       const data = await res.json()
+
+      // If the refine created a new child article, redirect to it
+      if (data.newSlug) {
+        router.push(`/article/${data.newSlug}`)
+        return
+      }
+
+      // Fallback: update in-place (shouldn't happen with new API)
       setArticle(data.article)
       setChips(data.suggestion_chips)
       window.scrollTo({ top: 0, behavior: 'smooth' })

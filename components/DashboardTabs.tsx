@@ -85,6 +85,73 @@ function ArticleCard({ row }: { row: ArticleRow }) {
   )
 }
 
+function ArticleGrid({ articles }: { articles: ArticleRow[] }) {
+  const [expandedChain, setExpandedChain] = useState<string | null>(null)
+
+  // Group articles by chain (root_article_id or own id)
+  const chains = new Map<string, ArticleRow[]>()
+  for (const a of articles) {
+    const chainKey = a.root_article_id ?? a.id
+    if (!chains.has(chainKey)) chains.set(chainKey, [])
+    chains.get(chainKey)!.push(a)
+  }
+
+  // Sort each chain by newest first
+  for (const [, chain] of chains) {
+    chain.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  }
+
+  // Build display list: latest version of each chain
+  const display = Array.from(chains.entries()).map(([chainKey, chain]) => ({
+    chainKey,
+    latest: chain[0],
+    olderVersions: chain.slice(1),
+  }))
+
+  // Sort by latest article's creation date
+  display.sort((a, b) => new Date(b.latest.created_at).getTime() - new Date(a.latest.created_at).getTime())
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      {display.map(({ chainKey, latest, olderVersions }) => (
+        <div key={chainKey}>
+          <ArticleCard row={latest} />
+          {olderVersions.length > 0 && (
+            <div className="mt-1.5 px-2">
+              <button
+                onClick={() => setExpandedChain(expandedChain === chainKey ? null : chainKey)}
+                className="text-xs font-medium"
+                style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                {expandedChain === chainKey ? '▾' : '▸'} {olderVersions.length} previous version{olderVersions.length > 1 ? 's' : ''}
+              </button>
+              {expandedChain === chainKey && (
+                <div className="mt-1.5 space-y-1 pl-2" style={{ borderLeft: '2px solid var(--border)' }}>
+                  {olderVersions.map(v => {
+                    const vDate = new Date(v.created_at).toLocaleDateString('en-US', {
+                      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+                    })
+                    return (
+                      <Link
+                        key={v.id}
+                        href={`/article/${v.slug}`}
+                        className="block text-xs py-1 no-underline hover:underline"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        {vDate} — {v.article?.title?.slice(0, 40) ?? 'Untitled'}...
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function DashboardTabs({ myArticles, totalViews }: Props) {
   const [tab, setTab] = useState<'my' | 'saved'>('my')
   const [savedArticles, setSavedArticles] = useState<ArticleRow[]>([])
@@ -172,9 +239,7 @@ export default function DashboardTabs({ myArticles, totalViews }: Props) {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {myArticles.map(row => <ArticleCard key={row.id} row={row} />)}
-          </div>
+          <ArticleGrid articles={myArticles} />
         )
       ) : (
         loadingSaved ? (
