@@ -390,11 +390,8 @@ export default function AboutPage() {
         >
           Fact-checked by an independent AI agent.
         </h2>
-        <p className="text-base mb-4 max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-          Every article is written by Claude (Anthropic) using live web search. Then a completely separate AI — Google Gemini — runs a full fact-check review, independently verifying every price, spec, and claim against live sources.
-        </p>
         <p className="text-base mb-8 max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-          If Gemini finds something wrong, it corrects the article automatically and shows you exactly what changed. Two different AI models, two different companies, checking each other&apos;s work. Every article includes its sources so you can verify anything yourself.
+          After every article is written, Google Gemini independently verifies every price, spec, and claim. If it finds errors, it corrects them and shows you exactly what changed.
         </p>
 
         {/* Fact-check bar mockup */}
