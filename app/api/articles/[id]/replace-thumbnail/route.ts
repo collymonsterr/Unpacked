@@ -10,6 +10,7 @@ export async function POST(
 ) {
   const { id } = await params
   const useAI = request.nextUrl.searchParams.get('ai') === 'true'
+  const isPreview = request.nextUrl.searchParams.get('preview') === 'true'
   // Pick a specific image from history by index
   const pickIndex = request.nextUrl.searchParams.get('pick')
 
@@ -19,6 +20,23 @@ export async function POST(
 
   const article = row.article as ArticleContent
   const history = article.thumbnail_history ?? []
+
+  // If setting a specific URL (from preview Keep action)
+  try {
+    const body = await request.json().catch(() => null)
+    if (body?.set_url) {
+      // Save current to history, set new URL
+      if (article.thumbnail_url && !history.includes(article.thumbnail_url)) {
+        history.push(article.thumbnail_url)
+      }
+      article.thumbnail_url = body.set_url
+      article.thumbnail_history = history
+      await db.from('articles').update({ article }).eq('id', id)
+      return Response.json({ article })
+    }
+  } catch {
+    // Not JSON body, continue
+  }
 
   // If picking from history, just set that URL as current
   if (pickIndex !== null) {
@@ -51,6 +69,11 @@ export async function POST(
   } else {
     newUrl = await fetchThumbnailImage(article.title, article.article_type, allSeenUrls, heroQuery)
       ?? pickBestArticleImage(article)
+  }
+
+  // Preview mode — return URL without saving
+  if (isPreview && newUrl) {
+    return Response.json({ preview_url: newUrl })
   }
 
   // Add the new URL to history too

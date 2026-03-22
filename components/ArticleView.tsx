@@ -694,6 +694,8 @@ function HeroImage({
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
   const [replacing, setReplacing] = useState<'photo' | 'ai' | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewLoaded, setPreviewLoaded] = useState(false)
   const [thumbErrors, setThumbErrors] = useState<Set<number>>(new Set())
 
   if (error) return null
@@ -702,11 +704,47 @@ function HeroImage({
     if (!onReplace || replacing) return
     setReplacing(useAI ? 'ai' : 'photo')
     try {
+      // Fetch preview URL without saving
+      const res = await fetch(`/api/articles/${articleId}/replace-thumbnail?preview=true${useAI ? '&ai=true' : ''}`, { method: 'POST' })
+      if (!res.ok) throw new Error('Failed')
+      const data = await res.json()
+      if (data.preview_url) {
+        setPreviewUrl(data.preview_url)
+        setPreviewLoaded(false)
+      }
+    } catch {
+      // Fall back to direct replace
       await onReplace(useAI)
       setLoaded(false)
     } finally {
       setReplacing(null)
     }
+  }
+
+  async function handleKeepPreview() {
+    if (!previewUrl) return
+    setReplacing('photo')
+    try {
+      const res = await fetch(`/api/articles/${articleId}/replace-thumbnail`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ set_url: previewUrl }),
+      })
+      if (!res.ok) throw new Error('Failed')
+      // Preview is now the real image — clear preview state
+      setPreviewUrl(null)
+      setPreviewLoaded(false)
+      setLoaded(true) // The image is already loaded from preview
+    } catch {
+      // silent
+    } finally {
+      setReplacing(null)
+    }
+  }
+
+  function handleDiscardPreview() {
+    setPreviewUrl(null)
+    setPreviewLoaded(false)
   }
 
   // History thumbnails — exclude the current image, filter out errored ones
@@ -725,16 +763,51 @@ function HeroImage({
         }}
       >
         <div className="relative w-full" style={{ aspectRatio: '16 / 9' }}>
+          {/* Current image (dimmed when preview is showing) */}
           <Image
-            src={url}
+            src={previewUrl ?? url}
             alt={alt}
             fill
             className="object-cover transition-opacity duration-500"
-            style={{ opacity: loaded ? 1 : 0 }}
-            onLoad={() => setLoaded(true)}
-            onError={() => setError(true)}
+            style={{ opacity: (previewUrl ? previewLoaded : loaded) ? 1 : 0 }}
+            onLoad={() => previewUrl ? setPreviewLoaded(true) : setLoaded(true)}
+            onError={() => previewUrl ? setPreviewUrl(null) : setError(true)}
             unoptimized
+            key={previewUrl ?? url}
           />
+          {/* Preview Keep/Discard buttons */}
+          {previewUrl && previewLoaded && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+              <button
+                onClick={handleKeepPreview}
+                disabled={!!replacing}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-opacity"
+                style={{ backgroundColor: '#16a34a', color: '#fff' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+                Keep
+              </button>
+              <button
+                onClick={handleDiscardPreview}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-opacity"
+                style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: '#fff' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+                Discard
+              </button>
+            </div>
+          )}
+          {previewUrl && (
+            <div className="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-lg text-xs font-semibold"
+              style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: '#fff' }}>
+              Preview
+            </div>
+          )}
           {isAdmin && onReplace && (
             <div className="absolute top-3 right-3 z-10 flex gap-2">
               <button

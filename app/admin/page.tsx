@@ -17,6 +17,8 @@ export default function AdminDashboard() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [reorderingId, setReorderingId] = useState<string | null>(null)
+  const [heroPreview, setHeroPreview] = useState<Record<string, string | null>>({})
+  const [heroRefreshing, setHeroRefreshing] = useState<string | null>(null)
 
   const fetchArticles = useCallback(async () => {
     try {
@@ -89,6 +91,50 @@ export default function AdminDashboard() {
         return { ...a, article: { ...a.article, hidden_from_homepage: currentHidden } as typeof a.article }
       }))
     }
+  }
+
+  async function handleRefreshHero(id: string) {
+    setHeroRefreshing(id)
+    setHeroPreview(prev => ({ ...prev, [id]: null }))
+    try {
+      const res = await fetch(`/api/articles/${id}/replace-thumbnail?preview=true`, { method: 'POST' })
+      if (!res.ok) throw new Error('Failed')
+      const data = await res.json()
+      if (data.preview_url) {
+        setHeroPreview(prev => ({ ...prev, [id]: data.preview_url }))
+      }
+    } catch {
+      // silent
+    } finally {
+      setHeroRefreshing(null)
+    }
+  }
+
+  async function handleKeepHero(id: string) {
+    const previewUrl = heroPreview[id]
+    if (!previewUrl) return
+    setHeroRefreshing(id)
+    try {
+      const res = await fetch(`/api/articles/${id}/replace-thumbnail`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ set_url: previewUrl }),
+      })
+      if (!res.ok) throw new Error('Failed')
+      const data = await res.json()
+      if (data.article) {
+        setArticles(prev => prev.map(a => a.id === id ? { ...a, article: data.article } : a))
+      }
+    } catch {
+      // silent
+    } finally {
+      setHeroPreview(prev => ({ ...prev, [id]: null }))
+      setHeroRefreshing(null)
+    }
+  }
+
+  function handleDiscardHero(id: string) {
+    setHeroPreview(prev => ({ ...prev, [id]: null }))
   }
 
   async function handleDelete(id: string) {
@@ -299,31 +345,81 @@ export default function AdminDashboard() {
                         {/* Article info */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div
-                              className="flex-shrink-0 rounded-lg overflow-hidden"
-                              style={{
-                                width: 60,
-                                height: 40,
-                                backgroundColor: 'var(--bg)',
-                                border: '1px solid var(--border)',
-                              }}
-                            >
-                              {thumbnailUrl ? (
-                                <Image
-                                  src={thumbnailUrl}
-                                  alt=""
-                                  width={60}
-                                  height={40}
-                                  className="object-cover w-full h-full"
-                                  unoptimized
-                                />
-                              ) : (
-                                <div
-                                  className="w-full h-full flex items-center justify-center text-xs"
-                                  style={{ color: 'var(--text-secondary)' }}
-                                >
-                                  --
+                            <div className="flex-shrink-0 relative group">
+                              <div
+                                className="rounded-lg overflow-hidden"
+                                style={{
+                                  width: 60,
+                                  height: 40,
+                                  backgroundColor: 'var(--bg)',
+                                  border: '1px solid var(--border)',
+                                }}
+                              >
+                                {(heroPreview[row.id] ?? thumbnailUrl) ? (
+                                  <Image
+                                    src={heroPreview[row.id] ?? thumbnailUrl ?? ''}
+                                    alt=""
+                                    width={60}
+                                    height={40}
+                                    className="object-cover w-full h-full"
+                                    unoptimized
+                                    key={heroPreview[row.id] ?? thumbnailUrl}
+                                  />
+                                ) : (
+                                  <div
+                                    className="w-full h-full flex items-center justify-center text-xs"
+                                    style={{ color: 'var(--text-secondary)' }}
+                                  >
+                                    --
+                                  </div>
+                                )}
+                              </div>
+                              {/* Preview badge */}
+                              {heroPreview[row.id] && (
+                                <span className="absolute -top-1 -left-1 text-[8px] font-bold px-1 rounded bg-amber-500 text-white">
+                                  NEW
+                                </span>
+                              )}
+                              {/* Refresh / Keep / Discard buttons */}
+                              {heroPreview[row.id] ? (
+                                <div className="flex gap-0.5 mt-1">
+                                  <button
+                                    onClick={() => handleKeepHero(row.id)}
+                                    disabled={heroRefreshing === row.id}
+                                    className="text-[9px] font-bold px-1.5 py-0.5 rounded text-white"
+                                    style={{ backgroundColor: '#16a34a' }}
+                                    title="Keep this image"
+                                  >
+                                    ✓
+                                  </button>
+                                  <button
+                                    onClick={() => handleDiscardHero(row.id)}
+                                    className="text-[9px] font-bold px-1.5 py-0.5 rounded text-white"
+                                    style={{ backgroundColor: '#6B6B6B' }}
+                                    title="Discard"
+                                  >
+                                    ✕
+                                  </button>
+                                  <button
+                                    onClick={() => handleRefreshHero(row.id)}
+                                    disabled={heroRefreshing === row.id}
+                                    className="text-[9px] font-bold px-1.5 py-0.5 rounded text-white"
+                                    style={{ backgroundColor: 'var(--accent)' }}
+                                    title="Try another"
+                                  >
+                                    ↻
+                                  </button>
                                 </div>
+                              ) : (
+                                <button
+                                  onClick={() => handleRefreshHero(row.id)}
+                                  disabled={heroRefreshing === row.id}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity absolute -bottom-1 left-1/2 -translate-x-1/2 text-[9px] font-bold px-2 py-0.5 rounded text-white whitespace-nowrap"
+                                  style={{ backgroundColor: 'var(--accent)' }}
+                                  title="Get new hero image"
+                                >
+                                  {heroRefreshing === row.id ? '...' : '↻ Hero'}
+                                </button>
                               )}
                             </div>
                             <Link
