@@ -371,29 +371,43 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ═══ Section 7: Trust ═══ */}
+      {/* ═══ Section 7: Trust & Transparency (merged) ═══ */}
       <section className="max-w-3xl mx-auto px-4 md:px-6 pb-24 text-center">
+        {/* Big green checkmark */}
+        <div
+          className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
+          style={{ backgroundColor: '#f0fdf4', border: '2px solid #bbf7d0' }}
+        >
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+        </div>
+
         <h2
           className="text-2xl md:text-3xl font-bold mb-4"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
         >
-          Written by one AI. Fact-checked by another.
+          Fact-checked by an independent AI agent.
         </h2>
-        <p className="text-base mb-8" style={{ color: 'var(--text-secondary)' }}>
-          Every article is independently verified after generation. A second AI cross-checks prices, specs, and claims against live sources. If something&apos;s wrong, it&apos;s corrected — and you see exactly what changed.
+        <p className="text-base mb-4 max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+          Every article is written by Claude (Anthropic) using live web search. Then a completely separate AI — Google Gemini — runs a full fact-check review, independently verifying every price, spec, and claim against live sources.
         </p>
+        <p className="text-base mb-8 max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+          If Gemini finds something wrong, it corrects the article automatically and shows you exactly what changed. Two different AI models, two different companies, checking each other&apos;s work. Every article includes its sources so you can verify anything yourself.
+        </p>
+
         {/* Fact-check bar mockup */}
         <div
           className="rounded-xl px-5 py-3 flex items-center gap-3 max-w-lg mx-auto"
-          style={{ backgroundColor: 'var(--accent-light)', border: '1px solid #f0d5be' }}
+          style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
           </svg>
           <p className="text-sm text-left" style={{ color: 'var(--text-primary)' }}>
-            <span className="font-semibold" style={{ fontFamily: 'var(--font-sora)' }}>Fact-check complete</span>
+            <span className="font-semibold" style={{ fontFamily: 'var(--font-sora)', color: '#16a34a' }}>Fact-check complete</span>
             {' — '}
             <span className="font-bold" style={{ color: 'var(--accent)' }}>2 corrections</span>
             {' applied. '}
@@ -420,19 +434,6 @@ export default function AboutPage() {
         >
           Learn more about creating →
         </Link>
-      </section>
-
-      {/* ═══ Section 9: Tech Transparency ═══ */}
-      <section className="max-w-3xl mx-auto px-4 md:px-6 pb-24 text-center">
-        <h2
-          className="text-2xl md:text-3xl font-bold mb-4"
-          style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
-        >
-          Transparent about how it works.
-        </h2>
-        <p className="text-base max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-          ArticleAI uses Claude by Anthropic to research and write, with live web search for current data. Google Gemini independently fact-checks every article. Images are sourced from real retailers and review sites. Every article includes its sources so you can verify anything yourself.
-        </p>
       </section>
 
       {/* ═══ Section 10: CTA ═══ */}
