@@ -460,6 +460,9 @@ interface GenOptions {
   length?: 'quick' | 'standard' | 'deep'
   tone?: 'opinionated' | 'balanced' | 'casual'
   visual?: 'minimal' | 'standard' | 'maximum'
+  location?: string
+  currency?: string
+  language?: string
 }
 
 function buildOptionsPrompt(options: GenOptions): string {
@@ -505,6 +508,39 @@ General rule: ask "what are the 3-4 things the reader absolutely needs?" and bui
     parts.push('VISUALS: Minimal visuals. Focus on text content. Include product images but skip charts, calculators, and data visualisations. No comparison_matrix or interactive_calculator sections.')
   } else if (options.visual === 'maximum') {
     parts.push('VISUALS: Maximum visuals. Include more charts, interactive calculators where relevant, data visualisations in every major section, more images per product. Make this highly visual and interactive.')
+  }
+
+  // User preferences — location, currency, language
+  const prefParts: string[] = []
+
+  const locationLabels: Record<string, string> = {
+    US: 'United States', GB: 'United Kingdom', AE: 'United Arab Emirates',
+    AU: 'Australia', CA: 'Canada', DE: 'Germany', FR: 'France',
+    SG: 'Singapore', IE: 'Ireland', IN: 'India', NZ: 'New Zealand',
+    NL: 'Netherlands', SE: 'Sweden', JP: 'Japan',
+  }
+  const currencyLabels: Record<string, string> = {
+    USD: 'USD ($)', GBP: 'GBP (£)', EUR: 'EUR (€)', AED: 'AED (د.إ)',
+    AUD: 'AUD (A$)', CAD: 'CAD (C$)', SGD: 'SGD (S$)', INR: 'INR (₹)',
+    NZD: 'NZD (NZ$)', SEK: 'SEK (kr)', JPY: 'JPY (¥)',
+  }
+  const languageLabels: Record<string, string> = {
+    en: 'English', es: 'Spanish', fr: 'French', de: 'German',
+    ar: 'Arabic', pt: 'Portuguese', ja: 'Japanese', zh: 'Chinese (Simplified)',
+  }
+
+  if (options.location && locationLabels[options.location]) {
+    prefParts.push(`The user is located in ${locationLabels[options.location]}. Prioritise products, services, and retailers available in this region. Use region-appropriate examples and references.`)
+  }
+  if (options.currency && options.currency !== 'USD' && currencyLabels[options.currency]) {
+    prefParts.push(`Show ALL prices in ${currencyLabels[options.currency]}. Convert any USD prices you find to ${options.currency} using current exchange rates from your web search. Do not show prices in USD unless specifically comparing international pricing.`)
+  }
+  if (options.language && options.language !== 'en' && languageLabels[options.language]) {
+    prefParts.push(`Write the entire article in ${languageLabels[options.language]}. All headings, descriptions, verdicts, and explanations must be in ${languageLabels[options.language]}. Product names and brand names can stay in their original language.`)
+  }
+
+  if (prefParts.length > 0) {
+    parts.push('REGIONAL PREFERENCES:\n' + prefParts.join('\n'))
   }
 
   return parts.length > 0 ? '\n\nUSER PREFERENCES:\n' + parts.join('\n') : ''

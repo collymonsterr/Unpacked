@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     const trimmedQuery = query.trim()
 
-    // Check if user is authenticated
+    // Check if user is authenticated and load their preferences
     let userId: string | undefined
     let userName: string | undefined
     let userAvatar: string | undefined
@@ -31,6 +31,19 @@ export async function POST(request: NextRequest) {
         userId = user.id
         userName = user.user_metadata?.full_name ?? undefined
         userAvatar = user.user_metadata?.avatar_url ?? undefined
+
+        // Load profile preferences and merge into generation options
+        const { data: profile } = await getSupabaseAdmin()
+          .from('profiles')
+          .select('location, currency, language')
+          .eq('id', user.id)
+          .single()
+
+        if (profile) {
+          if (profile.location) generationOptions.location = profile.location
+          if (profile.currency && profile.currency !== 'USD') generationOptions.currency = profile.currency
+          if (profile.language && profile.language !== 'en') generationOptions.language = profile.language
+        }
       }
     } catch {
       // Not authenticated — continue as anonymous
