@@ -142,18 +142,6 @@ export default function AboutPage() {
               </div>
               {/* Content */}
               <div className="p-4 flex-1" style={{ backgroundColor: '#ffffff' }}>
-                {/* Messy image grid — random sizes, inconsistent */}
-                <div className="flex gap-1.5 mb-3" style={{ height: '52px' }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/about/chatgpt-1.jpg" alt="" className="rounded" style={{ width: '52px', height: '52px', objectFit: 'cover' }} />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/about/chatgpt-2.jpg" alt="" className="rounded" style={{ width: '44px', height: '48px', objectFit: 'cover', marginTop: '4px' }} />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/about/chatgpt-3.jpg" alt="" className="rounded" style={{ width: '68px', height: '42px', objectFit: 'cover', marginTop: '6px' }} />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/about/chatgpt-4.jpg" alt="" className="rounded" style={{ width: '46px', height: '50px', objectFit: 'cover', marginTop: '2px' }} />
-                </div>
-
                 <p className="text-[11px] leading-[1.7] mb-2.5" style={{ color: '#374151' }}>
                   Here are some of the <strong>best electric guitars under $500</strong> that are widely recommended by players and instructors: 🎸
                 </p>
@@ -177,9 +165,6 @@ export default function AboutPage() {
                 </p>
                 <p className="text-[11px] leading-[1.7] mb-2" style={{ color: '#374151' }}>
                   Ultimately, the best guitar for you <span style={{ backgroundColor: '#fee2e2', padding: '1px 3px', borderRadius: '2px', color: '#991b1b' }}>depends on your personal preferences</span>, playing style, and the genres you&apos;re most interested in. I&apos;d recommend visiting a local music store to try out a few models before making your final decision. 😊
-                </p>
-                <p className="text-[11px] leading-[1.7]" style={{ color: '#374151' }}>
-                  Don&apos;t forget about accessories — you&apos;ll need an amp ($50–150 for a practice amp), a cable, a tuner, a strap, and some picks. This can add $100–250 to your total budget. And if you have smaller hands, a shorter scale length guitar (like a Mustang or Jaguar) might feel more comfortable to start with.
                 </p>
               </div>
             </div>
