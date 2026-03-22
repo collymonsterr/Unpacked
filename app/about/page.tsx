@@ -1,4 +1,5 @@
 import Logo from '@/components/ui/Logo'
+import UserMenu from '@/components/ui/UserMenu'
 import SearchForm from '@/components/SearchForm'
 import ExampleChips from '@/components/ExampleChips'
 import Link from 'next/link'
@@ -14,9 +15,12 @@ export default function AboutPage() {
       {/* Nav */}
       <nav className="px-6 py-5 flex items-center justify-between max-w-6xl mx-auto">
         <Logo size="md" />
-        <Link href="/" className="text-sm font-medium no-underline" style={{ color: 'var(--text-secondary)' }}>
-          ← Back to home
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/" className="text-sm font-medium no-underline hidden sm:block" style={{ color: 'var(--text-secondary)' }}>
+            Home
+          </Link>
+          <UserMenu />
+        </div>
       </nav>
 
       {/* ═══ Section 1: Hero ═══ */}

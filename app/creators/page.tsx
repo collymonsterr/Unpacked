@@ -1,4 +1,5 @@
 import Logo from '@/components/ui/Logo'
+import UserMenu from '@/components/ui/UserMenu'
 import Link from 'next/link'
 import CreatorsCTA from './CreatorsCTA'
 
@@ -14,16 +15,12 @@ export default function CreatorsPage() {
       {/* Nav */}
       <nav className="px-6 py-5 flex items-center justify-between max-w-6xl mx-auto">
         <Logo size="md" />
-        <Link
-          href="/"
-          className="text-xs font-medium px-3 py-1.5 rounded-lg no-underline transition-colors"
-          style={{
-            border: '1px solid var(--border)',
-            color: 'var(--text-secondary)',
-          }}
-        >
-          Back to home
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/" className="text-sm font-medium no-underline hidden sm:block" style={{ color: 'var(--text-secondary)' }}>
+            Home
+          </Link>
+          <UserMenu />
+        </div>
       </nav>
 
       {/* Hero */}

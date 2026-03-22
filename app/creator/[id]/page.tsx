@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase'
 import Image from 'next/image'
 import Link from 'next/link'
 import Logo from '@/components/ui/Logo'
+import UserMenu from '@/components/ui/UserMenu'
 import type { ArticleRow, ProductCard } from '@/types/article'
 
 interface Props {
@@ -89,6 +90,10 @@ export default async function CreatorProfilePage({ params }: Props) {
       <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
         <nav className="px-6 py-5 flex items-center justify-between max-w-6xl mx-auto">
           <Logo size="md" />
+          <div className="flex items-center gap-3">
+            <a href="/" className="text-sm font-medium no-underline hidden sm:block" style={{ color: 'var(--text-secondary)' }}>Home</a>
+            <UserMenu />
+          </div>
         </nav>
         <div className="max-w-3xl mx-auto px-4 py-20 text-center">
           <ProfileHeader

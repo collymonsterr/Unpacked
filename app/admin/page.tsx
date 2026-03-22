@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import Logo from '@/components/ui/Logo'
+import UserMenu from '@/components/ui/UserMenu'
 import AdminAnalytics from '@/components/AdminAnalytics'
 import { useAdminMode } from '@/hooks/useAdminMode'
 import type { ArticleRow } from '@/types/article'
@@ -181,13 +182,16 @@ export default function AdminDashboard() {
             Admin
           </span>
         </div>
-        <Link
-          href="/"
-          className="text-sm no-underline transition-opacity hover:opacity-70"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          Back to site
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="text-sm no-underline transition-opacity hover:opacity-70 hidden sm:block"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            Back to site
+          </Link>
+          <UserMenu />
+        </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
