@@ -149,34 +149,37 @@ export default function AboutPage() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="https://m.media-amazon.com/images/I/31RCpXSvWpL.jpg" alt="" className="rounded" style={{ width: '44px', height: '48px', objectFit: 'cover', marginTop: '4px' }} />
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="https://img.youtube.com/vi/zVgMEkpZCQM/mqdefault.jpg" alt="" className="rounded" style={{ width: '68px', height: '42px', objectFit: 'cover', marginTop: '6px' }} />
+                  <img src="https://m.media-amazon.com/images/I/71lk3wDJOAL._AC_SY200_.jpg" alt="" className="rounded" style={{ width: '68px', height: '42px', objectFit: 'cover', marginTop: '6px' }} />
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="https://m.media-amazon.com/images/I/51dy2erRiuL.jpg" alt="" className="rounded" style={{ width: '46px', height: '50px', objectFit: 'cover', marginTop: '2px' }} />
                 </div>
 
                 <p className="text-[11px] leading-[1.7] mb-2.5" style={{ color: '#374151' }}>
-                  Here are some of the <strong>best beginner electric guitars under $500</strong> that are widely recommended: 🎸
+                  Here are some of the <strong>best beginner electric guitars under $500</strong> that are widely recommended by players and instructors: 🎸
                 </p>
                 <p className="text-[11px] leading-[1.7] mb-2" style={{ color: '#374151' }}>
-                  <strong>1. Squier Classic Vibe &apos;60s Stratocaster</strong> — Great all-rounder with alnico pickups and a vintage-tint neck. Many players consider it one of the best value options in this price range.
+                  <strong>1. Squier Classic Vibe &apos;60s Stratocaster</strong> — Great all-rounder with alnico pickups and a vintage-tint gloss neck. The Classic Vibe series offers excellent build quality at an affordable price point, and many players consider it one of the best value options in this range. It comes in several colour options including Lake Placid Blue, 3-Colour Sunburst, and Olympic White.
                 </p>
                 <p className="text-[11px] leading-[1.7] mb-2" style={{ color: '#374151' }}>
-                  <strong>2. Yamaha Pacifica 112V</strong> — A go-to recommendation for beginners with its HSS pickup configuration and comfortable body shape. Very versatile. ✅
+                  <strong>2. Yamaha Pacifica 112V</strong> — A go-to recommendation for beginners with its HSS pickup configuration, comfortable body shape, and reliable tuning stability. The Pacifica series has been consistently popular for over two decades and offers great versatility across genres. ✅
                 </p>
                 <p className="text-[11px] leading-[1.7] mb-2" style={{ color: '#374151' }}>
-                  <strong>3. Epiphone Les Paul Standard</strong> — If you prefer warmer tones, this is a solid choice with dual humbuckers and the iconic Les Paul shape. 🎵
+                  <strong>3. Epiphone Les Paul Standard</strong> — If you prefer warmer, thicker tones, the Epiphone Les Paul is a solid choice. It features dual ProBucker humbuckers, a mahogany body, and the iconic Les Paul shape that&apos;s been a staple of rock music for decades. 🎵
                 </p>
                 <p className="text-[11px] leading-[1.7] mb-2" style={{ color: '#374151' }}>
-                  <strong>4. Ibanez GRX70QA</strong> — Known for its slim, fast neck. Particularly good for rock and metal genres. 🎶
+                  <strong>4. Ibanez GRX70QA</strong> — Known for its slim, fast neck profile, the Ibanez is particularly good for players interested in rock, metal, and shred genres. It offers good value with its quilted art grain top and versatile Infinity pickup configuration. 🎶
                 </p>
                 <p className="text-[11px] leading-[1.7] mb-2" style={{ color: '#374151' }}>
-                  <strong>5. Harley Benton SC-450</strong> — A budget-friendly option that punches above its weight. Great for players who want a Les Paul style without the premium price tag.
+                  <strong>5. Harley Benton SC-450</strong> — A budget-friendly option from Thomann that punches well above its weight. Great for players who want a Les Paul style without the premium price tag. Some players report needing a setup out of the box, but the value is hard to beat at this price point.
                 </p>
                 <p className="text-[11px] leading-[1.7] mb-2" style={{ color: '#374151' }}>
-                  Ultimately, the best guitar for you <span style={{ backgroundColor: '#fee2e2', padding: '1px 3px', borderRadius: '2px', color: '#991b1b' }}>depends on your personal preferences</span>, playing style, and the genres you&apos;re most interested in. I&apos;d recommend visiting a local music store to try out a few models before making your decision. 😊
+                  <strong>Key things to consider:</strong> When choosing your first electric guitar, think about the neck profile (thinner necks are easier for small hands), the pickup configuration (HSS is most versatile, HH is warmer), and whether you prefer a bolt-on or set neck construction. Each has pros and cons.
+                </p>
+                <p className="text-[11px] leading-[1.7] mb-2" style={{ color: '#374151' }}>
+                  Ultimately, the best guitar for you <span style={{ backgroundColor: '#fee2e2', padding: '1px 3px', borderRadius: '2px', color: '#991b1b' }}>depends on your personal preferences</span>, playing style, and the genres you&apos;re most interested in. I&apos;d recommend visiting a local music store to try out a few models before making your final decision. 😊
                 </p>
                 <p className="text-[11px] leading-[1.7]" style={{ color: '#374151' }}>
-                  Also consider what accessories you&apos;ll need — a good amp, cable, tuner, and strap can add another $100–200 to your total budget. And don&apos;t forget about hand size — if you have smaller hands, a shorter scale length guitar might be more comfortable.
+                  Don&apos;t forget about accessories — you&apos;ll need an amp ($50–150 for a practice amp), a cable, a tuner, a strap, and some picks. This can add $100–250 to your total budget. And if you have smaller hands, a shorter scale length guitar (like a Mustang or Jaguar) might feel more comfortable to start with.
                 </p>
               </div>
             </div>
