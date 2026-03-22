@@ -145,13 +145,13 @@ export default function AboutPage() {
                 {/* Messy image grid — random sizes, inconsistent */}
                 <div className="flex gap-1.5 mb-3" style={{ height: '52px' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="https://m.media-amazon.com/images/I/41dOxVqgBiL.jpg" alt="" className="rounded" style={{ width: '52px', height: '52px', objectFit: 'cover' }} />
+                  <img src="https://m.media-amazon.com/images/I/61rRsFFYl-L._AC_SL1500_.jpg" alt="" className="rounded" style={{ width: '52px', height: '52px', objectFit: 'cover' }} />
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="https://m.media-amazon.com/images/I/31RCpXSvWpL.jpg" alt="" className="rounded" style={{ width: '44px', height: '48px', objectFit: 'cover', marginTop: '4px' }} />
+                  <img src="https://m.media-amazon.com/images/I/71lJGGn0R9L._AC_SL1500_.jpg" alt="" className="rounded" style={{ width: '44px', height: '48px', objectFit: 'cover', marginTop: '4px' }} />
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="https://m.media-amazon.com/images/I/71lk3wDJOAL._AC_SY200_.jpg" alt="" className="rounded" style={{ width: '68px', height: '42px', objectFit: 'cover', marginTop: '6px' }} />
+                  <img src="https://m.media-amazon.com/images/I/71TPda7MEuL._AC_SL1500_.jpg" alt="" className="rounded" style={{ width: '68px', height: '42px', objectFit: 'cover', marginTop: '6px' }} />
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="https://m.media-amazon.com/images/I/51dy2erRiuL.jpg" alt="" className="rounded" style={{ width: '46px', height: '50px', objectFit: 'cover', marginTop: '2px' }} />
+                  <img src="https://m.media-amazon.com/images/I/61Y40cSqwWL._AC_SL1500_.jpg" alt="" className="rounded" style={{ width: '46px', height: '50px', objectFit: 'cover', marginTop: '2px' }} />
                 </div>
 
                 <p className="text-[11px] leading-[1.7] mb-2.5" style={{ color: '#374151' }}>
@@ -224,8 +224,8 @@ export default function AboutPage() {
 
                 {/* Product cards with real images */}
                 {[
-                  { name: 'Yamaha Pacifica 112V', price: '$299', badge: 'TOP PICK', badgeColor: 'var(--accent)', img: 'https://m.media-amazon.com/images/I/41dOxVqgBiL.jpg', desc: 'HSS versatility, reliable tuning' },
-                  { name: 'Squier Classic Vibe 50s', price: '$449', badge: 'RUNNER UP', badgeColor: '#94918D', img: 'https://m.media-amazon.com/images/I/31RCpXSvWpL.jpg', desc: 'Premium feel at mid-range price' },
+                  { name: 'Fender Player Stratocaster', price: '$849', badge: 'TOP PICK', badgeColor: 'var(--accent)', img: 'https://m.media-amazon.com/images/I/61rRsFFYl-L._AC_SL1500_.jpg', desc: 'The gold standard. HSS versatility.' },
+                  { name: 'Gibson Les Paul Standard', price: '$2,499', badge: 'PREMIUM', badgeColor: '#94918D', img: 'https://m.media-amazon.com/images/I/71lJGGn0R9L._AC_SL1500_.jpg', desc: 'Iconic tone, premium build quality' },
                 ].map((p, i) => (
                   <div key={i} className="flex gap-2.5 p-2 rounded-lg" style={{ border: '1px solid var(--border)' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
