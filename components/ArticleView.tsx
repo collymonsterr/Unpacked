@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import type { ArticleRow, ProductCard, VisualStrategy } from '@/types/article'
+import type { ArticleRow, ArticleContent, ProductCard, VisualStrategy } from '@/types/article'
 import ArticleTypeBadge from './ui/ArticleTypeBadge'
 import ArticleSidebarNav from './ui/ArticleSidebarNav'
 import QuickVerdict from './sections/QuickVerdict'
@@ -476,6 +476,7 @@ export default function ArticleView({ articleRow, isOwner, isNew, factCheckStatu
               // silently fail
             }
           }}
+          onKeep={(updatedArticle) => setArticle(updatedArticle)}
         />
       )}
 
@@ -682,6 +683,7 @@ function HeroImage({
   articleId,
   onReplace,
   onPick,
+  onKeep,
 }: {
   url: string
   alt: string
@@ -690,6 +692,7 @@ function HeroImage({
   articleId?: string
   onReplace?: (useAI?: boolean) => Promise<void>
   onPick?: (index: number) => Promise<void>
+  onKeep?: (article: ArticleContent) => void
 }) {
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
@@ -731,10 +734,15 @@ function HeroImage({
         body: JSON.stringify({ set_url: previewUrl }),
       })
       if (!res.ok) throw new Error('Failed')
+      const data = await res.json()
+      // Update parent state with the new article data
+      if (data.article && onKeep) {
+        onKeep(data.article)
+      }
       // Preview is now the real image — clear preview state
       setPreviewUrl(null)
       setPreviewLoaded(false)
-      setLoaded(true) // The image is already loaded from preview
+      setLoaded(true)
     } catch {
       // silent
     } finally {
