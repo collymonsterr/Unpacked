@@ -7,23 +7,35 @@ interface AuthResult {
   error?: Response
 }
 
+interface SessionUser {
+  id: string
+  email: string | null
+}
+
 /**
- * Check if a user ID is the platform admin.
+ * Check if a user is the platform admin.
+ * Matches against ADMIN_USER_ID (by ID) or ADMIN_EMAIL (by email).
  */
-function isAdminUser(userId: string): boolean {
+function isAdminUser(user: SessionUser): boolean {
   const adminId = process.env.ADMIN_USER_ID
-  return !!adminId && userId === adminId
+  if (adminId && user.id === adminId) return true
+
+  const adminEmail = process.env.ADMIN_EMAIL
+  if (adminEmail && user.email && user.email.toLowerCase() === adminEmail.toLowerCase()) return true
+
+  return false
 }
 
 /**
  * Get the current authenticated user from the server session.
  * Returns null if not authenticated.
  */
-async function getSessionUser(): Promise<string | null> {
+async function getSessionUser(): Promise<SessionUser | null> {
   try {
     const supabase = await createServerSupabase()
     const { data: { user } } = await supabase.auth.getUser()
-    return user?.id ?? null
+    if (!user) return null
+    return { id: user.id, email: user.email ?? null }
   } catch {
     return null
   }
@@ -34,9 +46,9 @@ async function getSessionUser(): Promise<string | null> {
  * Returns 401 if not authenticated, 403 if authenticated but not admin.
  */
 export async function requireAdmin(): Promise<AuthResult> {
-  const userId = await getSessionUser()
+  const sessionUser = await getSessionUser()
 
-  if (!userId) {
+  if (!sessionUser) {
     return {
       authorized: false,
       userId: null,
@@ -45,28 +57,26 @@ export async function requireAdmin(): Promise<AuthResult> {
     }
   }
 
-  if (!isAdminUser(userId)) {
+  if (!isAdminUser(sessionUser)) {
     return {
       authorized: false,
-      userId,
+      userId: sessionUser.id,
       isAdmin: false,
       error: Response.json({ error: 'Admin access required' }, { status: 403 }),
     }
   }
 
-  return { authorized: true, userId, isAdmin: true }
+  return { authorized: true, userId: sessionUser.id, isAdmin: true }
 }
 
 /**
  * Verify the current user is authenticated and owns the given article.
  * Admin users are always allowed regardless of ownership.
- * Returns { authorized: true, userId } on success.
- * Returns { authorized: false, error: Response } on failure.
  */
 export async function requireArticleOwner(articleId: string): Promise<AuthResult> {
-  const userId = await getSessionUser()
+  const sessionUser = await getSessionUser()
 
-  if (!userId) {
+  if (!sessionUser) {
     return {
       authorized: false,
       userId: null,
@@ -75,11 +85,11 @@ export async function requireArticleOwner(articleId: string): Promise<AuthResult
     }
   }
 
-  const admin = isAdminUser(userId)
+  const admin = isAdminUser(sessionUser)
 
   // Admin bypasses ownership check
   if (admin) {
-    return { authorized: true, userId, isAdmin: true }
+    return { authorized: true, userId: sessionUser.id, isAdmin: true }
   }
 
   // Check article ownership
@@ -93,17 +103,17 @@ export async function requireArticleOwner(articleId: string): Promise<AuthResult
   if (!row) {
     return {
       authorized: false,
-      userId,
+      userId: sessionUser.id,
       isAdmin: false,
       error: Response.json({ error: 'Article not found' }, { status: 404 }),
     }
   }
 
   // Allow if: user owns the article OR article has no owner (legacy/unclaimed)
-  if (row.user_id && row.user_id !== userId) {
+  if (row.user_id && row.user_id !== sessionUser.id) {
     return {
       authorized: false,
-      userId,
+      userId: sessionUser.id,
       isAdmin: false,
       error: Response.json(
         { error: "You don't have permission to modify this article" },
@@ -112,7 +122,7 @@ export async function requireArticleOwner(articleId: string): Promise<AuthResult
     }
   }
 
-  return { authorized: true, userId, isAdmin: false }
+  return { authorized: true, userId: sessionUser.id, isAdmin: false }
 }
 
 /**
@@ -120,9 +130,9 @@ export async function requireArticleOwner(articleId: string): Promise<AuthResult
  * Used for routes where any authenticated user can act (e.g. refine creates a fork).
  */
 export async function requireAuth(): Promise<AuthResult> {
-  const userId = await getSessionUser()
+  const sessionUser = await getSessionUser()
 
-  if (!userId) {
+  if (!sessionUser) {
     return {
       authorized: false,
       userId: null,
@@ -131,5 +141,5 @@ export async function requireAuth(): Promise<AuthResult> {
     }
   }
 
-  return { authorized: true, userId, isAdmin: isAdminUser(userId) }
+  return { authorized: true, userId: sessionUser.id, isAdmin: isAdminUser(sessionUser) }
 }
