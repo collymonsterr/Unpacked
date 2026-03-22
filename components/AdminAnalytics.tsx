@@ -144,14 +144,15 @@ export default function AdminAnalytics() {
           <h3 className="text-sm font-bold mb-4" style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}>
             Articles by Category
           </h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={pieData.sort((a, b) => b.value - a.value)} layout="vertical" margin={{ left: 10 }}>
+          <ResponsiveContainer width="100%" height={Math.max(200, pieData.length * 36 + 40)}>
+            <BarChart data={pieData.sort((a, b) => b.value - a.value)} layout="vertical" margin={{ left: 10, right: 30 }} barSize={20}>
               <XAxis type="number" tick={{ fontSize: 10, fill: '#94918D' }} allowDecimals={false} />
               <YAxis
                 type="category"
                 dataKey="name"
-                width={120}
+                width={130}
                 tick={{ fontSize: 11, fill: '#6B6B6B' }}
+                interval={0}
               />
               <Tooltip
                 contentStyle={{ fontSize: 12, backgroundColor: '#fff', border: '1px solid #E8E8E5', borderRadius: 8 }}
