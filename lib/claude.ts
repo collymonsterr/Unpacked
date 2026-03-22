@@ -152,6 +152,23 @@ For suggestion_chips: generate 3 refinements (modify this article) and 3 related
 
 For hero_image_query: generate a single search query (5-8 words) that would find a beautiful, magazine-quality hero photograph for this article. Think: what would a photo editor at a premium magazine search for? The image should be aspirational, high-resolution, and have NO text or infographics. Examples: "Rent vs Buy" → "beautiful modern house exterior golden hour", "Best Headphones" → "premium headphones lifestyle minimal desk", "Dubai Travel" → "Dubai marina skyline sunset aerial", "How to Budget" → "elegant notebook pen coffee flatlay". Do NOT include words like "article", "guide", "review", "infographic", or "chart".
 
+For hero_image_subject: generate a short description (8-15 words) of the CORE VISUAL SUBJECT that should be in the hero image. This is NOT the article title — it's what should actually be photographed. Rules:
+- Extract the primary physical object or subject, ignore the qualifiers and context
+- "Best robot vacuums for large apartments" → "robot vacuum on a hardwood floor"
+- "Best beginner electric guitars under $500" → "electric guitar leaning against an amplifier"
+- "iPhone 17 vs Galaxy S26" → "two smartphones side by side on a desk"
+- "Best skincare routine for men over 35" → "men's skincare products arranged on a bathroom shelf"
+- "How does a mortgage actually work?" → "house keys on top of paperwork on a kitchen table"
+- "Best travel backpacks" → "travel backpack in an airport terminal"
+- "The rise of Chinese EVs" → "modern electric car on a city street"
+- The subject should be a specific, photographable thing in a natural, realistic setting
+- Never a person's face as the main subject
+- If the topic is abstract with no obvious physical subject, choose a tangible object that REPRESENTS it:
+  - "How elections work" → "ballot box with voting slips in a community hall"
+  - "Inflation explained" → "shopping cart with groceries in a supermarket aisle"
+  - "How LLMs work" → "close-up of a laptop screen showing code in a dimly lit room"
+  - Never default to generic stock-photo concepts like "person thinking" or "abstract technology background"
+
 For loading_messages: generate 6-8 short, specific status messages describing what research will be done for THIS article. These are shown to the user while the article generates. Be specific to the query — reference actual product names, subreddits, source types, and data being gathered. Do NOT use generic messages like "Researching..." or "Nearly there". Each message should describe a concrete research action. Examples for "Best noise-cancelling headphones under $300": "Checking what audiophile forums say about ANC performance...", "Comparing noise cancellation test results from rtings.com...", "Reading 6-month owner reviews on Reddit r/headphones...", "Pulling current prices from Amazon and Best Buy..."
 
 Respond ONLY with valid JSON matching this schema exactly. No preamble, no markdown fences:
@@ -175,6 +192,7 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
   "sections_outline": ["string"],
   "research_queries": ["string"],
   "hero_image_query": "string",
+  "hero_image_subject": "string",
   "loading_messages": ["string"],
   "suggestion_chips": {
     "refinements": ["string"],

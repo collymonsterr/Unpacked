@@ -50,6 +50,15 @@ export async function POST(
         fetchThumbnailImage(rawArticle.title, rawArticle.article_type),
       ])
 
+      // Pass hero_image_subject from plan into article for AI image generation
+      if (row.plan.hero_image_subject) {
+        (enrichedArticle as unknown as Record<string, unknown>).hero_image_subject = row.plan.hero_image_subject
+      }
+      // Store hero_image_query for Brave search fallback
+      if (row.plan.hero_image_query) {
+        (enrichedArticle as unknown as Record<string, unknown>).hero_image_query = row.plan.hero_image_query
+      }
+
       enrichedArticle.thumbnail_url = heroUrl ?? pickBestArticleImage(enrichedArticle)
 
       // Save complete article
