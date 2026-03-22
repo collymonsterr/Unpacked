@@ -426,7 +426,7 @@ export default function AboutPage() {
       </section>
 
       {/* ═══ Section 10: CTA ═══ */}
-      <section className="max-w-2xl mx-auto px-4 md:px-6 pb-24 text-center">
+      <section className="max-w-2xl mx-auto px-4 md:px-6 pb-16 text-center">
         <h2
           className="text-2xl md:text-3xl font-bold mb-8"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
@@ -435,6 +435,42 @@ export default function AboutPage() {
         </h2>
         <SearchForm autoFocus={false} />
         <ExampleChips existingQueries={[]} />
+      </section>
+
+      {/* ═══ Section 11: Featured Articles ═══ */}
+      <section className="max-w-5xl mx-auto px-4 md:px-6 pb-24">
+        <h3
+          className="text-lg font-bold mb-6 text-center"
+          style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-secondary)' }}
+        >
+          Or explore what others have created
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { title: 'Are Robot Vacuums Worth It for Large Apartments?', slug: 'are-robot-vacuums-worth-it-for-large-apartments-and-houses', type: 'Decision Guide' },
+            { title: 'MacBook Neo vs Dell Inspiron 14', slug: 'macbook-neo-vs-dell-inspiron-14-which-laptop-should-you-buy-in-2024', type: 'Comparison' },
+            { title: 'Is Cooking at Home Actually Cheaper Than Eating Out?', slug: 'is-cooking-at-home-actually-cheaper-than-eating-out-the-real-cost-breakdown', type: 'Money & Finance' },
+            { title: 'Ozempic\u2019s Hidden Impact on Society in 2026', slug: 'ozempic-everything-need-know-affects-personally-i-want-know-implications-across-', type: 'Explainer' },
+            { title: 'The US National Debt Visualized', slug: 'the-us-national-debt-visualized-understanding-dollar36-trillion-through-time-spa', type: 'Explainer' },
+            { title: 'Humanoid Robots vs Specialized Task Robots', slug: 'humanoid-robots-vs-specialized-task-robots-which-design-philosophy-wins', type: 'Comparison' },
+            { title: 'The Real Cost of Owning a Dog in 2026', slug: 'the-real-cost-of-owning-a-dog-in-2026-complete-financial-breakdown', type: 'Money & Finance', hideOnMobile: true },
+            { title: 'How to Negotiate Your Salary', slug: 'salary-negocations-for-new-job-tips', type: 'Tutorial', hideOnMobile: true },
+          ].map((article, i) => (
+            <a
+              key={i}
+              href={`/article/${article.slug}`}
+              className={`rounded-xl p-3.5 no-underline transition-shadow hover:shadow-md${article.hideOnMobile ? ' hidden md:block' : ''}`}
+              style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
+            >
+              <p className="text-[10px] font-semibold mb-1" style={{ color: 'var(--accent)' }}>
+                {article.type}
+              </p>
+              <p className="text-xs font-bold leading-snug" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-sora)' }}>
+                {article.title}
+              </p>
+            </a>
+          ))}
+        </div>
       </section>
     </div>
   )
