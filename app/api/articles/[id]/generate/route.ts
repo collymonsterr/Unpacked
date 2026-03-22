@@ -43,8 +43,9 @@ export async function POST(
   after(async () => {
     const bgDb = getSupabaseAdmin()
     try {
-      // Step 2: Research & Write
-      const rawArticle = await writeArticle(row.query, row.plan)
+      // Step 2: Research & Write (use stored generation options for regional consistency)
+      const storedOptions = row.generation_options ?? undefined
+      const rawArticle = await writeArticle(row.query, row.plan, storedOptions)
 
       // Step 3: Image enrichment + hero image (in parallel)
       const [enrichedArticle, heroUrl] = await Promise.all([
