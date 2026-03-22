@@ -344,13 +344,41 @@ MANDATORY MINIMUMS BY TYPE:
 - planning: 1-3 charts (bar_chart for cost comparisons, stat_cards for key metrics)
 
 INTERACTIVE CALCULATORS:
-For articles about financial topics (retirement, investing, mortgages, budgeting, savings, compound interest), cost comparisons, or planning topics — include an interactive_calculator section. Available calculator_type values: compound_interest, mortgage, roi_comparison, budget, custom.
-Configure the inputs with sensible defaults and ranges relevant to the article topic. The calculator helps the reader apply the article's advice to their own situation.
+For articles about financial topics, cost comparisons, or planning topics — include an interactive_calculator section. The calculator helps the reader apply the article's advice to their own situation. Configure inputs with sensible defaults and ranges relevant to the article topic.
+
+IMPORTANT: You MUST choose from the named calculator types below. Do NOT use "custom".
+
+Available calculator_type values:
+- compound_interest — retirement savings, investment growth, compound interest (inputs: starting_age, monthly_savings, annual_return, retirement_age)
+- mortgage — monthly payment calculator (inputs: home_price, down_payment, interest_rate, loan_term)
+- mortgage_payoff — early payoff analysis (inputs: mortgage_balance, mortgage_rate, extra_payment, investment_return)
+- roi_comparison — compare two options over time (inputs: initial_investment, rate_a, rate_b, years)
+- budget — income vs expenses (inputs: monthly_income, housing, transport, food, utilities, entertainment)
+- commute_cost — true cost of commuting (inputs: miles_one_way, work_days, hourly_wage, commute_time)
+- subscription_audit — subscription spending (inputs: streaming_count, avg_streaming_cost, software_count, avg_software_cost, other_count, avg_other_cost)
+- cooking_comparison — cooking at home vs eating out (inputs: restaurant_meals_week, avg_meal_cost, home_cooking_cost, household_size)
+- gym_comparison — home gym vs membership (inputs: monthly_gym_cost, home_gym_cost, visits_per_month, annual_fees, travel_costs)
+- smoking_cost — lifetime cost of smoking (inputs: packs_per_day, pack_price, years_smoking, investment_return)
+- house_affordability — how much house you can afford (inputs: annual_income, monthly_debts, down_payment, mortgage_rate)
+- freelance_comparison — freelance vs employment take-home (inputs: salary, hourly_rate, billable_hours, health_insurance)
+- dog_ownership — lifetime cost of a dog (inputs: dog_size, lifespan, annual_cost, region_multiplier)
+- cost_of_living_comparison — compare two cities (inputs: monthly_salary, rent_preference, lifestyle_spending)
+- rental_comparison — Airbnb vs long-term rental (inputs: nightly_rate, monthly_rent, occupancy_rate, property_value)
+- college_savings — saving for college (inputs: child_age, college_type, target_coverage, annual_return)
+- car_budget — how much to spend on a car (inputs: gross_income, take_home_percentage, insurance_monthly, fuel_monthly)
+- salary_calculator — salary needed for a lifestyle (inputs: family_size, children, area_preference, lifestyle)
+- baby_cost — first year baby costs (inputs: location, childcare, feeding, income_loss)
+- engagement_ring_budget — ring budget from disposable income (inputs: annual_income, monthly_rent_mortgage, monthly_debt_payments, monthly_other_expenses, monthly_savings_goal, current_ring_savings)
+
+Choose the CLOSEST matching type. Use the input IDs listed above — they are required for the calculator to function correctly. You may adjust labels, defaults, min/max, and step values to fit the topic.
+
 Examples:
-- "How much to save for retirement" → compound_interest calculator with starting_age, monthly_savings, annual_return, retirement_age
-- "Rent vs buy" → mortgage calculator with home_price, down_payment, interest_rate, loan_term
-- "Is an EV worth it?" → custom calculator comparing fuel vs electricity costs
-- "Budget guide" → budget calculator with monthly_income and expense category sliders
+- "How much to save for retirement" → compound_interest
+- "Rent vs buy" → mortgage
+- "Is an EV worth it?" → roi_comparison (fuel cost vs electricity cost over time)
+- "Budget guide" → budget
+- "How much is your commute costing you?" → commute_cost
+- "Freelance vs full-time" → freelance_comparison
 
 CRITICAL — NO CITATION MARKUP:
 Do NOT include <cite>, </cite>, or any HTML citation tags in the article text. Write clean prose only. Source attribution goes in the "sources" section, not inline. If web search returns citation-annotated text, strip the tags before including it.
@@ -405,7 +433,7 @@ Return a JSON object matching this structure. Return ONLY valid JSON. No preambl
     { "type": "treemap", "heading": "string", "description": "string (optional)", "data": [{ "label": "string", "value": "number", "highlight": "boolean (optional)" }], "unit": "string (optional)", "source": "string (optional)" },
     { "type": "timeline", "heading": "string", "events": [{ "year": "string", "title": "string", "description": "string" }] },
     { "type": "image_section", "heading": "string (optional)", "images": [{ "search_query": "string", "caption": "string (optional)" }], "layout": "single | gallery | side-by-side" },
-    { "type": "interactive_calculator", "heading": "string", "description": "string (optional)", "calculator_type": "compound_interest | mortgage | roi_comparison | budget | custom", "inputs": [{ "id": "string", "label": "string", "type": "slider", "min": "number", "max": "number", "default": "number", "step": "number", "unit": "string (optional)" }], "outputs": [{ "id": "string", "label": "string", "format": "currency | percentage | number" }], "source": "string (optional)" }
+    { "type": "interactive_calculator", "heading": "string", "description": "string (optional)", "calculator_type": "compound_interest | mortgage | mortgage_payoff | roi_comparison | budget | commute_cost | subscription_audit | cooking_comparison | gym_comparison | smoking_cost | house_affordability | freelance_comparison | dog_ownership | cost_of_living_comparison | rental_comparison | college_savings | car_budget | salary_calculator | baby_cost | engagement_ring_budget", "inputs": [{ "id": "string", "label": "string", "type": "slider", "min": "number", "max": "number", "default": "number", "step": "number", "unit": "string (optional)" }], "outputs": [{ "id": "string", "label": "string", "format": "currency | percentage | number" }], "source": "string (optional)" }
   ]
 }
 
