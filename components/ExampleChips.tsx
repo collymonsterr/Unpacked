@@ -113,7 +113,7 @@ export default function ExampleChips({ existingQueries = [] }: Props) {
   }
 
   return (
-    <div className="flex flex-wrap justify-center gap-2 mt-4">
+    <div className="flex flex-wrap justify-center gap-2 mt-7">
       {examples.map((example) => (
         <button
           key={example}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+// Parent controls visibility — this component is always rendered when shown
 
 export interface GenerationOptions {
   length: 'quick' | 'standard' | 'deep'
@@ -76,84 +76,50 @@ function SegmentedControl({
 }
 
 export default function ArticleOptions({ value, onChange }: Props) {
-  const [expanded, setExpanded] = useState(false)
-
-  // Check if any option differs from default
-  const hasCustom = value.length !== DEFAULTS.length || value.tone !== DEFAULTS.tone || value.visual !== DEFAULTS.visual
-
   return (
-    <div className="mt-3">
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-1.5 mx-auto text-xs font-medium transition-colors"
-        style={{ color: hasCustom ? 'var(--accent)' : 'var(--text-secondary)' }}
-      >
-        <span>{hasCustom ? 'Article options (customised)' : 'Article options'}</span>
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{
-            transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 200ms ease',
-          }}
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </button>
+    <div
+      className="rounded-xl px-4 py-4"
+      style={{
+        backgroundColor: 'var(--card)',
+        border: '1px solid var(--border)',
+      }}
+    >
+      <SegmentedControl
+        label="Length"
+        options={[
+          { value: 'quick', label: 'Quick read', subtitle: '2-3 min' },
+          { value: 'standard', label: 'Standard', subtitle: '5-7 min' },
+          { value: 'deep', label: 'Deep dive', subtitle: '10+ min' },
+        ]}
+        selected={value.length}
+        onChange={(v) => onChange({ ...value, length: v as GenerationOptions['length'] })}
+      />
 
-      {expanded && (
-        <div
-          className="mt-3 rounded-xl px-4 py-4"
-          style={{
-            backgroundColor: 'var(--card)',
-            border: '1px solid var(--border)',
-          }}
-        >
-          <SegmentedControl
-            label="Length"
-            options={[
-              { value: 'quick', label: 'Quick read', subtitle: '2-3 min' },
-              { value: 'standard', label: 'Standard', subtitle: '5-7 min' },
-              { value: 'deep', label: 'Deep dive', subtitle: '10+ min' },
-            ]}
-            selected={value.length}
-            onChange={(v) => onChange({ ...value, length: v as GenerationOptions['length'] })}
-          />
+      <SegmentedControl
+        label="Tone"
+        options={[
+          { value: 'opinionated', label: 'Opinionated', subtitle: 'picks winners' },
+          { value: 'balanced', label: 'Balanced', subtitle: 'even-handed' },
+          { value: 'casual', label: 'Casual', subtitle: 'conversational' },
+        ]}
+        selected={value.tone}
+        onChange={(v) => onChange({ ...value, tone: v as GenerationOptions['tone'] })}
+      />
 
-          <SegmentedControl
-            label="Tone"
-            options={[
-              { value: 'opinionated', label: 'Opinionated', subtitle: 'picks winners' },
-              { value: 'balanced', label: 'Balanced', subtitle: 'even-handed' },
-              { value: 'casual', label: 'Casual', subtitle: 'conversational' },
-            ]}
-            selected={value.tone}
-            onChange={(v) => onChange({ ...value, tone: v as GenerationOptions['tone'] })}
-          />
+      <SegmentedControl
+        label="How visual"
+        options={[
+          { value: 'minimal', label: 'Minimal', subtitle: 'mostly text' },
+          { value: 'standard', label: 'Standard', subtitle: 'images + charts' },
+          { value: 'maximum', label: 'Maximum', subtitle: 'full interactive' },
+        ]}
+        selected={value.visual}
+        onChange={(v) => onChange({ ...value, visual: v as GenerationOptions['visual'] })}
+      />
 
-          <SegmentedControl
-            label="How visual"
-            options={[
-              { value: 'minimal', label: 'Minimal', subtitle: 'mostly text' },
-              { value: 'standard', label: 'Standard', subtitle: 'images + charts' },
-              { value: 'maximum', label: 'Maximum', subtitle: 'full interactive' },
-            ]}
-            selected={value.visual}
-            onChange={(v) => onChange({ ...value, visual: v as GenerationOptions['visual'] })}
-          />
-
-          <p className="text-center mt-1" style={{ fontSize: '11px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-            Location, currency, and budget preferences are set in your profile settings.
-          </p>
-        </div>
-      )}
+      <p className="text-center mt-1" style={{ fontSize: '11px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+        Location, currency, and budget preferences are set in your account settings.
+      </p>
     </div>
   )
 }

@@ -21,6 +21,7 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [options, setOptions] = useState<GenerationOptions>(DEFAULT_OPTIONS)
+  const [showOptions, setShowOptions] = useState(false)
   const router = useRouter()
 
   // Rotate placeholder text
@@ -79,8 +80,9 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
   return (
     <div className="w-full">
       <form onSubmit={handleSubmit}>
+        {/* Text input card */}
         <div
-          className="flex flex-col sm:flex-row gap-2 rounded-2xl overflow-hidden p-2"
+          className="rounded-2xl overflow-hidden p-2"
           style={{
             backgroundColor: 'var(--card)',
             boxShadow: '0 2px 8px rgba(0,0,0,0.06), 0 8px 32px rgba(0,0,0,0.08)',
@@ -91,8 +93,9 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
             value={query}
             onChange={(e) => {
               setQuery(e.target.value)
+              // Auto-expand beyond 2 rows if needed
               e.target.style.height = 'auto'
-              e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
+              e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px'
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -102,18 +105,23 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
             }}
             placeholder={placeholder}
             disabled={isLoading}
-            rows={1}
-            className="flex-1 px-4 py-3 text-base outline-none bg-transparent disabled:opacity-50 resize-none"
+            rows={2}
+            className="w-full px-4 py-3 text-base outline-none bg-transparent disabled:opacity-50 resize-none"
             style={{
               color: 'var(--text-primary)',
               fontFamily: 'var(--font-outfit)',
+              minHeight: '60px',
             }}
             autoFocus={autoFocus}
           />
+        </div>
+
+        {/* Buttons row — below the input */}
+        <div className="flex items-center gap-3 mt-3 justify-center">
           <button
             type="submit"
             disabled={isLoading || !query.trim()}
-            className="px-6 py-3 rounded-xl font-semibold text-sm sm:text-base transition-opacity disabled:opacity-40 shrink-0"
+            className="px-6 py-2.5 rounded-xl font-semibold text-sm transition-opacity disabled:opacity-40"
             style={{
               backgroundColor: 'var(--accent)',
               color: '#fff',
@@ -123,10 +131,29 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
           >
             {isLoading ? 'Creating...' : 'Generate Article'}
           </button>
+          <button
+            type="button"
+            onClick={() => setShowOptions(!showOptions)}
+            className="px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+            style={{
+              backgroundColor: 'transparent',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border)',
+              fontFamily: 'var(--font-sora)',
+              cursor: 'pointer',
+            }}
+          >
+            Article options {showOptions ? '▾' : '▸'}
+          </button>
         </div>
       </form>
 
-      <ArticleOptions value={options} onChange={setOptions} />
+      {/* Options panel — toggled by button */}
+      {showOptions && (
+        <div className="mt-3">
+          <ArticleOptions value={options} onChange={setOptions} />
+        </div>
+      )}
 
       {error && (
         <p className="mt-3 text-sm text-red-600 text-center">{error}</p>
