@@ -658,8 +658,10 @@ function stripCitations(article: ArticleContent): ArticleContent {
 export async function refineArticle(
   query: string,
   currentArticle: ArticleContent,
-  instruction: string
+  instruction: string,
+  options?: GenOptions
 ): Promise<{ article: ArticleContent; suggestion_chips: { refinements: string[]; related: string[] } }> {
+  const optionsPrompt = options ? buildOptionsPrompt(options) : ''
   const stream = getAnthropic().messages.stream({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 16000,
@@ -673,7 +675,7 @@ export async function refineArticle(
 Current article:
 ${JSON.stringify(currentArticle, null, 2)}
 
-Refinement instruction: "${instruction}"
+Refinement instruction: "${instruction}"${optionsPrompt}
 
 Apply the refinement and return the full updated article JSON. Also append a "suggestion_chips" key at the top level (outside the article structure) with new contextually relevant suggestions:
 {

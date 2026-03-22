@@ -45,10 +45,14 @@ export async function POST(
   }
 
   try {
+    // Use the generation options stored on the source article for regional consistency
+    const storedOptions = row.generation_options ?? undefined
+
     const { article: refined, suggestion_chips } = await refineArticle(
       row.query,
       row.article,
-      instruction
+      instruction,
+      storedOptions
     )
 
     const enriched = await enrichArticleWithImages(refined, row.plan?.entities ?? [])
@@ -75,6 +79,7 @@ export async function POST(
         user_id: row.user_id,
         user_name: row.user_name,
         user_avatar: row.user_avatar,
+        generation_options: storedOptions ?? null,
         parent_article_id: id,
         root_article_id: rootId,
       })
