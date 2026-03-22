@@ -91,10 +91,21 @@ export default function ProfileSettingsPage() {
           className="text-2xl font-bold mb-1"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
         >
-          Profile Settings
+          Account Settings
         </h1>
         <p className="text-sm mb-8" style={{ color: 'var(--text-secondary)' }}>
-          This is how you appear on your articles and creator profile.
+          Manage your profile and article preferences.
+        </p>
+
+        {/* Section header: Profile */}
+        <p
+          className="text-xs font-semibold uppercase tracking-widest mb-4"
+          style={{ color: 'var(--accent)' }}
+        >
+          Profile
+        </p>
+        <p className="text-xs mb-5" style={{ color: 'var(--text-secondary)' }}>
+          How you appear on your articles and creator profile.
         </p>
 
         {/* Avatar */}
@@ -207,6 +218,110 @@ export default function ProfileSettingsPage() {
             </span>
           )}
         </div>
+
+        {/* ─── Preferences Section ─── */}
+        <div className="mt-12 pt-8" style={{ borderTop: '1px solid var(--border)' }}>
+          <p
+            className="text-xs font-semibold uppercase tracking-widest mb-4"
+            style={{ color: 'var(--accent)' }}
+          >
+            Article Preferences
+          </p>
+          <p className="text-xs mb-5" style={{ color: 'var(--text-secondary)' }}>
+            These settings personalise your articles — prices, products, and recommendations will reflect your location and currency.
+          </p>
+
+          {/* Location */}
+          <div className="mb-5">
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+              Location
+            </label>
+            <select
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none appearance-none"
+              style={{
+                backgroundColor: 'var(--card)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-secondary)',
+              }}
+              disabled
+            >
+              <option>Not set — articles use global defaults</option>
+              <option>United States</option>
+              <option>United Kingdom</option>
+              <option>United Arab Emirates</option>
+              <option>Australia</option>
+              <option>Canada</option>
+              <option>Germany</option>
+              <option>France</option>
+              <option>Singapore</option>
+              <option>Ireland</option>
+            </select>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+              Affects product availability and regional recommendations. Coming soon.
+            </p>
+          </div>
+
+          {/* Currency */}
+          <div className="mb-5">
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+              Currency
+            </label>
+            <select
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none appearance-none"
+              style={{
+                backgroundColor: 'var(--card)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-secondary)',
+              }}
+              disabled
+            >
+              <option>USD ($) — default</option>
+              <option>GBP (£)</option>
+              <option>EUR (€)</option>
+              <option>AED (د.إ)</option>
+              <option>AUD (A$)</option>
+              <option>CAD (C$)</option>
+              <option>SGD (S$)</option>
+            </select>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+              All prices in your articles will be shown in this currency. Coming soon.
+            </p>
+          </div>
+
+          {/* Language */}
+          <div className="mb-5">
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+              Language
+            </label>
+            <select
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none appearance-none"
+              style={{
+                backgroundColor: 'var(--card)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-secondary)',
+              }}
+              disabled
+            >
+              <option>English — default</option>
+            </select>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+              More languages coming soon.
+            </p>
+          </div>
+        </div>
+
+        {/* Public profile link */}
+        {profile && (
+          <div className="mt-8 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
+            <a
+              href={`/creator/${profile.id}`}
+              className="text-sm font-medium no-underline"
+              style={{ color: 'var(--accent)' }}
+            >
+              View your public profile →
+            </a>
+          </div>
+        )}
       </div>
     </div>
   )

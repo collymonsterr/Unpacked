@@ -182,20 +182,6 @@ export default function UserMenu() {
               My Articles
             </Link>
             <Link
-              href={`/creator/${user.id}`}
-              onClick={() => setMenuOpen(false)}
-              className="block w-full text-left text-sm px-3 py-2 transition-colors"
-              style={{ color: 'var(--text-primary)' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--accent-light)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent'
-              }}
-            >
-              View my profile
-            </Link>
-            <Link
               href="/settings/profile"
               onClick={() => setMenuOpen(false)}
               className="block w-full text-left text-sm px-3 py-2 transition-colors"
@@ -207,7 +193,7 @@ export default function UserMenu() {
                 e.currentTarget.style.backgroundColor = 'transparent'
               }}
             >
-              Profile settings
+              Account settings
             </Link>
 
             {/* Admin-only links */}
