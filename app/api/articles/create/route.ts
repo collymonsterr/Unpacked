@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     // Rate limiting
     const { key, limit } = getRateLimitInfo(request, userId)
-    const rateResult = checkRateLimit(key, limit)
+    const rateResult = await checkRateLimit(key, limit)
     if (!rateResult.allowed) {
       return Response.json(
         { error: "You've reached the generation limit. Try again in a bit." },

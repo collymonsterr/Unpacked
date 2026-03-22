@@ -22,7 +22,7 @@ export async function POST(
 
   // Rate limiting — refine is cheaper, allow more
   const { key } = getRateLimitInfo(request)
-  const rateResult = checkRateLimit(`refine:${key}`, 20)
+  const rateResult = await checkRateLimit(`refine:${key}`, 20)
   if (!rateResult.allowed) {
     return Response.json({ error: "You've reached the refinement limit. Try again in a bit." }, { status: 429 })
   }
