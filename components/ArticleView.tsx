@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import type { ArticleRow, ArticleContent, ProductCard, VisualStrategy } from '@/types/article'
+import type { ArticleRow, ArticleContent, ProductCard } from '@/types/article'
 import ArticleTypeBadge from './ui/ArticleTypeBadge'
 import ArticleSidebarNav from './ui/ArticleSidebarNav'
 import QuickVerdict from './sections/QuickVerdict'
@@ -17,6 +17,8 @@ import BookmarkButton from './ui/BookmarkButton'
 import RelatedArticles from './RelatedArticles'
 import ArticleFeedback from './ui/ArticleFeedback'
 import FactCheckBar, { FactCheckBadge } from './ui/FactCheckBar'
+import MenuItem from './article/MenuItem'
+import DebugPanel from './article/DebugPanel'
 import { buildNavItems } from '@/lib/section-ids'
 import { getReadingTime } from '@/lib/reading-time'
 import { useUser } from '@/hooks/useUser'
@@ -581,120 +583,6 @@ function LoadingSpinner() {
         className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
         style={{ borderColor: 'var(--border)', borderTopColor: 'var(--accent)' }}
       />
-    </div>
-  )
-}
-
-function MenuItem({
-  children,
-  onClick,
-  disabled,
-  loading,
-  danger,
-}: {
-  children: React.ReactNode
-  onClick: () => void
-  disabled?: boolean
-  loading?: boolean
-  danger?: boolean
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled || loading}
-      className="w-full text-left text-sm px-3 py-2 transition-colors disabled:opacity-40"
-      style={{
-        color: danger ? '#dc2626' : 'var(--text-primary)',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = danger ? '#fef2f2' : 'var(--accent-light)'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'transparent'
-      }}
-    >
-      {loading ? (
-        <span className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
-          Working...
-        </span>
-      ) : (
-        children
-      )}
-    </button>
-  )
-}
-
-function DebugPanel({
-  articleType,
-  visualStrategy,
-  sections,
-}: {
-  articleType: string
-  visualStrategy: VisualStrategy
-  sections: string[]
-}) {
-  const [open, setOpen] = useState(false)
-
-  const sectionCounts = sections.reduce<Record<string, number>>((acc, type) => {
-    acc[type] = (acc[type] ?? 0) + 1
-    return acc
-  }, {})
-
-  const enabled = Object.entries(visualStrategy)
-    .filter(([k, v]) => k.startsWith('use_') && v === true)
-    .map(([k]) => k.replace('use_', ''))
-
-  const disabled = Object.entries(visualStrategy)
-    .filter(([k, v]) => k.startsWith('use_') && v === false)
-    .map(([k]) => k.replace('use_', ''))
-
-  return (
-    <div className="mb-4">
-      <button
-        onClick={() => setOpen(!open)}
-        className="text-xs font-mono px-3 py-1 rounded"
-        style={{ backgroundColor: '#1a1a2e', color: '#00d4aa' }}
-      >
-        {open ? '▼' : '▶'} Debug: {articleType} / {visualStrategy.image_density} images
-      </button>
-      {open && (
-        <div
-          className="mt-2 p-4 rounded-lg text-xs font-mono leading-relaxed"
-          style={{ backgroundColor: '#1a1a2e', color: '#e0e0e0' }}
-        >
-          <div className="mb-2">
-            <span style={{ color: '#00d4aa' }}>Article Type:</span> {articleType}
-          </div>
-          <div className="mb-2">
-            <span style={{ color: '#00d4aa' }}>Image Density:</span> {visualStrategy.image_density}
-          </div>
-          <div className="mb-2">
-            <span style={{ color: '#00d4aa' }}>Enabled:</span>{' '}
-            {enabled.map((c) => (
-              <span key={c} className="inline-block mr-1 px-1 rounded" style={{ backgroundColor: '#0d3320', color: '#4ade80' }}>
-                {c}
-              </span>
-            ))}
-          </div>
-          <div className="mb-2">
-            <span style={{ color: '#00d4aa' }}>Disabled:</span>{' '}
-            {disabled.map((c) => (
-              <span key={c} className="inline-block mr-1 px-1 rounded" style={{ backgroundColor: '#3b1c1c', color: '#f87171' }}>
-                {c}
-              </span>
-            ))}
-          </div>
-          <div>
-            <span style={{ color: '#00d4aa' }}>Sections rendered:</span>{' '}
-            {Object.entries(sectionCounts).map(([type, count]) => (
-              <span key={type} className="inline-block mr-1 px-1 rounded" style={{ backgroundColor: '#1e293b', color: '#93c5fd' }}>
-                {type}{count > 1 ? ` ×${count}` : ''}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
