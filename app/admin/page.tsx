@@ -66,13 +66,12 @@ export default function AdminDashboard() {
 
   async function handleToggleHidden(id: string) {
     const article = articles.find(a => a.id === id)
-    const currentHidden = !!(article?.article as unknown as Record<string, unknown>)?.hidden_from_homepage
+    const currentHidden = article?.hidden_from_homepage ?? false
     const newHidden = !currentHidden
     // Optimistic update
-    setArticles(prev => prev.map(a => {
-      if (a.id !== id || !a.article) return a
-      return { ...a, article: { ...a.article, hidden_from_homepage: newHidden } as typeof a.article }
-    }))
+    setArticles(prev => prev.map(a =>
+      a.id === id ? { ...a, hidden_from_homepage: newHidden } : a
+    ))
     try {
       const res = await fetch(`/api/articles/${id}/visibility`, {
         method: 'POST',
@@ -80,16 +79,14 @@ export default function AdminDashboard() {
         body: JSON.stringify({ hidden: newHidden }),
       })
       if (!res.ok) {
-        setArticles(prev => prev.map(a => {
-          if (a.id !== id || !a.article) return a
-          return { ...a, article: { ...a.article, hidden_from_homepage: currentHidden } as typeof a.article }
-        }))
+        setArticles(prev => prev.map(a =>
+          a.id === id ? { ...a, hidden_from_homepage: currentHidden } : a
+        ))
       }
     } catch {
-      setArticles(prev => prev.map(a => {
-        if (a.id !== id || !a.article) return a
-        return { ...a, article: { ...a.article, hidden_from_homepage: currentHidden } as typeof a.article }
-      }))
+      setArticles(prev => prev.map(a =>
+        a.id === id ? { ...a, hidden_from_homepage: currentHidden } : a
+      ))
     }
   }
 
@@ -505,10 +502,10 @@ export default function AdminDashboard() {
                             </ActionButton>
                             <ActionButton
                               onClick={() => handleToggleHidden(row.id)}
-                              title={(row.article as unknown as Record<string, unknown>)?.hidden_from_homepage ? 'Show on homepage' : 'Hide from homepage'}
-                              active={!!(row.article as unknown as Record<string, unknown>)?.hidden_from_homepage}
+                              title={row.hidden_from_homepage ? 'Show on homepage' : 'Hide from homepage'}
+                              active={!!row.hidden_from_homepage}
                             >
-                              {(row.article as unknown as Record<string, unknown>)?.hidden_from_homepage ? 'Show' : 'Hide'}
+                              {row.hidden_from_homepage ? 'Show' : 'Hide'}
                             </ActionButton>
                             {confirmDeleteId === row.id ? (
                               <div className="flex items-center gap-1 ml-1">

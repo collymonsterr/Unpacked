@@ -17,23 +17,16 @@ export async function POST(
   if (!body || typeof body.hidden !== 'boolean') {
     return Response.json({ error: 'hidden (boolean) is required' }, { status: 400 })
   }
-  const hidden = body.hidden
 
   const db = getSupabaseAdmin()
-  const { data: row } = await db.from('articles').select('article').eq('id', id).single()
-
-  if (!row?.article) {
-    return Response.json({ error: 'Article not found' }, { status: 404 })
-  }
-
-  const article = row.article as Record<string, unknown>
-  article.hidden_from_homepage = !!hidden
-
-  const { error } = await db.from('articles').update({ article }).eq('id', id)
+  const { error } = await db
+    .from('articles')
+    .update({ hidden_from_homepage: body.hidden })
+    .eq('id', id)
 
   if (error) {
     return Response.json({ error: 'Failed to update' }, { status: 500 })
   }
 
-  return Response.json({ success: true, hidden: !!hidden })
+  return Response.json({ success: true, hidden: body.hidden })
 }

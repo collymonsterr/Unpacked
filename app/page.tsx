@@ -20,9 +20,11 @@ async function getRecentArticles(): Promise<ArticleRow[]> {
     const { getSupabaseAdmin } = await import('@/lib/supabase')
     const { data } = await getSupabaseAdmin()
       .from('articles')
-      .select('id, slug, query, status, plan, article, pinned, root_article_id, parent_article_id, created_at')
+      .select('id, slug, query, status, plan, article, pinned, hidden_from_homepage, sort_order, root_article_id, parent_article_id, created_at')
       .in('status', ['complete', 'verified'])
+      .eq('hidden_from_homepage', false)
       .order('pinned', { ascending: false, nullsFirst: false })
+      .order('sort_order', { ascending: true, nullsFirst: true })
       .order('created_at', { ascending: false })
       .limit(200)
 
@@ -37,24 +39,20 @@ async function getRecentArticles(): Promise<ArticleRow[]> {
       }
     }
 
-    // Filter out hidden articles
-    const visible = Array.from(latestByChain.values()).filter(a => !(a.article as Record<string, unknown>)?.hidden_from_homepage)
-    const articles = visible.sort((a, b) => {
+    // Sort: pinned first, then by sort_order (null = new = first), then newest
+    const articles = Array.from(latestByChain.values()).sort((a, b) => {
       const aPinned = a.pinned ? 1 : 0
       const bPinned = b.pinned ? 1 : 0
       if (aPinned !== bPinned) return bPinned - aPinned
 
-      const aOrder = (a.article as Record<string, unknown>)?.sort_order as number | undefined
-      const bOrder = (b.article as Record<string, unknown>)?.sort_order as number | undefined
+      const aOrder = a.sort_order as number | null | undefined
+      const bOrder = b.sort_order as number | null | undefined
 
       // New articles (no sort_order) come before manually ordered ones
       if (aOrder == null && bOrder != null) return -1
       if (aOrder != null && bOrder == null) return 1
-
-      // Both have sort_order — use it
       if (aOrder != null && bOrder != null) return aOrder - bOrder
 
-      // Neither has sort_order — newest first
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
 

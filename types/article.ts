@@ -314,6 +314,8 @@ export interface ArticleRow {
   fact_check?: FactCheckResult | null
   verified_at?: string | null
   view_count?: number
+  hidden_from_homepage?: boolean
+  sort_order?: number | null
   parent_article_id?: string | null
   root_article_id?: string | null
   created_at: string

@@ -8,7 +8,6 @@ import { isValidUUID } from '@/lib/validate'
  * Body: { orderedIds: string[] }
  *
  * Sets sort_order for all articles based on their position in the array.
- * sort_order is stored in the article JSONB (no schema migration needed).
  */
 export async function POST(request: NextRequest) {
   // Reorder is admin-only
@@ -27,20 +26,10 @@ export async function POST(request: NextRequest) {
 
   const db = getSupabaseAdmin()
 
-  // Update sort_order for each article
+  // Update sort_order column directly
   await Promise.all(
     orderedIds.map(async (id: string, index: number) => {
-      const { data: row } = await db
-        .from('articles')
-        .select('article')
-        .eq('id', id)
-        .single()
-
-      if (row?.article) {
-        const article = row.article as Record<string, unknown>
-        article.sort_order = index
-        await db.from('articles').update({ article }).eq('id', id)
-      }
+      await db.from('articles').update({ sort_order: index }).eq('id', id)
     })
   )
 
