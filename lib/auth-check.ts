@@ -3,31 +3,83 @@ import { createServerSupabase, getSupabaseAdmin } from '@/lib/supabase'
 interface AuthResult {
   authorized: boolean
   userId: string | null
+  isAdmin: boolean
   error?: Response
 }
 
 /**
- * Verify the current user is authenticated and owns the given article.
- * Returns { authorized: true, userId } on success.
- * Returns { authorized: false, error: Response } on failure — caller should return the error.
+ * Check if a user ID is the platform admin.
  */
-export async function requireArticleOwner(articleId: string): Promise<AuthResult> {
-  // Check authentication
-  let userId: string | null = null
+function isAdminUser(userId: string): boolean {
+  const adminId = process.env.ADMIN_USER_ID
+  return !!adminId && userId === adminId
+}
+
+/**
+ * Get the current authenticated user from the server session.
+ * Returns null if not authenticated.
+ */
+async function getSessionUser(): Promise<string | null> {
   try {
     const supabase = await createServerSupabase()
     const { data: { user } } = await supabase.auth.getUser()
-    userId = user?.id ?? null
+    return user?.id ?? null
   } catch {
-    // Auth failed
+    return null
   }
+}
+
+/**
+ * Require the current user to be the platform admin.
+ * Returns 401 if not authenticated, 403 if authenticated but not admin.
+ */
+export async function requireAdmin(): Promise<AuthResult> {
+  const userId = await getSessionUser()
 
   if (!userId) {
     return {
       authorized: false,
       userId: null,
+      isAdmin: false,
       error: Response.json({ error: 'Authentication required' }, { status: 401 }),
     }
+  }
+
+  if (!isAdminUser(userId)) {
+    return {
+      authorized: false,
+      userId,
+      isAdmin: false,
+      error: Response.json({ error: 'Admin access required' }, { status: 403 }),
+    }
+  }
+
+  return { authorized: true, userId, isAdmin: true }
+}
+
+/**
+ * Verify the current user is authenticated and owns the given article.
+ * Admin users are always allowed regardless of ownership.
+ * Returns { authorized: true, userId } on success.
+ * Returns { authorized: false, error: Response } on failure.
+ */
+export async function requireArticleOwner(articleId: string): Promise<AuthResult> {
+  const userId = await getSessionUser()
+
+  if (!userId) {
+    return {
+      authorized: false,
+      userId: null,
+      isAdmin: false,
+      error: Response.json({ error: 'Authentication required' }, { status: 401 }),
+    }
+  }
+
+  const admin = isAdminUser(userId)
+
+  // Admin bypasses ownership check
+  if (admin) {
+    return { authorized: true, userId, isAdmin: true }
   }
 
   // Check article ownership
@@ -42,6 +94,7 @@ export async function requireArticleOwner(articleId: string): Promise<AuthResult
     return {
       authorized: false,
       userId,
+      isAdmin: false,
       error: Response.json({ error: 'Article not found' }, { status: 404 }),
     }
   }
@@ -51,6 +104,7 @@ export async function requireArticleOwner(articleId: string): Promise<AuthResult
     return {
       authorized: false,
       userId,
+      isAdmin: false,
       error: Response.json(
         { error: "You don't have permission to modify this article" },
         { status: 403 }
@@ -58,7 +112,7 @@ export async function requireArticleOwner(articleId: string): Promise<AuthResult
     }
   }
 
-  return { authorized: true, userId }
+  return { authorized: true, userId, isAdmin: false }
 }
 
 /**
@@ -66,22 +120,16 @@ export async function requireArticleOwner(articleId: string): Promise<AuthResult
  * Used for routes where any authenticated user can act (e.g. refine creates a fork).
  */
 export async function requireAuth(): Promise<AuthResult> {
-  let userId: string | null = null
-  try {
-    const supabase = await createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
-    userId = user?.id ?? null
-  } catch {
-    // Auth failed
-  }
+  const userId = await getSessionUser()
 
   if (!userId) {
     return {
       authorized: false,
       userId: null,
+      isAdmin: false,
       error: Response.json({ error: 'Authentication required' }, { status: 401 }),
     }
   }
 
-  return { authorized: true, userId }
+  return { authorized: true, userId, isAdmin: isAdminUser(userId) }
 }

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
-import { requireAuth } from '@/lib/auth-check'
+import { requireAdmin } from '@/lib/auth-check'
 import { isValidUUID } from '@/lib/validate'
 
 /**
@@ -11,8 +11,8 @@ import { isValidUUID } from '@/lib/validate'
  * sort_order is stored in the article JSONB (no schema migration needed).
  */
 export async function POST(request: NextRequest) {
-  // Reorder is an admin action — require authentication
-  const auth = await requireAuth()
+  // Reorder is admin-only
+  const auth = await requireAdmin()
   if (!auth.authorized) return auth.error!
 
   const { orderedIds } = await request.json()
