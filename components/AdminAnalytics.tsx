@@ -114,14 +114,15 @@ export default function AdminAnalytics() {
             Top Articles
           </h3>
           {data.topArticles.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={data.topArticles} layout="vertical" margin={{ left: 10 }}>
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#94918D' }} />
+            <ResponsiveContainer width="100%" height={Math.max(200, data.topArticles.length * 44 + 40)}>
+              <BarChart data={data.topArticles} layout="vertical" margin={{ left: 10, right: 20 }} barSize={22}>
+                <XAxis type="number" tick={{ fontSize: 10, fill: '#94918D' }} allowDecimals={false} />
                 <YAxis
                   type="category"
                   dataKey="title"
-                  width={150}
-                  tick={{ fontSize: 10, fill: '#6B6B6B' }}
+                  width={220}
+                  tick={{ fontSize: 11, fill: '#6B6B6B' }}
+                  interval={0}
                 />
                 <Tooltip
                   contentStyle={{ fontSize: 12, backgroundColor: '#fff', border: '1px solid #E8E8E5', borderRadius: 8 }}

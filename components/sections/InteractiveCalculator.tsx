@@ -455,6 +455,45 @@ function calcCustom(inputs: Record<string, number>, outputIds: string[]): CalcRe
     out.effective_return = Math.round((vals.interest_rate ?? 6) * 10) / 10
   }
 
+  // ── Baby / first year cost calculator ──
+  if ((vals.childcare != null || vals.feeding != null) && outputIds.includes('total_first_year')) {
+    const location = vals.location ?? 2 // 1=low COL, 2=medium, 3=high
+    const locMultiplier = [0.7, 1.0, 1.5][Math.min(2, Math.max(0, Math.round(location) - 1))]
+    const childcare = (vals.childcare ?? 1000) * 12 * locMultiplier
+    const feeding = (vals.feeding ?? 200) * 12 * locMultiplier
+    const gear = 2500 * locMultiplier // one-time: crib, stroller, car seat, etc.
+    const medical = 1500 * locMultiplier
+    const diapers = 80 * 12 * locMultiplier
+    const incomeLoss = (vals.income_loss ?? 0) * 3 // months of lost income
+    const total = childcare + feeding + gear + medical + diapers + incomeLoss
+    out.total_first_year = Math.round(total)
+    out.monthly_average = Math.round(total / 12)
+    out.childcare_cost = Math.round(childcare)
+    out.gear_and_medical = Math.round(gear + medical)
+  }
+
+  // ── Generic fallback — if no pattern matched, try summing inputs as costs ──
+  if (Object.keys(out).length === 0 && outputIds.length > 0) {
+    const inputValues = Object.values(vals).filter(v => typeof v === 'number')
+    const total = inputValues.reduce((sum, v) => sum + v, 0)
+    // Try to intelligently map outputs
+    for (const oid of outputIds) {
+      if (oid.includes('total') || oid.includes('cost')) {
+        out[oid] = Math.round(total * 12)  // assume monthly → annual
+      } else if (oid.includes('monthly') || oid.includes('average')) {
+        out[oid] = Math.round(total)
+      } else if (oid.includes('rate') || oid.includes('percent')) {
+        const income = vals.monthly_income ?? vals.income ?? vals.salary ?? total * 2
+        out[oid] = income > 0 ? Math.round((total / income) * 100) : 0
+      } else if (oid.includes('saving') || oid.includes('remain') || oid.includes('left')) {
+        const income = vals.monthly_income ?? vals.income ?? 0
+        out[oid] = Math.round(income - total)
+      } else {
+        out[oid] = Math.round(total)
+      }
+    }
+  }
+
   // Build simple chart data if we have outputs
   const chartData: Array<Record<string, number | string>> = []
   const outKeys = Object.keys(out)
