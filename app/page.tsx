@@ -77,7 +77,7 @@ export default async function HomePage() {
             className="text-sm font-medium no-underline hidden sm:block"
             style={{ color: 'var(--text-secondary)' }}
           >
-            For Creators
+            Creators
           </a>
           <UserMenu />
         </div>
