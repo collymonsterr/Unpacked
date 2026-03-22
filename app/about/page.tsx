@@ -125,6 +125,16 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* ═══ Section 4b: Real opinions headline ═══ */}
+      <section className="text-center py-20 px-4">
+        <p
+          className="text-3xl md:text-4xl lg:text-5xl font-extrabold"
+          style={{ fontFamily: 'var(--font-sora)', color: 'var(--accent)' }}
+        >
+          Real opinions from real people.
+        </p>
+      </section>
+
       {/* ═══ Section 5: Side-by-Side Comparison ═══ */}
       <section className="max-w-5xl mx-auto px-4 md:px-6 pb-24">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6" style={{ alignItems: 'stretch' }}>
