@@ -506,6 +506,345 @@ function calcCustom(inputs: Record<string, number>, outputIds: string[]): CalcRe
   return { outputs: out, chartData }
 }
 
+// ── Named calculator functions (promoted from calcCustom patterns) ───────────
+
+function calcCommuteCost(inputs: Record<string, number>): CalcResult {
+  const milesDay = (inputs.miles_one_way ?? 15) * 2
+  const days = inputs.work_days ?? 250
+  const wage = inputs.hourly_wage ?? 25
+  const commuteMinutes = (inputs.commute_time ?? 30) * 2
+  const annualMiles = milesDay * days
+  const vehicleCost = annualMiles * 0.67
+  const timeCost = (commuteMinutes / 60) * days * wage
+  return {
+    outputs: {
+      annual_vehicle_cost: Math.round(vehicleCost),
+      annual_time_cost: Math.round(timeCost),
+      total_annual_cost: Math.round(vehicleCost + timeCost),
+      monthly_cost: Math.round((vehicleCost + timeCost) / 12),
+    },
+    chartData: [
+      { year: 'Vehicle costs', value: Math.round(vehicleCost) },
+      { year: 'Time cost', value: Math.round(timeCost) },
+    ],
+  }
+}
+
+function calcSubscriptionAudit(inputs: Record<string, number>): CalcResult {
+  const streaming = (inputs.streaming_count ?? 3) * (inputs.avg_streaming_cost ?? 15)
+  const software = (inputs.software_count ?? 2) * (inputs.avg_software_cost ?? 12)
+  const other = (inputs.other_count ?? 1) * (inputs.avg_other_cost ?? 10)
+  const forgotten = inputs.forgotten_factor ?? 1.15
+  const monthly = (streaming + software + other) * forgotten
+  return {
+    outputs: {
+      monthly_total: Math.round(monthly),
+      annual_total: Math.round(monthly * 12),
+      vs_average: Math.round(monthly - 91),
+    },
+    chartData: [
+      { year: 'Streaming', value: Math.round(streaming) },
+      { year: 'Software', value: Math.round(software) },
+      { year: 'Other', value: Math.round(other) },
+    ],
+  }
+}
+
+function calcCookingComparison(inputs: Record<string, number>): CalcResult {
+  const size = inputs.household_size ?? 1
+  const eatOutWeekly = (inputs.restaurant_meals_week ?? 5) * (inputs.avg_meal_cost ?? 15) * size
+  const cookWeekly = (7 - (inputs.restaurant_meals_week ?? 5)) * (inputs.home_cooking_cost ?? 5) * size
+  const currentAnnual = (eatOutWeekly + cookWeekly) * 52
+  const allCookAnnual = 7 * (inputs.home_cooking_cost ?? 5) * size * 52
+  return {
+    outputs: {
+      annual_savings: Math.round(currentAnnual - allCookAnnual),
+      cost_difference: Math.round((eatOutWeekly - cookWeekly) * 52 / 12),
+      weekly_eating_out: Math.round(eatOutWeekly),
+      weekly_cooking: Math.round(cookWeekly),
+    },
+    chartData: [
+      { year: 'Eating out', value: Math.round(eatOutWeekly * 52) },
+      { year: 'Cooking', value: Math.round(allCookAnnual) },
+    ],
+  }
+}
+
+function calcGymComparison(inputs: Record<string, number>): CalcResult {
+  const gymMonthly = (inputs.monthly_gym_cost ?? 50) + (inputs.travel_costs ?? 20)
+  const gymAnnual = gymMonthly * 12 + (inputs.annual_fees ?? 50)
+  const gym5yr = gymAnnual * 5
+  const homeGym5yr = (inputs.home_gym_cost ?? 2000) + (200 * 5)
+  const visits = (inputs.visits_per_month ?? 12) * 12 * 5
+  return {
+    outputs: {
+      gym_total_5yr: Math.round(gym5yr),
+      home_gym_total_5yr: Math.round(homeGym5yr),
+      savings: Math.round(gym5yr - homeGym5yr),
+      cost_per_workout_gym: visits > 0 ? Math.round((gym5yr / visits) * 100) / 100 : 0,
+    },
+    chartData: [
+      { year: 'Gym membership', value: Math.round(gym5yr) },
+      { year: 'Home gym', value: Math.round(homeGym5yr) },
+    ],
+  }
+}
+
+function calcSmokingCost(inputs: Record<string, number>): CalcResult {
+  const dailyCost = (inputs.packs_per_day ?? 1) * (inputs.pack_price ?? 8)
+  const years = inputs.years_smoking ?? 30
+  const directCost = dailyCost * 365 * years
+  const r = (inputs.investment_return ?? 7) / 100
+  const monthlyAmount = dailyCost * 30
+  let opportunity = 0
+  if (r > 0) {
+    const mr = r / 12
+    const months = years * 12
+    opportunity = monthlyAmount * ((Math.pow(1 + mr, months) - 1) / mr)
+  }
+  return {
+    outputs: {
+      direct_cost: Math.round(directCost),
+      opportunity_cost: Math.round(opportunity),
+      total_cost: Math.round(directCost + opportunity),
+    },
+    chartData: [
+      { year: 'Direct cost', value: Math.round(directCost) },
+      { year: 'Opportunity cost', value: Math.round(opportunity) },
+    ],
+  }
+}
+
+function calcHouseAffordability(inputs: Record<string, number>): CalcResult {
+  const monthlyIncome = (inputs.annual_income ?? 80000) / 12
+  const maxPayment = monthlyIncome * 0.28 - (inputs.monthly_debts ?? 0)
+  const downPct = (inputs.down_payment ?? 20) / 100
+  const r = (inputs.mortgage_rate ?? 6.5) / 100 / 12
+  const n = 360
+  let maxLoan = 0
+  if (r > 0) { maxLoan = maxPayment * (Math.pow(1 + r, n) - 1) / (r * Math.pow(1 + r, n)) }
+  const maxPrice = maxLoan / (1 - downPct)
+  return {
+    outputs: {
+      max_house_price: Math.round(maxPrice),
+      monthly_payment: Math.round(maxPayment),
+      front_end_ratio: Math.round((maxPayment / monthlyIncome) * 100),
+    },
+    chartData: [
+      { year: 'Max price', value: Math.round(maxPrice) },
+      { year: 'Down payment', value: Math.round(maxPrice * downPct) },
+      { year: 'Loan amount', value: Math.round(maxLoan) },
+    ],
+  }
+}
+
+function calcFreelanceComparison(inputs: Record<string, number>): CalcResult {
+  const salary = inputs.salary ?? 80000
+  const taxRate = 0.25
+  const employeeTakeHome = salary * (1 - taxRate)
+  const freelanceGross = (inputs.hourly_rate ?? 75) * (inputs.billable_hours ?? 1500)
+  const seTax = freelanceGross * 0.153
+  const healthIns = (inputs.health_insurance ?? 500) * 12
+  const freelanceTakeHome = freelanceGross * (1 - taxRate) - seTax - healthIns
+  return {
+    outputs: {
+      employee_takehome: Math.round(employeeTakeHome),
+      freelance_takehome: Math.round(freelanceTakeHome),
+      difference: Math.round(freelanceTakeHome - employeeTakeHome),
+    },
+    chartData: [
+      { year: 'Employee', value: Math.round(employeeTakeHome) },
+      { year: 'Freelance', value: Math.round(freelanceTakeHome) },
+    ],
+  }
+}
+
+function calcDogOwnership(inputs: Record<string, number>): CalcResult {
+  const annualCost = inputs.annual_cost ?? 2000
+  const multiplier = inputs.region_multiplier ?? 1
+  const lifetime = annualCost * multiplier * (inputs.lifespan ?? 12)
+  return {
+    outputs: {
+      lifetime_cost: Math.round(lifetime),
+      monthly_budget: Math.round((annualCost * multiplier) / 12),
+    },
+    chartData: Array.from({ length: Math.min(inputs.lifespan ?? 12, 15) }, (_, i) => ({
+      year: `Year ${i + 1}`,
+      value: Math.round(annualCost * multiplier * (i + 1)),
+    })),
+  }
+}
+
+function calcCostOfLivingComparison(inputs: Record<string, number>): CalcResult {
+  const salary = inputs.monthly_salary ?? 5000
+  const rentPref = inputs.rent_preference ?? 2
+  const lifestyle = inputs.lifestyle_spending ?? 500
+  const londonRent = [1200, 1800, 2800][Math.min(2, Math.max(0, rentPref - 1))]
+  const lisbonRent = [600, 900, 1500][Math.min(2, Math.max(0, rentPref - 1))]
+  const londonTax = salary * 0.25
+  const lisbonTax = salary * 0.15
+  const londonDisp = salary - londonTax - londonRent - lifestyle * 1.3
+  const lisbonDisp = salary - lisbonTax - lisbonRent - lifestyle * 0.7
+  return {
+    outputs: {
+      london_disposable: Math.round(londonDisp),
+      lisbon_disposable: Math.round(lisbonDisp),
+      savings_difference: Math.round(lisbonDisp - londonDisp),
+    },
+    chartData: [
+      { year: 'London', value: Math.round(londonDisp) },
+      { year: 'Lisbon', value: Math.round(lisbonDisp) },
+    ],
+  }
+}
+
+function calcRentalComparison(inputs: Record<string, number>): CalcResult {
+  const occ = (inputs.occupancy_rate ?? 65) / 100
+  const strGross = (inputs.nightly_rate ?? 150) * 30 * occ
+  const strExpenses = strGross * 0.35
+  const strNet = strGross - strExpenses
+  const ltrNet = (inputs.monthly_rent ?? 2000) * 0.9
+  return {
+    outputs: {
+      str_monthly: Math.round(strGross),
+      str_net: Math.round(strNet),
+      ltr_net: Math.round(ltrNet),
+      annual_difference: Math.round((strNet - ltrNet) * 12),
+    },
+    chartData: [
+      { year: 'Airbnb net', value: Math.round(strNet) },
+      { year: 'Long-term net', value: Math.round(ltrNet) },
+    ],
+  }
+}
+
+function calcMortgagePayoff(inputs: Record<string, number>): CalcResult {
+  const balance = inputs.mortgage_balance ?? inputs.loan_amount ?? 250000
+  const rate = (inputs.mortgage_rate ?? inputs.interest_rate ?? 6) / 100 / 12
+  const extra = inputs.extra_payment ?? 500
+  const investReturn = (inputs.investment_return ?? 8) / 100
+  const lump = inputs.lump_sum ?? 0
+  const stdPayment = balance * (rate * Math.pow(1 + rate, 360)) / (Math.pow(1 + rate, 360) - 1)
+  let bal = balance - lump; let totalInterest = 0; let months = 0
+  while (bal > 0 && months < 360) { const int = bal * rate; totalInterest += int; bal -= (stdPayment - int); months++ }
+  let bal2 = balance - lump; let totalInterest2 = 0; let months2 = 0
+  while (bal2 > 0 && months2 < 360) { const int = bal2 * rate; totalInterest2 += int; bal2 -= (stdPayment + extra - int); months2++ }
+  const interestSaved = totalInterest - totalInterest2
+  const mr = investReturn / 12
+  const investValue = mr > 0 ? extra * ((Math.pow(1 + mr, months) - 1) / mr) : extra * months
+  return {
+    outputs: {
+      payoff_savings: Math.round(interestSaved),
+      interest_saved: Math.round(interestSaved),
+      investment_value: Math.round(investValue),
+      opportunity_cost: Math.round(investValue - interestSaved),
+      time_saved: Math.round(months - months2),
+      effective_return: Math.round((inputs.mortgage_rate ?? inputs.interest_rate ?? 6) * (1 - (inputs.tax_bracket ?? 22) / 100) * 10) / 10,
+    },
+    chartData: [
+      { year: 'Interest saved', value: Math.round(interestSaved) },
+      { year: 'Investment value', value: Math.round(investValue) },
+    ],
+  }
+}
+
+function calcCollegeSavings(inputs: Record<string, number>): CalcResult {
+  const age = inputs.child_age ?? 5
+  const yearsToCollege = Math.max(1, 18 - age)
+  const collegeCosts: Record<number, number> = { 1: 120000, 2: 200000, 3: 300000 }
+  const target = collegeCosts[inputs.college_type ?? 2] ?? 200000
+  const coverage = (inputs.target_coverage ?? 75) / 100
+  const needed = target * coverage
+  const r = (inputs.annual_return ?? 7) / 100 / 12
+  const months = yearsToCollege * 12
+  let monthly = 0
+  if (r > 0) { monthly = needed * r / (Math.pow(1 + r, months) - 1) } else { monthly = needed / months }
+  return {
+    outputs: {
+      monthly_savings: Math.round(monthly),
+      total_saved: Math.round(monthly * months),
+      projected_cost: Math.round(target),
+    },
+    chartData: Array.from({ length: yearsToCollege + 1 }, (_, i) => {
+      let saved = 0
+      if (r > 0) { saved = monthly * ((Math.pow(1 + r, i * 12) - 1) / r) } else { saved = monthly * i * 12 }
+      return { year: `Age ${age + i}`, value: Math.round(saved) }
+    }),
+  }
+}
+
+function calcCarBudget(inputs: Record<string, number>): CalcResult {
+  const takeHome = (inputs.gross_income ?? 80000) * ((inputs.take_home_percentage ?? 70) / 100) / 12
+  const maxTransport = takeHome * 0.175
+  const max110th = (inputs.gross_income ?? 80000) / 10
+  const ins = inputs.insurance_monthly ?? 150
+  const fuel = inputs.fuel_monthly ?? 150
+  return {
+    outputs: {
+      monthly_take_home: Math.round(takeHome),
+      max_transportation_budget: Math.round(maxTransport),
+      max_payment_110th: Math.round(max110th),
+      available_for_payment: Math.round(maxTransport - ins - fuel),
+    },
+    chartData: [
+      { year: 'Insurance', value: Math.round(ins) },
+      { year: 'Fuel', value: Math.round(fuel) },
+      { year: 'Available', value: Math.round(maxTransport - ins - fuel) },
+    ],
+  }
+}
+
+function calcSalaryCalculator(inputs: Record<string, number>): CalcResult {
+  const base = 15000
+  const familyAdj = (inputs.family_size ?? 1) * 3000
+  const childrenAdj = (inputs.children ?? 0) * 5000
+  const areaAdj = [0, 3000, 6000, 10000][Math.min(3, inputs.area_preference ?? 2)]
+  const lifestyleAdj = [0, 2000, 5000, 10000][Math.min(3, inputs.lifestyle ?? 2)]
+  const total = base + familyAdj + childrenAdj + areaAdj + lifestyleAdj
+  return {
+    outputs: {
+      monthly_salary: Math.round(total),
+      monthly_salary_needed: Math.round(total),
+      annual_salary_needed: Math.round(total * 12),
+      housing_budget: Math.round(total * 0.3),
+      school_costs: Math.round((inputs.children ?? 0) * 4000),
+    },
+    chartData: [
+      { year: 'Housing', value: Math.round(total * 0.3) },
+      { year: 'Schools', value: Math.round((inputs.children ?? 0) * 4000) },
+      { year: 'Living', value: Math.round(total * 0.4) },
+    ],
+  }
+}
+
+function calcBabyCost(inputs: Record<string, number>): CalcResult {
+  const location = inputs.location ?? 2
+  const locMultiplier = [0.7, 1.0, 1.5][Math.min(2, Math.max(0, Math.round(location) - 1))]
+  const childcare = (inputs.childcare ?? 1000) * 12 * locMultiplier
+  const feeding = (inputs.feeding ?? 200) * 12 * locMultiplier
+  const gear = 2500 * locMultiplier
+  const medical = 1500 * locMultiplier
+  const diapers = 80 * 12 * locMultiplier
+  const incomeLoss = (inputs.income_loss ?? 0) * 3
+  const total = childcare + feeding + gear + medical + diapers + incomeLoss
+  return {
+    outputs: {
+      total_first_year: Math.round(total),
+      monthly_average: Math.round(total / 12),
+      childcare_cost: Math.round(childcare),
+      gear_and_medical: Math.round(gear + medical),
+    },
+    chartData: [
+      { year: 'Childcare', value: Math.round(childcare) },
+      { year: 'Feeding', value: Math.round(feeding) },
+      { year: 'Gear + Medical', value: Math.round(gear + medical) },
+      { year: 'Diapers', value: Math.round(diapers) },
+    ],
+  }
+}
+
+// ── Calculator dispatcher ────────────────────────────────────────────────────
+
 function runCalculation(
   type: string,
   inputs: Record<string, number>,
@@ -513,12 +852,31 @@ function runCalculation(
   outputIds?: string[]
 ): CalcResult {
   switch (type) {
+    // Tier 1 — original named types
     case 'compound_interest': return calcCompoundInterest(inputs)
     case 'mortgage': return calcMortgage(inputs)
     case 'roi_comparison': return calcRoiComparison(inputs)
     case 'budget': return calcBudget(inputs)
-    case 'custom': return calcCustom(inputs, outputIds ?? [])
-    default: return calcCustom(inputs, outputIds ?? [])
+    // Tier 2 — promoted from custom
+    case 'commute_cost': return calcCommuteCost(inputs)
+    case 'subscription_audit': return calcSubscriptionAudit(inputs)
+    case 'cooking_comparison': return calcCookingComparison(inputs)
+    case 'gym_comparison': return calcGymComparison(inputs)
+    case 'smoking_cost': return calcSmokingCost(inputs)
+    case 'house_affordability': return calcHouseAffordability(inputs)
+    case 'freelance_comparison': return calcFreelanceComparison(inputs)
+    case 'dog_ownership': return calcDogOwnership(inputs)
+    case 'cost_of_living_comparison': return calcCostOfLivingComparison(inputs)
+    case 'rental_comparison': return calcRentalComparison(inputs)
+    case 'mortgage_payoff': return calcMortgagePayoff(inputs)
+    case 'college_savings': return calcCollegeSavings(inputs)
+    case 'car_budget': return calcCarBudget(inputs)
+    case 'salary_calculator': return calcSalaryCalculator(inputs)
+    case 'baby_cost': return calcBabyCost(inputs)
+    // Legacy fallback — pattern matching for old articles
+    case 'custom':
+    default:
+      return calcCustom(inputs, outputIds ?? [])
   }
 }
 
