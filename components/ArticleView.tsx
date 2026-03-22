@@ -771,6 +771,21 @@ function HeroImage({
         }}
       >
         <div className="relative w-full" style={{ aspectRatio: '16 / 9' }}>
+          {/* AI generation overlay */}
+          {replacing === 'ai' && (
+            <div
+              className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3"
+              style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+            >
+              <div className="w-8 h-8 rounded-full border-3 border-white border-t-transparent animate-spin" style={{ borderWidth: 3 }} />
+              <p className="text-white text-sm font-semibold" style={{ fontFamily: 'var(--font-sora)' }}>
+                Generating AI image...
+              </p>
+              <p className="text-white/60 text-xs">
+                This takes 30–60 seconds
+              </p>
+            </div>
+          )}
           {/* Current image (dimmed when preview is showing) */}
           <Image
             src={previewUrl ?? url}
