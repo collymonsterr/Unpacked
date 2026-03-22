@@ -124,8 +124,10 @@ function shortenTitle(title: string): string {
   // Remove generic article framing words (but keep proper nouns, numbers, product names)
   short = short
     .replace(/^(the |a |an |your |our )/i, '')
-    .replace(/\b(complete|ultimate|comprehensive|definitive)\b/gi, '')
-    .replace(/\b(guide|review|comparison|roundup|breakdown|overview|recommendations?)\b/gi, '')
+    .replace(/\b(complete|ultimate|comprehensive|definitive|real|actual|hidden|true)\b/gi, '')
+    .replace(/\b(guide|review|comparison|roundup|breakdown|overview|recommendations?|analysis|assessment)\b/gi, '')
+    // Strip trailing context phrases like "for large apartments and houses", "when traditional advice doesn't"
+    .replace(/\b(for|when|that|if|in|on|at)\b\s+.{0,40}$/i, '')
     .replace(/[&]/g, 'and')
     .replace(/\s+/g, ' ')
     .replace(/^\W+/, '') // Remove leading non-word chars (dashes, etc.)
@@ -180,7 +182,7 @@ function getHeroSubject(title: string, articleType: ArticleType): string {
   if (t.includes('airbnb') || t.includes('rental')) return 'beautiful vacation rental property'
   if (t.includes('london') || t.includes('lisbon')) return `${t.includes('london') ? 'London' : 'Lisbon'} city skyline beautiful`
   if (t.includes('dubai')) return 'Dubai skyline beautiful sunset'
-  if (t.includes('robot vacuum')) return 'modern clean living room home'
+  if (t.includes('robot vacuum')) return 'robot vacuum cleaner product photo top view'
   if (t.includes('ev') || t.includes('electric')) return 'electric car charging station modern'
   if (t.includes('ai') || t.includes('llm') || t.includes('chatgpt')) return 'artificial intelligence technology abstract'
   if (t.includes('vibe coding') || t.includes('programming')) return 'modern code editor developer workspace'
