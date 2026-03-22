@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import ArticleOptions, { DEFAULT_OPTIONS, type GenerationOptions } from './ArticleOptions'
 
 const PLACEHOLDERS = [
   'Best laptops for students under $800...',
@@ -19,6 +20,7 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
   const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [options, setOptions] = useState<GenerationOptions>(DEFAULT_OPTIONS)
   const router = useRouter()
 
   // Rotate placeholder text
@@ -43,7 +45,7 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
       const res = await fetch('/api/articles/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: trimmed }),
+        body: JSON.stringify({ query: trimmed, options }),
       })
 
       if (!res.ok) {
@@ -123,6 +125,8 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
           </button>
         </div>
       </form>
+
+      <ArticleOptions value={options} onChange={setOptions} />
 
       {error && (
         <p className="mt-3 text-sm text-red-600 text-center">{error}</p>

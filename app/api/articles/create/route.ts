@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const query = body?.query
+    const generationOptions = body?.options ?? { length: 'standard', tone: 'opinionated', visual: 'standard' }
 
     if (!query || typeof query !== 'string' || query.trim().length < 3) {
       return Response.json({ error: 'Query must be at least 3 characters' }, { status: 400 })
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
         slug,
         query: trimmedQuery,
         status: 'planning',
+        generation_options: generationOptions,
         ...(userId ? { user_id: userId, user_name: userName, user_avatar: userAvatar } : {}),
       })
       .select('id, slug')
@@ -68,8 +70,8 @@ export async function POST(request: NextRequest) {
       const db = getSupabaseAdmin()
       try {
         // Phase 1: Plan the article
-        console.log('[create] Planning article for:', trimmedQuery.slice(0, 50))
-        const plan = await planArticle(trimmedQuery)
+        console.log('[create] Planning article for:', trimmedQuery.slice(0, 50), 'options:', JSON.stringify(generationOptions))
+        const plan = await planArticle(trimmedQuery, generationOptions)
 
         // Update with plan data — client sees this via polling
         await db
@@ -84,7 +86,7 @@ export async function POST(request: NextRequest) {
         console.log('[create] Plan complete, now writing:', plan.title.slice(0, 50))
 
         // Phase 2: Write the article
-        const rawArticle = await writeArticle(trimmedQuery, plan)
+        const rawArticle = await writeArticle(trimmedQuery, plan, generationOptions)
 
         // Phase 3: Enrich images + hero thumbnail (parallel)
         const [enrichedArticle, heroUrl] = await Promise.all([

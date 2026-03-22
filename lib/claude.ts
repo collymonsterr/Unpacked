@@ -456,12 +456,46 @@ function extractJSON(text: string): string {
   return text.trim()
 }
 
-export async function planArticle(query: string): Promise<ArticlePlan> {
+interface GenOptions {
+  length?: 'quick' | 'standard' | 'deep'
+  tone?: 'opinionated' | 'balanced' | 'casual'
+  visual?: 'minimal' | 'standard' | 'maximum'
+}
+
+function buildOptionsPrompt(options: GenOptions): string {
+  const parts: string[] = []
+
+  // Length
+  if (options.length === 'quick') {
+    parts.push('LENGTH: Write a concise, quick-read article. Verdict, top 3 picks max, short comparison, no deep sections. Target 800-1200 words total.')
+  } else if (options.length === 'deep') {
+    parts.push('LENGTH: Write a comprehensive deep-dive article. Cover more products/topics, more detail per item, more sections, more data visualisations. Target 4000-6000 words.')
+  }
+
+  // Tone
+  if (options.tone === 'balanced') {
+    parts.push('TONE: Be balanced and even-handed. Present all options fairly with pros and cons for each. Still have a recommendation but frame it as "if we had to choose" rather than declaring a definitive winner. Let the reader decide.')
+  } else if (options.tone === 'casual') {
+    parts.push('TONE: Write in a casual, conversational tone. Use humour where appropriate. Less formal structure. Write like you\'re explaining to a friend over coffee, not writing a formal review.')
+  }
+
+  // Visual
+  if (options.visual === 'minimal') {
+    parts.push('VISUALS: Minimal visuals. Focus on text content. Include product images but skip charts, calculators, and data visualisations. No comparison_matrix or interactive_calculator sections.')
+  } else if (options.visual === 'maximum') {
+    parts.push('VISUALS: Maximum visuals. Include more charts, interactive calculators where relevant, data visualisations in every major section, more images per product. Make this highly visual and interactive.')
+  }
+
+  return parts.length > 0 ? '\n\nUSER PREFERENCES:\n' + parts.join('\n') : ''
+}
+
+export async function planArticle(query: string, options?: GenOptions): Promise<ArticlePlan> {
+  const optionsPrompt = options ? buildOptionsPrompt(options) : ''
   const message = await getAnthropic().messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 2048,
     system: PLANNING_SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: `Plan an article for: "${query}"` }],
+    messages: [{ role: 'user', content: `Plan an article for: "${query}"${optionsPrompt}` }],
   })
 
   const text = message.content.find((b) => b.type === 'text')?.text ?? ''
@@ -478,16 +512,19 @@ export async function planArticle(query: string): Promise<ArticlePlan> {
   return plan
 }
 
-export async function writeArticle(query: string, plan: ArticlePlan): Promise<ArticleContent> {
+export async function writeArticle(query: string, plan: ArticlePlan, options?: GenOptions): Promise<ArticleContent> {
   let lastError: Error | null = null
+  const optionsPrompt = options ? buildOptionsPrompt(options) : ''
+  const maxTokens = options?.length === 'quick' ? 8000 : options?.length === 'deep' ? 24000 : 16000
+  const maxSearches = options?.length === 'quick' ? 5 : options?.length === 'deep' ? 15 : 10
 
   for (let attempt = 0; attempt < 2; attempt++) {
     // Use streaming to keep the connection alive during long web search calls
     const stream = getAnthropic().messages.stream({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 16000,
+      max_tokens: maxTokens,
       system: WRITING_SYSTEM_PROMPT,
-      tools: [{ type: 'web_search_20250305' as const, name: 'web_search', max_uses: 10 }],
+      tools: [{ type: 'web_search_20250305' as const, name: 'web_search', max_uses: maxSearches }],
       messages: [
         {
           role: 'user',
@@ -499,7 +536,7 @@ Visual strategy (FOLLOW THIS — it controls which section types you may use):
 ${JSON.stringify(plan.visual_strategy, null, 2)}
 
 Full article plan:
-${JSON.stringify(plan, null, 2)}`,
+${JSON.stringify(plan, null, 2)}${optionsPrompt}`,
         },
       ],
     })
