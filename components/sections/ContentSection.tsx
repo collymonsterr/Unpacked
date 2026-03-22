@@ -19,6 +19,39 @@ function splitBoldParagraphs(text: string): string[] {
   return [text]
 }
 
+/**
+ * Break long paragraphs at sentence boundaries.
+ * If a paragraph is >400 chars, split it into chunks of ~2-3 sentences each.
+ */
+function breakLongParagraphs(text: string): string[] {
+  if (text.length <= 400) return [text]
+
+  // Split on sentence boundaries (period + space + uppercase letter)
+  const sentences = text.split(/(?<=\.)\s+(?=[A-Z])/)
+  if (sentences.length <= 2) return [text]
+
+  // Group into chunks of 2-3 sentences
+  const chunks: string[] = []
+  let current: string[] = []
+  let currentLen = 0
+
+  for (const sentence of sentences) {
+    current.push(sentence)
+    currentLen += sentence.length
+
+    if (currentLen >= 250 && current.length >= 2) {
+      chunks.push(current.join(' '))
+      current = []
+      currentLen = 0
+    }
+  }
+  if (current.length > 0) {
+    chunks.push(current.join(' '))
+  }
+
+  return chunks
+}
+
 function renderContent(content: string) {
   const paragraphs = content.split(/\n\n+/)
   const elements: React.ReactElement[] = []
@@ -67,13 +100,17 @@ function renderContent(content: string) {
         }
       }
 
-      elements.push(
-        <p
-          key={`${i}-${j}`}
-          className="mb-4 leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: boldify(sub) }}
-        />
-      )
+      // Break long paragraphs into shorter ones
+      const chunks = breakLongParagraphs(sub)
+      for (let k = 0; k < chunks.length; k++) {
+        elements.push(
+          <p
+            key={`${i}-${j}-${k}`}
+            className="mb-4 leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: boldify(chunks[k]) }}
+          />
+        )
+      }
     }
   }
 
