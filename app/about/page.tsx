@@ -128,78 +128,174 @@ export default function AboutPage() {
       {/* ═══ Section 5: Side-by-Side Comparison ═══ */}
       <section className="max-w-5xl mx-auto px-4 md:px-6 pb-24">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left — What AI gives you */}
+
+          {/* Left — Typical AI response */}
           <div>
             <div
-              className="rounded-xl p-6 h-80 flex flex-col justify-between"
-              style={{ backgroundColor: '#e8e8e5', border: '1px solid #d5d5d2' }}
+              className="rounded-xl overflow-hidden flex flex-col"
+              style={{ border: '1px solid #d5d5d2', height: '520px' }}
             >
-              <div className="space-y-3">
-                <div className="h-3 rounded" style={{ backgroundColor: '#cccac6', width: '60%' }} />
-                <div className="h-2.5 rounded" style={{ backgroundColor: '#d5d3cf', width: '100%' }} />
-                <div className="h-2.5 rounded" style={{ backgroundColor: '#d5d3cf', width: '95%' }} />
-                <div className="h-2.5 rounded" style={{ backgroundColor: '#d5d3cf', width: '100%' }} />
-                <div className="h-2.5 rounded" style={{ backgroundColor: '#d5d3cf', width: '88%' }} />
-                <div className="h-2.5 rounded" style={{ backgroundColor: '#d5d3cf', width: '100%' }} />
-                <div className="h-2.5 rounded" style={{ backgroundColor: '#d5d3cf', width: '72%' }} />
-                <div className="h-2.5 rounded" style={{ backgroundColor: '#d5d3cf', width: '100%' }} />
-                <div className="h-2.5 rounded" style={{ backgroundColor: '#d5d3cf', width: '93%' }} />
-                <div className="h-2.5 rounded" style={{ backgroundColor: '#d5d3cf', width: '65%' }} />
+              {/* Header */}
+              <div className="px-4 py-2.5 flex items-center gap-2" style={{ backgroundColor: '#e8e8e5', borderBottom: '1px solid #d5d5d2' }}>
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#c4c2be' }} />
+                <span className="text-[11px] font-bold tracking-wider" style={{ color: '#8a8580' }}>TYPICAL AI RESPONSE</span>
+              </div>
+              {/* Content — scrollable */}
+              <div className="flex-1 overflow-y-auto p-4" style={{ backgroundColor: '#f5f5f0' }}>
+                <p className="text-[11px] leading-relaxed mb-3" style={{ color: '#6b6965', fontFamily: 'ui-monospace, monospace' }}>
+                  <strong>Best Beginner Electric Guitars Under $500</strong>
+                </p>
+                <p className="text-[11px] leading-relaxed mb-3" style={{ color: '#6b6965', fontFamily: 'ui-monospace, monospace' }}>
+                  When it comes to choosing a beginner electric guitar, there are several great options available under $500. Here are some popular choices that are well-regarded by beginners and experienced players alike:
+                </p>
+                <p className="text-[11px] leading-relaxed mb-3" style={{ color: '#6b6965', fontFamily: 'ui-monospace, monospace' }}>
+                  <strong>1. Squier Classic Vibe Stratocaster</strong> — The Squier Classic Vibe series offers excellent build quality at an affordable price point. It features alnico pickups, a vintage-tint gloss neck, and comfortable playability. Many players consider it one of the best value options in this range.
+                </p>
+                <p className="text-[11px] leading-relaxed mb-3" style={{ color: '#6b6965', fontFamily: 'ui-monospace, monospace' }}>
+                  <strong>2. Yamaha Pacifica 112V</strong> — The Pacifica series has been a go-to recommendation for beginners for many years. It offers versatile tones with its HSS pickup configuration, a comfortable body shape, and reliable tuning stability.
+                </p>
+                <p className="text-[11px] leading-relaxed mb-3" style={{ color: '#6b6965', fontFamily: 'ui-monospace, monospace' }}>
+                  <strong>3. Epiphone Les Paul Standard</strong> — If you prefer a warmer, thicker tone, the Epiphone Les Paul is a solid choice. It features dual humbuckers, a mahogany body, and the iconic Les Paul shape.
+                </p>
+                <p className="text-[11px] leading-relaxed mb-3" style={{ color: '#6b6965', fontFamily: 'ui-monospace, monospace' }}>
+                  <strong>4. Ibanez GRX70QA</strong> — Known for its slim, fast neck profile, the Ibanez is particularly good for players interested in rock and metal genres. It offers good value with its quilted art grain top and versatile pickup configuration.
+                </p>
+                <p className="text-[11px] leading-relaxed mb-2" style={{ color: '#6b6965', fontFamily: 'ui-monospace, monospace' }}>
+                  Ultimately, the best guitar for you <span style={{ backgroundColor: '#fef08a', padding: '0 2px' }}>depends on your personal preferences</span>, playing style, and the genres you&apos;re most interested in. I&apos;d recommend visiting a local music store to try out a few models before making your decision.
+                </p>
+                <p className="text-[10px] mt-3" style={{ color: '#a8a5a0', fontFamily: 'ui-monospace, monospace', fontStyle: 'italic' }}>
+                  No images. No prices. No sources. No verdict.
+                </p>
               </div>
             </div>
             <p className="text-xs text-center mt-3" style={{ color: '#8a8580' }}>
-              Plain text. No images. No structure. No verdict.
+              Plain text. No images. No data. No verdict.
             </p>
           </div>
 
-          {/* Right — What ArticleAI gives you */}
+          {/* Right — ArticleAI */}
           <div>
             <div
-              className="rounded-xl overflow-hidden h-80 flex flex-col"
-              style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}
+              className="rounded-xl overflow-hidden flex flex-col"
+              style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', height: '520px' }}
             >
-              {/* Mini hero image */}
-              <div className="h-20" style={{ backgroundColor: 'var(--accent-light)' }}>
-                <div className="h-full flex items-end px-4 pb-2">
-                  <div className="h-3 rounded" style={{ backgroundColor: 'var(--accent)', width: '50%', opacity: 0.4 }} />
-                </div>
+              {/* Header */}
+              <div className="px-4 py-2.5 flex items-center gap-2" style={{ backgroundColor: 'var(--accent-light)', borderBottom: '1px solid #f0d5be' }}>
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'var(--accent)' }} />
+                <span className="text-[11px] font-bold tracking-wider" style={{ color: 'var(--accent)' }}>ARTICLEAI</span>
               </div>
-              <div className="p-4 flex-1 space-y-3">
-                {/* Verdict bar */}
-                <div className="rounded-lg p-2.5" style={{ backgroundColor: 'var(--accent-light)' }}>
-                  <div className="h-2 rounded" style={{ backgroundColor: 'var(--accent)', width: '40%', opacity: 0.5 }} />
-                  <div className="h-1.5 rounded mt-1" style={{ backgroundColor: 'var(--accent)', width: '70%', opacity: 0.25 }} />
+              {/* Content — scrollable */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {/* Badge + title */}
+                <div>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--accent)', color: '#fff' }}>BUYER GUIDE</span>
+                  <p className="text-sm font-bold mt-1.5" style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}>
+                    Best Beginner Electric Guitars Under $500
+                  </p>
                 </div>
-                {/* Product card mockup */}
-                <div className="flex gap-2">
-                  <div className="w-12 h-12 rounded-lg" style={{ backgroundColor: 'var(--accent-light)' }} />
-                  <div className="flex-1 space-y-1.5">
-                    <div className="h-2 rounded" style={{ backgroundColor: 'var(--border)', width: '70%' }} />
-                    <div className="h-1.5 rounded" style={{ backgroundColor: 'var(--border)', width: '50%' }} />
-                  </div>
+
+                {/* Verdict box */}
+                <div className="rounded-lg p-2.5" style={{ backgroundColor: 'var(--accent-light)', borderLeft: '3px solid var(--accent)' }}>
+                  <span className="text-[9px] font-bold" style={{ color: 'var(--accent)' }}>VERDICT</span>
+                  <p className="text-[11px] font-semibold mt-0.5" style={{ color: 'var(--text-primary)' }}>
+                    Get the Yamaha Pacifica 112V
+                  </p>
+                  <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                    Best all-round value with HSS versatility
+                  </p>
                 </div>
-                {/* Chart mockup */}
-                <div className="flex items-end gap-1 h-10">
-                  {[40, 65, 55, 80, 70, 90, 60].map((h, i) => (
-                    <div
-                      key={i}
-                      className="flex-1 rounded-t"
-                      style={{
-                        height: `${h}%`,
-                        backgroundColor: i === 5 ? 'var(--accent)' : 'var(--border)',
-                      }}
-                    />
+
+                {/* Stat cards */}
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[
+                    { val: '$199–$499', label: 'Price range' },
+                    { val: '7', label: 'Guitars reviewed' },
+                    { val: '14', label: 'Sources checked' },
+                  ].map((s, i) => (
+                    <div key={i} className="text-center rounded-lg p-1.5" style={{ backgroundColor: 'var(--accent-light)' }}>
+                      <p className="text-[11px] font-bold" style={{ color: 'var(--accent)' }}>{s.val}</p>
+                      <p className="text-[8px]" style={{ color: 'var(--text-secondary)' }}>{s.label}</p>
+                    </div>
                   ))}
                 </div>
-                {/* Sources */}
-                <div className="flex gap-1">
-                  <div className="h-1.5 rounded" style={{ backgroundColor: 'var(--accent)', width: '15%', opacity: 0.3 }} />
-                  <div className="h-1.5 rounded" style={{ backgroundColor: 'var(--accent)', width: '20%', opacity: 0.3 }} />
-                  <div className="h-1.5 rounded" style={{ backgroundColor: 'var(--accent)', width: '12%', opacity: 0.3 }} />
+
+                {/* Product cards */}
+                {[
+                  { name: 'Yamaha Pacifica 112V', price: '$299', badge: 'TOP PICK' },
+                  { name: 'Squier Classic Vibe 50s', price: '$449', badge: 'RUNNER UP' },
+                ].map((p, i) => (
+                  <div key={i} className="flex gap-2 p-2 rounded-lg" style={{ border: '1px solid var(--border)' }}>
+                    <div className="w-10 h-10 rounded flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: 'var(--accent-light)' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-[11px] font-bold truncate" style={{ color: 'var(--text-primary)' }}>{p.name}</p>
+                        {p.badge && <span className="text-[7px] font-bold px-1 py-0.5 rounded flex-shrink-0" style={{ backgroundColor: 'var(--accent)', color: '#fff' }}>{p.badge}</span>}
+                      </div>
+                      <p className="text-[10px] font-semibold" style={{ color: 'var(--accent)' }}>{p.price}</p>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Mini bar chart */}
+                <div>
+                  <p className="text-[9px] font-bold mb-1" style={{ color: 'var(--text-secondary)' }}>VALUE SCORE</p>
+                  <div className="space-y-1">
+                    {[
+                      { name: 'Pacifica', w: '92%', winner: true },
+                      { name: 'Squier CV', w: '78%', winner: false },
+                      { name: 'Epiphone', w: '65%', winner: false },
+                      { name: 'Ibanez', w: '70%', winner: false },
+                    ].map((b, i) => (
+                      <div key={i} className="flex items-center gap-1.5">
+                        <span className="text-[8px] w-12 text-right flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{b.name}</span>
+                        <div className="flex-1 h-2 rounded-full" style={{ backgroundColor: 'var(--border)' }}>
+                          <div className="h-full rounded-full" style={{ width: b.w, backgroundColor: b.winner ? 'var(--accent)' : '#D3D1C7' }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mini comparison table */}
+                <div className="rounded-lg overflow-hidden text-[8px]" style={{ border: '1px solid var(--border)' }}>
+                  <div className="grid grid-cols-4 gap-0" style={{ backgroundColor: '#f5f4f0' }}>
+                    <div className="p-1 font-bold" style={{ color: 'var(--text-secondary)' }}></div>
+                    <div className="p-1 font-bold text-center" style={{ color: 'var(--accent)' }}>Pacifica</div>
+                    <div className="p-1 font-bold text-center" style={{ color: 'var(--text-secondary)' }}>Squier</div>
+                    <div className="p-1 font-bold text-center" style={{ color: 'var(--text-secondary)' }}>Epiphone</div>
+                  </div>
+                  {[
+                    { metric: 'Price', vals: ['$299', '$449', '$399'] },
+                    { metric: 'Pickups', vals: ['HSS', 'SSS', 'HH'] },
+                    { metric: 'Weight', vals: ['3.5kg', '3.4kg', '4.1kg'] },
+                  ].map((row, i) => (
+                    <div key={i} className="grid grid-cols-4 gap-0" style={{ borderTop: '1px solid var(--border)' }}>
+                      <div className="p-1" style={{ color: 'var(--text-secondary)' }}>{row.metric}</div>
+                      {row.vals.map((v, j) => (
+                        <div key={j} className="p-1 text-center" style={{ color: j === 0 ? 'var(--accent)' : 'var(--text-primary)', fontWeight: j === 0 ? 600 : 400 }}>{v}</div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Reddit quote */}
+                <div className="rounded-lg p-2" style={{ backgroundColor: '#f8f7f5', borderLeft: '2px solid #FF4500' }}>
+                  <p className="text-[9px] italic" style={{ color: 'var(--text-secondary)' }}>
+                    &ldquo;The Pacifica is the guitar every teacher recommends for a reason. Nothing else at $299 gives you that HSS versatility.&rdquo;
+                  </p>
+                  <p className="text-[8px] mt-0.5" style={{ color: '#FF4500' }}>— r/guitar</p>
+                </div>
+
+                {/* Fact-check badge */}
+                <div className="flex items-center gap-1.5 rounded-lg px-2 py-1.5" style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  <span className="text-[9px]" style={{ color: '#16a34a' }}>3 prices corrected, all specs verified</span>
                 </div>
               </div>
             </div>
-            <p className="text-xs text-center mt-3" style={{ color: 'var(--accent)' }}>
+            <p className="text-xs text-center mt-3 font-medium" style={{ color: 'var(--accent)' }}>
               Visual. Structured. Opinionated. Fact-checked.
             </p>
           </div>
