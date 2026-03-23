@@ -148,10 +148,10 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
     // Don't start a second interval
     if (messageIntervalRef.current) return
 
-    // Show first 2 immediately
-    setCompletedMsgs(2)
+    // Show first 3 immediately
+    setCompletedMsgs(3)
 
-    // Tick one message every 7 seconds
+    // Tick one message every 5 seconds (fills ~80s with 17 messages)
     const totalMsgs = messages.length
     messageIntervalRef.current = setInterval(() => {
       setCompletedMsgs(prev => {
@@ -165,7 +165,7 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
         }
         return next
       })
-    }, 7000)
+    }, 5000)
 
     // Cleanup only on unmount
     return () => {
