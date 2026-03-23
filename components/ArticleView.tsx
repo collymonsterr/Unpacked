@@ -362,7 +362,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
         <RefinementInput onSubmit={handleRefine} isLoading={isRefining} />
       </div>
 
-      {/* 3. Suggested refinement chips */}
+      {/* 3. Suggestion chips */}
       {chips && (
         <div className="mt-6">
           <p

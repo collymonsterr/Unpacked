@@ -145,7 +145,7 @@ export default function ArticleFeedback({ articleId }: Props) {
   // Default: compact inline row
   if (!voted) {
     return (
-      <div className="flex items-center justify-between py-2">
+      <div className="flex items-center justify-center gap-3 py-2">
         <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
           Was this helpful?
         </span>

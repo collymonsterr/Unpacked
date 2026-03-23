@@ -30,13 +30,15 @@ export default function SuggestionChips({ chips, onRefine, isRefining }: Props) 
     }
   }
 
+  const hasRefinements = chips.refinements.length > 0
+  const hasRelated = chips.related.length > 0
+
+  if (!hasRefinements && !hasRelated) return null
+
   return (
-    <div className="mt-10 pt-8" style={{ borderTop: '1px solid var(--border)' }}>
-      {chips.refinements.length > 0 && (
-        <div className="mb-5">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-secondary)' }}>
-            Refine This Article
-          </p>
+    <div>
+      {hasRefinements && (
+        <div className={hasRelated ? 'mb-5' : ''}>
           <div className="flex flex-wrap gap-2">
             {chips.refinements.map((chip, i) => (
               <button
@@ -58,10 +60,13 @@ export default function SuggestionChips({ chips, onRefine, isRefining }: Props) 
         </div>
       )}
 
-      {chips.related.length > 0 && (
+      {hasRelated && (
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-secondary)' }}>
-            Related Articles
+          <p
+            className="text-xs font-semibold uppercase tracking-widest mb-3"
+            style={{ color: 'var(--text-secondary)', letterSpacing: '0.1em' }}
+          >
+            Related topics
           </p>
           <div className="flex flex-wrap gap-2">
             {chips.related.map((chip, i) => (
