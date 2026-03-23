@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { ArticleRow, ArticleContent, ProductCard } from '@/types/article'
@@ -42,6 +42,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
   const [isRegeneratingImages, setIsRegeneratingImages] = useState(false)
   const [isRegeneratingArticle, setIsRegeneratingArticle] = useState(false)
   const [toolbarBusy, setToolbarBusy] = useState<string | null>(null)
+  const [exportState, setExportState] = useState<'idle' | 'generating' | 'done'>('idle')
   const hasMissingImages = useMemo(() => {
     const productCards = article.sections.filter(
       (s): s is ProductCard => s.type === 'product_card'
@@ -401,22 +402,37 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           variant="bottom-row"
         />
         <button
-          className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium"
-          style={{
-            backgroundColor: 'var(--card)',
-            color: 'var(--text-secondary)',
-            border: '1px solid var(--border)',
-            fontFamily: 'var(--font-sora)',
-            cursor: 'pointer',
+          onClick={async () => {
+            if (exportState !== 'idle') return
+            setExportState('generating')
+            try {
+              const { generateArticlePDF } = await import('@/lib/export-pdf')
+              await generateArticlePDF(article, articleRow.slug)
+              setExportState('done')
+              setTimeout(() => setExportState('idle'), 2000)
+            } catch (err) {
+              console.error('[export-pdf]', err)
+              setExportState('idle')
+            }
           }}
-          title="Export article (coming soon)"
+          disabled={exportState === 'generating'}
+          className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+          style={{
+            backgroundColor: exportState === 'done' ? '#059669' : 'var(--card)',
+            color: exportState === 'done' ? '#fff' : 'var(--text-secondary)',
+            border: exportState === 'done' ? '1px solid #059669' : '1px solid var(--border)',
+            fontFamily: 'var(--font-sora)',
+            cursor: exportState === 'generating' ? 'wait' : 'pointer',
+            opacity: exportState === 'generating' ? 0.6 : 1,
+          }}
+          title="Download article as PDF"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
-          Export
+          {exportState === 'generating' ? 'Generating…' : exportState === 'done' ? 'Downloaded!' : 'Export'}
         </button>
       </div>
 
