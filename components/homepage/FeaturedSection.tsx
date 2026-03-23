@@ -44,7 +44,7 @@ export default function FeaturedSection({ articles }: Props) {
     }
 
     setHeroArticle(hero)
-    setSmallArticles(articles.filter(a => a.id !== hero.id).slice(0, 6))
+    setSmallArticles(articles.filter(a => a.id !== hero.id).slice(0, 4))
   }, [articles])
 
   if (!heroArticle) {
@@ -198,7 +198,7 @@ export default function FeaturedSection({ articles }: Props) {
         <div
           className="grid gap-[18px]"
           style={{
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
             gridTemplateRows: 'repeat(2, 1fr)',
           }}
         >
@@ -253,7 +253,7 @@ export default function FeaturedSection({ articles }: Props) {
             grid-template-columns: 1fr !important;
             height: auto !important;
           }
-          .grid[style*="repeat(3"] {
+          .grid[style*="repeat(2"] {
             grid-template-columns: repeat(2, 1fr) !important;
           }
         }

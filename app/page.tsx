@@ -55,7 +55,7 @@ async function getHomepageData() {
         if (ap !== bp) return ap - bp
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       })
-      .slice(0, 7)
+      .slice(0, 5)
 
     const trending = deduplicated
       .filter(a => a.is_trending)
@@ -64,7 +64,7 @@ async function getHomepageData() {
         const bt = b.trending_set_at ? new Date(b.trending_set_at).getTime() : 0
         return bt - at
       })
-      .slice(0, 4)
+      .slice(0, 3)
 
     const popular = [...deduplicated]
       .sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0))
