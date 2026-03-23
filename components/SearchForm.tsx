@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import ArticleOptions, { DEFAULT_OPTIONS, type GenerationOptions } from './ArticleOptions'
+import { setPendingArticle } from '@/lib/pending-article'
 
 const PLACEHOLDERS = [
   'Best laptops for students under $800...',
@@ -55,6 +56,9 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
       }
 
       const { id, slug } = await res.json()
+
+      // Save pending article for recovery
+      setPendingArticle(id, slug)
 
       // Track ownership
       try {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import type { ArticleRow } from '@/types/article'
 import ArticleGenerating from '@/components/ArticleGenerating'
 import ArticleView from '@/components/ArticleView'
@@ -10,6 +10,7 @@ import FactCheckBar from '@/components/ui/FactCheckBar'
 import { useAdminMode } from '@/hooks/useAdminMode'
 import { useUser } from '@/hooks/useUser'
 import { addRecentArticle } from '@/lib/recent-articles'
+import { clearPendingArticle } from '@/lib/pending-article'
 
 interface Props {
   initialRow: ArticleRow
@@ -67,23 +68,53 @@ export default function ArticlePageClient({ initialRow }: Props) {
     })
   }, [showArticle, row.article, initialRow.slug])
 
+  const [timedOut, setTimedOut] = useState(false)
+  const pollStartRef = useRef(Date.now())
+
   // Poll while planning, generating, or waiting for fact-check
   useEffect(() => {
     if (row.status === 'verified' || row.status === 'error') return
     if (showArticle && row.status === 'complete' && !wasGenerating) return
+    if (timedOut) return
 
-    const interval = setInterval(poll, 2500)
+    const interval = setInterval(() => {
+      // Timeout after 3 minutes
+      if (Date.now() - pollStartRef.current > 3 * 60 * 1000) {
+        setTimedOut(true)
+        return
+      }
+      poll()
+    }, 2500)
     return () => clearInterval(interval)
-  }, [row.status, wasGenerating, showArticle, poll])
+  }, [row.status, wasGenerating, showArticle, poll, timedOut])
+
+  // Page Visibility API — poll immediately when tab becomes visible
+  useEffect(() => {
+    if (showArticle) return
+    function handleVisibility() {
+      if (document.visibilityState === 'visible') {
+        poll()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [showArticle, poll])
+
+  // Clear pending article from localStorage when article is ready
+  useEffect(() => {
+    if (showArticle && row.article) {
+      clearPendingArticle()
+    }
+  }, [showArticle, row.article])
 
   // Handle the transition from generating to article
   const handleArticleReady = useCallback(() => {
     if (showArticle) return // Already showing
+    clearPendingArticle()
     setFadeState('transitioning')
     setTimeout(() => {
       window.scrollTo({ top: 0 })
       setShowArticle(true)
-      // Small delay so the DOM renders before we fade in
       requestAnimationFrame(() => {
         setFadeState('article')
       })
@@ -156,7 +187,20 @@ export default function ArticlePageClient({ initialRow }: Props) {
             transition: 'opacity 0.4s ease',
           }}
         >
-          <ArticleGenerating row={row} onReady={handleArticleReady} />
+          <ArticleGenerating
+            row={row}
+            onReady={handleArticleReady}
+            timedOut={timedOut}
+            onRetry={() => {
+              setTimedOut(false)
+              pollStartRef.current = Date.now()
+              poll()
+            }}
+            onStartOver={() => {
+              clearPendingArticle()
+              window.location.href = '/'
+            }}
+          />
         </div>
       )}
 

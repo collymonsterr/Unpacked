@@ -3,6 +3,7 @@ import UserMenu from '@/components/ui/UserMenu'
 import SearchForm from '@/components/SearchForm'
 import ExampleChips from '@/components/ExampleChips'
 import RecentArticlesGrid from '@/components/RecentArticlesGrid'
+import PendingArticleRecovery from '@/components/PendingArticleRecovery'
 import type { ArticleRow } from '@/types/article'
 
 import type { Metadata } from 'next'
@@ -67,6 +68,7 @@ export default async function HomePage() {
 
   return (
     <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
+      <PendingArticleRecovery />
       {/* Nav */}
       <nav className="px-6 py-5 flex items-center justify-between max-w-6xl mx-auto">
         <Logo size="md" />

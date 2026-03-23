@@ -9,6 +9,9 @@ import { useUser } from '@/hooks/useUser'
 interface Props {
   row: ArticleRow
   onReady?: () => void
+  timedOut?: boolean
+  onRetry?: () => void
+  onStartOver?: () => void
 }
 
 // Fun messages shown immediately while plan is loading
@@ -22,7 +25,7 @@ const PRE_PLAN_MESSAGES = [
   { text: 'Separating the good advice from the noise...', delay: 14500 },
 ]
 
-export default function ArticleGenerating({ row, onReady }: Props) {
+export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onStartOver }: Props) {
   const [elapsed, setElapsed] = useState(0)
   const [prePlanMsgCount, setPrePlanMsgCount] = useState(1)
   const [completedMsgs, setCompletedMsgs] = useState(0)
@@ -381,6 +384,57 @@ export default function ArticleGenerating({ row, onReady }: Props) {
           )}
 
           <Timer timeStr={timeStr} />
+        </div>
+      )}
+
+      {/* Timeout state */}
+      {timedOut && (
+        <div className="py-12 text-center max-w-md mx-auto">
+          <div
+            className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
+            style={{ backgroundColor: 'var(--accent-light)' }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          </div>
+          <h2
+            className="text-xl font-bold mb-2"
+            style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+          >
+            Taking longer than expected
+          </h2>
+          <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+            Your article might still be generating. You can check if it&apos;s ready or start fresh.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={onRetry}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold"
+              style={{
+                backgroundColor: 'var(--accent)',
+                color: '#fff',
+                fontFamily: 'var(--font-sora)',
+                cursor: 'pointer',
+              }}
+            >
+              Check again
+            </button>
+            <button
+              onClick={onStartOver}
+              className="px-5 py-2.5 rounded-xl text-sm font-medium"
+              style={{
+                backgroundColor: 'transparent',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border)',
+                fontFamily: 'var(--font-sora)',
+                cursor: 'pointer',
+              }}
+            >
+              Start over
+            </button>
+          </div>
         </div>
       )}
     </div>
