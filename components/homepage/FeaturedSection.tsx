@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { ArticleRow } from '@/types/article'
+import { getReadingTime } from '@/lib/reading-time'
 import SectionHeader from './SectionHeader'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -53,8 +54,13 @@ export default function FeaturedSection({ articles }: Props) {
 
   const heroArt = heroArticle.article
   const heroType = heroArt?.article_type ?? ''
-  const heroVerdict = heroArt?.quick_verdict?.one_liner ?? heroArt?.executive_summary?.short_answer ?? ''
+  const heroDescription = heroArt?.executive_summary?.short_answer ?? heroArt?.quick_verdict?.one_liner ?? ''
+  const heroVerdict = heroArt?.quick_verdict?.recommendation ?? ''
   const heroImg = heroArt?.thumbnail_url
+  const heroReadTime = heroArt ? getReadingTime(heroArt) : 0
+  const heroDate = new Date(heroArticle.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
+  const heroAuthorName = heroArticle.user_name ?? 'ArticleAI'
+  const heroAuthorInitial = heroAuthorName.charAt(0).toUpperCase()
 
   return (
     <section className="w-full max-w-6xl mx-auto px-4 md:px-6">
@@ -91,32 +97,90 @@ export default function FeaturedSection({ articles }: Props) {
             )}
           </div>
           <div className="p-4 flex-1 flex flex-col">
+            {/* 1. Category badge */}
             <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--accent)' }}>
               {TYPE_LABELS[heroType] ?? heroType.replace(/_/g, ' ')}
             </p>
+
+            {/* 2. Title */}
             <h3
               className="text-lg font-bold leading-snug mb-2 line-clamp-3"
               style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
             >
               {heroArt?.title}
             </h3>
-            {heroVerdict && (
+
+            {/* 3. Description */}
+            {heroDescription && (
               <p className="text-xs leading-relaxed mb-3 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
-                {heroVerdict}
+                {heroDescription}
               </p>
             )}
-            <div className="mt-auto flex items-center gap-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
-              {heroArticle.view_count ? (
-                <span>{heroArticle.view_count} views</span>
-              ) : null}
-              {heroArticle.verified_at && (
-                <span className="flex items-center gap-1" style={{ color: '#059669' }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M20 6L9 17l-5-5" />
-                  </svg>
-                  Verified
-                </span>
-              )}
+
+            {/* 4. Verdict box */}
+            {heroVerdict && (
+              <div
+                className="rounded-lg px-3 py-2.5 mb-3"
+                style={{ backgroundColor: '#f0efed' }}
+              >
+                <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-secondary)' }}>
+                  Verdict
+                </p>
+                <p
+                  className="text-xs leading-relaxed line-clamp-2"
+                  style={{ color: 'var(--text-primary)', fontStyle: 'italic' }}
+                >
+                  {heroVerdict.replace(/;/g, '.').split('.')[0].trim()}.
+                </p>
+              </div>
+            )}
+
+            {/* 5. Bottom metadata row */}
+            <div
+              className="mt-auto pt-3 flex items-center justify-between"
+              style={{ borderTop: '1px solid var(--border)' }}
+            >
+              {/* Left: author + date */}
+              <div className="flex items-center gap-2">
+                {heroArticle.user_avatar ? (
+                  <img
+                    src={heroArticle.user_avatar}
+                    alt=""
+                    className="w-6 h-6 rounded-full"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+                    style={{ backgroundColor: 'var(--accent)', color: '#fff' }}
+                  >
+                    {heroAuthorInitial}
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs font-medium leading-tight" style={{ color: 'var(--text-primary)' }}>
+                    {heroAuthorName}
+                  </p>
+                  <p className="text-[10px] leading-tight" style={{ color: 'var(--text-secondary)' }}>
+                    {heroDate} · {heroReadTime} min read
+                  </p>
+                </div>
+              </div>
+
+              {/* Right: views + fact-checked */}
+              <div className="flex items-center gap-3 text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+                {(heroArticle.view_count ?? 0) > 0 && (
+                  <span>{(heroArticle.view_count ?? 0).toLocaleString()} views</span>
+                )}
+                {heroArticle.verified_at && (
+                  <span className="flex items-center gap-0.5" style={{ color: '#059669' }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                    Fact-checked
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </Link>
