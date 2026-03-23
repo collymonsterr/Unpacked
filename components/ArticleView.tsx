@@ -9,7 +9,7 @@ import ArticleSidebarNav from './ui/ArticleSidebarNav'
 import QuickVerdict from './sections/QuickVerdict'
 import ExecutiveSummary from './sections/ExecutiveSummary'
 import SectionRenderer from './sections/SectionRenderer'
-import SuggestionChips from './ui/SuggestionChips'
+import { RefinementChips, RelatedChips } from './ui/SuggestionChips'
 import RefinementInput from './ui/RefinementInput'
 import ShareButton from './ui/ShareButton'
 import BookmarkButton from './ui/BookmarkButton'
@@ -362,21 +362,34 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
         <RefinementInput onSubmit={handleRefine} isLoading={isRefining} />
       </div>
 
-      {/* 3. Suggestion chips */}
-      {chips && (
-        <div className="mt-6">
-          <p
-            className="text-xs font-semibold uppercase tracking-widest mb-3"
-            style={{ color: 'var(--text-secondary)', letterSpacing: '0.1em' }}
-          >
-            Suggested refinements
-          </p>
-          <SuggestionChips
-            chips={chips}
-            articleId={articleRow.id}
-            onRefine={handleRefine}
-            isRefining={isRefining}
-          />
+      {/* 3. Two-column: Refinements + Related topics */}
+      {chips && (chips.refinements.length > 0 || chips.related.length > 0) && (
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+          {/* Left: Suggested Refinements */}
+          <div>
+            <p
+              className="text-xs font-semibold uppercase tracking-widest mb-3"
+              style={{ color: 'var(--text-secondary)', letterSpacing: '0.1em' }}
+            >
+              Suggested refinements
+            </p>
+            <RefinementChips
+              chips={chips}
+              onRefine={handleRefine}
+              isRefining={isRefining}
+            />
+          </div>
+
+          {/* Right: Related Topics */}
+          <div>
+            <p
+              className="text-xs font-semibold uppercase tracking-widest mb-3"
+              style={{ color: 'var(--text-secondary)', letterSpacing: '0.1em' }}
+            >
+              Related topics
+            </p>
+            <RelatedChips chips={chips} />
+          </div>
         </div>
       )}
 
