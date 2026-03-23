@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
       try {
         // Phase 1: Plan the article
         console.log('[create] Planning article for:', trimmedQuery.slice(0, 50), 'options:', JSON.stringify(generationOptions))
-        const plan = await planArticle(trimmedQuery, generationOptions)
+        const plan = await planArticle(trimmedQuery, generationOptions, data.id)
 
         // Update with plan data — client sees this via polling
         await db
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
         console.log('[create] Plan complete, now writing:', plan.title.slice(0, 50))
 
         // Phase 2: Write the article
-        const rawArticle = await writeArticle(trimmedQuery, plan, generationOptions)
+        const rawArticle = await writeArticle(trimmedQuery, plan, generationOptions, data.id)
 
         // Phase 3: Enrich images + hero thumbnail (parallel)
         const [enrichedArticle, heroUrl] = await Promise.all([

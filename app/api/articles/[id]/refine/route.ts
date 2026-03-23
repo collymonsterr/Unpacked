@@ -52,7 +52,8 @@ export async function POST(
       row.query,
       row.article,
       instruction,
-      storedOptions
+      storedOptions,
+      id
     )
 
     const enriched = await enrichArticleWithImages(refined, row.plan?.entities ?? [])

@@ -45,7 +45,7 @@ export async function POST(
     try {
       // Step 2: Research & Write (use stored generation options for regional consistency)
       const storedOptions = row.generation_options ?? undefined
-      const rawArticle = await writeArticle(row.query, row.plan, storedOptions)
+      const rawArticle = await writeArticle(row.query, row.plan, storedOptions, id)
 
       // Step 3: Image enrichment + hero image (in parallel)
       const [enrichedArticle, heroUrl] = await Promise.all([

@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { ArticlePlan, ArticleContent, ArticleType } from '@/types/article'
 import { VISUAL_DEFAULTS } from '@/lib/article-config'
+import { isDuplicateCall, logApiCall } from '@/lib/api-usage'
 
 // Lazy-init so the env var is always available at call time (not module-load time)
 let _anthropic: Anthropic | null = null
@@ -621,13 +622,26 @@ General rule: ask "what are the 3-4 things the reader absolutely needs?" and bui
   return parts.length > 0 ? '\n\nUSER PREFERENCES:\n' + parts.join('\n') : ''
 }
 
-export async function planArticle(query: string, options?: GenOptions): Promise<ArticlePlan> {
+export async function planArticle(query: string, options?: GenOptions, articleId?: string): Promise<ArticlePlan> {
+  if (articleId && isDuplicateCall(articleId, 'plan')) {
+    throw new Error('Duplicate planning call blocked')
+  }
+
   const optionsPrompt = options ? buildOptionsPrompt(options) : ''
+  const model = 'claude-haiku-4-5-20251001'
   const message = await getAnthropic().messages.create({
-    model: 'claude-haiku-4-5-20251001',
+    model,
     max_tokens: 2048,
     system: PLANNING_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: `Plan an article for: "${query}"${optionsPrompt}` }],
+  })
+
+  logApiCall({
+    callType: 'plan',
+    model,
+    inputTokens: message.usage?.input_tokens,
+    outputTokens: message.usage?.output_tokens,
+    articleId,
   })
 
   const text = message.content.find((b) => b.type === 'text')?.text ?? ''
@@ -644,16 +658,21 @@ export async function planArticle(query: string, options?: GenOptions): Promise<
   return plan
 }
 
-export async function writeArticle(query: string, plan: ArticlePlan, options?: GenOptions): Promise<ArticleContent> {
+export async function writeArticle(query: string, plan: ArticlePlan, options?: GenOptions, articleId?: string): Promise<ArticleContent> {
+  if (articleId && isDuplicateCall(articleId, 'write')) {
+    throw new Error('Duplicate writing call blocked')
+  }
+
   let lastError: Error | null = null
   const optionsPrompt = options ? buildOptionsPrompt(options) : ''
   const maxTokens = options?.length === 'quick' ? 8000 : options?.length === 'deep' ? 24000 : 16000
   const maxSearches = options?.length === 'quick' ? 5 : options?.length === 'deep' ? 15 : 10
+  const model = 'claude-sonnet-4-20250514'
 
   for (let attempt = 0; attempt < 2; attempt++) {
     // Use streaming to keep the connection alive during long web search calls
     const stream = getAnthropic().messages.stream({
-      model: 'claude-sonnet-4-20250514',
+      model,
       max_tokens: maxTokens,
       system: WRITING_SYSTEM_PROMPT,
       tools: [{ type: 'web_search_20250305' as const, name: 'web_search', max_uses: maxSearches }],
@@ -675,6 +694,14 @@ ${JSON.stringify(plan, null, 2)}${optionsPrompt}`,
     })
 
     const message = await stream.finalMessage()
+
+    logApiCall({
+      callType: 'write',
+      model,
+      inputTokens: message.usage?.input_tokens,
+      outputTokens: message.usage?.output_tokens,
+      articleId,
+    })
 
     // Extract final text block (after any tool use)
     const textBlocks = message.content.filter((b) => b.type === 'text')
@@ -735,11 +762,17 @@ export async function refineArticle(
   query: string,
   currentArticle: ArticleContent,
   instruction: string,
-  options?: GenOptions
+  options?: GenOptions,
+  articleId?: string
 ): Promise<{ article: ArticleContent; suggestion_chips: { refinements: string[]; related: string[] } }> {
+  if (articleId && isDuplicateCall(articleId, 'refine')) {
+    throw new Error('Duplicate refinement call blocked')
+  }
+
   const optionsPrompt = options ? buildOptionsPrompt(options) : ''
+  const model = 'claude-sonnet-4-20250514'
   const stream = getAnthropic().messages.stream({
-    model: 'claude-sonnet-4-20250514',
+    model,
     max_tokens: 16000,
     system: WRITING_SYSTEM_PROMPT,
     tools: [{ type: 'web_search_20250305' as const, name: 'web_search', max_uses: 10 }],
@@ -766,6 +799,14 @@ Apply the refinement and return the full updated article JSON. Also append a "su
   })
 
   const message = await stream.finalMessage()
+
+  logApiCall({
+    callType: 'refine',
+    model,
+    inputTokens: message.usage?.input_tokens,
+    outputTokens: message.usage?.output_tokens,
+    articleId,
+  })
 
   const textBlocks = message.content.filter((b) => b.type === 'text')
   const text = textBlocks[textBlocks.length - 1]?.text ?? ''
