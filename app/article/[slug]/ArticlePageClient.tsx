@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import type { ArticleRow } from '@/types/article'
 import ArticleGenerating from '@/components/ArticleGenerating'
 import ArticleView from '@/components/ArticleView'
+import ArticleSkeleton from '@/components/ArticleSkeleton'
 import Logo from '@/components/ui/Logo'
 import UserMenu from '@/components/ui/UserMenu'
 import FactCheckBar from '@/components/ui/FactCheckBar'
@@ -151,19 +152,38 @@ export default function ArticlePageClient({ initialRow }: Props) {
       {/* Content */}
       {row.status === 'error' ? (
         <div className="max-w-[900px] mx-auto px-4 py-20 text-center">
-          <p className="text-2xl font-bold mb-2" style={{ fontFamily: 'var(--font-sora)' }}>
-            Something went wrong
-          </p>
-          <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-            We couldn&apos;t generate this article. This sometimes happens with complex queries.
-          </p>
-          <a
-            href="/"
-            className="inline-block px-5 py-2.5 rounded-xl text-sm font-semibold"
-            style={{ backgroundColor: 'var(--accent)', color: '#fff' }}
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
+            style={{ backgroundColor: 'var(--accent-light)' }}
           >
-            Go back and try again
-          </a>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <p className="text-2xl font-bold mb-2" style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}>
+            We couldn&apos;t load this article
+          </p>
+          <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+            Something went wrong. The article might have been removed, or there was a server issue.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold"
+              style={{ backgroundColor: 'var(--accent)', color: '#fff', fontFamily: 'var(--font-sora)', cursor: 'pointer' }}
+            >
+              Try again
+            </button>
+            <a
+              href="/"
+              className="px-5 py-2.5 rounded-xl text-sm font-medium no-underline"
+              style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)', fontFamily: 'var(--font-sora)' }}
+            >
+              Go home
+            </a>
+          </div>
         </div>
       ) : showArticle && row.article ? (
         <div
@@ -180,7 +200,7 @@ export default function ArticlePageClient({ initialRow }: Props) {
             factCheckStatus={factCheckStatus}
           />
         </div>
-      ) : (
+      ) : (row.status === 'generating' || row.status === 'planning') ? (
         <div
           style={{
             opacity: fadeState === 'transitioning' ? 0 : 1,
@@ -202,6 +222,15 @@ export default function ArticlePageClient({ initialRow }: Props) {
             }}
           />
         </div>
+      ) : (
+        /* Scenario B: Direct link loading — show skeleton with plan data if available */
+        <ArticleSkeleton
+          title={row.plan?.title ?? row.query}
+          articleType={row.plan?.article_type}
+          verdictPreview={row.plan?.quick_verdict_preview}
+          sections={row.plan?.sections_outline ?? []}
+          showHero
+        />
       )}
 
       {/* Fixed bottom fact-check bar — show whenever we're fact-checking or verified for a fresh article */}
