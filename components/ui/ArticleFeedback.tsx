@@ -70,103 +70,114 @@ export default function ArticleFeedback({ articleId }: Props) {
 
   if (alreadyVoted && !thanks) return null
 
-  return (
-    <div className="mt-8 mb-4">
-      {thanks ? (
-        <p className="text-sm font-medium text-center" style={{ color: 'var(--text-secondary)' }}>
-          Thanks for the feedback! 🙏
+  // Expanded reason picker (shown after thumbs down)
+  if (voted === 'down' && showReasons) {
+    return (
+      <div
+        className="rounded-xl p-5"
+        style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
+      >
+        <p className="text-sm font-semibold mb-3" style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}>
+          What went wrong? Select all that apply.
         </p>
-      ) : voted === 'down' && showReasons ? (
-        <div
-          className="rounded-xl p-5"
-          style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
-        >
-          <p className="text-sm font-semibold mb-3" style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}>
-            What went wrong? Select all that apply.
-          </p>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {DOWN_REASONS.map(reason => {
-              const isSelected = selectedReasons.has(reason)
-              return (
-                <button
-                  key={reason}
-                  onClick={() => toggleReason(reason)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                  style={{
-                    backgroundColor: isSelected ? 'var(--accent)' : 'transparent',
-                    color: isSelected ? '#fff' : 'var(--text-secondary)',
-                    border: isSelected ? '1px solid var(--accent)' : '1px solid var(--border)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {reason}
-                </button>
-              )
-            })}
-          </div>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Anything else you'd like to tell us? (optional)"
-            rows={2}
-            className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none mb-3"
+        <div className="flex flex-wrap gap-2 mb-4">
+          {DOWN_REASONS.map(reason => {
+            const isSelected = selectedReasons.has(reason)
+            return (
+              <button
+                key={reason}
+                onClick={() => toggleReason(reason)}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                style={{
+                  backgroundColor: isSelected ? 'var(--accent)' : 'transparent',
+                  color: isSelected ? '#fff' : 'var(--text-secondary)',
+                  border: isSelected ? '1px solid var(--accent)' : '1px solid var(--border)',
+                  cursor: 'pointer',
+                }}
+              >
+                {reason}
+              </button>
+            )
+          })}
+        </div>
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Anything else? (optional)"
+          rows={2}
+          className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none mb-3"
+          style={{
+            backgroundColor: 'var(--bg)',
+            border: '1px solid var(--border)',
+            color: 'var(--text-primary)',
+          }}
+        />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => submitFeedback('down')}
+            disabled={submitting || (selectedReasons.size === 0 && !comment.trim())}
+            className="px-4 py-2 rounded-lg text-sm font-semibold transition-opacity disabled:opacity-40"
+            style={{ backgroundColor: 'var(--accent)', color: '#fff', cursor: submitting ? 'not-allowed' : 'pointer' }}
+          >
+            {submitting ? 'Sending...' : 'Submit'}
+          </button>
+          <button
+            onClick={() => { setShowReasons(false); setVoted(null) }}
+            className="text-xs"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Thanks state
+  if (thanks) {
+    return (
+      <p className="text-xs text-center py-1" style={{ color: 'var(--text-secondary)' }}>
+        Thanks for the feedback 🙏
+      </p>
+    )
+  }
+
+  // Default: compact inline row
+  if (!voted) {
+    return (
+      <div className="flex items-center justify-between py-2">
+        <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+          Was this helpful?
+        </span>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => submitFeedback('up')}
+            className="px-3 py-1 rounded-full text-xs font-medium transition-all hover:scale-105"
             style={{
-              backgroundColor: 'var(--bg)',
+              backgroundColor: 'transparent',
               border: '1px solid var(--border)',
-              color: 'var(--text-primary)',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
             }}
-          />
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => submitFeedback('down')}
-              disabled={submitting || (selectedReasons.size === 0 && !comment.trim())}
-              className="px-4 py-2 rounded-lg text-sm font-semibold transition-opacity disabled:opacity-40"
-              style={{ backgroundColor: 'var(--accent)', color: '#fff', cursor: submitting ? 'not-allowed' : 'pointer' }}
-            >
-              {submitting ? 'Sending...' : 'Submit feedback'}
-            </button>
-            <button
-              onClick={() => { setShowReasons(false); setVoted(null) }}
-              className="text-xs"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Cancel
-            </button>
-          </div>
+          >
+            👍 Yes
+          </button>
+          <button
+            onClick={() => { setVoted('down'); setShowReasons(true) }}
+            className="px-3 py-1 rounded-full text-xs font-medium transition-all hover:scale-105"
+            style={{
+              backgroundColor: 'transparent',
+              border: '1px solid var(--border)',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+            }}
+          >
+            👎 Not quite
+          </button>
         </div>
-      ) : !voted ? (
-        <div className="text-center">
-          <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
-            Was this article helpful?
-          </p>
-          <div className="flex justify-center gap-2">
-            <button
-              onClick={() => submitFeedback('up')}
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105"
-              style={{
-                backgroundColor: 'var(--card)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-              }}
-            >
-              👍 Yes
-            </button>
-            <button
-              onClick={() => { setVoted('down'); setShowReasons(true) }}
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105"
-              style={{
-                backgroundColor: 'var(--card)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-              }}
-            >
-              👎 Not quite
-            </button>
-          </div>
-        </div>
-      ) : null}
-    </div>
-  )
+      </div>
+    )
+  }
+
+  return null
 }

@@ -345,39 +345,83 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
         />
       )}
 
-      {/* Feedback */}
-      <ArticleFeedback articleId={articleRow.id} />
+      {/* ─── Bottom sections ─── */}
 
-      {/* Share button at bottom */}
-      <ShareButton
-        title={article.title}
-        url={`https://articleai-three.vercel.app/article/${articleRow.slug}`}
-        variant="bottom"
-      />
+      {/* 1. Inline feedback row */}
+      <div className="mt-8">
+        <ArticleFeedback articleId={articleRow.id} />
+      </div>
 
-      {/* Owner-only: refinement controls */}
-      {isOwner && (
-        <div className="mt-8">
-          {refineError && (
-            <p className="text-sm text-red-600 mb-3">{refineError}</p>
-          )}
-          <RefinementInput onSubmit={handleRefine} isLoading={isRefining} />
-          {chips && (
+      <div className="my-6" style={{ borderTop: '1px solid var(--border)' }} />
+
+      {/* 2. Share + Export action bar */}
+      <div className="flex items-center gap-3">
+        <ShareButton
+          title={article.title}
+          url={`https://articleai-three.vercel.app/article/${articleRow.slug}`}
+          variant="bottom-row"
+        />
+        <button
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium shrink-0"
+          style={{
+            backgroundColor: 'var(--card)',
+            color: 'var(--text-secondary)',
+            border: '1px solid var(--border)',
+            fontFamily: 'var(--font-sora)',
+            cursor: 'pointer',
+          }}
+          title="Export article (coming soon)"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Export
+        </button>
+      </div>
+
+      <div className="my-6" style={{ borderTop: '1px solid var(--border)' }} />
+
+      {/* 3. Make it yours — refine block */}
+      <div>
+        <p
+          className="text-xs font-semibold uppercase tracking-widest mb-4"
+          style={{ color: 'var(--text-secondary)', letterSpacing: '0.1em' }}
+        >
+          Make it yours
+        </p>
+        {chips && (
+          <div className="mb-4">
             <SuggestionChips
               chips={chips}
               articleId={articleRow.id}
               onRefine={handleRefine}
               isRefining={isRefining}
             />
-          )}
-        </div>
-      )}
+          </div>
+        )}
+        {refineError && (
+          <p className="text-sm text-red-600 mb-3">{refineError}</p>
+        )}
+        <RefinementInput onSubmit={handleRefine} isLoading={isRefining} />
+      </div>
 
-      {/* Related Articles — bottom of page */}
-      <RelatedArticles
-        articleId={articleRow.id}
-        articleType={article.article_type}
-      />
+      <div className="my-10" style={{ borderTop: '1px solid var(--border)' }} />
+
+      {/* 4. Related articles */}
+      <div>
+        <p
+          className="text-xs font-semibold uppercase tracking-widest mb-4"
+          style={{ color: 'var(--text-secondary)', letterSpacing: '0.1em' }}
+        >
+          Related articles
+        </p>
+        <RelatedArticles
+          articleId={articleRow.id}
+          articleType={article.article_type}
+        />
+      </div>
     </div>
     </div>
   )
