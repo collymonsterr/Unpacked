@@ -31,7 +31,7 @@ export default function TrendingSection({ articles }: Props) {
         {today} — {articles.length} new article{articles.length !== 1 ? 's' : ''} today
       </p>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {articles.map((row) => {
           const art = row.article
           const img = art?.thumbnail_url
@@ -70,7 +70,7 @@ export default function TrendingSection({ articles }: Props) {
                   {TYPE_LABELS[type] ?? type.replace(/_/g, ' ')}
                 </p>
                 <h4
-                  className="text-sm font-bold leading-snug line-clamp-2"
+                  className="text-base font-bold leading-snug line-clamp-3"
                   style={{ fontFamily: 'var(--font-sora)', color: '#fff' }}
                 >
                   {art?.title}

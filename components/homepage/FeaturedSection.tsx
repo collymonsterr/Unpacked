@@ -234,7 +234,7 @@ export default function FeaturedSection({ articles }: Props) {
                     {TYPE_LABELS[type] ?? type.replace(/_/g, ' ')}
                   </p>
                   <h4
-                    className="text-xs font-bold leading-snug line-clamp-2"
+                    className="text-sm font-bold leading-snug line-clamp-2"
                     style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
                   >
                     {art?.title}

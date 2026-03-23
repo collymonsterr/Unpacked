@@ -119,8 +119,8 @@ function SortableArticleCard({
 
         <div className="p-4">
           <h3
-            className="font-bold leading-snug line-clamp-3 text-sm mb-1.5"
-            style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)', minHeight: '3.6em' }}
+            className="font-bold leading-snug line-clamp-3 text-base mb-1.5"
+            style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
           >
             {title}
           </h3>
@@ -298,7 +298,7 @@ export default function RecentArticlesGrid({ articles: initialArticles }: Props)
                 onDragEnd={handleDragEnd}
               >
                 <SortableContext items={visibleArticles.map(a => a.id)} strategy={rectSortingStrategy}>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {visibleArticles.map((row) => (
                       <SortableArticleCard
                         key={row.id}
@@ -310,7 +310,7 @@ export default function RecentArticlesGrid({ articles: initialArticles }: Props)
                 </SortableContext>
               </DndContext>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {visibleArticles.map((row) => (
                   <SortableArticleCard
                     key={row.id}

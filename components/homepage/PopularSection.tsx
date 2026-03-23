@@ -61,7 +61,7 @@ export default function PopularSection({ articles }: Props) {
                   {TYPE_LABELS[type] ?? type.replace(/_/g, ' ')}
                 </p>
                 <h4
-                  className="text-sm font-bold leading-snug line-clamp-2 mb-1"
+                  className="text-base font-bold leading-snug line-clamp-3 mb-1"
                   style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
                 >
                   {art?.title}
