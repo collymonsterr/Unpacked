@@ -624,7 +624,7 @@ General rule: ask "what are the 3-4 things the reader absolutely needs?" and bui
 export async function planArticle(query: string, options?: GenOptions): Promise<ArticlePlan> {
   const optionsPrompt = options ? buildOptionsPrompt(options) : ''
   const message = await getAnthropic().messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 2048,
     system: PLANNING_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: `Plan an article for: "${query}"${optionsPrompt}` }],
