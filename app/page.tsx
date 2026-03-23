@@ -1,5 +1,6 @@
 import Logo from '@/components/ui/Logo'
 import UserMenu from '@/components/ui/UserMenu'
+import RecentArticlesDropdown from '@/components/ui/RecentArticlesDropdown'
 import SearchForm from '@/components/SearchForm'
 import ExampleChips from '@/components/ExampleChips'
 import RecentArticlesGrid from '@/components/RecentArticlesGrid'
@@ -85,6 +86,7 @@ export default async function HomePage() {
           >
             Creators
           </a>
+          <RecentArticlesDropdown />
           <UserMenu />
         </div>
       </nav>

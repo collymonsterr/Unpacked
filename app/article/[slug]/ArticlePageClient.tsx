@@ -7,8 +7,10 @@ import ArticleView from '@/components/ArticleView'
 import Logo from '@/components/ui/Logo'
 import UserMenu from '@/components/ui/UserMenu'
 import FactCheckBar from '@/components/ui/FactCheckBar'
+import RecentArticlesDropdown from '@/components/ui/RecentArticlesDropdown'
 import { useAdminMode } from '@/hooks/useAdminMode'
 import { useUser } from '@/hooks/useUser'
+import { addRecentArticle } from '@/lib/recent-articles'
 
 interface Props {
   initialRow: ArticleRow
@@ -53,6 +55,18 @@ export default function ArticlePageClient({ initialRow }: Props) {
     localStorage.setItem(key, String(now))
     fetch(`/api/articles/${initialRow.id}/view`, { method: 'POST' }).catch(() => {})
   }, [showArticle, row.article, initialRow.id])
+
+  // Track in recent articles history (localStorage)
+  useEffect(() => {
+    if (!showArticle || !row.article) return
+    addRecentArticle({
+      title: row.article.title,
+      slug: initialRow.slug,
+      articleType: row.article.article_type,
+      thumbnailUrl: row.article.thumbnail_url ?? undefined,
+      visitedAt: Date.now(),
+    })
+  }, [showArticle, row.article, initialRow.slug])
 
   // Poll while planning, generating, or waiting for fact-check
   useEffect(() => {
@@ -99,7 +113,8 @@ export default function ArticlePageClient({ initialRow }: Props) {
         }}
       >
         <Logo size="sm" />
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <RecentArticlesDropdown />
           <UserMenu />
         </div>
       </nav>
