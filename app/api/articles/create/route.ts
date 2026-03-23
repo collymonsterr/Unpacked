@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server'
 import { after } from 'next/server'
-import { planArticle, writeArticle } from '@/lib/claude'
+import { planArticle, writeWithSonnet } from '@/lib/claude'
+import { writeWithGemini } from '@/lib/gemini-writer'
+import { runBraveResearch } from '@/lib/brave-research'
 import { enrichArticleWithImages, fetchThumbnailImage } from '@/lib/images'
 import { pickBestArticleImage } from '@/lib/imagen'
 import { runFactCheck, applyCorrections } from '@/lib/fact-check'
@@ -111,10 +113,40 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', data.id)
 
-        console.log('[create] Plan complete, now writing:', plan.title.slice(0, 50))
+        console.log('[create] Plan complete, now researching:', plan.title.slice(0, 50))
 
-        // Phase 2: Write the article
-        const rawArticle = await writeArticle(trimmedQuery, plan, generationOptions, data.id)
+        // Phase 2a: Brave pre-research
+        const length = (generationOptions?.length as 'quick' | 'standard' | 'deep') ?? 'standard'
+        const research = await runBraveResearch(
+          trimmedQuery,
+          plan.entities ?? [],
+          plan.article_type,
+          length,
+        )
+
+        // Phase 2b: Write the article
+        let rawArticle
+        const isDeep = length === 'deep'
+
+        if (isDeep) {
+          console.log('[create] Writing with Sonnet (deep mode)')
+          rawArticle = await writeWithSonnet(trimmedQuery, plan, research.summary, generationOptions, data.id)
+        } else {
+          try {
+            console.log('[create] Writing with Gemini Flash')
+            const optsParts: string[] = []
+            if (generationOptions?.length === 'quick') optsParts.push('LENGTH: Concise. 800-1200 words.')
+            if (generationOptions?.tone === 'balanced') optsParts.push('TONE: Balanced.')
+            if (generationOptions?.tone === 'casual') optsParts.push('TONE: Casual.')
+            if (generationOptions?.visual === 'minimal') optsParts.push('VISUALS: Minimal.')
+            if (generationOptions?.visual === 'maximum') optsParts.push('VISUALS: Maximum.')
+            const optsPrompt = optsParts.length > 0 ? '\n\nPREFERENCES:\n' + optsParts.join('\n') : ''
+            rawArticle = await writeWithGemini(trimmedQuery, plan, research.summary, optsPrompt, data.id)
+          } catch (geminiErr) {
+            console.log('[fallback] Gemini failed — falling back to Sonnet:', (geminiErr as Error).message)
+            rawArticle = await writeWithSonnet(trimmedQuery, plan, research.summary, generationOptions, data.id)
+          }
+        }
 
         // Phase 3: Enrich images + hero thumbnail (parallel)
         const [enrichedArticle, heroUrl] = await Promise.all([

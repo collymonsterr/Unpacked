@@ -658,7 +658,17 @@ export async function planArticle(query: string, options?: GenOptions, articleId
   return plan
 }
 
-export async function writeArticle(query: string, plan: ArticlePlan, options?: GenOptions, articleId?: string): Promise<ArticleContent> {
+/**
+ * Write article using Sonnet + pre-researched Brave data (NO web search tool).
+ * Used as fallback for Gemini failures, and as primary for "deep" articles.
+ */
+export async function writeWithSonnet(
+  query: string,
+  plan: ArticlePlan,
+  research: string,
+  options?: GenOptions,
+  articleId?: string,
+): Promise<ArticleContent> {
   if (articleId && isDuplicateCall(articleId, 'write')) {
     throw new Error('Duplicate writing call blocked')
   }
@@ -666,16 +676,13 @@ export async function writeArticle(query: string, plan: ArticlePlan, options?: G
   let lastError: Error | null = null
   const optionsPrompt = options ? buildOptionsPrompt(options) : ''
   const maxTokens = options?.length === 'quick' ? 8000 : options?.length === 'deep' ? 24000 : 16000
-  const maxSearches = options?.length === 'quick' ? 4 : options?.length === 'deep' ? 6 : 6
   const model = 'claude-sonnet-4-20250514'
 
   for (let attempt = 0; attempt < 2; attempt++) {
-    // Use streaming to keep the connection alive during long web search calls
-    const stream = getAnthropic().messages.stream({
+    const message = await getAnthropic().messages.create({
       model,
       max_tokens: maxTokens,
       system: WRITING_SYSTEM_PROMPT,
-      tools: [{ type: 'web_search_20250305' as const, name: 'web_search', max_uses: maxSearches }],
       messages: [
         {
           role: 'user',
@@ -683,17 +690,19 @@ export async function writeArticle(query: string, plan: ArticlePlan, options?: G
 
 Article type: ${plan.article_type}
 
-Visual strategy (FOLLOW THIS — it controls which section types you may use):
-${JSON.stringify(plan.visual_strategy, null, 2)}
+${plan.forbidden_components?.length ? `FORBIDDEN COMPONENTS — DO NOT USE THESE SECTION TYPES:\n${plan.forbidden_components.map(c => `- ${c}`).join('\n')}\n` : ''}
 
-${plan.forbidden_components?.length ? `FORBIDDEN COMPONENTS — DO NOT USE THESE SECTION TYPES:\n${plan.forbidden_components.map(c => `- ${c}`).join('\n')}\nThis is a hard constraint. If a section type is listed above, do NOT include it in the output.\n` : ''}
-Full article plan:
-${JSON.stringify(plan, null, 2)}${optionsPrompt}`,
+RESEARCH (from live web search — use these facts and prices):
+${research}
+
+Plan:
+- Title: ${plan.title}
+- Entities: ${plan.entities.map(e => e.name).join(', ')}
+- Sections: ${plan.sections_outline.join(', ')}
+${optionsPrompt}`,
         },
       ],
     })
-
-    const message = await stream.finalMessage()
 
     logApiCall({
       callType: 'write',
@@ -703,22 +712,27 @@ ${JSON.stringify(plan, null, 2)}${optionsPrompt}`,
       articleId,
     })
 
-    // Extract final text block (after any tool use)
     const textBlocks = message.content.filter((b) => b.type === 'text')
     const text = textBlocks[textBlocks.length - 1]?.text ?? ''
 
-    console.log('[writeArticle] stop_reason:', message.stop_reason, 'text_blocks:', textBlocks.length, 'text_length:', text.length)
+    console.log('[writeWithSonnet] attempt:', attempt + 1, 'text_length:', text.length)
 
     try {
       const article = JSON.parse(extractJSON(text)) as ArticleContent
       return stripCitations(article)
     } catch (e) {
-      console.error('[writeArticle] JSON parse failed, text preview:', text.substring(0, 500))
+      console.error('[writeWithSonnet] JSON parse failed:', (e as Error).message)
       lastError = e as Error
     }
   }
 
   throw lastError ?? new Error('Failed to parse article JSON after retries')
+}
+
+// Keep old writeArticle as alias for backward compat (now uses Sonnet + Brave, no web search)
+export async function writeArticle(query: string, plan: ArticlePlan, options?: GenOptions, articleId?: string): Promise<ArticleContent> {
+  // This function is now only called as a fallback — the generate route uses writeWithGemini or writeWithSonnet directly
+  return writeWithSonnet(query, plan, '(No pre-research available — use your knowledge carefully)', options, articleId)
 }
 
 /**
@@ -771,11 +785,10 @@ export async function refineArticle(
 
   const optionsPrompt = options ? buildOptionsPrompt(options) : ''
   const model = 'claude-sonnet-4-20250514'
-  const stream = getAnthropic().messages.stream({
+  const message = await getAnthropic().messages.create({
     model,
     max_tokens: 16000,
     system: WRITING_SYSTEM_PROMPT,
-    tools: [{ type: 'web_search_20250305' as const, name: 'web_search', max_uses: 10 }],
     messages: [
       {
         role: 'user',
@@ -797,8 +810,6 @@ Apply the refinement and return the full updated article JSON. Also append a "su
       },
     ],
   })
-
-  const message = await stream.finalMessage()
 
   logApiCall({
     callType: 'refine',
