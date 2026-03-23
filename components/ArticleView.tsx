@@ -347,69 +347,71 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
 
       {/* ─── Bottom sections ─── */}
 
-      {/* 1. Inline feedback row */}
-      <div className="mt-8">
+      {/* 1. Feedback row — centred */}
+      <div className="mt-10 mb-8">
         <ArticleFeedback articleId={articleRow.id} />
       </div>
 
-      <div className="my-6" style={{ borderTop: '1px solid var(--border)' }} />
+      <div style={{ borderTop: '1px solid var(--border)' }} />
 
-      {/* 2. Share + Export action bar */}
-      <div className="flex items-center gap-3">
-        <ShareButton
-          title={article.title}
-          url={`https://articleai-three.vercel.app/article/${articleRow.slug}`}
-          variant="bottom-row"
-        />
-        <button
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium shrink-0"
-          style={{
-            backgroundColor: 'var(--card)',
-            color: 'var(--text-secondary)',
-            border: '1px solid var(--border)',
-            fontFamily: 'var(--font-sora)',
-            cursor: 'pointer',
-          }}
-          title="Export article (coming soon)"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
-          Export
-        </button>
-      </div>
-
-      <div className="my-6" style={{ borderTop: '1px solid var(--border)' }} />
-
-      {/* 3. Make it yours — refine block */}
-      <div>
-        <p
-          className="text-xs font-semibold uppercase tracking-widest mb-4"
-          style={{ color: 'var(--text-secondary)', letterSpacing: '0.1em' }}
-        >
-          Make it yours
-        </p>
-        {chips && (
-          <div className="mb-4">
-            <SuggestionChips
-              chips={chips}
-              articleId={articleRow.id}
-              onRefine={handleRefine}
-              isRefining={isRefining}
-            />
-          </div>
-        )}
+      {/* 2. Chat-style refine input */}
+      <div className="mt-8">
         {refineError && (
           <p className="text-sm text-red-600 mb-3">{refineError}</p>
         )}
         <RefinementInput onSubmit={handleRefine} isLoading={isRefining} />
       </div>
 
+      {/* 3. Suggested refinement chips */}
+      {chips && (
+        <div className="mt-6">
+          <p
+            className="text-xs font-semibold uppercase tracking-widest mb-3"
+            style={{ color: 'var(--text-secondary)', letterSpacing: '0.1em' }}
+          >
+            Suggested refinements
+          </p>
+          <SuggestionChips
+            chips={chips}
+            articleId={articleRow.id}
+            onRefine={handleRefine}
+            isRefining={isRefining}
+          />
+        </div>
+      )}
+
+      {/* 4. Share + Export row */}
+      <div className="mt-8">
+        <div className="flex items-center gap-3">
+          <ShareButton
+            title={article.title}
+            url={`https://articleai-three.vercel.app/article/${articleRow.slug}`}
+            variant="bottom-row"
+          />
+          <button
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium shrink-0"
+            style={{
+              backgroundColor: 'var(--card)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border)',
+              fontFamily: 'var(--font-sora)',
+              cursor: 'pointer',
+            }}
+            title="Export article (coming soon)"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Export
+          </button>
+        </div>
+      </div>
+
       <div className="my-10" style={{ borderTop: '1px solid var(--border)' }} />
 
-      {/* 4. Related articles */}
+      {/* 5. Related articles */}
       <div>
         <p
           className="text-xs font-semibold uppercase tracking-widest mb-4"
