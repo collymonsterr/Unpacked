@@ -7,7 +7,6 @@ import ArticleView from '@/components/ArticleView'
 import Logo from '@/components/ui/Logo'
 import UserMenu from '@/components/ui/UserMenu'
 import FactCheckBar from '@/components/ui/FactCheckBar'
-import RecentArticlesDropdown from '@/components/ui/RecentArticlesDropdown'
 import { useAdminMode } from '@/hooks/useAdminMode'
 import { useUser } from '@/hooks/useUser'
 import { addRecentArticle } from '@/lib/recent-articles'
@@ -113,8 +112,7 @@ export default function ArticlePageClient({ initialRow }: Props) {
         }}
       >
         <Logo size="sm" />
-        <div className="ml-auto flex items-center gap-2">
-          <RecentArticlesDropdown />
+        <div className="ml-auto">
           <UserMenu />
         </div>
       </nav>
