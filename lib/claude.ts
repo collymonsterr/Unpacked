@@ -17,77 +17,111 @@ function getAnthropic(): Anthropic {
 
 const CURRENT_DATE = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
-const PLANNING_SYSTEM_PROMPT = `You are an article planning engine for ArticleAI. Given a user query, you MUST first classify the query into the correct article type, then design the optimal structure and visual strategy for that type.
+const PLANNING_SYSTEM_PROMPT = `You are an article planning engine for ArticleAI. Given a user query, you MUST first make one hard classification decision, then apply strict rules for that type.
 
 IMPORTANT: Today's date is ${CURRENT_DATE}. The current year is ${new Date().getFullYear()}. All content, prices, data, and references must reflect the current year unless the query specifically asks about a historical period. Do NOT default to 2024 or 2025 — we are in ${new Date().getFullYear()}.
 
-STEP 1: CLASSIFY THE ARTICLE TYPE
+═══════════════════════════════════════════════════════════════
+STEP 1: CLASSIFY THE ARTICLE TYPE (HARD DECISION — MAKE THIS FIRST)
+═══════════════════════════════════════════════════════════════
 
-Choose exactly one:
-- buyer_guide: Multiple products in a category, ranked with a clear winner ("Best X under $Y", "Top 10 X")
-- comparison: Two specific products/things compared head-to-head ("X vs Y")
-- decision_guide: A buyer guide with a specific constraint, filter, or decision criteria ("Best X for Y situation")
-- explainer: Educational/conceptual content explaining how something works ("What is X", "How does X work", "X explained")
-- news: Current events, recent developments, breaking stories ("What happened with X", "Why did X")
-- planning: Planning guides, travel, life decisions, strategies ("How to plan X", "Best cities for X", "How to start X")
-- trend_analysis: Market overviews, industry trends, data-driven analysis ("State of X", "X market overview", "Future of X")
-- tutorial: Step-by-step instructional content ("How to X", "Guide to doing X", "X tutorial")
+Read the query language and user intent. Choose EXACTLY ONE type. This decision controls everything that follows.
 
-CRITICAL CLASSIFICATION RULES:
-- "What is compound interest?" → explainer (NOT buyer_guide)
+CLASSIFICATION MAP:
+- "Best…" or "top…" or "recommended…" → buyer_guide
+- "X vs Y" or "X or Y" or "X compared to Y" → comparison
+- "How does…" or "What is…" or "Why does…" or "…explained" → explainer
+- "How to…" or "How do I…" or "Steps to…" or "Guide to doing…" → tutorial
+- "Trends in…" or "Most popular…" or "Fastest growing…" or "State of…" → trend_analysis
+- "Should I…" or "Is it worth…" or "Are X worth it?" → decision_guide
+- "How much does…" or "Can I afford…" or "What will it cost…" → decision_guide (calculator-driven)
+
+The valid types are:
+- buyer_guide: Ranking multiple purchasable products with a winner
+- comparison: Head-to-head between exactly 2-3 specific things
+- decision_guide: Helping the reader make a personal decision (often with a calculator)
+- explainer: Teaching a concept or answering "how/what/why"
+- tutorial: Step-by-step instructions to accomplish something
+- trend_analysis: Data-driven market or industry analysis
+- planning: Travel, lifestyle, or strategic planning guides
+- news: Current events and recent developments
+
+EXAMPLES:
+- "What is compound interest?" → explainer (NOT buyer_guide, NOT tutorial)
 - "Best laptops under $1000" → buyer_guide
-- "iPhone vs Samsung" → comparison
-- "State of the EV market" → trend_analysis
-- "How to start investing" → tutorial
+- "iPhone 17 vs Samsung S26" → comparison
+- "How to start investing with $1000" → tutorial
+- "Should I buy or lease a car?" → decision_guide
+- "State of the EV market in 2026" → trend_analysis
 - "Best cities for digital nomads" → planning
-- If the query is about UNDERSTANDING or LEARNING → explainer or tutorial
-- If the query is about BUYING or CHOOSING a product → buyer_guide, comparison, or decision_guide
-- If the query is about DATA, MARKETS, or TRENDS → trend_analysis
-- Only use product_card sections for articles about actual purchasable products
 
-STEP 2: DETERMINE VISUAL STRATEGY
+═══════════════════════════════════════════════════════════════
+STEP 2: APPLY STRICT RULES FOR THE CLASSIFIED TYPE
+═══════════════════════════════════════════════════════════════
 
-Based on the article type, set the visual_strategy object. This controls which layout components are appropriate:
+After classifying, apply the REQUIRED, ALLOWED, and FORBIDDEN rules below. These are hard constraints, not suggestions.
 
-For PRODUCT-focused types (buyer_guide, comparison, decision_guide):
-  - image_density: "high" or "medium"
-  - use_product_cards: true
-  - use_image_gallery: true (buyer_guide, comparison) or false (decision_guide)
-  - use_comparison_table: true
-  - use_charts: true (bar charts for price/rating comparisons, comparison matrices)
-  - use_stat_cards: true (price range, number reviewed, etc.)
+BUYER GUIDE:
+  REQUIRED: product_card (one per recommended product), comparison_table, clear verdict naming a winner
+  ALLOWED: product images, specs, pros/cons per product, price information, bar_chart, comparison_matrix, stat_cards, community_insights, price_tier_breakdown, warning_box
+  FORBIDDEN: long theoretical explanations, concept diagrams unrelated to products, generic filler content_sections that don't set up the recommendations
 
-For KNOWLEDGE-focused types (explainer, tutorial):
-  - image_density: "none" or "low"
-  - use_product_cards: false — NEVER use product cards for explainers
-  - use_image_gallery: false — NEVER use image galleries for abstract concepts
-  - use_comparison_table: false (unless comparing non-product concepts)
-  - use_charts: true (line charts for trends, bar charts for data, pie charts for breakdowns)
-  - use_worked_examples: true (step-by-step calculations, scenarios, demonstrations)
-  - use_callout_boxes: true (key definitions, important concepts, warnings)
-  - use_stat_cards: true (key numbers and facts)
-  - use_timelines: true if topic has historical context
+COMPARISON:
+  REQUIRED: comparison_table (side-by-side), winner declared per category, overall verdict
+  ALLOWED: brief specs per option, one bar_chart or comparison_matrix if data supports it, stat_cards, community_insights, head_to_head
+  FORBIDDEN: product_card sections, large image galleries, long introductory theory sections, price_tier_breakdown
 
-For DATA-focused types (trend_analysis, news):
-  - image_density: "low"
-  - use_product_cards: false
-  - use_image_gallery: false
-  - use_charts: true (3-5 visualisations — this is the primary visual format)
-  - use_stat_cards: true (headline numbers)
-  - use_timelines: true
-  - use_quote_blocks: true
-  - use_callout_boxes: true
+EXPLAINER:
+  REQUIRED: clear logical structure, plain language definitions, worked examples or scenarios
+  ALLOWED: line_chart, bar_chart, pie_chart, stat_cards (to illustrate concepts with data), one interactive_calculator if directly relevant to the concept, warning_box for common misconceptions
+  ALLOWED (conditional images): up to 3 editorial images but ONLY where ALL THREE conditions are true: (1) the subject is concrete and photographable, (2) the image would appear in a real magazine article on this topic, (3) a search will return a real photo not a logo/icon/stock cliché. If any condition fails, include NO image for that section.
+  FORBIDDEN: product_card, product image galleries, comparison_table, affiliate-style recommendation sections, price_tier_breakdown, who_this_is_for
 
-For PLANNING types (planning):
-  - image_density: "medium"
-  - use_product_cards: false (unless recommending specific purchasable items)
-  - use_comparison_table: true (comparing options, cities, strategies)
-  - use_charts: true
-  - use_stat_cards: true
-  - use_worked_examples: true
-  - use_timelines: true (if planning involves phases/stages)
+TUTORIAL (How-To):
+  REQUIRED: numbered steps, clear outcome stated upfront in the verdict
+  ALLOWED: stat_cards for key metrics, warning_box for common mistakes, one interactive_calculator if the topic involves personalised numbers
+  FORBIDDEN: product_card, comparison_table, price_tier_breakdown, large image galleries
 
-STEP 3: PLAN ENTITIES
+DECISION GUIDE (Opinion/Verdict + Calculator-driven):
+  REQUIRED: a clear stated opinion or recommendation with reasoning, at least one data visualisation supporting the argument
+  ALLOWED: interactive_calculator as centrepiece (REQUIRED if the query involves personal numbers like cost, affordability, worth), comparison_table if comparing 2-3 options, bar_chart, stat_cards, community_insights
+  FORBIDDEN: product_card (discuss options in content_sections instead), large image galleries, long neutral balanced sections that avoid taking a position
+
+TREND ANALYSIS:
+  REQUIRED: 3-5 data charts (line_chart, bar_chart, pie_chart, treemap), sourced statistics, rankings or ordered lists
+  ALLOWED: stat_cards, timeline, brief commentary per item, comparison_table for summary
+  FORBIDDEN: product_card, interactive_calculator, tutorial steps, who_this_is_for
+
+PLANNING:
+  REQUIRED: specific actionable recommendations with real numbers/places/timelines, comparison_table or ranked list
+  ALLOWED: stat_cards, bar_chart, image_section (for destinations/places), timeline if planning involves phases, interactive_calculator if budget-related
+  FORBIDDEN: product_card (unless recommending specific purchasable items), long abstract theory sections
+
+NEWS:
+  REQUIRED: lead with the most important insight, stat_cards for headline numbers
+  ALLOWED: timeline for chronology, bar_chart, line_chart, community_insights
+  FORBIDDEN: product_card, interactive_calculator, tutorial steps, price_tier_breakdown
+
+═══════════════════════════════════════════════════════════════
+STEP 3: SET VISUAL STRATEGY AND FORBIDDEN COMPONENTS
+═══════════════════════════════════════════════════════════════
+
+Based on the type rules above, set the visual_strategy AND populate forbidden_components.
+
+The forbidden_components array MUST list every component type that is FORBIDDEN for this article type. The writing step will treat this as a hard constraint. Examples:
+- explainer → forbidden_components: ["product_card", "comparison_table", "price_tier_breakdown", "who_this_is_for"]
+- buyer_guide → forbidden_components: []
+- comparison → forbidden_components: ["product_card", "price_tier_breakdown"]
+- tutorial → forbidden_components: ["product_card", "comparison_table", "price_tier_breakdown"]
+
+Visual strategy rules:
+- Product articles (buyer_guide) → product photography, image_density "high"
+- Concept articles (explainer, tutorial) → diagrams/charts only, image_density "none" or "low"
+- Finance/decision articles (decision_guide) → charts and calculator, image_density "low"
+- Data articles (trend_analysis, news) → charts as primary visual, image_density "low"
+- Planning articles → contextual photos of places, image_density "medium"
+
+If no visual type is REQUIRED or ALLOWED for a section, no visual should be generated for that section. Visuals must earn their place — they are not decoration.
 
 For the entities array: identify every specific product, brand, or item that will be featured AND needs an image.
 - For buyer_guide/comparison/decision_guide: list products with image search queries
@@ -100,9 +134,9 @@ CRITICAL: The search_query for each entity MUST be optimised for finding officia
 - Example: "Samsung Galaxy S24 official press image" NOT "Galaxy phone"
 - Example: "Sony WH-1000XM5 headphones official product photo" NOT "noise cancelling headphones"
 
-STEP 4: PLAN SECTIONS
+STEP 5: PLAN SECTIONS
 
-For sections_outline: design the article structure. Follow this recommended flow for product articles:
+For sections_outline: design the article structure following the REQUIRED/ALLOWED rules for the classified type. NEVER include section types listed in forbidden_components. Follow this recommended flow for product articles:
 
 1. Quick Verdict (always first)
 2. Executive Summary (key takeaways + warnings)
@@ -201,6 +235,7 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
   "research_queries": ["string"],
   "hero_image_query": "string",
   "hero_image_subject": "string",
+  "forbidden_components": ["string — list every section type FORBIDDEN for this article type. The writing step will hard-block these."],
   "loading_messages": ["string"],
   "suggestion_chips": {
     "refinements": ["string"],
@@ -317,15 +352,27 @@ Use web search to research thoroughly.
 
 LAYOUT AND VISUAL RULES:
 
-The article plan includes a visual_strategy object that tells you which components to use. YOU MUST FOLLOW IT.
+The article plan includes a visual_strategy object AND a forbidden_components array. YOU MUST FOLLOW BOTH.
 
-CRITICAL: Only use section types that match the visual_strategy:
+═══════════════════════════════════════════════════════════════
+FORBIDDEN COMPONENTS — HARD CONSTRAINT
+═══════════════════════════════════════════════════════════════
+The plan contains a "forbidden_components" array listing section types that are BANNED for this article. You MUST NOT generate any section whose type appears in this list. This is not a suggestion — it is a hard rule.
+
+For example, if forbidden_components includes "product_card", you must NOT output any product_card sections. Discuss products in content_sections instead.
+
+If forbidden_components includes "comparison_table", do NOT output comparison_table sections.
+
+Check the forbidden_components list BEFORE writing each section. If the section type is forbidden, skip it entirely.
+═══════════════════════════════════════════════════════════════
+
+Visual strategy rules:
 - If use_product_cards is FALSE → do NOT output any "product_card" sections. Use content_section instead to discuss items.
 - If use_image_gallery is FALSE → do NOT add decorative image entities.
-- If use_comparison_table is FALSE → do NOT output "comparison_table" sections (unless comparing non-product concepts like strategies or approaches).
+- If use_comparison_table is FALSE → do NOT output "comparison_table" sections.
 - If use_charts is TRUE → include data visualisations throughout the article.
-- If use_worked_examples is TRUE → include step-by-step calculations, scenarios, or demonstrations within content_section blocks. Show the math. Walk through examples.
-- If use_callout_boxes is TRUE → use warning_box for important caveats, common mistakes, and key definitions.
+- If use_worked_examples is TRUE → include step-by-step calculations, scenarios, or demonstrations within content_section blocks.
+- If use_callout_boxes is TRUE → use warning_box for important caveats and key definitions.
 - If use_timelines is TRUE → include timeline sections where historical context is relevant.
 - If use_stat_cards is TRUE → include stat_cards near the top for "at a glance" key numbers.
 
@@ -620,6 +667,7 @@ Article type: ${plan.article_type}
 Visual strategy (FOLLOW THIS — it controls which section types you may use):
 ${JSON.stringify(plan.visual_strategy, null, 2)}
 
+${plan.forbidden_components?.length ? `FORBIDDEN COMPONENTS — DO NOT USE THESE SECTION TYPES:\n${plan.forbidden_components.map(c => `- ${c}`).join('\n')}\nThis is a hard constraint. If a section type is listed above, do NOT include it in the output.\n` : ''}
 Full article plan:
 ${JSON.stringify(plan, null, 2)}${optionsPrompt}`,
         },

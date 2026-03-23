@@ -48,6 +48,7 @@ export interface ArticlePlan {
   loading_messages?: string[]
   hero_image_query?: string
   hero_image_subject?: string
+  forbidden_components?: string[]
   suggestion_chips: SuggestionChips
 }
 
