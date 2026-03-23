@@ -1,6 +1,33 @@
-// jsPDF is loaded dynamically to avoid Turbopack build issues with fflate
+// jsPDF loaded from CDN to avoid Turbopack build issues with fflate
 import type { ArticleContent, ContentSection, ProductCard } from '@/types/article'
 type JsPDFType = import('jspdf').jsPDF
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let cachedJsPDF: any = null
+
+async function loadJsPDF() {
+  if (cachedJsPDF) return cachedJsPDF
+
+  // Check if already loaded globally (e.g. from a previous call)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if ((window as any).jspdf?.jsPDF) {
+    cachedJsPDF = (window as any).jspdf.jsPDF
+    return cachedJsPDF
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js'
+    script.onload = () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      cachedJsPDF = (window as any).jspdf?.jsPDF
+      if (cachedJsPDF) resolve(cachedJsPDF)
+      else reject(new Error('jsPDF not found after loading'))
+    }
+    script.onerror = () => reject(new Error('Failed to load jsPDF'))
+    document.head.appendChild(script)
+  })
+}
 
 const ORANGE = '#d4621a'
 const DARK = '#333333'
@@ -59,10 +86,9 @@ function wrapAndWrite(
 }
 
 export async function generateArticlePDF(article: ArticleContent, slug: string) {
-  // Dynamic import via eval to prevent Turbopack static analysis of fflate
-  // eslint-disable-next-line no-eval
-  const jspdfModule = await (eval('import("jspdf")') as Promise<{ jsPDF: new (opts: Record<string, string>) => JsPDFType }>)
-  const doc = new jspdfModule.jsPDF({ unit: 'mm', format: 'a4' })
+  // Load jsPDF from CDN to avoid Turbopack/fflate build issues
+  const jsPDFClass = await loadJsPDF()
+  const doc = new jsPDFClass({ unit: 'mm', format: 'a4' }) as JsPDFType
 
   let y = MARGIN_TOP
 

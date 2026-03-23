@@ -42,7 +42,7 @@ export default function AboutPage() {
           className="text-2xl md:text-3xl font-bold mb-8 text-center"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
         >
-          You&apos;ve seen this before.
+          You&apos;ve seen this before
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
@@ -81,7 +81,7 @@ export default function AboutPage() {
           className="text-3xl md:text-4xl lg:text-5xl font-extrabold"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--accent)' }}
         >
-          So we built something different.
+          So we built something different
         </p>
       </section>
 
@@ -91,7 +91,7 @@ export default function AboutPage() {
           className="text-2xl md:text-3xl font-bold mb-8 text-center"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
         >
-          ArticleAI fixes all of it.
+          ArticleAI fixes all of it
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
@@ -131,7 +131,7 @@ export default function AboutPage() {
           className="text-3xl md:text-4xl lg:text-5xl font-extrabold"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--accent)' }}
         >
-          Real opinions from real people.
+          Real opinions from real people
         </p>
       </section>
 
@@ -345,7 +345,7 @@ export default function AboutPage() {
           className="text-2xl md:text-3xl font-bold mb-10 text-center"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
         >
-          Type a question. Get a complete article.
+          Type a question. Get a complete article
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
@@ -388,7 +388,7 @@ export default function AboutPage() {
           className="text-2xl md:text-3xl font-bold mb-4"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
         >
-          Fact-checked by an independent AI agent.
+          Fact-checked by an independent AI agent
         </h2>
         <p className="text-base mb-8 max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
           After every article is written, Google Gemini independently verifies every price, spec, and claim. If it finds errors, it corrects them and shows you exactly what changed.
@@ -419,7 +419,7 @@ export default function AboutPage() {
           className="text-2xl md:text-3xl font-bold mb-4"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
         >
-          Know your niche? Build your reputation.
+          Know your niche? Build your reputation
         </h2>
         <p className="text-base mb-6 max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
           Create articles about topics you know. Share them with your audience. Every recommendation earns affiliate revenue — and creators get a share. Your name, your expertise, your earnings.
@@ -439,7 +439,7 @@ export default function AboutPage() {
           className="text-2xl md:text-3xl font-bold mb-8"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
         >
-          Try it. Takes 2 minutes.
+          Try it. Takes 2 minutes
         </h2>
         <SearchForm autoFocus={false} />
         <ExampleChips existingQueries={[]} />
