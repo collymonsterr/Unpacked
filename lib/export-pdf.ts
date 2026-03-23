@@ -17,7 +17,7 @@ async function loadJsPDF() {
 
   return new Promise((resolve, reject) => {
     const script = document.createElement('script')
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js'
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.3/jspdf.umd.min.js'
     script.onload = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       cachedJsPDF = (window as any).jspdf?.jsPDF
