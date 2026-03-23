@@ -55,7 +55,16 @@ export default function FeaturedSection({ articles }: Props) {
   const heroArt = heroArticle.article
   const heroType = heroArt?.article_type ?? ''
   const heroDescription = heroArt?.executive_summary?.short_answer ?? heroArt?.quick_verdict?.one_liner ?? ''
-  const heroVerdict = heroArt?.quick_verdict?.recommendation ?? ''
+  // Verdict fallback chain: recommendation → one_liner → first key_takeaway
+  const heroVerdict = (() => {
+    const rec = heroArt?.quick_verdict?.recommendation
+    if (rec) return rec.split(';')[0].trim()
+    const oneLiner = heroArt?.quick_verdict?.one_liner
+    if (oneLiner) return oneLiner
+    const takeaway = heroArt?.executive_summary?.key_takeaways?.[0]
+    if (takeaway) return takeaway
+    return ''
+  })()
   const heroImg = heroArt?.thumbnail_url
   const heroReadTime = heroArt ? getReadingTime(heroArt) : 0
   const heroDate = new Date(heroArticle.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -83,7 +92,7 @@ export default function FeaturedSection({ articles }: Props) {
             boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
           }}
         >
-          <div className="relative" style={{ height: '260px' }}>
+          <div className="relative" style={{ height: '220px' }}>
             {heroImg ? (
               <Image
                 src={heroImg}
@@ -96,15 +105,15 @@ export default function FeaturedSection({ articles }: Props) {
               <div className="w-full h-full" style={{ backgroundColor: 'var(--accent-light)' }} />
             )}
           </div>
-          <div className="p-4 flex-1 flex flex-col">
+          <div className="p-4 flex-1 flex flex-col gap-0">
             {/* 1. Category badge */}
-            <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--accent)' }}>
+            <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--accent)' }}>
               {TYPE_LABELS[heroType] ?? heroType.replace(/_/g, ' ')}
             </p>
 
             {/* 2. Title */}
             <h3
-              className="text-lg font-bold leading-snug mb-2 line-clamp-3"
+              className="text-lg font-bold leading-snug mb-1.5 line-clamp-2"
               style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
             >
               {heroArt?.title}
@@ -112,7 +121,7 @@ export default function FeaturedSection({ articles }: Props) {
 
             {/* 3. Description */}
             {heroDescription && (
-              <p className="text-xs leading-relaxed mb-3 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-xs leading-relaxed mb-2 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
                 {heroDescription}
               </p>
             )}
@@ -120,7 +129,7 @@ export default function FeaturedSection({ articles }: Props) {
             {/* 4. Verdict box */}
             {heroVerdict && (
               <div
-                className="rounded-lg px-3 py-2.5 mb-3"
+                className="rounded-lg px-3 py-2 mb-2"
                 style={{ backgroundColor: '#f0efed' }}
               >
                 <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-secondary)' }}>
