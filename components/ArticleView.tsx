@@ -42,7 +42,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
   const [isRegeneratingImages, setIsRegeneratingImages] = useState(false)
   const [isRegeneratingArticle, setIsRegeneratingArticle] = useState(false)
   const [toolbarBusy, setToolbarBusy] = useState<string | null>(null)
-  const [exportState, setExportState] = useState<'idle' | 'generating' | 'done'>('idle')
+  const [exportState] = useState<'idle' | 'generating' | 'done'>('idle')
   const hasMissingImages = useMemo(() => {
     const productCards = article.sections.filter(
       (s): s is ProductCard => s.type === 'product_card'
@@ -346,17 +346,17 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
         />
       )}
 
-      {/* ─── Bottom sections ─── */}
+      {/* ─── Bottom sections (hidden in print) ─── */}
 
       {/* 1. Feedback row — centred */}
-      <div className="mt-10 mb-8">
+      <div className="mt-10 mb-8" data-no-print>
         <ArticleFeedback articleId={articleRow.id} />
       </div>
 
       <div style={{ borderTop: '1px solid var(--border)' }} />
 
       {/* 2. Chat-style refine input */}
-      <div className="mt-8">
+      <div className="mt-8" data-no-print>
         {refineError && (
           <p className="text-sm text-red-600 mb-3">{refineError}</p>
         )}
@@ -365,7 +365,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
 
       {/* 3. Two-column: Refinements + Related topics */}
       {chips && (chips.refinements.length > 0 || chips.related.length > 0) && (
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8" data-no-print>
           {/* Left: Suggested Refinements */}
           <div>
             <p
@@ -395,51 +395,38 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
       )}
 
       {/* 4. Share + Export row — aligned to two-column grid */}
-      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3" data-no-print>
         <ShareButton
           title={article.title}
           url={`https://articleai-three.vercel.app/article/${articleRow.slug}`}
           variant="bottom-row"
         />
         <button
-          onClick={async () => {
-            if (exportState !== 'idle') return
-            setExportState('generating')
-            try {
-              const { generateArticlePDF } = await import('@/lib/export-pdf')
-              await generateArticlePDF(article, articleRow.slug)
-              setExportState('done')
-              setTimeout(() => setExportState('idle'), 2000)
-            } catch (err) {
-              console.error('[export-pdf]', err)
-              setExportState('idle')
-            }
-          }}
-          disabled={exportState === 'generating'}
+          onClick={() => window.print()}
           className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
           style={{
-            backgroundColor: exportState === 'done' ? '#059669' : 'var(--card)',
-            color: exportState === 'done' ? '#fff' : 'var(--text-secondary)',
-            border: exportState === 'done' ? '1px solid #059669' : '1px solid var(--border)',
+            backgroundColor: 'var(--card)',
+            color: 'var(--text-secondary)',
+            border: '1px solid var(--border)',
             fontFamily: 'var(--font-sora)',
-            cursor: exportState === 'generating' ? 'wait' : 'pointer',
-            opacity: exportState === 'generating' ? 0.6 : 1,
+            cursor: 'pointer',
           }}
-          title="Download article as PDF"
+          title="Print or save as PDF"
+          data-no-print
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
-          {exportState === 'generating' ? 'Generating…' : exportState === 'done' ? 'Downloaded!' : 'Export'}
+          Export PDF
         </button>
       </div>
 
-      <div className="my-10" style={{ borderTop: '1px solid var(--border)' }} />
+      <div className="my-10" style={{ borderTop: '1px solid var(--border)' }} data-no-print />
 
       {/* 5. Related articles */}
-      <div>
+      <div data-no-print>
         <p
           className="text-xs font-semibold uppercase tracking-widest mb-4"
           style={{ color: 'var(--text-secondary)', letterSpacing: '0.1em' }}

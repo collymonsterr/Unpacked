@@ -175,3 +175,62 @@ h1, h2, h3, h4, h5, h6 {
     display: block;
   }
 }
+
+/* ─── Print styles for PDF export ─── */
+@media print {
+  /* Hide everything except the article content */
+  nav,
+  .article-sidebar-nav,
+  .sticky-logo-bar,
+  .fact-check-sticky-bar,
+  [data-no-print] {
+    display: none !important;
+  }
+
+  /* Reset layout for print */
+  .article-page-layout {
+    display: block !important;
+  }
+
+  /* Clean up the article content area */
+  body {
+    background: white !important;
+    color: #1A1A1A !important;
+    font-size: 11pt !important;
+    line-height: 1.6 !important;
+  }
+
+  /* Ensure images print */
+  img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  /* Avoid page breaks in the middle of sections */
+  .mb-8, .mb-6, .mb-4 {
+    page-break-inside: avoid;
+  }
+
+  /* Keep headings with their content */
+  h1, h2, h3, h4 {
+    page-break-after: avoid;
+  }
+
+  /* Print-friendly links */
+  a {
+    color: #1A1A1A !important;
+    text-decoration: underline !important;
+  }
+
+  /* Add article URL to the bottom */
+  .article-page-layout::after {
+    content: "ArticleAI — articleai-three.vercel.app";
+    display: block;
+    text-align: center;
+    font-size: 9pt;
+    color: #94918D;
+    margin-top: 2em;
+    padding-top: 1em;
+    border-top: 1px solid #E8E8E5;
+  }
+}
