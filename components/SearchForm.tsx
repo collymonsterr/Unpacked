@@ -35,6 +35,7 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
   const [options, setOptions] = useState<GenerationOptions>(DEFAULT_OPTIONS)
   const [showOptions, setShowOptions] = useState(false)
   const [loadingMsgCount, setLoadingMsgCount] = useState(0)
+  const [cachedResult, setCachedResult] = useState<{ slug: string; title: string } | null>(null)
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const router = useRouter()
 
@@ -84,6 +85,45 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
     }
   }, [isLoading])
 
+  async function handleForceNew() {
+    setIsLoading(true)
+    setCachedResult(null)
+    setError(null)
+
+    try {
+      const trimmed = query.trim()
+      const res = await fetch('/api/articles/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: trimmed, options, forceNew: true }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error ?? 'Failed to generate article')
+      }
+
+      const { id, slug } = await res.json()
+      setPendingArticle(id, slug)
+
+      try {
+        const owned = JSON.parse(localStorage.getItem('owned_articles') ?? '[]')
+        owned.push(id)
+        localStorage.setItem('owned_articles', JSON.stringify(owned))
+      } catch {}
+
+      try {
+        const count = parseInt(localStorage.getItem('articles_generated') ?? '0', 10)
+        localStorage.setItem('articles_generated', String(count + 1))
+      } catch {}
+
+      router.push(`/article/${slug}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
+      setIsLoading(false)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const trimmed = query.trim()
@@ -104,7 +144,16 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
         throw new Error(data.error ?? 'Failed to generate article')
       }
 
-      const { id, slug } = await res.json()
+      const data = await res.json()
+
+      // Handle cached article — show the user an option instead of redirecting
+      if (data.cached) {
+        setIsLoading(false)
+        setCachedResult({ slug: data.slug, title: data.cachedTitle })
+        return
+      }
+
+      const { id, slug } = data
 
       // Save pending article for recovery
       setPendingArticle(id, slug)
@@ -284,6 +333,37 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
       {showOptions && (
         <div className="mt-3">
           <ArticleOptions value={options} onChange={setOptions} />
+        </div>
+      )}
+
+      {/* Cached article notification */}
+      {cachedResult && (
+        <div
+          className="mt-4 rounded-xl p-4"
+          style={{ backgroundColor: 'var(--accent-light)', border: '1px solid #f0d5be' }}
+        >
+          <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-sora)' }}>
+            We recently wrote an article on this topic
+          </p>
+          <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
+            &ldquo;{cachedResult.title}&rdquo;
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push(`/article/${cachedResult.slug}`)}
+              className="px-4 py-2 rounded-lg text-sm font-semibold"
+              style={{ backgroundColor: 'var(--accent)', color: '#fff', cursor: 'pointer' }}
+            >
+              Read it →
+            </button>
+            <button
+              onClick={handleForceNew}
+              className="px-4 py-2 rounded-lg text-sm font-medium"
+              style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)', cursor: 'pointer' }}
+            >
+              Generate fresh article anyway
+            </button>
+          </div>
         </div>
       )}
 

@@ -666,7 +666,7 @@ export async function writeArticle(query: string, plan: ArticlePlan, options?: G
   let lastError: Error | null = null
   const optionsPrompt = options ? buildOptionsPrompt(options) : ''
   const maxTokens = options?.length === 'quick' ? 8000 : options?.length === 'deep' ? 24000 : 16000
-  const maxSearches = options?.length === 'quick' ? 5 : options?.length === 'deep' ? 15 : 10
+  const maxSearches = options?.length === 'quick' ? 4 : options?.length === 'deep' ? 6 : 6
   const model = 'claude-sonnet-4-20250514'
 
   for (let attempt = 0; attempt < 2; attempt++) {

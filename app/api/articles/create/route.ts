@@ -7,6 +7,7 @@ import { runFactCheck, applyCorrections } from '@/lib/fact-check'
 import { getSupabaseAdmin, createServerSupabase } from '@/lib/supabase'
 import { generateUniqueSlug } from '@/lib/slug'
 import { checkRateLimit, getRateLimitInfo } from '@/lib/rate-limit'
+import { findCachedArticle } from '@/lib/query-cache'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,6 +20,20 @@ export async function POST(request: NextRequest) {
     }
 
     const trimmedQuery = query.trim()
+    const forceNew = body?.forceNew === true
+
+    // Check for cached similar article (skip if user explicitly wants a new one)
+    if (!forceNew) {
+      const cached = await findCachedArticle(trimmedQuery)
+      if (cached) {
+        return Response.json({
+          id: cached.id,
+          slug: cached.slug,
+          cached: true,
+          cachedTitle: cached.title,
+        })
+      }
+    }
 
     // Check if user is authenticated and load their preferences
     let userId: string | undefined
