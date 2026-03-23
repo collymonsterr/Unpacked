@@ -19,16 +19,25 @@ interface Props {
 
 export default function ArticlePageClient({ initialRow }: Props) {
   const [row, setRow] = useState(initialRow)
-  const [wasGenerating] = useState(
+
+  // Determine if article is already complete on initial load
+  const articleAlreadyComplete = (initialRow.status === 'complete' || initialRow.status === 'verified') && !!initialRow.article
+
+  // showArticle: true when we should render ArticleView
+  const [showArticle, setShowArticle] = useState(articleAlreadyComplete)
+
+  // fadeState controls opacity transitions
+  const [fadeState, setFadeState] = useState<'generating' | 'transitioning' | 'article'>(
+    articleAlreadyComplete ? 'article' : 'generating'
+  )
+
+  // Track whether this article was/is being generated (reactive — updates with row.status)
+  const isGenerating = row.status === 'generating' || row.status === 'planning'
+  const wasEverGenerating = useRef(
     initialRow.status === 'generating' || initialRow.status === 'planning'
   )
-  const [showArticle, setShowArticle] = useState(
-    // If we load a completed article directly (not freshly generated), show it immediately
-    (initialRow.status === 'complete' || initialRow.status === 'verified') && !!initialRow.article
-  )
-  const [fadeState, setFadeState] = useState<'generating' | 'transitioning' | 'article'>(
-    showArticle ? 'article' : 'generating'
-  )
+  if (isGenerating) wasEverGenerating.current = true
+
   const isAdmin = useAdminMode()
   const { user } = useUser()
   const isOwner = isAdmin || (user != null && row.user_id === user.id)
@@ -47,12 +56,10 @@ export default function ArticlePageClient({ initialRow }: Props) {
   // Track view (debounced: 1 view per article per 5 minutes via localStorage)
   useEffect(() => {
     if (!showArticle || !row.article) return
-
     const key = `viewed_${initialRow.id}`
     const lastViewed = localStorage.getItem(key)
     const now = Date.now()
     if (lastViewed && now - parseInt(lastViewed, 10) < 5 * 60 * 1000) return
-
     localStorage.setItem(key, String(now))
     fetch(`/api/articles/${initialRow.id}/view`, { method: 'POST' }).catch(() => {})
   }, [showArticle, row.article, initialRow.id])
@@ -72,14 +79,15 @@ export default function ArticlePageClient({ initialRow }: Props) {
   const [timedOut, setTimedOut] = useState(false)
   const pollStartRef = useRef(Date.now())
 
-  // Poll while planning, generating, or waiting for fact-check
+  // Poll while article is not yet verified
   useEffect(() => {
+    // Stop polling when verified or errored
     if (row.status === 'verified' || row.status === 'error') return
-    if (showArticle && row.status === 'complete' && !wasGenerating) return
+    // Stop polling when showing a completed article that wasn't freshly generated
+    if (showArticle && row.status === 'complete' && !wasEverGenerating.current) return
     if (timedOut) return
 
     const interval = setInterval(() => {
-      // Timeout after 3 minutes
       if (Date.now() - pollStartRef.current > 3 * 60 * 1000) {
         setTimedOut(true)
         return
@@ -87,50 +95,82 @@ export default function ArticlePageClient({ initialRow }: Props) {
       poll()
     }, 2500)
     return () => clearInterval(interval)
-  }, [row.status, wasGenerating, showArticle, poll, timedOut])
+  }, [row.status, showArticle, poll, timedOut])
 
   // Page Visibility API — poll immediately when tab becomes visible
   useEffect(() => {
-    if (showArticle) return
+    if (showArticle && (row.status === 'verified' || !wasEverGenerating.current)) return
     function handleVisibility() {
-      if (document.visibilityState === 'visible') {
-        poll()
-      }
+      if (document.visibilityState === 'visible') poll()
     }
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)
-  }, [showArticle, poll])
+  }, [showArticle, row.status, poll])
 
   // Clear pending article from localStorage when article is ready
   useEffect(() => {
-    if (showArticle && row.article) {
-      clearPendingArticle()
-    }
+    if (showArticle && row.article) clearPendingArticle()
   }, [showArticle, row.article])
 
-  // Handle the transition from generating to article
-  const handleArticleReady = useCallback(() => {
+  // CRITICAL: Direct completion detection
+  // If the article becomes complete/verified and has content, show it — regardless
+  // of whether we went through ArticleGenerating or not. This handles:
+  // - Page refresh mid-generation where status is already 'complete' on load
+  // - Fast articles that complete before ArticleGenerating even mounts
+  // - Race conditions where the rendering path was wrong
+  useEffect(() => {
     if (showArticle) return // Already showing
+    if (!row.article) return // No content yet
+
+    const isComplete = row.status === 'complete' || row.status === 'verified'
+    if (!isComplete) return
+
+    // If we were never generating (direct load of completed article), show immediately
+    if (!wasEverGenerating.current) {
+      setShowArticle(true)
+      setFadeState('article')
+      return
+    }
+
+    // If we were generating and it just completed, do the transition
+    // (This is the safety net — ArticleGenerating's onReady should handle this,
+    // but if it didn't fire for any reason, this catches it after 2 seconds)
+    const timer = setTimeout(() => {
+      if (!showArticle) {
+        clearPendingArticle()
+        setShowArticle(true)
+        setFadeState('article')
+        window.scrollTo({ top: 0 })
+      }
+    }, 2000)
+
+    return () => clearTimeout(timer)
+  }, [row.status, row.article, showArticle])
+
+  // Handle the transition from ArticleGenerating → ArticleView (called by ArticleGenerating)
+  const handleArticleReady = useCallback(() => {
+    if (showArticle) return
     clearPendingArticle()
     setFadeState('transitioning')
     setTimeout(() => {
       window.scrollTo({ top: 0 })
       setShowArticle(true)
-      requestAnimationFrame(() => {
-        setFadeState('article')
-      })
+      requestAnimationFrame(() => setFadeState('article'))
     }, 500)
   }, [showArticle])
 
   // Detect fact-check status
   const factCheckStatus: 'none' | 'checking' | 'verified' = (() => {
-    if (row.status === 'verified' && wasGenerating) return 'verified'
     if (row.status === 'verified' && row.fact_check) return 'verified'
-    if (row.status === 'complete' && wasGenerating && !row.fact_check) return 'checking'
-    // If article was just generated and is complete but fact-check hasn't started yet
-    if (row.status === 'complete' && wasGenerating) return 'checking'
+    if (row.status === 'complete' && wasEverGenerating.current && !row.fact_check) return 'checking'
+    if (row.status === 'complete' && wasEverGenerating.current) return 'checking'
     return 'none'
   })()
+
+  // Determine which view to show
+  const showError = row.status === 'error'
+  const showGenerating = !showArticle && !showError && isGenerating
+  const showSkeleton = !showArticle && !showError && !showGenerating
 
   return (
     <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
@@ -150,7 +190,7 @@ export default function ArticlePageClient({ initialRow }: Props) {
       </nav>
 
       {/* Content */}
-      {row.status === 'error' ? (
+      {showError ? (
         <div className="max-w-[900px] mx-auto px-4 py-20 text-center">
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
@@ -196,11 +236,11 @@ export default function ArticlePageClient({ initialRow }: Props) {
             articleRow={row}
             isOwner={isOwner}
             isAdmin={isAdmin}
-            isNew={wasGenerating}
+            isNew={wasEverGenerating.current}
             factCheckStatus={factCheckStatus}
           />
         </div>
-      ) : (row.status === 'generating' || row.status === 'planning') ? (
+      ) : showGenerating ? (
         <div
           style={{
             opacity: fadeState === 'transitioning' ? 0 : 1,
@@ -222,8 +262,7 @@ export default function ArticlePageClient({ initialRow }: Props) {
             }}
           />
         </div>
-      ) : (
-        /* Scenario B: Direct link loading — show skeleton with plan data if available */
+      ) : showSkeleton ? (
         <ArticleSkeleton
           title={row.plan?.title ?? row.query}
           articleType={row.plan?.article_type}
@@ -231,9 +270,9 @@ export default function ArticlePageClient({ initialRow }: Props) {
           sections={row.plan?.sections_outline ?? []}
           showHero
         />
-      )}
+      ) : null}
 
-      {/* Fixed bottom fact-check bar — show whenever we're fact-checking or verified for a fresh article */}
+      {/* Fixed bottom fact-check bar */}
       {factCheckStatus !== 'none' && (
         <FactCheckBar
           status={factCheckStatus}

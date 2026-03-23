@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import ArticleOptions, { DEFAULT_OPTIONS, type GenerationOptions } from './ArticleOptions'
 import { setPendingArticle } from '@/lib/pending-article'
@@ -16,6 +16,17 @@ const PLACEHOLDERS = [
   'Best robot vacuums for pet hair...',
 ]
 
+// Stacking messages shown immediately when user clicks Generate
+const LOADING_MESSAGES = [
+  'Starting research...',
+  'Searching the web for answers...',
+  'Finding relevant sources...',
+  'Reading expert reviews...',
+  'Checking forums and communities...',
+  'Gathering real opinions...',
+  'Preparing your article...',
+]
+
 export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean } = {}) {
   const [query, setQuery] = useState('')
   const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0])
@@ -23,6 +34,8 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
   const [error, setError] = useState<string | null>(null)
   const [options, setOptions] = useState<GenerationOptions>(DEFAULT_OPTIONS)
   const [showOptions, setShowOptions] = useState(false)
+  const [loadingMsgCount, setLoadingMsgCount] = useState(0)
+  const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const router = useRouter()
 
   // Rotate placeholder text
@@ -34,6 +47,42 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
     }, 3000)
     return () => clearInterval(interval)
   }, [])
+
+  // Tick loading messages when generating
+  useEffect(() => {
+    if (!isLoading) {
+      if (loadingIntervalRef.current) {
+        clearInterval(loadingIntervalRef.current)
+        loadingIntervalRef.current = null
+      }
+      setLoadingMsgCount(0)
+      return
+    }
+
+    // Show first message immediately
+    setLoadingMsgCount(1)
+
+    // Tick one message every 2 seconds
+    loadingIntervalRef.current = setInterval(() => {
+      setLoadingMsgCount(prev => {
+        const next = prev + 1
+        if (next >= LOADING_MESSAGES.length) {
+          if (loadingIntervalRef.current) {
+            clearInterval(loadingIntervalRef.current)
+            loadingIntervalRef.current = null
+          }
+        }
+        return Math.min(next, LOADING_MESSAGES.length)
+      })
+    }, 2000)
+
+    return () => {
+      if (loadingIntervalRef.current) {
+        clearInterval(loadingIntervalRef.current)
+        loadingIntervalRef.current = null
+      }
+    }
+  }, [isLoading])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -73,12 +122,92 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
         localStorage.setItem('articles_generated', String(count + 1))
       } catch {}
 
-      // Immediate redirect — no loading messages, no transitions
       router.push(`/article/${slug}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
       setIsLoading(false)
     }
+  }
+
+  // Loading state — replaces the form with stacking messages
+  if (isLoading) {
+    return (
+      <div className="w-full">
+        <div
+          className="rounded-2xl p-6 text-center"
+          style={{
+            backgroundColor: 'var(--card)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06), 0 8px 32px rgba(0,0,0,0.08)',
+            border: '1px solid var(--border)',
+          }}
+        >
+          {/* Animated progress bar */}
+          <div
+            className="w-48 h-1 rounded-full overflow-hidden mx-auto mb-5"
+            style={{ backgroundColor: 'var(--border)' }}
+          >
+            <div
+              className="h-full rounded-full"
+              style={{
+                backgroundColor: 'var(--accent)',
+                animation: 'loadingSlide 1.8s ease-in-out infinite',
+              }}
+            />
+          </div>
+
+          {/* Stacking messages */}
+          <div className="space-y-2 max-w-md mx-auto text-left">
+            {LOADING_MESSAGES.slice(0, loadingMsgCount).map((msg, i) => {
+              const isDone = i < loadingMsgCount - 1
+              const isCurrent = i === loadingMsgCount - 1
+              return (
+                <div
+                  key={i}
+                  className="flex items-center gap-2.5 transition-all duration-300"
+                  style={{
+                    opacity: isDone ? 0.5 : 1,
+                    animation: isCurrent ? 'fadeInUp 0.3s ease' : undefined,
+                  }}
+                >
+                  {isDone ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  ) : (
+                    <div
+                      className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin flex-shrink-0"
+                      style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
+                    />
+                  )}
+                  <span
+                    className="text-sm"
+                    style={{
+                      color: isDone ? 'var(--text-secondary)' : 'var(--text-primary)',
+                      fontWeight: isCurrent ? 600 : 400,
+                      fontFamily: 'var(--font-outfit)',
+                    }}
+                  >
+                    {msg}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes loadingSlide {
+            0% { width: 0%; margin-left: 0%; }
+            50% { width: 60%; margin-left: 20%; }
+            100% { width: 0%; margin-left: 100%; }
+          }
+          @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+      </div>
+    )
   }
 
   return (
@@ -97,7 +226,6 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
             value={query}
             onChange={(e) => {
               setQuery(e.target.value)
-              // Auto-expand beyond 2 rows if needed
               e.target.style.height = 'auto'
               e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px'
             }}
@@ -133,7 +261,7 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
               cursor: isLoading || !query.trim() ? 'not-allowed' : 'pointer',
             }}
           >
-            {isLoading ? 'Creating...' : 'Generate Article'}
+            Generate Article
           </button>
           <button
             type="button"
