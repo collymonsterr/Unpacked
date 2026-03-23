@@ -1,6 +1,9 @@
 import Logo from '@/components/ui/Logo'
 import UserMenu from '@/components/ui/UserMenu'
 import HomepageHero from '@/components/HomepageHero'
+import FeaturedSection from '@/components/homepage/FeaturedSection'
+import TrendingSection from '@/components/homepage/TrendingSection'
+import PopularSection from '@/components/homepage/PopularSection'
 import RecentArticlesGrid from '@/components/RecentArticlesGrid'
 import PendingArticleRecovery from '@/components/PendingArticleRecovery'
 import Footer from '@/components/ui/Footer'
@@ -16,40 +19,65 @@ export const metadata: Metadata = {
   },
 }
 
-async function getRecentArticles(): Promise<ArticleRow[]> {
+async function getHomepageData() {
   try {
     const { getSupabaseAdmin } = await import('@/lib/supabase')
-    const { data } = await getSupabaseAdmin()
+    const db = getSupabaseAdmin()
+
+    // Single query — get all visible articles with all flags
+    const { data } = await db
       .from('articles')
-      .select('id, slug, query, status, plan, article, pinned, hidden_from_homepage, sort_order, root_article_id, parent_article_id, created_at')
+      .select('id, slug, query, status, plan, article, pinned, hidden_from_homepage, sort_order, root_article_id, parent_article_id, is_featured, featured_position, is_trending, trending_set_at, view_count, user_id, user_name, user_avatar, fact_check, verified_at, created_at, updated_at, suggestion_chips')
       .in('status', ['complete', 'verified'])
       .eq('hidden_from_homepage', false)
-      .order('pinned', { ascending: false, nullsFirst: false })
-      .order('sort_order', { ascending: true, nullsFirst: true })
       .order('created_at', { ascending: false })
       .limit(200)
 
-    // For each article chain (grouped by root_article_id), only show the latest version
-    const allArticles = data ?? []
-    const latestByChain = new Map<string, typeof allArticles[0]>()
+    const allArticles = (data ?? []) as ArticleRow[]
+
+    // Deduplicate chains: for each root, keep latest
+    const latestByChain = new Map<string, ArticleRow>()
     for (const a of allArticles) {
-      const chainKey = (a.root_article_id ?? a.id) as string
+      const chainKey = a.root_article_id ?? a.id
       const existing = latestByChain.get(chainKey)
       if (!existing || new Date(a.created_at) > new Date(existing.created_at)) {
         latestByChain.set(chainKey, a)
       }
     }
+    const deduplicated = Array.from(latestByChain.values())
 
-    // Sort: pinned first, then by sort_order (null = new = first), then newest
-    const articles = Array.from(latestByChain.values()).sort((a, b) => {
+    // Split into sections
+    const featured = deduplicated
+      .filter(a => a.is_featured)
+      .sort((a, b) => {
+        const ap = a.featured_position ?? 999
+        const bp = b.featured_position ?? 999
+        if (ap !== bp) return ap - bp
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      })
+      .slice(0, 7)
+
+    const trending = deduplicated
+      .filter(a => a.is_trending)
+      .sort((a, b) => {
+        const at = a.trending_set_at ? new Date(a.trending_set_at).getTime() : 0
+        const bt = b.trending_set_at ? new Date(b.trending_set_at).getTime() : 0
+        return bt - at
+      })
+      .slice(0, 4)
+
+    const popular = [...deduplicated]
+      .sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0))
+      .slice(0, 4)
+
+    // All articles: sorted by pinned, sort_order, then newest
+    const all = deduplicated.sort((a, b) => {
       const aPinned = a.pinned ? 1 : 0
       const bPinned = b.pinned ? 1 : 0
       if (aPinned !== bPinned) return bPinned - aPinned
 
       const aOrder = a.sort_order as number | null | undefined
       const bOrder = b.sort_order as number | null | undefined
-
-      // New articles (no sort_order) come before manually ordered ones
       if (aOrder == null && bOrder != null) return -1
       if (aOrder != null && bOrder == null) return 1
       if (aOrder != null && bOrder != null) return aOrder - bOrder
@@ -57,14 +85,14 @@ async function getRecentArticles(): Promise<ArticleRow[]> {
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
 
-    return articles as ArticleRow[]
+    return { featured, trending, popular, all }
   } catch {
-    return []
+    return { featured: [], trending: [], popular: [], all: [] }
   }
 }
 
 export default async function HomePage() {
-  const recentArticles = await getRecentArticles()
+  const { featured, trending, popular, all } = await getHomepageData()
 
   return (
     <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
@@ -92,10 +120,34 @@ export default async function HomePage() {
       </nav>
 
       {/* Hero + feature cards (auth-conditional) */}
-      <HomepageHero existingQueries={recentArticles.map(a => a.query)} />
+      <HomepageHero existingQueries={all.map(a => a.query)} />
 
-      {/* Recent articles */}
-      <RecentArticlesGrid articles={recentArticles} />
+      {/* Featured */}
+      {featured.length > 0 && (
+        <>
+          <FeaturedSection articles={featured} />
+          <div className="max-w-6xl mx-auto px-4 md:px-6 my-14" style={{ borderTop: '1px solid #e2e0d8' }} />
+        </>
+      )}
+
+      {/* Trending Today */}
+      {trending.length > 0 && (
+        <>
+          <TrendingSection articles={trending} />
+          <div className="max-w-6xl mx-auto px-4 md:px-6 my-14" style={{ borderTop: '1px solid #e2e0d8' }} />
+        </>
+      )}
+
+      {/* Most Popular */}
+      {popular.length > 0 && (
+        <>
+          <PopularSection articles={popular} />
+          <div className="max-w-6xl mx-auto px-4 md:px-6 my-14" style={{ borderTop: '1px solid #e2e0d8' }} />
+        </>
+      )}
+
+      {/* All Articles */}
+      <RecentArticlesGrid articles={all} />
 
       {/* Footer */}
       <Footer />

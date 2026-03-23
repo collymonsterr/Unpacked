@@ -68,7 +68,6 @@ export default function AdminDashboard() {
     const article = articles.find(a => a.id === id)
     const currentHidden = article?.hidden_from_homepage ?? false
     const newHidden = !currentHidden
-    // Optimistic update
     setArticles(prev => prev.map(a =>
       a.id === id ? { ...a, hidden_from_homepage: newHidden } : a
     ))
@@ -86,6 +85,56 @@ export default function AdminDashboard() {
     } catch {
       setArticles(prev => prev.map(a =>
         a.id === id ? { ...a, hidden_from_homepage: currentHidden } : a
+      ))
+    }
+  }
+
+  async function handleToggleFeatured(id: string) {
+    const article = articles.find(a => a.id === id)
+    const current = article?.is_featured ?? false
+    const newVal = !current
+    setArticles(prev => prev.map(a =>
+      a.id === id ? { ...a, is_featured: newVal } : a
+    ))
+    try {
+      const res = await fetch(`/api/articles/${id}/featured`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_featured: newVal }),
+      })
+      if (!res.ok) {
+        setArticles(prev => prev.map(a =>
+          a.id === id ? { ...a, is_featured: current } : a
+        ))
+      }
+    } catch {
+      setArticles(prev => prev.map(a =>
+        a.id === id ? { ...a, is_featured: current } : a
+      ))
+    }
+  }
+
+  async function handleToggleTrending(id: string) {
+    const article = articles.find(a => a.id === id)
+    const current = article?.is_trending ?? false
+    const newVal = !current
+    setArticles(prev => prev.map(a =>
+      a.id === id ? { ...a, is_trending: newVal, trending_set_at: newVal ? new Date().toISOString() : null } : a
+    ))
+    try {
+      const res = await fetch(`/api/articles/${id}/trending`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_trending: newVal }),
+      })
+      if (!res.ok) {
+        setArticles(prev => prev.map(a =>
+          a.id === id ? { ...a, is_trending: current } : a
+        ))
+      }
+    } catch {
+      setArticles(prev => prev.map(a =>
+        a.id === id ? { ...a, is_trending: current } : a
       ))
     }
   }
@@ -506,6 +555,20 @@ export default function AdminDashboard() {
                               active={!!row.hidden_from_homepage}
                             >
                               {row.hidden_from_homepage ? 'Show' : 'Hide'}
+                            </ActionButton>
+                            <ActionButton
+                              onClick={() => handleToggleFeatured(row.id)}
+                              title={row.is_featured ? 'Remove from Featured' : 'Add to Featured'}
+                              active={!!row.is_featured}
+                            >
+                              {row.is_featured ? '★' : '☆'}
+                            </ActionButton>
+                            <ActionButton
+                              onClick={() => handleToggleTrending(row.id)}
+                              title={row.is_trending ? 'Remove from Trending' : 'Set as Trending'}
+                              active={!!row.is_trending}
+                            >
+                              {row.is_trending ? '🔥' : '📈'}
                             </ActionButton>
                             {confirmDeleteId === row.id ? (
                               <div className="flex items-center gap-1 ml-1">

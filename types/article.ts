@@ -319,6 +319,10 @@ export interface ArticleRow {
   sort_order?: number | null
   parent_article_id?: string | null
   root_article_id?: string | null
+  is_featured?: boolean
+  featured_position?: number | null
+  is_trending?: boolean
+  trending_set_at?: string | null
   created_at: string
   updated_at: string
 }
