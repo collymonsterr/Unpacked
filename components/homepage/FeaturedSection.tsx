@@ -104,19 +104,7 @@ export default function FeaturedSection({ articles }: Props) {
             ) : (
               <div className="w-full h-full" style={{ backgroundColor: 'var(--accent-light)' }} />
             )}
-            {/* Verified badge — corner of image */}
-            {heroArticle.verified_at && (
-              <div
-                className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-full"
-                style={{ backgroundColor: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)' }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  <path d="M9 12l2 2 4-4" />
-                </svg>
-                <span className="text-[10px] font-semibold" style={{ color: '#059669' }}>Verified</span>
-              </div>
-            )}
+            {/* No badge on image — verified status shown in bottom metadata */}
           </div>
           <div className="p-4 flex-1 flex flex-col gap-0">
             {/* 1. Category badge */}
@@ -145,19 +133,15 @@ export default function FeaturedSection({ articles }: Props) {
                 className="rounded-lg px-3 py-2 mb-2"
                 style={{ backgroundColor: '#f0efed' }}
               >
-                <div className="flex items-center gap-1.5 mb-1">
+                <div className="flex items-center gap-1 mb-1">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
+                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                    <path d="M2 17l10 5 10-5" />
+                    <path d="M2 12l10 5 10-5" />
+                  </svg>
                   <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
                     Verdict
                   </p>
-                  {heroArticle.verified_at && (
-                    <span className="flex items-center gap-0.5">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                        <path d="M9 12l2 2 4-4" />
-                      </svg>
-                      <span className="text-[10px] font-medium" style={{ color: '#059669' }}>Verified</span>
-                    </span>
-                  )}
                 </div>
                 <p
                   className="text-xs leading-relaxed line-clamp-2"
