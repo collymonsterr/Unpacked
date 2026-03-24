@@ -13,14 +13,28 @@ interface Props {
 async function getArticle(slug: string): Promise<ArticleRow | null> {
   // Support UUID or slug
   const isUUID = /^[0-9a-f-]{36}$/i.test(slug)
+  const db = getSupabaseAdmin()
 
-  const query = getSupabaseAdmin().from('articles').select('*')
-  const { data, error } = isUUID
-    ? await query.eq('id', slug).single()
-    : await query.eq('slug', slug).single()
+  if (isUUID) {
+    const { data } = await db.from('articles').select('*').eq('id', slug).single()
+    return (data as ArticleRow) ?? null
+  }
 
-  if (error || !data) return null
-  return data as ArticleRow
+  // Try exact slug match first
+  const { data } = await db.from('articles').select('*').eq('slug', slug).single()
+  if (data) return data as ArticleRow
+
+  // Fallback: the slug might have been updated after the client navigated
+  // Search by the query-based slug pattern in case the article was renamed
+  const { data: fuzzy } = await db
+    .from('articles')
+    .select('*')
+    .ilike('slug', `${slug.slice(0, 30)}%`)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  return (fuzzy as ArticleRow) ?? null
 }
 
 export default async function ArticlePage({ params }: Props) {

@@ -103,11 +103,15 @@ export async function POST(request: NextRequest) {
         console.log('[create] Planning article for:', trimmedQuery.slice(0, 50), 'options:', JSON.stringify(generationOptions))
         const plan = await planArticle(trimmedQuery, generationOptions, data.id)
 
-        // Update with plan data — client sees this via polling
+        // Generate clean slug from AI title and update
+        const cleanSlug = await generateUniqueSlug(plan.title, data.id)
+
+        // Update with plan data + clean slug — client sees this via polling
         await db
           .from('articles')
           .update({
             plan,
+            slug: cleanSlug,
             suggestion_chips: plan.suggestion_chips,
             status: 'generating',
           })
