@@ -47,7 +47,13 @@ export default function ArticlePageClient({ initialRow }: Props) {
       const res = await fetch(`/api/articles/${initialRow.id}`)
       if (!res.ok) return
       const updated: ArticleRow = await res.json()
-      setRow(updated)
+      // Preserve existing hero image — never allow image → null → image flash
+      setRow(prev => {
+        if (prev.article?.thumbnail_url && updated.article && !updated.article.thumbnail_url) {
+          updated.article.thumbnail_url = prev.article.thumbnail_url
+        }
+        return updated
+      })
     } catch {
       // ignore transient fetch errors
     }

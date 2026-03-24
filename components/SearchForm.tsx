@@ -16,15 +16,14 @@ const PLACEHOLDERS = [
   'Best robot vacuums for pet hair...',
 ]
 
-// Stacking messages shown immediately when user clicks Generate
-const LOADING_MESSAGES = [
-  'Starting research...',
-  'Searching the web for answers...',
-  'Finding relevant sources...',
-  'Reading expert reviews...',
-  'Checking forums and communities...',
-  'Gathering real opinions...',
-  'Preparing your article...',
+// Phase 1 messages — shown on the homepage while planning runs
+const PHASE1_MESSAGES = [
+  'This isn\'t a five-second AI summary — it\'s a properly researched article...',
+  'Reading your question carefully...',
+  'Deciding what type of article fits this best...',
+  'Planning the research approach...',
+  'Working out which sources will matter most...',
+  'Starting the research pass...',
 ]
 
 export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean } = {}) {
@@ -36,7 +35,11 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
   const [showOptions, setShowOptions] = useState(false)
   const [loadingMsgCount, setLoadingMsgCount] = useState(0)
   const [cachedResult, setCachedResult] = useState<{ slug: string; title: string } | null>(null)
+  const [pendingId, setPendingId] = useState<string | null>(null)
+  const [pendingSlug, setPendingSlug] = useState<string | null>(null)
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const loadingStartRef = useRef(0)
   const router = useRouter()
 
   // Rotate placeholder text
@@ -49,7 +52,7 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
     return () => clearInterval(interval)
   }, [])
 
-  // Tick loading messages when generating
+  // Phase 1 message ticking — starts when loading begins
   useEffect(() => {
     if (!isLoading) {
       if (loadingIntervalRef.current) {
@@ -63,19 +66,19 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
     // Show first message immediately
     setLoadingMsgCount(1)
 
-    // Tick one message every 2 seconds
+    // Tick one message every 3.5 seconds
     loadingIntervalRef.current = setInterval(() => {
       setLoadingMsgCount(prev => {
         const next = prev + 1
-        if (next >= LOADING_MESSAGES.length) {
+        if (next >= PHASE1_MESSAGES.length) {
           if (loadingIntervalRef.current) {
             clearInterval(loadingIntervalRef.current)
             loadingIntervalRef.current = null
           }
         }
-        return Math.min(next, LOADING_MESSAGES.length)
+        return Math.min(next, PHASE1_MESSAGES.length)
       })
-    }, 2000)
+    }, 3500)
 
     return () => {
       if (loadingIntervalRef.current) {
@@ -84,6 +87,49 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
       }
     }
   }, [isLoading])
+
+  // Phase 1 polling — poll for status change from 'planning' to 'generating'
+  useEffect(() => {
+    if (!pendingId || !pendingSlug) return
+
+    loadingStartRef.current = Date.now()
+
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/articles/${pendingId}`)
+        if (!res.ok) return
+        const data = await res.json()
+
+        // Navigate when article moves past planning (writing has started)
+        if (data.status === 'generating' || data.status === 'complete' || data.status === 'verified') {
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current)
+            pollIntervalRef.current = null
+          }
+          router.push(`/article/${pendingSlug}`)
+          return
+        }
+
+        // Fallback: if stuck on 'planning' for >15 seconds, navigate anyway
+        if (Date.now() - loadingStartRef.current > 15000) {
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current)
+            pollIntervalRef.current = null
+          }
+          router.push(`/article/${pendingSlug}`)
+        }
+      } catch {
+        // Ignore transient errors
+      }
+    }, 2500)
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
+      }
+    }
+  }, [pendingId, pendingSlug, router])
 
   async function handleForceNew() {
     setIsLoading(true)
@@ -117,7 +163,8 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
         localStorage.setItem('articles_generated', String(count + 1))
       } catch {}
 
-      router.push(`/article/${slug}`)
+      setPendingId(id)
+      setPendingSlug(slug)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
       setIsLoading(false)
@@ -171,25 +218,37 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
         localStorage.setItem('articles_generated', String(count + 1))
       } catch {}
 
-      router.push(`/article/${slug}`)
+      // Don't navigate yet — Phase 1 polling will navigate when status changes to 'generating'
+      setPendingId(id)
+      setPendingSlug(slug)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
       setIsLoading(false)
     }
   }
 
-  // Loading state — replaces the form with stacking messages
+  // Loading state — Phase 1: stays on homepage until status changes to 'generating'
   if (isLoading) {
     return (
       <div className="w-full">
         <div
-          className="rounded-2xl p-6 text-center"
+          className="rounded-2xl p-6"
           style={{
             backgroundColor: 'var(--card)',
             boxShadow: '0 2px 8px rgba(0,0,0,0.06), 0 8px 32px rgba(0,0,0,0.08)',
             border: '1px solid var(--border)',
           }}
         >
+          {/* Static header — always visible, visually separated */}
+          <div className="text-center mb-6 pb-5" style={{ borderBottom: '1px solid var(--border)' }}>
+            <p
+              className="text-base font-semibold"
+              style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-sora)' }}
+            >
+              Building your article — this takes 2–3 minutes, go grab a coffee ☕
+            </p>
+          </div>
+
           {/* Animated progress bar */}
           <div
             className="w-48 h-1 rounded-full overflow-hidden mx-auto mb-5"
@@ -204,9 +263,9 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
             />
           </div>
 
-          {/* Stacking messages */}
-          <div className="space-y-2 max-w-md mx-auto text-left">
-            {LOADING_MESSAGES.slice(0, loadingMsgCount).map((msg, i) => {
+          {/* Stacking Phase 1 messages */}
+          <div className="space-y-2.5 max-w-md mx-auto text-left">
+            {PHASE1_MESSAGES.slice(0, loadingMsgCount).map((msg, i) => {
               const isDone = i < loadingMsgCount - 1
               const isCurrent = i === loadingMsgCount - 1
               return (

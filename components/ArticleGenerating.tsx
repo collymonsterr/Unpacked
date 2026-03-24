@@ -89,74 +89,112 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
     return () => clearTimeout(timer)
   }, [user, planRevealed])
 
-  // Build post-plan status messages — aim for 15-20 to fill a 2-3 min wait
+  // Article-type-aware message sets — each tells the research → analysis → writing → finishing story
+  const TYPE_MESSAGES: Record<string, string[]> = {
+    buyer_guide: [
+      'Pulling from multiple expert sources and review sites...',
+      'Checking real user sentiment on Reddit and forums...',
+      'Filtering out sponsored content and outdated information...',
+      'Comparing specs, performance data, and pricing across options...',
+      'Looking for consistent patterns across independent sources...',
+      'Identifying where the experts agree — and where they don\'t...',
+      'Narrowing down the real contenders from the noise...',
+      'Working out which option deserves the top recommendation...',
+      'Writing the main sections and product breakdowns...',
+      'Assembling data tables and interactive charts...',
+      'Adding pricing and availability data...',
+      'Writing the verdict...',
+      'Fact-checking everything before it reaches you...',
+      'Almost there...',
+    ],
+    comparison: [
+      'Researching both options in depth...',
+      'Pulling real user experiences from Reddit and review sites...',
+      'Mapping out each option\'s strengths and weaknesses...',
+      'Finding the edge cases and common complaints...',
+      'Checking where expert consensus lands...',
+      'Identifying the key trade-offs that actually matter...',
+      'Working out which type of person should choose each one...',
+      'Writing the head-to-head breakdown...',
+      'Assembling the comparison tables...',
+      'Fact-checking everything before it reaches you...',
+      'Writing the verdict...',
+      'Almost there...',
+    ],
+    explainer: [
+      'Researching the background on this topic...',
+      'Finding the most authoritative and reliable sources...',
+      'Checking for recent developments or updates...',
+      'Looking for the clearest explanations and real-world examples...',
+      'Breaking the complexity down into logical sections...',
+      'Building the structure...',
+      'Writing the explanations...',
+      'Adding examples and supporting detail...',
+      'Fact-checking everything before it reaches you...',
+      'Almost there...',
+    ],
+    news: [
+      'Pulling in the latest reporting on this...',
+      'Cross-referencing multiple sources for accuracy...',
+      'Checking what\'s confirmed versus what\'s still speculation...',
+      'Looking at expert reaction and analysis...',
+      'Building the timeline of what happened...',
+      'Writing the analysis...',
+      'Fact-checking everything before it reaches you...',
+      'Almost there...',
+    ],
+    decision_guide: [
+      'Pulling from multiple expert sources and review sites...',
+      'Checking real user sentiment on Reddit and forums...',
+      'Comparing the key factors in this decision...',
+      'Looking at real-world experiences from people who\'ve been here...',
+      'Identifying what matters most for your specific situation...',
+      'Working out the clear recommendation...',
+      'Writing the breakdown with all the trade-offs...',
+      'Assembling data tables and comparison tools...',
+      'Adding pricing and practical details...',
+      'Writing the verdict...',
+      'Fact-checking everything before it reaches you...',
+      'Almost there...',
+    ],
+    default: [
+      'Casting a wide net across sources and databases...',
+      'Filtering for quality, relevance, and recency...',
+      'Checking community recommendations on Reddit and forums...',
+      'Cross-referencing what experts and real users say...',
+      'Grouping and organising the strongest findings...',
+      'Building the article structure...',
+      'Writing the main sections...',
+      'Adding the key details and supporting data...',
+      'Writing the verdict...',
+      'Fact-checking everything before it reaches you...',
+      'Almost there...',
+    ],
+  }
+
+  // Select message set based on article type
   const messages = useMemo(() => {
     if (!plan) return []
-    const msgs: string[] = []
+    const articleType = plan.article_type ?? 'default'
+    // Map article types to message sets (some types share sets)
+    const typeKey = TYPE_MESSAGES[articleType] ? articleType : 'default'
+    return TYPE_MESSAGES[typeKey]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!plan, plan?.article_type])
 
-    // Start with AI-generated loading messages
-    if (plan.loading_messages?.length) {
-      msgs.push(...plan.loading_messages)
-    }
-
-    // Add entity-specific messages
-    for (const e of plan.entities ?? []) {
-      msgs.push(`Looking up ${e.name}...`)
-    }
-
-    // Add research query messages
-    for (const q of plan.research_queries ?? []) {
-      if (!msgs.some(m => m.includes(q))) {
-        msgs.push(`Researching: ${q}`)
-      }
-    }
-
-    // Pad with generic-but-relevant messages to reach 15+
-    const padding = [
-      'Cross-referencing sources for accuracy...',
-      'Reading expert reviews and opinions...',
-      'Checking Reddit for real user experiences...',
-      'Comparing data across multiple sources...',
-      'Building data visualisations...',
-      'Structuring the article for clarity...',
-      'Finding the best images...',
-      'Deciding what deserves the top spot...',
-      'Writing the verdict...',
-      'Formatting charts and comparison tables...',
-      'Adding editorial commentary...',
-      'Polishing the final draft...',
-    ]
-
-    let padIdx = 0
-    while (msgs.length < 15 && padIdx < padding.length) {
-      msgs.push(padding[padIdx++])
-    }
-
-    // Always end with these
-    msgs.push('Forming an editorial opinion...')
-    msgs.push('Writing your article — almost there...')
-
-    return msgs
-  }, [plan])
-
-  // Tick messages using setInterval — immune to polling re-renders
-  // The key insight: useEffect cleanup runs when deps change, which kills setTimeout timers.
-  // Polling updates `plan` reference every 2.5s, so setTimeout-based approaches break.
-  // setInterval with a ref guard ensures we only create one interval, ever.
+  // Tick messages using setInterval at 10 seconds — covers 2+ minutes with 12-14 messages
   useEffect(() => {
     if (!plan || messages.length === 0) return
-    // Don't start a second interval
     if (messageIntervalRef.current) return
 
-    // Show first 3 immediately
-    setCompletedMsgs(3)
+    // Show first 2 immediately
+    setCompletedMsgs(2)
 
-    // Tick one message every 5 seconds (fills ~80s with 17 messages)
+    // Tick one message every 10 seconds
     const totalMsgs = messages.length
     messageIntervalRef.current = setInterval(() => {
       setCompletedMsgs(prev => {
         const next = prev + 1
-        // Stop interval when all messages shown
         if (next >= totalMsgs) {
           if (messageIntervalRef.current) {
             clearInterval(messageIntervalRef.current)
@@ -165,9 +203,8 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
         }
         return next
       })
-    }, 5000)
+    }, 10000)
 
-    // Cleanup only on unmount
     return () => {
       if (messageIntervalRef.current) {
         clearInterval(messageIntervalRef.current)
@@ -177,14 +214,31 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!plan, messages.length])
 
-  // When article ready — trigger transition
+  // When article ready — fast-forward remaining messages then transition
   const triggerReady = useCallback(() => {
     if (readyFired.current) return
     readyFired.current = true
-    setCompletedMsgs(999)
-    setArticleReady(true)
-    setTimeout(() => onReady?.(), 1500)
-  }, [onReady])
+
+    // Clear the normal interval
+    if (messageIntervalRef.current) {
+      clearInterval(messageIntervalRef.current)
+      messageIntervalRef.current = null
+    }
+
+    // Fast-forward: tick remaining messages at 300ms each
+    const total = messages.length
+    const fastForward = setInterval(() => {
+      setCompletedMsgs(prev => {
+        if (prev >= total) {
+          clearInterval(fastForward)
+          setArticleReady(true)
+          setTimeout(() => onReady?.(), 1000)
+          return prev
+        }
+        return prev + 1
+      })
+    }, 300)
+  }, [onReady, messages.length])
 
   useEffect(() => {
     if (isComplete && !readyFired.current) triggerReady()
@@ -237,17 +291,20 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
       {plan && (
         <div className={planRevealed ? 'generation-fade-in' : 'opacity-0'}>
 
-          {/* ─── 1. TITLE + BADGE ─── */}
-          <div className="mb-6">
+          {/* ─── 1. TITLE + BADGE + STATIC SUBTITLE ─── */}
+          <div className="mb-6 pb-5" style={{ borderBottom: '1px solid var(--border)' }}>
             <div className="mb-2">
               <ArticleTypeBadge type={plan.article_type} />
             </div>
             <h1
-              className="text-2xl md:text-3xl font-extrabold leading-tight"
+              className="text-2xl md:text-3xl font-extrabold leading-tight mb-2"
               style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
             >
               {plan.title}
             </h1>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              Real research. Multiple sources. A proper article — not just an AI summary.
+            </p>
           </div>
 
           {/* ─── 2. LIVE STATUS MESSAGES (most important — directly under title) ─── */}
