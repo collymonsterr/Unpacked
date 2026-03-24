@@ -31,12 +31,22 @@ export default function HeroImage({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewLoaded, setPreviewLoaded] = useState(false)
   const [thumbErrors, setThumbErrors] = useState<Set<number>>(new Set())
+  const [noResult, setNoResult] = useState(false)
 
   if (error) return null
+
+  // Fix 1: When clearing previewUrl for any reason, ensure loaded is true
+  // so the fallback to `url` renders at full opacity immediately
+  function clearPreview() {
+    setPreviewUrl(null)
+    setPreviewLoaded(false)
+    setLoaded(true) // Ensure current image shows at full opacity
+  }
 
   async function handleReplace(useAI: boolean) {
     if (!onReplace || replacing) return
     setReplacing(useAI ? 'ai' : 'photo')
+    setNoResult(false) // Clear any previous "no result" message
     try {
       // Fetch preview URL without saving
       const res = await fetch(`/api/articles/${articleId}/replace-thumbnail?preview=true${useAI ? '&ai=true' : ''}`, { method: 'POST' })
@@ -45,11 +55,15 @@ export default function HeroImage({
       if (data.preview_url) {
         setPreviewUrl(data.preview_url)
         setPreviewLoaded(false)
+        setNoResult(false)
+      } else {
+        // Fix 3: API returned no preview — show message instead of going white
+        setNoResult(true)
       }
     } catch {
       // Fall back to direct replace
       await onReplace(useAI)
-      setLoaded(false)
+      setLoaded(true)
     } finally {
       setReplacing(null)
     }
@@ -71,9 +85,7 @@ export default function HeroImage({
         onKeep(data.article)
       }
       // Preview is now the real image — clear preview state
-      setPreviewUrl(null)
-      setPreviewLoaded(false)
-      setLoaded(true)
+      clearPreview()
     } catch {
       // silent
     } finally {
@@ -82,8 +94,7 @@ export default function HeroImage({
   }
 
   function handleDiscardPreview() {
-    setPreviewUrl(null)
-    setPreviewLoaded(false)
+    clearPreview()
   }
 
   // History thumbnails — exclude the current image, filter out errored ones
@@ -117,7 +128,7 @@ export default function HeroImage({
               </p>
             </div>
           )}
-          {/* Current image (dimmed when preview is showing) */}
+          {/* Current image — Fix 1: stable key prevents remount when preview clears */}
           <Image
             src={previewUrl ?? url}
             alt={alt}
@@ -125,10 +136,26 @@ export default function HeroImage({
             className="object-cover transition-opacity duration-500"
             style={{ opacity: (previewUrl ? previewLoaded : loaded) ? 1 : 0 }}
             onLoad={() => previewUrl ? setPreviewLoaded(true) : setLoaded(true)}
-            onError={() => previewUrl ? setPreviewUrl(null) : setError(true)}
+            onError={() => {
+              if (previewUrl) {
+                // Preview failed to load — fall back to current image at full opacity
+                clearPreview()
+              } else {
+                setError(true)
+              }
+            }}
             unoptimized
-            key={previewUrl ?? url}
+            key="hero-img"
           />
+          {/* Fix 3: "No result" message overlay */}
+          {noResult && !previewUrl && !replacing && (
+            <div
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-lg text-sm"
+              style={{ backgroundColor: 'rgba(0,0,0,0.7)', color: '#fff' }}
+            >
+              Couldn&apos;t find a new image — try again
+            </div>
+          )}
           {/* Preview Keep/Discard buttons */}
           {previewUrl && previewLoaded && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">

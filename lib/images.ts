@@ -246,22 +246,21 @@ export async function fetchThumbnailImage(
   const baseQuery = heroImageQuery || getHeroSubject(title, articleType)
   const isReplacing = excludeUrls && excludeUrls.length > 0
 
-  // Different suffixes for variety on repeat searches
+  // Neutral suffixes for variety on repeat searches — no Unsplash prefix
   const suffixes = [
-    'beautiful high resolution photography',
-    'editorial photograph professional',
-    'stunning HD wallpaper',
-    'aesthetic photography',
-    'cinematic photo',
-    'award winning photography',
-    'magazine quality photo',
-    'premium stock photography',
+    '',
+    'photo',
+    'editorial',
+    'photography',
+    'image',
+    'press photo',
+    'high resolution',
+    'closeup',
   ]
 
   const angleIndex = isReplacing ? (excludeUrls?.length ?? 0) % suffixes.length : 0
-  // For the first search, try Unsplash specifically for highest quality
-  const unsplashPrefix = angleIndex === 0 ? 'site:unsplash.com ' : ''
-  const query = `${unsplashPrefix}${baseQuery} ${suffixes[angleIndex]}`.trim()
+  const suffix = suffixes[angleIndex]
+  const query = suffix ? `${baseQuery} ${suffix}` : baseQuery
   console.log('[thumbnail] Search query:', query, `(angle ${angleIndex}, AI query: ${!!heroImageQuery})`)
 
   const excludeSet = new Set(excludeUrls ?? [])
