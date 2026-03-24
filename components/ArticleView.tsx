@@ -341,8 +341,10 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           sections={article.sections}
           animated
           isAdmin={isOwner}
+          articleId={articleRow.id}
           onReplaceImage={handleReplaceImage}
           onSetPrimaryImage={handleSetPrimaryImage}
+          onArticleUpdated={(updated) => setArticle(updated)}
         />
       )}
 

@@ -1,4 +1,4 @@
-import type { ArticleSection } from '@/types/article'
+import type { ArticleSection, ArticleContent } from '@/types/article'
 import ProductCard from './ProductCard'
 import ComparisonTable from './ComparisonTable'
 import WarningBox from './WarningBox'
@@ -23,8 +23,10 @@ interface Props {
   sections: ArticleSection[]
   animated?: boolean
   isAdmin?: boolean
+  articleId?: string
   onReplaceImage?: (sectionIndex: number, imageIndex: number) => Promise<void>
   onSetPrimaryImage?: (sectionIndex: number, imageIndex: number) => Promise<void>
+  onArticleUpdated?: (article: ArticleContent) => void
 }
 
 // Recharts-based sections break when rendered inside opacity:0 containers
@@ -42,8 +44,10 @@ export default function SectionRenderer({
   sections,
   animated = false,
   isAdmin,
+  articleId,
   onReplaceImage,
   onSetPrimaryImage,
+  onArticleUpdated,
 }: Props) {
   return (
     <>
@@ -72,8 +76,10 @@ export default function SectionRenderer({
                   section={section}
                   isAdmin={isAdmin}
                   sectionIndex={i}
+                  articleId={articleId}
                   onReplaceImage={onReplaceImage ? (imgIdx) => onReplaceImage(i, imgIdx) : undefined}
                   onSetPrimaryImage={onSetPrimaryImage ? (imgIdx) => onSetPrimaryImage(i, imgIdx) : undefined}
+                  onArticleUpdated={onArticleUpdated}
                 />
               )
             case 'comparison_table':
