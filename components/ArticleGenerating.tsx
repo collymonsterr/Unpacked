@@ -172,17 +172,24 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
     ],
   }
 
-  // Select message set based on article type
+  // Three "long tail" messages shown after the main sequence — at 20s intervals
+  const TAIL_MESSAGES = [
+    'Still working — complex topics take a little longer...',
+    'Almost there — just finishing up the final checks...',
+    'Just another minute or so — nearly ready...',
+  ]
+
+  // Select message set based on article type, append tail messages
   const messages = useMemo(() => {
     if (!plan) return []
     const articleType = plan.article_type ?? 'default'
-    // Map article types to message sets (some types share sets)
     const typeKey = TYPE_MESSAGES[articleType] ? articleType : 'default'
-    return TYPE_MESSAGES[typeKey]
+    return [...TYPE_MESSAGES[typeKey], ...TAIL_MESSAGES]
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!plan, plan?.article_type])
 
-  // Tick messages using setInterval at 10 seconds — covers 2+ minutes with 12-14 messages
+  // Tick messages: 15s for main sequence, then 20s for tail messages
+  // With 14 main msgs at 15s + 3 tail at 20s = ~210s + 60s = ~4.5 min coverage
   useEffect(() => {
     if (!plan || messages.length === 0) return
     if (messageIntervalRef.current) return
@@ -190,11 +197,32 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
     // Show first 2 immediately
     setCompletedMsgs(2)
 
-    // Tick one message every 10 seconds
+    const mainCount = messages.length - TAIL_MESSAGES.length
     const totalMsgs = messages.length
+
+    // Start with 15s interval for main messages
     messageIntervalRef.current = setInterval(() => {
       setCompletedMsgs(prev => {
         const next = prev + 1
+
+        // Switch to 20s interval when entering the tail messages
+        if (next === mainCount && messageIntervalRef.current) {
+          clearInterval(messageIntervalRef.current)
+          messageIntervalRef.current = setInterval(() => {
+            setCompletedMsgs(p => {
+              const n = p + 1
+              if (n >= totalMsgs) {
+                if (messageIntervalRef.current) {
+                  clearInterval(messageIntervalRef.current)
+                  messageIntervalRef.current = null
+                }
+              }
+              return n
+            })
+          }, 20000)
+        }
+
+        // Stop if we somehow exceed total
         if (next >= totalMsgs) {
           if (messageIntervalRef.current) {
             clearInterval(messageIntervalRef.current)
@@ -203,7 +231,7 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
         }
         return next
       })
-    }, 10000)
+    }, 15000)
 
     return () => {
       if (messageIntervalRef.current) {
