@@ -128,12 +128,25 @@ For the entities array: identify every specific product, brand, or item that wil
 - For buyer_guide/comparison/decision_guide: list products with image search queries
 - For explainer/tutorial/trend_analysis/news/planning: entities should be EMPTY or contain only items where a real photograph adds value (e.g., a specific place, a specific device). Do NOT add entities for abstract concepts.
 
-CRITICAL: The search_query for each entity MUST be optimised for finding official product images.
-- Use the full product name + brand (e.g., "Keychron C3 Pro mechanical keyboard official product image")
-- Include "official" or "press image" or "product shot" in the query
-- For tech products, include the brand name to bias towards manufacturer sites
-- Example: "Samsung Galaxy S24 official press image" NOT "Galaxy phone"
-- Example: "Sony WH-1000XM5 headphones official product photo" NOT "noise cancelling headphones"
+For entities search_query: this is used to find product and subject images via Brave image search. Follow these rules precisely:
+
+Physical products (cameras, headphones, laptops, appliances, cars, furniture, anything you can hold or touch): Use the full product name and model number only. Nothing else. No suffixes. Good: "Sony A7 IV" or "Canon EOS R6 Mark II" or "Sony WH-1000XM5". Bad: "Sony A7 IV official product photo" or "Canon EOS R6 Mark II full-frame mirrorless official product photo".
+
+Software and apps: Use the product name followed by "interface" or "screenshot". Good: "MacWhisper app interface" or "Notion app screenshot" or "Spotify app interface". Bad: "MacWhisper official product photo" or "Notion app official product photo interface".
+
+Services and subscriptions: Use the brand name followed by the service type. Good: "Netflix streaming service" or "Shopify ecommerce platform". Bad: "Netflix official product photo".
+
+People: Use their full name followed by a relevant context word. Good: "Elon Musk press photo" or "Tim Cook Apple keynote". Bad: "Elon Musk official product photo 2026".
+
+Places: Use the place name followed by a visual descriptor. Good: "Dubai Marina aerial" or "Kyoto temple garden". Bad: "Dubai official product photo".
+
+Concepts and topics (for explainers, news, trend articles): Describe the visual subject concisely. Good: "cloud seeding rain storm" or "electric vehicle charging station". Bad: "interest rates official product photo".
+
+Rules that apply to ALL types:
+- Never include the year (no "2026", no "2025")
+- Never use the words "official", "product photo", "press image", or "high quality"
+- Never use more than 5 words
+- Always use the specific product name, never a generic category name alone
 
 STEP 5: PLAN SECTIONS
 
@@ -182,14 +195,6 @@ VISUALISATION RULES BY TYPE:
 - planning: 1-3 charts. Bar charts for cost comparisons, stat_cards for key metrics.
 
 For research_queries: generate 3-4 short, natural-sounding descriptions of what the system will research. These are shown to the user during loading.
-
-For entities search_query: this is used to find PRODUCT IMAGES via image search. Follow these rules:
-- Always append "official product photo" to specific product names: "iRobot Roomba j7+ official product photo"
-- Use the FULL official name including model number: "Sony WH-1000XM5 official product photo" not just "Sony headphones"
-- For places: "{place name} photography": "Dubai Marina photography"
-- For software: "{software name} app screenshot": "Notion app screenshot"
-- NEVER just search the product name alone — you'll get random accessories, cases, and junk
-- For product CATEGORIES (not specific products): "{category} lineup editorial photo"
 
 For suggestion_chips: generate 3 refinements (modify this article) and 3 related (generate a new article on a naturally connected topic).
 
