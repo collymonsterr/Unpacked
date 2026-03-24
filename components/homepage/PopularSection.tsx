@@ -18,7 +18,7 @@ export default function PopularSection({ articles }: Props) {
 
   return (
     <section className="w-full max-w-6xl mx-auto px-4 md:px-6">
-      <SectionHeader title="Most Popular" badge="By views" viewAllHref="/" />
+      <SectionHeader title="Most Popular" badge="By views" />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {articles.slice(0, 4).map((row, rank) => {

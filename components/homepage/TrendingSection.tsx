@@ -25,7 +25,7 @@ export default function TrendingSection({ articles }: Props) {
 
   return (
     <section className="w-full max-w-6xl mx-auto px-4 md:px-6">
-      <SectionHeader title="Trending Today" badge="Updated daily" badgeColor="#1a1a1a" viewAllHref="/" />
+      <SectionHeader title="Trending Today" badge="Updated daily" badgeColor="#1a1a1a" />
 
       <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>
         {today} — {articles.length} new article{articles.length !== 1 ? 's' : ''} today

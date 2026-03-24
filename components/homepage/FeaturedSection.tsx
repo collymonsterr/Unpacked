@@ -89,7 +89,7 @@ export default function FeaturedSection({ articles }: Props) {
 
   return (
     <section className="w-full max-w-6xl mx-auto px-4 md:px-6">
-      <SectionHeader title="Featured" badge="Editor's picks" viewAllHref="/" />
+      <SectionHeader title="Featured" badge="Editor's picks" />
 
       <div
         className="grid gap-[18px]"
