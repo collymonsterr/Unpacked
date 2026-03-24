@@ -27,74 +27,118 @@ export default function HeroImage({
 }: HeroImageProps) {
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
-  const [replacing, setReplacing] = useState<'photo' | 'ai' | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [previewLoaded, setPreviewLoaded] = useState(false)
   const [thumbErrors, setThumbErrors] = useState<Set<number>>(new Set())
-  const [noResult, setNoResult] = useState(false)
+
+  // Grid picker state
+  const [pickerUrls, setPickerUrls] = useState<string[] | null>(null)
+  const [pickerLoading, setPickerLoading] = useState(false)
+  const [pickerExcluded, setPickerExcluded] = useState<string[]>([])
+  const [pickerError, setPickerError] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  // AI generation state
+  const [generatingAI, setGeneratingAI] = useState(false)
 
   if (error) return null
 
-  // Fix 1: When clearing previewUrl for any reason, ensure loaded is true
-  // so the fallback to `url` renders at full opacity immediately
-  function clearPreview() {
-    setPreviewUrl(null)
-    setPreviewLoaded(false)
-    setLoaded(true) // Ensure current image shows at full opacity
-  }
-
-  async function handleReplace(useAI: boolean) {
-    if (!onReplace || replacing) return
-    setReplacing(useAI ? 'ai' : 'photo')
-    setNoResult(false) // Clear any previous "no result" message
+  async function openPicker() {
+    if (pickerLoading || saving) return
+    setPickerLoading(true)
+    setPickerError(false)
+    setPickerExcluded([])
     try {
-      // Fetch preview URL without saving
-      const res = await fetch(`/api/articles/${articleId}/replace-thumbnail?preview=true${useAI ? '&ai=true' : ''}`, { method: 'POST' })
+      const res = await fetch(
+        `/api/articles/${articleId}/replace-thumbnail?preview=true&count=4`,
+        { method: 'POST' }
+      )
       if (!res.ok) throw new Error('Failed')
       const data = await res.json()
-      if (data.preview_url) {
-        setPreviewUrl(data.preview_url)
-        setPreviewLoaded(false)
-        setNoResult(false)
+      const urls = data.preview_urls as string[] | undefined
+      if (urls && urls.length > 0) {
+        setPickerUrls(urls)
       } else {
-        // Fix 3: API returned no preview — show message instead of going white
-        setNoResult(true)
+        setPickerError(true)
       }
     } catch {
-      // Fall back to direct replace
-      await onReplace(useAI)
-      setLoaded(true)
+      setPickerError(true)
     } finally {
-      setReplacing(null)
+      setPickerLoading(false)
     }
   }
 
-  async function handleKeepPreview() {
-    if (!previewUrl) return
-    setReplacing('photo')
+  async function searchAgain() {
+    if (pickerLoading || saving) return
+    setPickerLoading(true)
+    setPickerError(false)
+    // Add current picker URLs to the excluded list
+    const newExcluded = [...pickerExcluded, ...(pickerUrls ?? [])]
+    setPickerExcluded(newExcluded)
+    try {
+      const res = await fetch(
+        `/api/articles/${articleId}/replace-thumbnail?preview=true&count=4`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ extra_exclude: newExcluded }),
+        }
+      )
+      if (!res.ok) throw new Error('Failed')
+      const data = await res.json()
+      const urls = data.preview_urls as string[] | undefined
+      if (urls && urls.length > 0) {
+        setPickerUrls(urls)
+      } else {
+        setPickerError(true)
+        // Keep showing old results if search again found nothing
+      }
+    } catch {
+      setPickerError(true)
+    } finally {
+      setPickerLoading(false)
+    }
+  }
+
+  async function selectImage(selectedUrl: string) {
+    if (saving) return
+    setSaving(true)
     try {
       const res = await fetch(`/api/articles/${articleId}/replace-thumbnail`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ set_url: previewUrl }),
+        body: JSON.stringify({ set_url: selectedUrl }),
       })
       if (!res.ok) throw new Error('Failed')
       const data = await res.json()
-      // Update parent state with the new article data
       if (data.article && onKeep) {
         onKeep(data.article)
       }
-      // Preview is now the real image — clear preview state
-      clearPreview()
+      // Close picker
+      setPickerUrls(null)
+      setPickerExcluded([])
+      setLoaded(true)
     } catch {
-      // silent
+      // silent — stay in picker
     } finally {
-      setReplacing(null)
+      setSaving(false)
     }
   }
 
-  function handleDiscardPreview() {
-    clearPreview()
+  function closePicker() {
+    setPickerUrls(null)
+    setPickerExcluded([])
+    setPickerLoading(false)
+    setPickerError(false)
+  }
+
+  async function handleGenerateAI() {
+    if (!onReplace || generatingAI) return
+    setGeneratingAI(true)
+    try {
+      await onReplace(true)
+      setLoaded(true)
+    } finally {
+      setGeneratingAI(false)
+    }
   }
 
   // History thumbnails — exclude the current image, filter out errored ones
@@ -102,6 +146,8 @@ export default function HeroImage({
     .map((u, i) => ({ url: u, index: i }))
     .filter(({ url: u }) => u !== url)
     .filter(({ index }) => !thumbErrors.has(index))
+
+  const pickerOpen = pickerUrls !== null || pickerLoading || pickerError
 
   return (
     <div className="mb-8">
@@ -113,8 +159,21 @@ export default function HeroImage({
         }}
       >
         <div className="relative w-full" style={{ aspectRatio: '16 / 9' }}>
+          {/* Current hero image — always rendered underneath */}
+          <Image
+            src={url}
+            alt={alt}
+            fill
+            className="object-cover transition-opacity duration-500"
+            style={{ opacity: loaded ? 1 : 0 }}
+            onLoad={() => setLoaded(true)}
+            onError={() => setError(true)}
+            unoptimized
+            key="hero-img"
+          />
+
           {/* AI generation overlay */}
-          {replacing === 'ai' && (
+          {generatingAI && (
             <div
               className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3"
               style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
@@ -128,115 +187,131 @@ export default function HeroImage({
               </p>
             </div>
           )}
-          {/* Current image — Fix 1: stable key prevents remount when preview clears */}
-          <Image
-            src={previewUrl ?? url}
-            alt={alt}
-            fill
-            className="object-cover transition-opacity duration-500"
-            style={{ opacity: (previewUrl ? previewLoaded : loaded) ? 1 : 0 }}
-            onLoad={() => previewUrl ? setPreviewLoaded(true) : setLoaded(true)}
-            onError={() => {
-              if (previewUrl) {
-                // Preview failed to load — fall back to current image at full opacity
-                clearPreview()
-              } else {
-                setError(true)
-              }
-            }}
-            unoptimized
-            key="hero-img"
-          />
-          {/* Fix 3: "No result" message overlay */}
-          {noResult && !previewUrl && !replacing && (
+
+          {/* Grid picker overlay */}
+          {pickerOpen && (
             <div
-              className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-lg text-sm"
-              style={{ backgroundColor: 'rgba(0,0,0,0.7)', color: '#fff' }}
+              className="absolute inset-0 z-20 flex flex-col"
+              style={{ backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(2px)' }}
             >
-              Couldn&apos;t find a new image — try again
-            </div>
-          )}
-          {/* Preview Keep/Discard buttons */}
-          {previewUrl && previewLoaded && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+              {/* Close button */}
               <button
-                onClick={handleKeepPreview}
-                disabled={!!replacing}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-opacity"
-                style={{ backgroundColor: '#16a34a', color: '#fff' }}
+                onClick={closePicker}
+                className="absolute top-3 right-3 z-30 w-8 h-8 flex items-center justify-center rounded-full"
+                style={{ backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', cursor: 'pointer' }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 6L9 17l-5-5" />
-                </svg>
-                Keep
-              </button>
-              <button
-                onClick={handleDiscardPreview}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-opacity"
-                style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: '#fff' }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
-                Discard
               </button>
+
+              {/* Loading state */}
+              {pickerLoading && (
+                <div className="flex-1 flex flex-col items-center justify-center gap-3">
+                  <div className="w-6 h-6 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  <p className="text-white text-sm font-medium" style={{ fontFamily: 'var(--font-sora)' }}>
+                    Finding images...
+                  </p>
+                </div>
+              )}
+
+              {/* Error state — no images found */}
+              {pickerError && !pickerLoading && !pickerUrls && (
+                <div className="flex-1 flex flex-col items-center justify-center gap-3">
+                  <p className="text-white text-sm">No images found — try a different search</p>
+                  <button
+                    onClick={searchAgain}
+                    className="px-4 py-2 rounded-lg text-sm font-medium"
+                    style={{ border: '1px solid rgba(255,255,255,0.4)', color: '#fff', cursor: 'pointer' }}
+                  >
+                    Search again
+                  </button>
+                </div>
+              )}
+
+              {/* Image grid */}
+              {pickerUrls && !pickerLoading && (
+                <div className="flex-1 flex flex-col p-3 gap-3">
+                  <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
+                    {pickerUrls.map((imgUrl, i) => (
+                      <button
+                        key={i}
+                        onClick={() => selectImage(imgUrl)}
+                        disabled={saving}
+                        className="relative rounded-lg overflow-hidden transition-all hover:ring-2 disabled:opacity-50"
+                        style={{
+                          cursor: saving ? 'not-allowed' : 'pointer',
+                        }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.outline = '2px solid #E07A3A' }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.outline = 'none' }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={imgUrl}
+                          alt={`Option ${i + 1}`}
+                          className="w-full h-full object-cover"
+                          style={{ minHeight: '80px' }}
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Search again + error notice */}
+                  <div className="flex items-center justify-center gap-3">
+                    <button
+                      onClick={searchAgain}
+                      disabled={pickerLoading}
+                      className="px-4 py-1.5 rounded-lg text-xs font-medium transition-opacity disabled:opacity-50"
+                      style={{
+                        border: '1px solid rgba(255,255,255,0.4)',
+                        color: '#fff',
+                        cursor: pickerLoading ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      Search again
+                    </button>
+                    {pickerError && (
+                      <span className="text-xs text-white/60">No more results found</span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
-          {previewUrl && (
-            <div className="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-lg text-xs font-semibold"
-              style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: '#fff' }}>
-              Preview
-            </div>
-          )}
-          {isAdmin && onReplace && (
+
+          {/* Admin buttons — only show when picker is NOT open */}
+          {isAdmin && onReplace && !pickerOpen && !generatingAI && (
             <div className="absolute top-3 right-3 z-10 flex gap-2">
               <button
-                onClick={() => handleReplace(false)}
-                disabled={!!replacing}
+                onClick={openPicker}
+                disabled={pickerLoading}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity"
-                style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: '#fff', opacity: replacing ? 0.6 : 0.85 }}
-                title="Find a different photo from the web"
+                style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: '#fff', opacity: 0.85 }}
+                title="Choose a new photo"
               >
-                {replacing === 'photo' ? (
-                  <>
-                    <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                    Searching…
-                  </>
-                ) : (
-                  <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21.5 2v6h-6" />
-                      <path d="M2.5 22v-6h6" />
-                      <path d="M2.5 11.5a10 10 0 0 1 18.4-4.5" />
-                      <path d="M21.5 12.5a10 10 0 0 1-18.4 4.5" />
-                    </svg>
-                    New photo
-                  </>
-                )}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21.5 2v6h-6" />
+                  <path d="M2.5 22v-6h6" />
+                  <path d="M2.5 11.5a10 10 0 0 1 18.4-4.5" />
+                  <path d="M21.5 12.5a10 10 0 0 1-18.4 4.5" />
+                </svg>
+                New photo
               </button>
               <button
-                onClick={() => handleReplace(true)}
-                disabled={!!replacing}
+                onClick={handleGenerateAI}
+                disabled={generatingAI}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity"
-                style={{ backgroundColor: 'rgba(100,60,180,0.75)', color: '#fff', opacity: replacing ? 0.6 : 0.85 }}
+                style={{ backgroundColor: 'rgba(100,60,180,0.75)', color: '#fff', opacity: 0.85 }}
                 title="Generate an AI image"
               >
-                {replacing === 'ai' ? (
-                  <>
-                    <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                    Generating…
-                  </>
-                ) : (
-                  <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                      <path d="M2 17l10 5 10-5" />
-                      <path d="M2 12l10 5 10-5" />
-                    </svg>
-                    Generate AI
-                  </>
-                )}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                  <path d="M2 17l10 5 10-5" />
+                  <path d="M2 12l10 5 10-5" />
+                </svg>
+                Generate AI
               </button>
             </div>
           )}
@@ -244,7 +319,7 @@ export default function HeroImage({
       </figure>
 
       {/* History thumbnails — only shown in admin mode when there are previous images */}
-      {isAdmin && historyItems.length > 0 && (
+      {isAdmin && historyItems.length > 0 && !pickerOpen && (
         <div className="mt-3 flex items-center gap-2">
           <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Previous:</span>
           <div className="flex gap-2 overflow-x-auto">

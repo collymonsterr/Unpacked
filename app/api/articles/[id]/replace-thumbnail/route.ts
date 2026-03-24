@@ -2,7 +2,7 @@ export const maxDuration = 120 // GPT Image can take 60+ seconds
 
 import { NextRequest } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
-import { fetchThumbnailImage } from '@/lib/images'
+import { fetchThumbnailImage, fetchMultipleThumbnailImages } from '@/lib/images'
 import { generateHeroImage, pickBestArticleImage } from '@/lib/imagen'
 import { requireArticleOwner } from '@/lib/auth-check'
 import { isValidUUID } from '@/lib/validate'
@@ -20,7 +20,8 @@ export async function POST(
 
   const useAI = request.nextUrl.searchParams.get('ai') === 'true'
   const isPreview = request.nextUrl.searchParams.get('preview') === 'true'
-  // Pick a specific image from history by index
+  const countParam = request.nextUrl.searchParams.get('count')
+  const count = countParam ? Math.min(Math.max(parseInt(countParam, 10) || 1, 1), 10) : 1
   const pickIndex = request.nextUrl.searchParams.get('pick')
 
   const db = getSupabaseAdmin()
@@ -30,7 +31,7 @@ export async function POST(
   const article = row.article as ArticleContent
   const history = article.thumbnail_history ?? []
 
-  // If setting a specific URL (from preview Keep action)
+  // If setting a specific URL directly (from grid picker select)
   try {
     const body = await request.json().catch(() => null)
     if (body?.set_url) {
@@ -42,6 +43,24 @@ export async function POST(
       article.thumbnail_history = history
       await db.from('articles').update({ article }).eq('id', id)
       return Response.json({ article })
+    }
+
+    // If extra exclude URLs are passed from the picker's "Search again"
+    if (body?.extra_exclude && Array.isArray(body.extra_exclude)) {
+      // These are URLs the picker has already shown — exclude them from this search
+      const extraExclude = body.extra_exclude as string[]
+      const allSeenUrls = [...history]
+      if (article.thumbnail_url) allSeenUrls.push(article.thumbnail_url)
+      allSeenUrls.push(...extraExclude)
+
+      const heroQuery = (article as unknown as Record<string, unknown>).hero_image_query as string | undefined
+
+      if (isPreview && count > 1) {
+        const urls = await fetchMultipleThumbnailImages(
+          article.title, article.article_type, allSeenUrls, heroQuery, count
+        )
+        return Response.json({ preview_urls: urls })
+      }
     }
   } catch {
     // Not JSON body, continue
@@ -57,19 +76,22 @@ export async function POST(
     }
   }
 
-  // Save current thumbnail to history before replacing
-  if (article.thumbnail_url && !history.includes(article.thumbnail_url)) {
-    history.push(article.thumbnail_url)
-  }
-
   // Build list of all URLs the user has already seen
   const allSeenUrls = [...history]
   if (article.thumbnail_url) allSeenUrls.push(article.thumbnail_url)
 
-  let newUrl: string | null = null
-
-  // Use stored hero_image_query if available for smarter searches
   const heroQuery = (article as unknown as Record<string, unknown>).hero_image_query as string | undefined
+
+  // Multi-image preview mode — return array of URLs without saving
+  if (isPreview && count > 1 && !useAI) {
+    const urls = await fetchMultipleThumbnailImages(
+      article.title, article.article_type, allSeenUrls, heroQuery, count
+    )
+    return Response.json({ preview_urls: urls })
+  }
+
+  // Single-image flows (AI generation, single preview, direct save)
+  let newUrl: string | null = null
 
   if (useAI) {
     newUrl = await generateHeroImage(article, id)
@@ -80,12 +102,16 @@ export async function POST(
       ?? pickBestArticleImage(article)
   }
 
-  // Preview mode — return URL without saving
+  // Single preview mode — return URL without saving
   if (isPreview && newUrl) {
     return Response.json({ preview_url: newUrl })
   }
 
-  // Add the new URL to history too
+  // Save current thumbnail to history before replacing
+  if (article.thumbnail_url && !history.includes(article.thumbnail_url)) {
+    history.push(article.thumbnail_url)
+  }
+
   if (newUrl && !history.includes(newUrl)) {
     history.push(newUrl)
   }

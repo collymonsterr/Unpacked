@@ -293,6 +293,57 @@ export async function fetchThumbnailImage(
 }
 
 /**
+ * Fetch multiple thumbnail image candidates in a single Brave search.
+ * Returns up to `count` URLs after filtering and excluding seen URLs.
+ */
+export async function fetchMultipleThumbnailImages(
+  title: string,
+  articleType: ArticleType,
+  excludeUrls?: string[],
+  heroImageQuery?: string,
+  count: number = 4
+): Promise<string[]> {
+  const apiKey = process.env.BRAVE_SEARCH_API_KEY
+  if (!apiKey) return []
+
+  const baseQuery = heroImageQuery || getHeroSubject(title, articleType)
+  const isReplacing = excludeUrls && excludeUrls.length > 0
+
+  const suffixes = ['', 'photo', 'editorial', 'photography', 'image', 'press photo', 'high resolution', 'closeup']
+  const angleIndex = isReplacing ? (excludeUrls?.length ?? 0) % suffixes.length : 0
+  const suffix = suffixes[angleIndex]
+  const query = suffix ? `${baseQuery} ${suffix}` : baseQuery
+  console.log('[thumbnail-multi] Search query:', query, `(count: ${count}, excluded: ${excludeUrls?.length ?? 0})`)
+
+  const excludeSet = new Set(excludeUrls ?? [])
+
+  try {
+    const url = new URL('https://api.search.brave.com/res/v1/images/search')
+    url.searchParams.set('q', query)
+    url.searchParams.set('count', '20')
+    url.searchParams.set('safesearch', 'strict')
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        'Accept': 'application/json',
+        'X-Subscription-Token': apiKey,
+      },
+    })
+    if (!res.ok) return []
+
+    const data = await res.json()
+    const results: BraveImageResult[] = data.results ?? []
+
+    const filtered = filterAndRankImageUrls(results)
+      .filter((u) => !excludeSet.has(u))
+
+    return filtered.slice(0, count)
+  } catch {
+    return []
+  }
+}
+
+/**
  * Returns a search hint based on product type to improve image relevance.
  * e.g. "motorcycle" for a physical product named "Kawasaki ZX-10R"
  */
