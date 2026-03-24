@@ -55,12 +55,28 @@ export default function FeaturedSection({ articles }: Props) {
   const heroArt = heroArticle.article
   const heroType = heroArt?.article_type ?? ''
   const heroDescription = heroArt?.executive_summary?.short_answer ?? heroArt?.quick_verdict?.one_liner ?? ''
-  // Verdict fallback chain: recommendation → one_liner → first key_takeaway
+  // Card summary: use card_summary if available, else first complete sentence of verdict
   const heroVerdict = (() => {
+    // Priority 1: dedicated card_summary (generated when article is featured)
+    const cardSummary = (heroArticle as unknown as Record<string, unknown>).card_summary as string | undefined
+    if (cardSummary && cardSummary.trim().length > 0) return cardSummary.trim()
+
+    // Priority 2: first complete sentence of verdict
     const rec = heroArt?.quick_verdict?.recommendation
-    if (rec) return rec.split(';')[0].trim()
+    if (rec) {
+      // Split on first period followed by space or end, but only if >10 chars before it
+      const firstSentence = rec.match(/^[^.;!?]+[.;!?]/)
+      if (firstSentence) return firstSentence[0].replace(/;$/, '.').trim()
+      return rec.split(';')[0].trim()
+    }
+
     const oneLiner = heroArt?.quick_verdict?.one_liner
-    if (oneLiner) return oneLiner
+    if (oneLiner) {
+      const firstSentence = oneLiner.match(/^[^.;!?]+[.;!?]/)
+      if (firstSentence) return firstSentence[0].trim()
+      return oneLiner
+    }
+
     const takeaway = heroArt?.executive_summary?.key_takeaways?.[0]
     if (takeaway) return takeaway
     return ''
@@ -147,7 +163,7 @@ export default function FeaturedSection({ articles }: Props) {
                   className="text-xs leading-relaxed line-clamp-2"
                   style={{ color: 'var(--text-primary)', fontStyle: 'italic' }}
                 >
-                  {heroVerdict.replace(/;/g, '.').split('.')[0].trim()}.
+                  {heroVerdict}
                 </p>
               </div>
             )}

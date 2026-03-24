@@ -302,6 +302,27 @@ export default function AdminDashboard() {
           </span>
         </div>
 
+        {/* Backfill card summaries for featured articles */}
+        {articles.some(a => a.is_featured && !(a as unknown as Record<string, unknown>).card_summary) && (
+          <button
+            onClick={async () => {
+              const missing = articles.filter(a => a.is_featured && !(a as unknown as Record<string, unknown>).card_summary)
+              for (const a of missing) {
+                await fetch(`/api/articles/${a.id}/featured`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ is_featured: true }),
+                })
+              }
+              alert(`Triggered card summary generation for ${missing.length} featured article(s). Refresh in a few seconds.`)
+            }}
+            className="px-4 py-2 rounded-lg text-xs font-semibold mb-4"
+            style={{ backgroundColor: 'var(--accent)', color: '#fff', cursor: 'pointer' }}
+          >
+            Generate missing card summaries ({articles.filter(a => a.is_featured && !(a as unknown as Record<string, unknown>).card_summary).length})
+          </button>
+        )}
+
         {/* Analytics charts */}
         <AdminAnalytics />
 
@@ -600,6 +621,35 @@ export default function AdminDashboard() {
                               </ActionButton>
                             )}
                           </div>
+                          {/* Card summary editor for featured articles */}
+                          {row.is_featured && (
+                            <div className="mt-2">
+                              <label className="text-[10px] uppercase tracking-wide font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                                Card summary
+                              </label>
+                              <input
+                                type="text"
+                                defaultValue={(row as unknown as Record<string, unknown>).card_summary as string ?? ''}
+                                placeholder="Generating automatically..."
+                                onBlur={async (e) => {
+                                  const val = e.target.value.trim()
+                                  try {
+                                    await fetch(`/api/articles/${row.id}/card-summary`, {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ card_summary: val }),
+                                    })
+                                  } catch {}
+                                }}
+                                className="w-full mt-0.5 px-2 py-1 text-xs rounded-lg outline-none"
+                                style={{
+                                  border: '1px solid var(--border)',
+                                  backgroundColor: 'var(--bg)',
+                                  color: 'var(--text-primary)',
+                                }}
+                              />
+                            </div>
+                          )}
                         </td>
                       </tr>
                     )

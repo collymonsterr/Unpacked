@@ -27,7 +27,7 @@ async function getHomepageData() {
     // Single query — get all visible articles with all flags
     const { data } = await db
       .from('articles')
-      .select('id, slug, query, status, plan, article, pinned, hidden_from_homepage, sort_order, root_article_id, parent_article_id, is_featured, featured_position, is_trending, trending_set_at, view_count, user_id, user_name, user_avatar, fact_check, verified_at, created_at, updated_at, suggestion_chips')
+      .select('id, slug, query, status, plan, article, pinned, hidden_from_homepage, sort_order, root_article_id, parent_article_id, is_featured, featured_position, is_trending, trending_set_at, view_count, user_id, user_name, user_avatar, fact_check, verified_at, created_at, updated_at, suggestion_chips, card_summary')
       .in('status', ['complete', 'verified'])
       .eq('hidden_from_homepage', false)
       .order('created_at', { ascending: false })
