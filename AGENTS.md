@@ -152,6 +152,8 @@ Per-article controls: Featured toggle, Trending toggle, Hero pin (only one at a 
 - Authenticated: refine (creates a fork)
 - Public: view, record view, feedback, fact-check, export
 
+**Article visibility:** Currently all articles are public. A three-state visibility system (private / unlisted / published) is planned for Stage 3, alongside the category restructure. Until then, `hidden_from_homepage` is the only visibility control — it hides from the homepage grid but the article is still accessible via direct URL.
+
 ---
 
 ## Rate Limiting

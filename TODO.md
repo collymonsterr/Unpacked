@@ -1,6 +1,6 @@
 # TODO.md — thebrief.fyi (currently The Brief)
 
-Last updated: 24 March 2026
+Last updated: 25 March 2026
 
 ---
 
@@ -70,6 +70,19 @@ Last updated: 24 March 2026
 - [x] Calculator cleanup — all 9 problematic calculators removed or replaced, zero custom remaining
 
 ### Added March 25 2026
-- [ ] **Post-generation first draft banner** with action chips that pre-fill the refine box (Stage 2)
+- [x] **Post-generation first draft banner** — slides up after article reveals, 4 action chips pre-fill refine box, corrections badge, share/edit buttons, dismiss to floating pill. Owner-only.
+- [x] **Name change to The Brief** — all user-facing text, meta tags, OG data, manifest, structured data, export branding updated from ArticleAI to The Brief / thebrief.fyi
+- [x] **TrustStrip component** — three trust signals between masthead and featured section
+- [x] **Creator CTA line** — "Want to publish under your name?" below suggestion chips
+- [x] **Article-type-aware loading subtitles** — Phase 2 subtitle varies by buyer_guide, explainer, news, etc.
+- [x] **Loading message timing improvements** — Phase 1 at 5s/msg, Phase 2 at 15s/msg, 4-minute timeout, long-tail messages
+- [x] **Slug migration** — all 92 articles migrated to clean AI-title-based slugs
+- [x] **Entity search query fix** — removed "official product photo" suffix, context-aware queries by product type
+- [x] **Product card category-aware specs** — per-category spec fields (headphones, cameras, laptops, etc.)
+- [x] **Richer product card descriptions** — 3-paragraph opinion format in writing prompt
+- [x] **Hero image grid picker** — 2x2 grid overlay, Search Again, select to save
+- [x] **Image enrichment minimums** — retry search for product cards with <4 images, inject editorial images
+- [x] **Refine switched to Gemini Flash** — $0.02 vs $0.30-0.50, Sonnet fallback retained
 - [ ] **Post-submit prompt refinement interstitial** for short or vague queries (Stage 2)
+- [ ] **Article visibility system** — private / unlisted / published three-state model (Stage 3)
 - [ ] **Inline text editing** for article headings and paragraph text — post-launch

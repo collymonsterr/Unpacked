@@ -4,6 +4,55 @@ A running log of what has been built, changed, and fixed. Updated at the end of 
 
 ---
 
+## 25 March 2026 — Name change, FirstDraftBanner, image fixes, loading overhaul
+
+### Name Change
+- Renamed from ArticleAI to The Brief across entire codebase — all meta tags, OG data, JSON-LD, manifest, export branding, about page, creators page, footer, logo text updated
+- Domain references changed to thebrief.fyi
+
+### FirstDraftBanner (new feature)
+- Post-generation editing prompt that slides up from bottom 2.5s after article reveals
+- Shows corrections count from fact-check, source count, 4 action chips
+- Action chips pre-fill the refine textarea and scroll to it with amber glow highlight
+- "Looks good — share it" and "Start editing →" buttons
+- Dismisses to small floating "✍️ Edit this article" pill bottom-right
+- Owner-only — never shown to readers visiting shared articles
+
+### Image System Improvements
+- Entity search queries: removed "official product photo" suffix, replaced with context-aware queries by product type (physical products, software, services, places, concepts)
+- Added product_category field to planning entities for better image relevance
+- Hero image grid picker: 2×2 overlay, Search Again button, click to select and save
+- Image enrichment minimums: retry search for product cards with <4 images, inject editorial images for product articles missing them
+
+### Loading Experience Overhaul
+- Phase 1 (homepage): static header "Building your article — go grab a coffee ☕", stacking messages every 5s, polls for status change before navigating
+- Phase 2 (article page): article-type-aware messages (buyer_guide, comparison, explainer, news, etc.) at 15s intervals, long-tail messages after sequence completes
+- Article-type-aware subtitle under title during generation
+- Timeout pushed to 4 minutes with softer "Still working on this one..." messaging
+- Hero image preservation — polling updates never overwrite existing hero image with null
+
+### Product Cards
+- Richer descriptions: 3-paragraph format (standout features, real-world performance, honest caveats)
+- Category-aware spec fields per product type (headphones, cameras, laptops, etc.)
+- Real links from research sources passed to writing model
+
+### Refine Pipeline
+- Switched from Claude Sonnet ($0.30-0.50) to Gemini Flash ($0.02) with Sonnet fallback
+
+### Slug Migration
+- Rewrote lib/slug.ts with aggressive stop word removal, protected compound phrases, 60-char max
+- Migrated all 92 existing articles to clean AI-title-based slugs
+- New articles generate slug from plan.title, not raw query
+
+### Other
+- TrustStrip component added between masthead and featured section
+- Creator CTA line below suggestion chips
+- Article-type-aware loading subtitles for Phase 2
+- Removed "View all →" links from homepage sections
+- Recent Articles sort changed to newest-first (removed pinned/sort_order influence)
+
+---
+
 ## 24 March 2026 — Major refactor and feature build sprint
 
 ### Architecture (biggest change)
