@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useRef, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { ArticleRow, ArticleContent, ProductCard } from '@/types/article'
@@ -16,6 +16,7 @@ import BookmarkButton from './ui/BookmarkButton'
 import RelatedArticles from './RelatedArticles'
 import ArticleFeedback from './ui/ArticleFeedback'
 import FactCheckBar, { FactCheckBadge } from './ui/FactCheckBar'
+import FirstDraftBanner from './FirstDraftBanner'
 import MenuItem from './article/MenuItem'
 import DebugPanel from './article/DebugPanel'
 import HeroImage from './article/HeroImage'
@@ -43,6 +44,8 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
   const [isRegeneratingArticle, setIsRegeneratingArticle] = useState(false)
   const [toolbarBusy, setToolbarBusy] = useState<string | null>(null)
   const [exportState] = useState<'idle' | 'generating' | 'done'>('idle')
+  const [refineValue, setRefineValue] = useState('')
+  const refineContainerRef = useRef<HTMLDivElement>(null)
   const hasMissingImages = useMemo(() => {
     const productCards = article.sections.filter(
       (s): s is ProductCard => s.type === 'product_card'
@@ -358,11 +361,16 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
       <div style={{ borderTop: '1px solid var(--border)' }} />
 
       {/* 2. Chat-style refine input */}
-      <div className="mt-8" data-no-print>
+      <div className="mt-8" data-no-print ref={refineContainerRef}>
         {refineError && (
           <p className="text-sm text-red-600 mb-3">{refineError}</p>
         )}
-        <RefinementInput onSubmit={handleRefine} isLoading={isRefining} />
+        <RefinementInput
+          onSubmit={handleRefine}
+          isLoading={isRefining}
+          externalValue={refineValue}
+          onExternalValueChange={setRefineValue}
+        />
       </div>
 
       {/* 3. Two-column: Refinements + Related topics */}
@@ -441,6 +449,47 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
         />
       </div>
     </div>
+
+    {/* First Draft Banner — shown to owner on freshly generated articles */}
+    {isNew && isOwner && (
+      <FirstDraftBanner
+        correctionsCount={articleRow.fact_check?.total_issues ?? 0}
+        sourceCount={(() => {
+          const src = article.sections.find(s => s.type === 'sources')
+          if (!src) return 0
+          const sources = (src as unknown as { sources?: unknown[] }).sources
+          return Array.isArray(sources) ? sources.length : 0
+        })()}
+        firstSectionTitle={
+          article.sections.find(s => s.type === 'content_section')?.heading ?? 'introduction'
+        }
+        onPrefillRefine={(text) => {
+          setRefineValue(text)
+          // Brief amber glow on the refine container
+          if (refineContainerRef.current) {
+            refineContainerRef.current.style.boxShadow = '0 0 0 3px rgba(186, 117, 23, 0.3)'
+            refineContainerRef.current.style.borderRadius = '12px'
+            refineContainerRef.current.style.transition = 'box-shadow 0.3s ease'
+            setTimeout(() => {
+              if (refineContainerRef.current) {
+                refineContainerRef.current.style.boxShadow = 'none'
+              }
+            }, 1000)
+          }
+        }}
+        onScrollToRefine={() => {
+          refineContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }}
+        onShare={async () => {
+          const shareUrl = `https://thebrief.fyi/article/${articleRow.slug}`
+          if (typeof navigator !== 'undefined' && navigator.share) {
+            try { await navigator.share({ title: article.title, url: shareUrl }) } catch {}
+          } else {
+            try { await navigator.clipboard.writeText(shareUrl) } catch {}
+          }
+        }}
+      />
+    )}
     </div>
   )
 }

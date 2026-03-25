@@ -6,10 +6,19 @@ interface Props {
   onSubmit: (instruction: string) => void
   onNewArticle?: (query: string) => void
   isLoading: boolean
+  externalValue?: string
+  onExternalValueChange?: (value: string) => void
 }
 
-export default function RefinementInput({ onSubmit, isLoading }: Props) {
-  const [value, setValue] = useState('')
+export default function RefinementInput({ onSubmit, isLoading, externalValue, onExternalValueChange }: Props) {
+  const [internalValue, setInternalValue] = useState('')
+
+  // Support both controlled and uncontrolled modes
+  const value = externalValue !== undefined ? externalValue : internalValue
+  const setValue = (v: string) => {
+    if (onExternalValueChange) onExternalValueChange(v)
+    setInternalValue(v)
+  }
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-resize textarea
