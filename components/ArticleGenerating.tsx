@@ -337,7 +337,19 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
               {plan.title}
             </h1>
             <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              Real research. Multiple sources. A proper article — not just an AI summary.
+              {(() => {
+                const subtitles: Record<string, string> = {
+                  buyer_guide: 'Real expert reviews, real user opinions, real prices — fact-checked before you read it.',
+                  comparison: 'Real expert reviews, real user opinions, real prices — fact-checked before you read it.',
+                  decision_guide: 'Real expert reviews, real user opinions, real prices — fact-checked before you read it.',
+                  explainer: 'Real sources, multiple perspectives, fact-checked — so you actually understand it.',
+                  news: 'Live sources, expert analysis, fact-checked — what\'s actually happening and why it matters.',
+                  trend_analysis: 'Live sources, expert analysis, fact-checked — what\'s actually happening and why it matters.',
+                  tutorial: 'Step-by-step guidance drawn from real expert sources — tested and fact-checked.',
+                  planning: 'Real recommendations, local insights, up-to-date information — fact-checked before you read it.',
+                }
+                return subtitles[plan.article_type] ?? 'Real sources. Real opinions. Fact-checked.'
+              })()}
             </p>
           </div>
 
