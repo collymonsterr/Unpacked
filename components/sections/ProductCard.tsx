@@ -484,9 +484,11 @@ export default function ProductCard({ section, isAdmin, sectionIndex, articleId,
           </div>
         )}
 
-        <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
-          {section.opinion}
-        </p>
+        <div className="text-sm leading-relaxed mb-4 space-y-3" style={{ color: 'var(--text-secondary)' }}>
+          {section.opinion.split(/\n\n+/).filter(Boolean).map((para, i) => (
+            <p key={i}>{para}</p>
+          ))}
+        </div>
 
         {section.links && section.links.length > 0 && (
           <div className="flex flex-wrap items-center gap-3">

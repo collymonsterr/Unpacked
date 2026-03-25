@@ -94,7 +94,7 @@ OUTPUT: Return ONLY valid JSON matching this schema:
   "executive_summary": { "short_answer": "string", "key_takeaways": ["string"], "watch_out_for": ["string"] },
   "sections": [
     { "type": "content_section", "heading": "string", "content": "string" },
-    { "type": "product_card", "heading": "string", "entity_name": "string", "product_type": "physical|software|service|place", "price": "string", "key_specs": {}, "opinion": "string", "verdict": "string", "links": [{"label":"string","url":"string"}] },
+    { "type": "product_card", "heading": "string", "entity_name": "string", "product_type": "physical|software|service|place", "price": "string", "key_specs": {"use category-appropriate specs — see rules below": "value"}, "opinion": "string (3 paragraphs separated by \\n\\n: P1 what stands out and who its for, P2 real-world performance vs competitors, P3 honest caveats. 3-4 sentences each.)", "verdict": "string", "links": [{"label":"string","url":"string — use ONLY real URLs from ENTITY LINKS below"}] },
     { "type": "comparison_table", "heading": "string", "columns": ["string"], "rows": [["string"]] },
     { "type": "warning_box", "heading": "string", "items": [{"name":"string","reason":"string"}] },
     { "type": "community_insights", "heading": "string", "consensus": "strong|mixed|divided", "consensus_summary": "string", "insights": [{"source":"string","summary":"string","sentiment":"positive|negative|mixed"}] },
@@ -110,7 +110,16 @@ OUTPUT: Return ONLY valid JSON matching this schema:
     { "type": "image_section", "heading": "string", "images": [{"search_query":"string","caption":"string"}], "layout": "single|gallery" },
     { "type": "interactive_calculator", "heading": "string", "description": "string", "calculator_type": "string", "inputs": [{"id":"string","label":"string","type":"slider","min":"number","max":"number","default":"number","step":"number","unit":"string"}], "outputs": [{"id":"string","label":"string","format":"currency|percentage|number"}] }
   ]
-}`
+}
+
+SPEC FIELDS BY CATEGORY (use product_category from plan):
+over-ear/on-ear headphones: ANC Performance, Sound Signature, Battery Life, Comfort/Weight, Microphone Quality, Connectivity, App Support, Codec Support
+true wireless earbuds: ANC Performance, Sound Signature, Battery Life (per charge), Total Battery (with case), Fit/Stability, Call Quality, Water Resistance, Codec Support
+mirrorless camera/DSLR: Sensor, Autofocus, Video, Burst Rate, Battery Life, Stabilisation, Weather Sealing, Weight
+laptop: Processor, RAM, Storage, Display, Battery Life, Weight, GPU, Ports
+electric vehicle/car: Range, 0-60mph, Charging Speed, Boot Space, Seating, Price Range, Warranty, Colours
+smartphone: Display, Processor, RAM, Storage, Camera System, Battery Life, Charging Speed, OS
+For unlisted categories: use 6-8 relevant specs a knowledgeable reviewer would include.`
 }
 
 function extractJSON(text: string): string {

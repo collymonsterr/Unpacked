@@ -9,6 +9,94 @@ import { getSupabaseAdmin } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/auth-check'
 import { isValidUUID } from '@/lib/validate'
 
+// Domain patterns for link categorization
+const REVIEW_DOMAINS = ['rtings.com', 'wirecutter.com', 'theverge.com', 'techradar.com', 'pcmag.com', 'tomsguide.com', 'soundguys.com', 'dpreview.com', 'gsmarena.com', 'cnet.com', 'engadget.com', 'whatifi.com', 'headfi.org']
+const RETAILER_DOMAINS = ['bestbuy.com', 'currys.co.uk', 'johnlewis.com', 'bhphotovideo.com', 'sweetwater.com', 'walmart.com', 'target.com', 'adorama.com', 'newegg.com']
+
+interface EntityLinks {
+  [entityName: string]: { label: string; url: string }[]
+}
+
+/**
+ * Extract per-entity links from research sources.
+ * Categorizes URLs and assigns them to matching entities.
+ */
+function extractEntityLinks(
+  sources: { title: string; url: string }[],
+  entities: { name: string }[]
+): EntityLinks {
+  const result: EntityLinks = {}
+
+  for (const entity of entities) {
+    const name = entity.name.toLowerCase()
+    const links: { label: string; url: string; priority: number }[] = []
+
+    for (const source of sources) {
+      const titleLower = source.title.toLowerCase()
+      const urlLower = source.url.toLowerCase()
+
+      // Check if this source is relevant to this entity
+      const nameWords = name.split(/\s+/).filter(w => w.length > 2)
+      const matchCount = nameWords.filter(w => titleLower.includes(w) || urlLower.includes(w)).length
+      const isRelevant = matchCount >= Math.min(2, nameWords.length)
+
+      if (!isRelevant) continue
+
+      const domain = new URL(source.url).hostname.replace('www.', '')
+
+      // Categorize
+      if (urlLower.includes('amazon.com') || urlLower.includes('amazon.co')) {
+        links.push({ label: 'Amazon', url: source.url, priority: 1 })
+      } else if (urlLower.includes('reddit.com')) {
+        links.push({ label: 'Reddit Discussion', url: source.url, priority: 4 })
+      } else if (REVIEW_DOMAINS.some(d => domain.includes(d))) {
+        const siteName = source.title.split(/[|\-–—]/).pop()?.trim() ?? domain
+        links.push({ label: siteName, url: source.url, priority: 2 })
+      } else if (RETAILER_DOMAINS.some(d => domain.includes(d))) {
+        links.push({ label: domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1), url: source.url, priority: 3 })
+      } else {
+        // Could be manufacturer or other — check if domain contains brand name
+        const brandWords = name.split(/\s+/).slice(0, 2)
+        const isBrandSite = brandWords.some(w => domain.includes(w.toLowerCase()))
+        if (isBrandSite) {
+          links.push({ label: 'Official Site', url: source.url, priority: 0 })
+        } else {
+          links.push({ label: source.title.slice(0, 40), url: source.url, priority: 5 })
+        }
+      }
+    }
+
+    // Deduplicate by priority category and take top 5
+    const seen = new Set<number>()
+    const deduped = links
+      .sort((a, b) => a.priority - b.priority)
+      .filter(l => {
+        if (seen.has(l.priority)) return false
+        seen.add(l.priority)
+        return true
+      })
+      .slice(0, 5)
+
+    if (deduped.length > 0) {
+      result[entity.name] = deduped.map(({ label, url }) => ({ label, url }))
+    }
+  }
+
+  return result
+}
+
+function formatEntityLinksForPrompt(entityLinks: EntityLinks): string {
+  const lines: string[] = []
+  lines.push('ENTITY LINKS (use these real URLs in product card links — do NOT invent URLs):')
+  for (const [name, links] of Object.entries(entityLinks)) {
+    lines.push(`- ${name}:`)
+    for (const link of links) {
+      lines.push(`  ${link.label}: ${link.url}`)
+    }
+  }
+  return lines.join('\n')
+}
+
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -52,22 +140,29 @@ export async function POST(
         length as 'quick' | 'standard' | 'deep',
       )
 
+      // Step 1b: Extract per-entity links from research sources
+      const entityLinks = extractEntityLinks(research.sources, row.plan.entities ?? [])
+      const entityLinksPrompt = Object.keys(entityLinks).length > 0
+        ? '\n\n' + formatEntityLinksForPrompt(entityLinks)
+        : ''
+      const researchWithLinks = research.summary + entityLinksPrompt
+
       // Step 2: Write article
       let rawArticle
       if (isDeep) {
         // Deep articles use Sonnet (higher quality, more output tokens)
         console.log('[generate] Writing with Sonnet (deep mode)')
-        rawArticle = await writeWithSonnet(row.query, row.plan, research.summary, storedOptions, id)
+        rawArticle = await writeWithSonnet(row.query, row.plan, researchWithLinks, storedOptions, id)
       } else {
         // Standard/quick use Gemini Flash (fast, cheap)
         try {
           console.log('[generate] Writing with Gemini Flash')
           const optionsPrompt = storedOptions ? buildSimpleOptionsPrompt(storedOptions) : ''
-          rawArticle = await writeWithGemini(row.query, row.plan, research.summary, optionsPrompt, id)
+          rawArticle = await writeWithGemini(row.query, row.plan, researchWithLinks, optionsPrompt, id)
         } catch (geminiErr) {
           // Fallback to Sonnet if Gemini fails
           console.log('[fallback] Gemini Flash failed — falling back to Sonnet:', (geminiErr as Error).message)
-          rawArticle = await writeWithSonnet(row.query, row.plan, research.summary, storedOptions, id)
+          rawArticle = await writeWithSonnet(row.query, row.plan, researchWithLinks, storedOptions, id)
         }
       }
 

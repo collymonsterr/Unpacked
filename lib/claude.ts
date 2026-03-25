@@ -482,7 +482,7 @@ Return a JSON object matching this structure. Return ONLY valid JSON. No preambl
   },
   "sections": [
     { "type": "content_section", "heading": "string", "content": "string" },
-    { "type": "product_card", "heading": "string", "entity_name": "string", "product_type": "physical | software | service | place", "price": "string", "key_specs": { "key": "value" }, "opinion": "string", "verdict": "string", "links": [{ "label": "string", "url": "string" }] },
+    { "type": "product_card", "heading": "string", "entity_name": "string", "product_type": "physical | software | service | place", "price": "string", "key_specs": { "key": "value (use category-appropriate spec fields — see SPEC FIELDS BY CATEGORY below)" }, "opinion": "string (MUST be 3 substantial paragraphs separated by \\n\\n. P1: What makes this product stand out, its core identity, who it's best for. P2: Real-world performance, specific strengths vs competitors. P3: Honest caveats, who should look elsewhere, meaningful compromises. Each paragraph 3-4 sentences minimum. Write like a senior product journalist — specific and opinionated, not generic.)", "verdict": "string", "links": [{ "label": "string", "url": "string (use ONLY real URLs from the ENTITY LINKS section below — never invent URLs)" }] },
     { "type": "comparison_table", "heading": "string", "columns": ["string"], "rows": [["string"]] },
     { "type": "warning_box", "heading": "string", "items": [{ "name": "string", "reason": "string" }] },
     { "type": "price_tier_breakdown", "heading": "string", "tiers": [{ "range": "string", "summary": "string", "pick": "string" }] },
@@ -529,6 +529,21 @@ This matters because different product types need different image treatment:
 - Physical products benefit from multiple angles — the image search will find product photos
 - Software tools only need ONE image (a screenshot or logo) — multiple images of an app UI look repetitive and add no value
 - Services and places need 1-2 images at most
+
+SPEC FIELDS BY CATEGORY:
+Use the product_category from the plan to select the right spec fields for key_specs. Use these exact field names:
+
+over-ear headphones / on-ear headphones: ANC Performance, Sound Signature, Battery Life, Comfort/Weight, Microphone Quality, Connectivity, App Support, Codec Support
+true wireless earbuds: ANC Performance, Sound Signature, Battery Life (per charge), Total Battery (with case), Fit/Stability, Call Quality, Water Resistance, Codec Support
+mirrorless camera / DSLR: Sensor, Autofocus, Video, Burst Rate, Battery Life, Stabilisation, Weather Sealing, Weight
+laptop: Processor, RAM, Storage, Display, Battery Life, Weight, GPU, Ports
+electric vehicle / car: Range, 0-60mph, Charging Speed, Boot Space, Seating, Price Range, Warranty, Colours Available
+smartphone: Display, Processor, RAM, Storage, Camera System, Battery Life, Charging Speed, OS
+mechanical keyboard: Switch Type, Layout, Connectivity, Backlight, Build Material, Hot-Swap, Keycap Profile, Weight
+robot vacuum: Suction Power, Battery Life, Navigation, Self-Empty, Mop Function, Noise Level, App Support, Obstacle Avoidance
+smartwatch: Display, Battery Life, Health Sensors, GPS, Water Resistance, OS, Storage, Weight
+
+For any category not listed above, use 6-8 spec fields that a knowledgeable reviewer would consider important for that category.
 
 IMPORTANT:
 - Use web search extensively. Do not rely on training data alone.
