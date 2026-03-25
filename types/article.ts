@@ -29,6 +29,7 @@ export interface VisualStrategy {
 
 export interface PlanEntity {
   name: string
+  product_category?: string
   search_query: string
 }
 

@@ -130,7 +130,7 @@ For the entities array: identify every specific product, brand, or item that wil
 
 For entities search_query: this is used to find product and subject images via Brave image search. Follow these rules precisely:
 
-Physical products (cameras, headphones, laptops, appliances, cars, furniture, anything you can hold or touch): Use the full product name and model number only. Nothing else. No suffixes. Good: "Sony A7 IV" or "Canon EOS R6 Mark II" or "Sony WH-1000XM5". Bad: "Sony A7 IV official product photo" or "Canon EOS R6 Mark II full-frame mirrorless official product photo".
+Physical products (cameras, headphones, laptops, appliances, cars, furniture, anything you can hold or touch): Use the full product name followed by the product_category field. This disambiguates the physical form factor for image search. Good: "Nothing Ear Max over-ear headphones" or "Sony A7 IV mirrorless camera" or "Tesla Model 3 electric sedan". Bad: "Nothing Ear Max" alone (could return earbuds or headphones) or "Sony A7 IV official product photo".
 
 Software and apps: Use the product name followed by "interface" or "screenshot". Good: "MacWhisper app interface" or "Notion app screenshot" or "Spotify app interface". Bad: "MacWhisper official product photo" or "Notion app official product photo interface".
 
@@ -145,8 +145,20 @@ Concepts and topics (for explainers, news, trend articles): Describe the visual 
 Rules that apply to ALL types:
 - Never include the year (no "2026", no "2025")
 - Never use the words "official", "product photo", "press image", or "high quality"
-- Never use more than 5 words
+- Never use more than 6 words (product name + category may need the extra word)
 - Always use the specific product name, never a generic category name alone
+
+For entities product_category: a short 2-4 word physical descriptor of exactly what the product IS. This describes the form factor, not the brand, price, or use case. Examples:
+- "over-ear headphones"
+- "true wireless earbuds"
+- "mirrorless camera"
+- "electric sedan"
+- "mechanical keyboard"
+- "smartwatch"
+- "standing desk"
+- "robot vacuum"
+- "laptop"
+For non-physical entities (software, services, people, places, concepts), set product_category to "software", "service", "person", "place", or "concept" respectively.
 
 STEP 5: PLAN SECTIONS
 
@@ -236,7 +248,7 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
     "use_quote_blocks": false
   },
   "quick_verdict_preview": "string",
-  "entities": [{ "name": "string", "search_query": "string" }],
+  "entities": [{ "name": "string", "product_category": "string", "search_query": "string" }],
   "sections_outline": ["string"],
   "research_queries": ["string"],
   "hero_image_query": "string",
