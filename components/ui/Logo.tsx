@@ -8,7 +8,7 @@ export default function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   }
 
   return (
-    <Link href="/" className="inline-flex items-center gap-1 no-underline">
+    <Link href="/" className="inline-flex items-center no-underline">
       <span
         className={`font-extrabold tracking-tight ${sizes[size]}`}
         style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
@@ -19,7 +19,7 @@ export default function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
         className={`font-extrabold tracking-tight ${sizes[size]}`}
         style={{ fontFamily: 'var(--font-sora)', color: 'var(--accent)' }}
       >
-        Brief
+        Brief.
       </span>
     </Link>
   )
