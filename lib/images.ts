@@ -432,5 +432,89 @@ export async function enrichArticleWithImages(
     return section
   })
 
+  // ── Fix 2: Enforce image minimums ──
+  const isProductArticle = ['buyer_guide', 'comparison', 'decision_guide'].includes(article.article_type)
+  const MIN_PRODUCT_IMAGES = 4
+
+  if (isProductArticle && !skipProductImages) {
+    // Retry for product cards with fewer than 4 images
+    const retryPromises = enrichedSections
+      .map((section, idx) => ({ section, idx }))
+      .filter(({ section }) =>
+        section.type === 'product_card' &&
+        ((section as unknown as ProductCard).image_urls?.length ?? 0) < MIN_PRODUCT_IMAGES
+      )
+      .map(async ({ section, idx }) => {
+        const card = section as unknown as ProductCard
+        const currentUrls = card.image_urls ?? []
+        const needed = MIN_PRODUCT_IMAGES - currentUrls.length
+        if (needed <= 0) return
+
+        // Retry with a different query variation
+        const retryQuery = `${card.entity_name} review`
+        console.log(`[images] Retry for "${card.entity_name}": need ${needed} more images, query: "${retryQuery}"`)
+        const extraUrls = await fetchProductImages(retryQuery, needed + 2, card.entity_name)
+        const newUrls = extraUrls.filter(u => !currentUrls.includes(u)).slice(0, needed)
+
+        if (newUrls.length > 0) {
+          const combined = [...currentUrls, ...newUrls]
+          enrichedSections[idx] = {
+            ...card,
+            image_url: combined[0] ?? null,
+            image_urls: combined,
+          }
+          console.log(`[images] Retry added ${newUrls.length} images for "${card.entity_name}" (now ${combined.length})`)
+        }
+      })
+
+    await Promise.all(retryPromises)
+
+    // Inject editorial images if none exist
+    const hasEditorialImages = enrichedSections.some(s => s.type === 'image_section')
+    if (!hasEditorialImages) {
+      const titleTopic = article.title.split(/[:|—]/)[0].trim()
+      const editorialQuery = `${titleTopic} editorial photography`
+      console.log(`[images] No editorial images — searching: "${editorialQuery}"`)
+      const editorialUrls = await fetchProductImages(editorialQuery, 2)
+
+      if (editorialUrls.length > 0) {
+        const imageSection = {
+          type: 'image_section' as const,
+          heading: '',
+          images: editorialUrls.map(url => ({ search_query: editorialQuery, caption: '', image_url: url })),
+          layout: editorialUrls.length === 1 ? 'single' as const : 'gallery' as const,
+        }
+
+        // Find insertion point: after 2nd content_section, or after 3rd product_card
+        let insertIdx = -1
+        let contentCount = 0
+        let productCount = 0
+        for (let i = 0; i < enrichedSections.length; i++) {
+          if (enrichedSections[i].type === 'content_section') {
+            contentCount++
+            if (contentCount === 2) { insertIdx = i + 1; break }
+          }
+          if (enrichedSections[i].type === 'product_card') {
+            productCount++
+            if (productCount === 3 && insertIdx === -1) { insertIdx = i + 1 }
+          }
+        }
+
+        if (insertIdx > 0) {
+          enrichedSections.splice(insertIdx, 0, imageSection as unknown as typeof enrichedSections[0])
+          console.log(`[images] Injected editorial image section at index ${insertIdx}`)
+        }
+      }
+    }
+  }
+
+  // Logging
+  const productCardsWithImages = enrichedSections
+    .filter(s => s.type === 'product_card')
+    .filter(s => ((s as unknown as ProductCard).image_urls?.length ?? 0) >= MIN_PRODUCT_IMAGES)
+  const editorialCount = enrichedSections.filter(s => s.type === 'image_section').length
+  const totalProducts = enrichedSections.filter(s => s.type === 'product_card').length
+  console.log(`[images] Article "${article.title?.slice(0, 40)}": ${productCardsWithImages.length}/${totalProducts} cards with ${MIN_PRODUCT_IMAGES}+ images, ${editorialCount} editorial sections`)
+
   return { ...article, sections: enrichedSections }
 }

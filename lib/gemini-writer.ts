@@ -76,7 +76,12 @@ FORBIDDEN COMPONENTS: Check the plan's forbidden_components array. Do NOT genera
 
 CALCULATOR: For finance/cost topics, include an interactive_calculator. Use ONLY named types: compound_interest, mortgage, mortgage_payoff, roi_comparison, budget, commute_cost, subscription_audit, cooking_comparison, gym_comparison, smoking_cost, house_affordability, freelance_comparison, dog_ownership, cost_of_living_comparison, rental_comparison, college_savings, car_budget, salary_calculator, baby_cost, engagement_ring_budget.
 
-IMAGES: Max 1-3 image_section entries. Only specific photographable subjects. No generic concepts. Product cards get their own images — don't duplicate.
+IMAGES BY ARTICLE TYPE — follow these rules strictly:
+- buyer_guide, comparison, decision_guide: MANDATORY 4-5 images per product card (set image_count: 5 in each product_card). Hero image always required. Include 1-2 image_section entries between major text sections for articles over 800 words.
+- explainer: 1-3 contextual editorial images only if subject is concrete and photographable. No product images unless specific products discussed.
+- news, trend_analysis: Hero image required. 1-2 editorial image_section entries if relevant. No product images unless specific products discussed.
+- tutorial: Step illustration images where they genuinely clarify a step. Not mandatory but encouraged.
+- For image_section entries: search_query must describe a specific photographable subject. Never "technology background" or "abstract concept". Only include if you're confident a search will return a relevant photo.
 
 NO CITATION MARKUP: No <cite> tags. Clean prose only.
 
@@ -266,6 +271,137 @@ ${optionsPrompt}`
     }
 
     throw new Error('Gemini failed after 3 attempts')
+  } finally {
+    releaseSlot()
+  }
+}
+
+/**
+ * Refine an existing article using Gemini Flash.
+ * Same retry/validation pattern as writeWithGemini.
+ */
+export async function refineWithGemini(
+  query: string,
+  currentArticle: ArticleContent,
+  instruction: string,
+  optionsPrompt: string,
+  articleId?: string,
+): Promise<{ article: ArticleContent; suggestion_chips: { refinements: string[]; related: string[] } }> {
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY
+  if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY not set')
+
+  const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const currentYear = new Date().getFullYear()
+  const systemPrompt = getWritingPrompt(currentDate, currentYear)
+
+  const userMessage = `Refine this article. Apply the instruction below and return the FULL updated article as valid JSON.
+
+QUERY: ${query}
+REFINEMENT INSTRUCTION: "${instruction}"
+${optionsPrompt}
+
+CURRENT ARTICLE:
+${JSON.stringify(currentArticle)}
+
+Apply the refinement and return the full updated article JSON. Also include a "suggestion_chips" key at the top level with new contextually relevant suggestions:
+{
+  ...article fields...,
+  "suggestion_chips": {
+    "refinements": ["string", "string", "string"],
+    "related": ["string", "string", "string"]
+  }
+}`
+
+  await acquireSlot()
+
+  try {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      console.log(`[gemini-refine] Attempt ${attempt + 1}/3 for "${instruction.slice(0, 40)}..."`)
+
+      try {
+        const res = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: systemPrompt + '\n\n' + userMessage }] }],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 8192,
+            },
+          }),
+        })
+
+        if (!res.ok) {
+          const errText = await res.text()
+          console.error(`[gemini-refine] API error ${res.status}:`, errText.slice(0, 200))
+          if (res.status >= 500) continue
+          throw new Error(`Gemini API error: ${res.status}`)
+        }
+
+        const data = await res.json()
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+
+        if (!text) {
+          console.error('[gemini-refine] Empty response')
+          continue
+        }
+
+        // Extract JSON
+        const jsonMatch = text.match(/\{[\s\S]*\}/)
+        if (!jsonMatch) {
+          console.error('[gemini-refine] No JSON found in response')
+          continue
+        }
+
+        let parsed: Record<string, unknown>
+        try {
+          parsed = JSON.parse(jsonMatch[0])
+        } catch {
+          console.error(`[gemini-refine] JSON parse failed (attempt ${attempt + 1})`)
+          continue
+        }
+
+        // Extract suggestion_chips and article
+        const { suggestion_chips, ...articleData } = parsed
+
+        // Basic validation — must have title and sections
+        if (!articleData.title || !Array.isArray(articleData.sections) || articleData.sections.length < 2) {
+          console.error('[gemini-refine] Invalid article structure')
+          continue
+        }
+
+        // Log usage
+        try {
+          const { getSupabaseAdmin } = await import('@/lib/supabase')
+          const db = getSupabaseAdmin()
+          await db.from('api_usage_log').insert({
+            call_type: 'refine',
+            model: 'gemini-2.5-flash',
+            input_tokens: Math.round(userMessage.length / 3.8),
+            output_tokens: Math.round(text.length / 3.8),
+            article_id: articleId ?? null,
+          })
+        } catch {
+          // Non-critical
+        }
+
+        console.log(`[gemini-refine] Success: ${(articleData.sections as unknown[]).length} sections`)
+
+        return {
+          article: articleData as unknown as ArticleContent,
+          suggestion_chips: (suggestion_chips as { refinements: string[]; related: string[] }) ?? { refinements: [], related: [] },
+        }
+
+      } catch (err) {
+        if (attempt < 2) {
+          console.log(`[gemini-refine] Retrying after error: ${(err as Error).message}`)
+          continue
+        }
+        throw err
+      }
+    }
+
+    throw new Error('Gemini refine failed after 3 attempts')
   } finally {
     releaseSlot()
   }

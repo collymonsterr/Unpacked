@@ -789,6 +789,20 @@ export async function refineArticle(
   }
 
   const optionsPrompt = options ? buildOptionsPrompt(options) : ''
+
+  // Try Gemini Flash first (much cheaper: ~$0.02 vs ~$0.40)
+  try {
+    const { refineWithGemini } = await import('@/lib/gemini-writer')
+    const result = await refineWithGemini(query, currentArticle, instruction, optionsPrompt, articleId)
+    return {
+      article: stripCitations(result.article),
+      suggestion_chips: result.suggestion_chips,
+    }
+  } catch (geminiErr) {
+    console.warn('[refine] Gemini Flash failed — falling back to Sonnet:', (geminiErr as Error).message)
+  }
+
+  // Fallback: Claude Sonnet
   const model = 'claude-sonnet-4-20250514'
   const message = await getAnthropic().messages.create({
     model,
