@@ -18,7 +18,6 @@ const PLACEHOLDERS = [
 
 // Phase 1 messages — shown on the homepage while planning runs
 const PHASE1_MESSAGES = [
-  'This isn\'t a five-second AI summary — it\'s a properly researched article...',
   'Reading your question carefully...',
   'Deciding what type of article fits this best...',
   'Planning the research approach...',
@@ -66,7 +65,7 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
     // Show first message immediately
     setLoadingMsgCount(1)
 
-    // Tick one message every 3.5 seconds
+    // Tick one message every 5 seconds
     loadingIntervalRef.current = setInterval(() => {
       setLoadingMsgCount(prev => {
         const next = prev + 1
@@ -78,7 +77,7 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
         }
         return Math.min(next, PHASE1_MESSAGES.length)
       })
-    }, 3500)
+    }, 5000)
 
     return () => {
       if (loadingIntervalRef.current) {

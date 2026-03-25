@@ -105,6 +105,7 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
       'Adding pricing and availability data...',
       'Writing the verdict...',
       'Fact-checking everything before it reaches you...',
+      'This isn\'t a five-second AI summary — it\'s a properly researched article...',
       'Almost there...',
     ],
     comparison: [
@@ -119,6 +120,7 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
       'Assembling the comparison tables...',
       'Fact-checking everything before it reaches you...',
       'Writing the verdict...',
+      'This isn\'t a five-second AI summary — it\'s a properly researched article...',
       'Almost there...',
     ],
     explainer: [
@@ -131,6 +133,7 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
       'Writing the explanations...',
       'Adding examples and supporting detail...',
       'Fact-checking everything before it reaches you...',
+      'This isn\'t a five-second AI summary — it\'s a properly researched article...',
       'Almost there...',
     ],
     news: [
@@ -141,6 +144,7 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
       'Building the timeline of what happened...',
       'Writing the analysis...',
       'Fact-checking everything before it reaches you...',
+      'This isn\'t a five-second AI summary — it\'s a properly researched article...',
       'Almost there...',
     ],
     decision_guide: [
@@ -155,6 +159,7 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
       'Adding pricing and practical details...',
       'Writing the verdict...',
       'Fact-checking everything before it reaches you...',
+      'This isn\'t a five-second AI summary — it\'s a properly researched article...',
       'Almost there...',
     ],
     default: [
@@ -168,6 +173,7 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
       'Adding the key details and supporting data...',
       'Writing the verdict...',
       'Fact-checking everything before it reaches you...',
+      'This isn\'t a five-second AI summary — it\'s a properly researched article...',
       'Almost there...',
     ],
   }
@@ -188,19 +194,19 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!plan, plan?.article_type])
 
-  // Tick messages: 15s for main sequence, then 20s for tail messages
-  // With 14 main msgs at 15s + 3 tail at 20s = ~210s + 60s = ~4.5 min coverage
+  // Tick messages: 14s for main sequence, then 20s for tail messages
+  // With 16 main msgs at 14s + 3 tail at 20s = ~224s + 60s = ~4.7 min coverage
   useEffect(() => {
     if (!plan || messages.length === 0) return
     if (messageIntervalRef.current) return
 
-    // Show first 2 immediately
-    setCompletedMsgs(2)
+    // Show first message with spinner only — nothing pre-ticked
+    setCompletedMsgs(1)
 
     const mainCount = messages.length - TAIL_MESSAGES.length
     const totalMsgs = messages.length
 
-    // Start with 15s interval for main messages
+    // Start with 14s interval for main messages
     messageIntervalRef.current = setInterval(() => {
       setCompletedMsgs(prev => {
         const next = prev + 1
@@ -231,7 +237,7 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
         }
         return next
       })
-    }, 15000)
+    }, 14000)
 
     return () => {
       if (messageIntervalRef.current) {
@@ -360,10 +366,10 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
               </div>
             )}
 
-            {elapsed > 180 && !isComplete && (
+            {elapsed > 240 && !isComplete && (
               <div className="mt-4 p-4 rounded-xl" style={{ backgroundColor: 'var(--accent-light)', border: '1px solid #f0d5be' }}>
-                <p className="text-sm font-semibold mb-1" style={{ color: 'var(--accent)' }}>Taking longer than expected</p>
-                <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>Complex topics sometimes need a bit more time. Hang tight or head home.</p>
+                <p className="text-sm font-semibold mb-1" style={{ color: 'var(--accent)' }}>Still working on this one...</p>
+                <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>This is a particularly detailed article and it&apos;s taking a little longer than usual. You can wait here, click Check again to see if it&apos;s ready, or come back in a few minutes.</p>
                 <a href="/" className="text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Go home</a>
               </div>
             )}
@@ -488,10 +494,10 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
             className="text-xl font-bold mb-2"
             style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
           >
-            Taking longer than expected
+            Still working on this one...
           </h2>
           <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-            Your article might still be generating. You can check if it&apos;s ready or start fresh.
+            This is a particularly detailed article and it&apos;s taking a little longer than usual. You can wait here, click Check again to see if it&apos;s ready, or come back in a few minutes.
           </p>
           <div className="flex items-center justify-center gap-3">
             <button
