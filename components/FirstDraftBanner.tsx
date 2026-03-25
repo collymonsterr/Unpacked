@@ -49,6 +49,7 @@ export default function FirstDraftBanner({
   const [visible, setVisible] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const [showPill, setShowPill] = useState(false)
+  const [showAllChips, setShowAllChips] = useState(false)
 
   // Slide in after 2.5 seconds
   useEffect(() => {
@@ -124,11 +125,11 @@ export default function FirstDraftBanner({
           boxShadow: '0 -8px 40px rgba(0,0,0,0.12)',
         }}
       >
-        <div className="max-w-[900px] mx-auto px-5 md:px-10 py-5 md:py-6 relative">
-          {/* Close button */}
+        <div className="max-w-[900px] mx-auto px-4 sm:px-5 md:px-10 py-4 sm:py-5 md:py-6 relative">
+          {/* Close button — 44px touch target via padding */}
           <button
             onClick={dismiss}
-            className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full transition-colors"
+            className="absolute top-2 right-2 w-11 h-11 flex items-center justify-center rounded-full transition-colors"
             style={{ color: 'var(--text-secondary)', cursor: 'pointer' }}
             title="Dismiss"
           >
@@ -174,13 +175,15 @@ export default function FirstDraftBanner({
             We&apos;ve done the research, compiled {sourceCount > 0 ? `${sourceCount} sources` : 'multiple sources'}, and built the structure. Now make it yours — read it through, change the tone, swap a product, or rewrite a section before you publish.
           </p>
 
-          {/* Action chips */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-            {ACTION_CHIPS.map((chip) => (
+          {/* Action chips — 2 visible on mobile, 4 on desktop */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
+            {ACTION_CHIPS.map((chip, idx) => (
               <button
                 key={chip.label}
                 onClick={() => handleChipClick(chip.prefill)}
-                className="text-left p-3 rounded-xl transition-all hover:shadow-sm"
+                className={`text-left p-3 rounded-xl transition-all hover:shadow-sm ${
+                  idx >= 2 && !showAllChips ? 'hidden sm:block' : ''
+                }`}
                 style={{
                   backgroundColor: '#FAFAF8',
                   border: '1px solid #E8E3DC',
@@ -205,6 +208,16 @@ export default function FirstDraftBanner({
               </button>
             ))}
           </div>
+          {/* "More options" toggle — mobile only */}
+          {!showAllChips && (
+            <button
+              onClick={() => setShowAllChips(true)}
+              className="text-xs mb-3 sm:hidden"
+              style={{ color: 'var(--text-secondary)', cursor: 'pointer' }}
+            >
+              More options...
+            </button>
+          )}
 
           {/* Buttons */}
           <div className="flex items-center gap-3 justify-end">

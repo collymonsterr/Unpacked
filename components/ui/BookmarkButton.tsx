@@ -53,8 +53,8 @@ export default function BookmarkButton({ articleId, user, onSignInNeeded }: Prop
     <button
       onClick={toggle}
       disabled={loading}
-      className="flex items-center gap-1 text-sm transition-opacity hover:opacity-70 disabled:opacity-50"
-      style={{ color: saved ? 'var(--accent)' : 'var(--text-secondary)', cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
+      className="flex items-center gap-1 text-sm transition-opacity hover:opacity-70 disabled:opacity-50 py-2 px-1 -my-2 -mx-1"
+      style={{ color: saved ? 'var(--accent)' : 'var(--text-secondary)', cursor: 'pointer', background: 'none', border: 'none', minHeight: '44px', minWidth: '44px' }}
       title={saved ? 'Remove bookmark' : 'Save for later'}
     >
       <svg

@@ -112,8 +112,8 @@ export default function ShareButton({ title, url, variant = 'inline' }: Props) {
   return (
     <button
       onClick={handleShare}
-      className="flex items-center gap-1.5 text-xs font-medium transition-colors relative"
-      style={{ color: copied ? '#059669' : 'var(--text-secondary)' }}
+      className="flex items-center gap-1.5 text-xs font-medium transition-colors relative py-2 px-1 -my-2 -mx-1"
+      style={{ color: copied ? '#059669' : 'var(--text-secondary)', minHeight: '44px', minWidth: '44px' }}
       title="Share article"
     >
       {copied ? (

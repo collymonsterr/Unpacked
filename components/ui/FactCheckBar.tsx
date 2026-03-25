@@ -97,8 +97,8 @@ export default function FactCheckBar({ status, factCheck }: Props) {
                 </p>
                 <button
                   onClick={() => setDismissed(true)}
-                  className="text-xs px-2 py-1 rounded-lg flex-shrink-0"
-                  style={{ color: '#15803d', opacity: 0.6 }}
+                  className="text-xs flex items-center justify-center rounded-lg flex-shrink-0"
+                  style={{ color: '#15803d', opacity: 0.6, minWidth: '44px', minHeight: '44px' }}
                 >
                   ✕
                 </button>
