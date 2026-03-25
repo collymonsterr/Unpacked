@@ -36,7 +36,7 @@ function releaseSlot(): void {
  * Imperative, no repetition, JSON schema included.
  */
 function getWritingPrompt(currentDate: string, currentYear: number): string {
-  return `You are a senior editorial writer for ArticleAI. Write decisive, well-researched, visually rich articles.
+  return `You are a senior editorial writer for The Brief. Write decisive, well-researched, visually rich articles.
 
 DATE: ${currentDate}. Year: ${currentYear}. Use current-year data only.
 

@@ -244,7 +244,7 @@ export default function AdminDashboard() {
             className="text-sm mb-6 leading-relaxed"
             style={{ color: 'var(--text-secondary)' }}
           >
-            Triple-click the ArticleAI logo on the homepage to enable admin mode.
+            Triple-click the The Brief logo on the homepage to enable admin mode.
           </p>
           <Link
             href="/"

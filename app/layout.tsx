@@ -17,28 +17,28 @@ const outfit = Outfit({
 })
 
 export const metadata: Metadata = {
-  title: 'ArticleAI — Type a question. Get a complete visual article.',
+  title: 'The Brief — Type a question. Get a complete visual article.',
   description:
     'Researched from real sources. Written with a clear opinion. Ready in under two minutes.',
-  metadataBase: new URL('https://articleai-three.vercel.app'),
+  metadataBase: new URL('https://thebrief.fyi'),
   openGraph: {
-    title: 'ArticleAI — Type a question. Get a complete visual article.',
+    title: 'The Brief — Type a question. Get a complete visual article.',
     description: 'Researched from real sources. Written with a clear opinion. Ready in under two minutes.',
-    url: 'https://articleai-three.vercel.app',
-    siteName: 'ArticleAI',
+    url: 'https://thebrief.fyi',
+    siteName: 'The Brief',
     type: 'website',
     images: [
       {
         url: '/og-default.png',
         width: 1200,
         height: 630,
-        alt: 'ArticleAI',
+        alt: 'The Brief',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ArticleAI — Type a question. Get a complete visual article.',
+    title: 'The Brief — Type a question. Get a complete visual article.',
     description: 'Researched from real sources. Written with a clear opinion. Ready in under two minutes.',
     images: ['/og-default.png'],
     site: '@articleai',

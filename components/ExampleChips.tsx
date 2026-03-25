@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 
 // Non-product prompts — one of these always goes first
 const NON_PRODUCT = [
+  'How much do I need to retire at 55 in the UK with a mortgage?',
   'Should I rent or buy in 2026?',
   'Is an MBA still worth it?',
   'How to start investing with $500',
@@ -12,36 +13,26 @@ const NON_PRODUCT = [
   'Is it worth learning to code in 2026?',
   'Should I go freelance or stay employed?',
   'How to negotiate a higher salary',
-  'How credit scores actually work',
-  'The state of AI in 2026',
   'Are electric cars actually cheaper to own?',
   'Is the housing market about to crash?',
-  'What is intermittent fasting and does it work?',
   'How much house can I actually afford?',
   'Is paying off your mortgage early worth it?',
   'How much is your commute actually costing you?',
-  'What\'s happening with remote work policies?',
   'Best cities for remote workers in Europe',
-  'Weekend trip to Tokyo: what to do',
-  'A food lover\'s guide to Mexico City',
   'How to plan a solo backpacking trip',
 ]
 
 // Product/buyer/comparison prompts — fill the remaining 3 slots
 const PRODUCT = [
-  'Best noise-cancelling headphones under $300',
+  'Best noise-cancelling headphones under $300 for long flights',
+  'Sony A7 IV vs Canon R6 Mark II — which is better for video?',
   'Best standing desks for home offices',
   'Best mirrorless cameras for beginners',
   'Best mechanical keyboards under $100',
-  'Best portable monitors for travel',
-  'Best air purifiers for allergies',
   'Best espresso machines under $500',
   'iPhone 17 vs Galaxy S26',
   'MacBook Air vs Dell XPS 14',
-  'Notion vs Obsidian for note-taking',
   'Tesla Model 3 vs BMW i4',
-  'Spotify vs Apple Music in 2026',
-  'Lease vs finance a new car',
   'Best Greek islands for couples',
 ]
 

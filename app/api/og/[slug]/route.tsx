@@ -9,7 +9,7 @@ export async function GET(
 ) {
   const { slug } = await params
 
-  let title = 'ArticleAI'
+  let title = 'The Brief'
   let articleType = ''
   let verdict = ''
   let thumbnailUrl = ''
@@ -23,7 +23,7 @@ export async function GET(
       : await query.eq('slug', slug).single()
 
     if (data) {
-      title = data.article?.title ?? data.plan?.title ?? data.query ?? 'ArticleAI'
+      title = data.article?.title ?? data.plan?.title ?? data.query ?? 'The Brief'
       articleType = data.article?.article_type ?? ''
       verdict = data.article?.quick_verdict?.one_liner ?? ''
       thumbnailUrl = data.article?.thumbnail_url ?? ''
@@ -154,10 +154,10 @@ export async function GET(
             }}
           >
             <span style={{ fontSize: 22, fontWeight: 800, color: '#1A1A1A' }}>
-              Article
+              The
             </span>
             <span style={{ fontSize: 22, fontWeight: 800, color: '#E07A3A' }}>
-              AI
+              Brief
             </span>
           </div>
         </div>

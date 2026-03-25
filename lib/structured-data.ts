@@ -6,7 +6,7 @@ export function generateArticleJsonLd(
   createdAt: string,
   updatedAt?: string
 ) {
-  const canonicalUrl = `https://articleai-three.vercel.app/article/${slug}`
+  const canonicalUrl = `https://thebrief.fyi/article/${slug}`
 
   const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
@@ -21,15 +21,15 @@ export function generateArticleJsonLd(
     dateModified: updatedAt ?? createdAt,
     author: {
       '@type': 'Organization',
-      name: 'ArticleAI',
+      name: 'The Brief',
     },
     publisher: {
       '@type': 'Organization',
-      name: 'ArticleAI',
-      url: 'https://articleai-three.vercel.app',
+      name: 'The Brief',
+      url: 'https://thebrief.fyi',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://articleai-three.vercel.app/favicon-192.png',
+        url: 'https://thebrief.fyi/favicon-192.png',
       },
     },
   }
@@ -51,7 +51,7 @@ export function generateProductJsonLd(
     '@type': 'Product',
     name: product.entity_name,
     description: product.opinion ?? product.verdict ?? '',
-    url: `https://articleai-three.vercel.app/article/${slug}`,
+    url: `https://thebrief.fyi/article/${slug}`,
   }
 
   if (product.image_url ?? product.image_urls?.[0]) {
@@ -77,11 +77,11 @@ export function generateProductJsonLd(
       reviewBody: product.verdict,
       author: {
         '@type': 'Organization',
-        name: 'ArticleAI',
+        name: 'The Brief',
       },
       publisher: {
         '@type': 'Organization',
-        name: 'ArticleAI',
+        name: 'The Brief',
       },
     }
   }
@@ -98,13 +98,13 @@ export function generateBreadcrumbJsonLd(articleTitle: string, slug: string) {
         '@type': 'ListItem',
         position: 1,
         name: 'Home',
-        item: 'https://articleai-three.vercel.app',
+        item: 'https://thebrief.fyi',
       },
       {
         '@type': 'ListItem',
         position: 2,
         name: articleTitle,
-        item: `https://articleai-three.vercel.app/article/${slug}`,
+        item: `https://thebrief.fyi/article/${slug}`,
       },
     ],
   }

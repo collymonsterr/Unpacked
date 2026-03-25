@@ -13,13 +13,13 @@ export default function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
         className={`font-extrabold tracking-tight ${sizes[size]}`}
         style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
       >
-        Article
+        The
       </span>
       <span
         className={`font-extrabold tracking-tight ${sizes[size]}`}
         style={{ fontFamily: 'var(--font-sora)', color: 'var(--accent)' }}
       >
-        AI
+        Brief
       </span>
     </Link>
   )

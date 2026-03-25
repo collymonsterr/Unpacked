@@ -7,6 +7,7 @@ import PopularSection from '@/components/homepage/PopularSection'
 import RecentArticlesGrid from '@/components/RecentArticlesGrid'
 import PendingArticleRecovery from '@/components/PendingArticleRecovery'
 import Footer from '@/components/ui/Footer'
+import TrustStrip from '@/components/TrustStrip'
 import type { ArticleRow } from '@/types/article'
 
 import type { Metadata } from 'next'
@@ -15,7 +16,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   alternates: {
-    canonical: 'https://articleai-three.vercel.app',
+    canonical: 'https://thebrief.fyi',
   },
 }
 
@@ -121,6 +122,11 @@ export default async function HomePage() {
 
       {/* Hero + feature cards (auth-conditional) */}
       <HomepageHero existingQueries={all.map(a => a.query)} />
+
+      {/* Trust strip */}
+      <div className="mb-10">
+        <TrustStrip />
+      </div>
 
       {/* Featured */}
       {featured.length > 0 && (

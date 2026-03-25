@@ -260,7 +260,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
             {formattedDate} · {readingTime} min read
           </p>
           <span style={{ color: 'var(--border)' }}>·</span>
-          <ShareButton title={article.title} url={`https://articleai-three.vercel.app/article/${articleRow.slug}`} />
+          <ShareButton title={article.title} url={`https://thebrief.fyi/article/${articleRow.slug}`} />
           <span style={{ color: 'var(--border)' }}>·</span>
           <BookmarkButton articleId={articleRow.id} user={user} />
           {(articleRow.status === 'verified' || articleRow.fact_check) && (
@@ -400,7 +400,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3" data-no-print>
         <ShareButton
           title={article.title}
-          url={`https://articleai-three.vercel.app/article/${articleRow.slug}`}
+          url={`https://thebrief.fyi/article/${articleRow.slug}`}
           variant="bottom-row"
         />
         <button

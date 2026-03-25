@@ -5,7 +5,7 @@ import ExampleChips from '@/components/ExampleChips'
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'About ArticleAI — Why We Built Something Different',
+  title: 'About The Brief — Why We Built Something Different',
   description: 'AI articles are boring. We fixed that. Structured, visual, opinionated articles with real research and independent fact-checking.',
 }
 
@@ -91,7 +91,7 @@ export default function AboutPage() {
           className="text-2xl md:text-3xl font-bold mb-8 text-center"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
         >
-          ArticleAI fixes all of it
+          The Brief fixes all of it
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
@@ -180,7 +180,7 @@ export default function AboutPage() {
             </p>
           </div>
 
-          {/* Right — ArticleAI */}
+          {/* Right — The Brief */}
           <div className="flex flex-col">
             <div
               className="rounded-xl overflow-hidden flex-1 flex flex-col"

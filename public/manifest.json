@@ -1,6 +1,6 @@
 {
-  "name": "ArticleAI",
-  "short_name": "ArticleAI",
+  "name": "The Brief",
+  "short_name": "The Brief",
   "description": "Type a question. Get a complete visual article.",
   "start_url": "/",
   "display": "standalone",

@@ -50,6 +50,12 @@ export default function HomepageHero({ existingQueries }: Props) {
         <div className="w-full max-w-2xl">
           <SearchForm />
           <ExampleChips existingQueries={existingQueries} />
+          <p className="text-center mt-4" style={{ fontSize: '13px', color: '#999', fontFamily: 'var(--font-outfit)' }}>
+            Want to publish under your name?{' '}
+            <a href="/creators" className="no-underline hover:opacity-80" style={{ color: '#999', textDecoration: 'underline' }}>
+              Learn how →
+            </a>
+          </p>
         </div>
       </section>
 

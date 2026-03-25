@@ -1,0 +1,64 @@
+{
+  "query": "The New Wave of Chinese EVs: Your Complete Guide to the Global Market Leaders",
+  "model": "gemini-2.5-flash",
+  "method": "Brave Search (6 queries) + Gemini Flash",
+  "durationMs": 14948,
+  "estimatedCost": "~$0.01-0.02",
+  "article": {
+    "title": "The New Wave of Chinese EVs: Your Complete Guide to the Global Market Leaders",
+    "article_type": "decision_guide",
+    "thumbnail_url": null,
+    "quick_verdict": {
+      "bullets": [
+        "China is the undisputed global leader in electric vehicles, driven by strategic advantages and rapid innovation.",
+        "BYD Auto stands as the dominant Chinese EV manufacturer, leveraging vertical integration and advanced Blade Battery technology.",
+        "Chinese OEMs are aggressively expanding globally, reshaping the international automotive landscape with high-tech, cost-effective models."
+      ],
+      "one_liner": "China's EV sector, spearheaded by BYD, has decisively seized global leadership through innovation, vertical integration, and aggressive market expansion."
+    },
+    "executive_summary": {
+      "short_answer": "China has firmly established itself as the global leader in the electric vehicle market, with BYD Auto emerging as the preeminent manufacturer, pushing boundaries in technology and affordability.",
+      "key_takeaways": [
+        "The Chinese EV market is a financial powerhouse, projected to reach $377.9 billion in revenue for 2025, underscoring its immense scale and growth.",
+        "BYD Auto leads the charge with a commanding 34.1% market share, attributed to its comprehensive vertical integration and innovative Blade Battery technology.",
+        "Chinese OEMs are rapidly expanding their global footprint, with exports surging 87%, fundamentally reshaping auto markets from Mexico to Europe in 2026."
+      ],
+      "watch_out_for": [
+        "Intense domestic price wars are a significant factor driving Chinese automakers to expand aggressively into global markets, potentially impacting profit margins.",
+        "The rapid expansion of new-energy manufacturers has led to overcapacity in China, further fueling the push for international sales."
+      ]
+    },
+    "sections": [
+      {
+        "type": "content_section",
+        "heading": "China's Unstoppable EV Dominance",
+        "content": "As of March 2026, China has cemented its position as the global leader in the electric vehicle (EV) market. Its domestic market is the largest worldwide, with EV sales reaching over 50% market share in the country [Reddit 1]. This dominance is a result of a national strategy that prioritized EV development and adoption years ago [BBVA Research 3].\n\nThe Chinese EV market is a financial powerhouse, projected to reach an astounding $377.9 billion in revenue for 2025 [Solartechonline 1]. This immense growth is now coupled with a critical shift: companies can no longer rely on minor improvements, but must rapidly commercialize advanced technologies to compete [Evinfrastructurenews 5]. The era of incremental change is over; 2026 demands high-tech focus."
+      },
+      {
+        "type": "content_section",
+        "heading": "The Architects of Dominance: Why China Leads",
+        "content": "China's leadership in the EV sector is not accidental, but a product of strategic advantages. Robust EV battery supply chains, price parity with traditional internal combustion engine (ICE) vehicles, and advanced smartification features have been key drivers [McKinsey & Company 2]. Generous government subsidies and support for lithium batteries also played a crucial role in building this world-leading industry [MIT Technology Review 5].\n\nBeyond policy, China's control over critical chemical materials provides ultimate sector control, a strategy pursued for years [ITIF 4]. Furthermore, China dominates electric motor production and excels in designing high-efficiency systems that integrate batteries and motors [ITIF 4]. This vertical integration and technological prowess create a formidable competitive edge."
+      },
+      {
+        "type": "content_section",
+        "heading": "BYD: The Undisputed Global Frontrunner",
+        "content": "Among Chinese OEMs, BYD Auto stands as the undisputed global leader. The company is projected to capture a massive 34.1% market share in 2025, driven by its vertical integration and innovative Blade Battery technology [Solartechonline 1]. This strategic approach has allowed BYD to outpace competitors.\n\nIn a significant milestone, BYD edged past Tesla in global Battery Electric Vehicle (BEV) sales for the first time in the year leading up to June 2025 [ICCT 4]. BYD also received approvals for 38 new passenger car models in China, significantly more than Tesla's three, highlighting its rapid product development cycle [Rest of World 2]. BYD's aggressive model rollout and technological advancements solidify its position at the top."
+      },
+      {
+        "type": "content_section",
+        "heading": "The Rising Tide: Other Key Players and Their Edge",
+        "content": "While BYD leads, other Chinese OEMs are making significant waves globally. Geely's structure supports rapid development and cost reduction, giving it a clear advantage in scaling its EV efforts [Gizmochina 1]. Geely, alongside BYD and Wuling, received approvals for 83 new passenger car models collectively in the year leading up to October 2025 [Reddit 3].\n\nXPeng has solidified its position as the leader in AI-centric mobility, shifting its 2025 lineup fully to “AI-defined” vehicles [Gizmochina 1]. Its Mona M03 became a best-seller by offering advanced driver-assist tech for under $20,000, with a Mona SUV set to challenge the Tesla Model Y in early 2026 [Gizmochina 1]. Leapmotor is also recognized as a global leader in EV technology, selling 280,000 EVs in 2024 and surpassing Volkswagen in non-gasoline car sales in China [Reddit 2]."
+      },
+      {
+        "type": "content_section",
+        "heading": "Global Expansion: Reshaping the Automotive Landscape",
+        "content": "The Chinese EV sector's domestic success is now translating into aggressive global expansion. China’s EV exports surged an impressive 87% as price wars intensified at home [Carbon Credits 2]. This expansion is reshaping global auto markets, with Chinese automakers making significant inroads from Mexico to Europe in 2026 [Carbon Credits 2].\n\nGlobalData forecasts Chinese EV sales to continue growing globally, reaching approximately 6.5 million units by 2030, and nearly 8.5 million in 2035 [CNBC 3]. This aggressive push is driven by a combination of sustained government support, vertically integrated supply chains, speed, and saturation in China's domestic market [CNBC 5]. The oversupply of vehicles and batteries in China further fuels this global drive [SHS Conferences 3]."
+      },
+      {
+        "type": "content_section",
+        "heading": "The Future is Chinese: A Decisive Verdict",
+        "content": "The evidence is clear: China is not just participating in the EV revolution; it is leading it. The combination of government strategy, technological innovation, vertical integration, and aggressive global expansion has created an 'existential risk' for the U.S. auto industry, as noted by automotive experts [CNBC 5]. Europe, in turn, is attempting to copy China's approach, seeking technology transfers for market access [Reddit 4].\n\nUltimately, the world is benefiting from low-cost Chinese EVs, making electric mobility accessible to a broader global population, including customers with lower incomes [Reddit 5]. China's dominance is a permanent shift, and its automakers, particularly BYD, are the undeniable global market leaders in 2026 and for the foreseeable future."
+      }
+    ]
+  }
+}

@@ -1,5 +1,231 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
+# AGENTS.md — Project Briefing for The Brief (thebrief.fyi)
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
+Read this file before doing anything else. It is the single source of truth for this project.
+
+---
+
+## What This Project Is
+
+A web platform where users type any question and receive a complete, visual, opinionated article in 2–3 minutes. Not a chat response — a full editorial article with product cards, comparison tables, interactive charts, editorial photos, real user opinions pulled from Reddit and forums, and a clear verdict that picks a winner. After generation, a second AI independently fact-checks every price, spec, and claim.
+
+The platform has a creator model: users put their name on articles and will eventually earn affiliate revenue from product recommendations. Think Wirecutter meets Substack.
+
+**Current URL:** https://articleai-three.vercel.app/
+**Repository:** GitHub, auto-deploys to Vercel on push
+**Name change in progress:** "AI" is being dropped. Frontrunner name is thebrief.fyi. Do not hardcode "The Brief" anywhere new.
+
+---
+
+## The Founder
+
+Solo non-developer. Uses Claude Code as the primary development tool. All prompts need to be detailed and explicit — specify exact UI elements, exact behaviour, exact colours and sizes, fallback logic. Vague prompts lead to wrong implementations.
+
+---
+
+## CRITICAL: Development Workflow
+
+**Use the investigate-plan-approve-code workflow for any significant change.**
+
+1. **Investigate** — read and show the current relevant code first
+2. **Plan** — write out exactly what you intend to change and why
+3. **Approve** — wait for the founder to confirm the plan before touching anything
+4. **Code** — only then implement
+
+This workflow exists because Claude Code has made mistakes implementing things incorrectly and breaking existing functionality when diving straight into code. It applies to: anything touching the generation flow, homepage layout, article page structure, or any multi-component change.
+
+Small cosmetic tweaks (copy changes, colour adjustments, single-component fixes) can go direct.
+
+**Never assume something is implemented without verifying it in the code first.**
+
+---
+
+## Tech Stack
+
+- **Framework:** Next.js (App Router) deployed on Vercel Pro
+- **Database:** Supabase (PostgreSQL) — https://obyywahmmkrpsimjbdua.supabase.co
+- **Auth:** Google OAuth via Supabase Auth (no email/password login)
+- **Storage:** Supabase Storage (bucket: article-images)
+- **CSS:** Tailwind CSS
+- **Charts:** Recharts
+
+---
+
+## AI Pipeline
+
+### Default pipeline (used for most articles)
+1. **Planning:** Claude Haiku — classifies article type, decides structure, produces `forbidden_components`
+2. **Research:** Brave Search API — runs 4–10 searches, extracts structured research summary (~3,000–4,000 tokens). File: `lib/brave-research.ts`
+3. **Writing:** Google Gemini 2.5 Flash — generates full article JSON from research summary. File: `lib/gemini-writer.ts`
+4. **Cost:** ~$0.02–0.03 per article
+
+### Premium / deep dive pipeline
+- Same planning and Brave research steps
+- Writing uses Claude Sonnet instead of Gemini Flash
+- Sonnet does NOT use the web search tool — research comes from Brave only
+- Also used as automatic fallback if Gemini fails (JSON schema validation with 2 retries before fallback)
+- **Cost:** ~$0.08–0.12 per article
+
+### Fact-checking (all articles, runs after delivery)
+- Google Gemini 2.5 Flash with Google Search grounding
+- Runs asynchronously after article is delivered to user
+- Independently verifies prices, specs, statistics, claims
+- Corrections applied automatically
+- User sees: "Fact-checking this article against live sources..." then "Verified — X corrections applied"
+- Deliberate choice to use a different model from the writer to avoid self-reinforcing errors
+- API key: GOOGLE_GEMINI_API_KEY
+
+### Hero image generation
+- Primary: Brave image search for real editorial photos
+- Fallback: OpenAI GPT Image (gpt-image-1) with 6 randomised photography styles
+- Smart subject extraction to ensure images match the topic not the context
+
+---
+
+## Article Classification Engine
+
+The planning step classifies every query into one of 7 article types before writing begins:
+
+- Comparison, Explainer, Buyer Guide, Decision Guide, Tutorial, News, Trend Analysis
+
+Each type has Required, Allowed, and Forbidden component rules. The `forbidden_components` field in the plan JSON is passed to the writing prompt as a HARD CONSTRAINT. Visuals are conditional based on article type — not included by default.
+
+This was built to stop every article looking like a generic blog post.
+
+---
+
+## Database — Key Columns on Articles Table
+
+- `is_featured` boolean — article appears in Featured section
+- `featured_position` integer — controls order; hero article is whichever featured article the localStorage rotation logic selects (no separate is_hero column)
+- `card_summary` text — punchy one-liner generated by Haiku for hero card display, editable in admin
+- `is_trending` boolean — article appears in Trending Today section
+- `trending_set_at` timestamp — when trending flag was set
+- `view_count` integer — used for Most Popular section
+- `hidden_from_homepage` boolean — admin can hide articles
+- `sort_order` integer — manual admin reorder
+- `generation_options` JSONB — stores length, tone, visual density settings
+- `forbidden_components` — in plan JSON, passed to writing prompt
+- `fact_check` JSONB — fact-check results
+- `verified_at` timestamp — when fact-check completed
+- `parent_article_id` and `root_article_id` — article lineage for refine/fork chain
+- `user_id`, `user_name`, `user_avatar` — creator attribution
+
+---
+
+## localStorage Keys in Use
+
+- `pendingArticleId` — article being generated, used for recovery on refresh/tab switch
+- `hasVisitedFeatured` — controls hero card rotation (first visit vs return)
+- `featuredHeroId` — last featured article shown as hero, excluded from next random selection
+- `recentArticles` — array of up to 10 recently visited articles
+
+---
+
+## Key Files and Components
+
+- `components/SearchForm.tsx` — homepage search/generate form, Phase 1 loading
+- `app/article/[slug]/ArticlePageClient.tsx` — article page, rendering conditions, polling, completion detection
+- `components/ArticleGenerating.tsx` — loading messages, message pacing, progress display
+- `lib/brave-research.ts` — Brave Search pre-research pipeline
+- `lib/gemini-writer.ts` — Gemini Flash article generation
+
+---
+
+## Homepage Structure (Four Sections)
+
+1. **Featured** — 1 hero card left (2fr) + 2×2 small cards right (3fr), fixed 540px height. Hero is selected by admin via featured toggle; rotation logic uses localStorage.
+2. **Trending Today** — exactly 3 dark-style cards, manually toggled by admin via `is_trending`
+3. **Most Popular** — top 4 articles by `view_count` with numbered rank badges
+4. **Recent Articles** — 3 cards per row with category filter pills
+
+---
+
+## Admin System
+
+Admin detected by matching authenticated user email against `NEXT_PUBLIC_ADMIN_EMAIL` env var.
+
+Per-article controls: Featured toggle, Trending toggle, Hero pin (only one at a time), Hide, Delete, Drag-to-reorder, Category change, Regenerate, Hero image refresh, `card_summary` edit field, Backfill button for card summaries.
+
+**Permission model:**
+- Admin only: delete, pin, visibility, update-type, reorder, regenerate, featured/trending toggles
+- Owner or admin: replace-thumbnail, replace-image, set-primary-image, regenerate-images
+- Authenticated: refine (creates a fork)
+- Public: view, record view, feedback, fact-check, export
+
+---
+
+## Rate Limiting
+
+- Create: 10 articles per hour per user ID or IP
+- Refine: 20 per hour
+- Stored in Supabase `rate_limits` table (not in-memory — works correctly on serverless Vercel)
+
+---
+
+## Cost Controls
+
+- `api_usage_log` table logs every Anthropic/Gemini API call with token counts
+- Duplicate call guard prevents same article ID triggering the same API call type within 5 minutes
+- Query caching checks for similar existing articles before generating — shows "We recently wrote this" with option to generate fresh
+- Concurrency limiter: default 3 concurrent generations (GEMINI_MAX_CONCURRENT=3)
+
+---
+
+## Design System
+
+- **Background:** warm cream/off-white (#FAFAF8)
+- **Primary accent:** orange/amber (#BA7517 for amber, #993C1D for category text)
+- **Feel:** Wirecutter meets The Verge — editorial, warm, opinionated
+- **Cards:** subtle borders, rounded corners, generous whitespace
+- **Verdict box:** trophy SVG icon in amber, grey background (#f0efed), italic serif text
+- **Verified badge:** green shield on hero card image corner. Label is "Verified" — NOT "Fact-checked"
+- **Author avatars:** initials circles
+
+---
+
+## Environment Variables
+
+```
+ANTHROPIC_API_KEY              # Haiku planning + Sonnet premium writing
+GOOGLE_GEMINI_API_KEY          # Gemini Flash writing + fact-checking
+BRAVE_SEARCH_API_KEY           # Web research + image search (paid plan, $5/1000 queries)
+OPENAI_API_KEY                 # GPT Image hero image generation
+NEXT_PUBLIC_SUPABASE_URL       # https://obyywahmmkrpsimjbdua.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY  # Public key
+SUPABASE_SERVICE_ROLE_KEY      # Server-side only — never in client code
+NEXT_PUBLIC_ADMIN_EMAIL        # Admin user's email
+GEMINI_MAX_CONCURRENT=3        # Concurrent generation limit
+```
+
+**Safe to remove from Vercel (confirmed unused):**
+- GOOGLE_CUSTOM_SEARCH_API_KEY
+- GOOGLE_CUSTOM_SEARCH_ENGINE_ID
+- FAL_API_KEY
+
+---
+
+## Two Audiences — Important for Copy and Branding
+
+1. **Creators** — type questions, generate articles, share them, eventually earn affiliate revenue
+2. **Organic readers** — arrive via shared links on Reddit, social, etc.
+
+The site must feel like a publication for audience 2 while being a creation tool for audience 1. Do not write copy that frames the product as "an AI tool" — frame it as a publishing platform.
+
+---
+
+## What's Not Built Yet (Do Not Assume These Exist)
+
+- Affiliate link integration
+- Subscription tiers / usage limits / paywall
+- Trending Today automation (currently manual admin toggle)
+- Tags system
+- Proper PDF export (current export is browser print-to-PDF placeholder)
+- Profile photo upload (settings page exists but upload not wired to Supabase Storage)
+- Weekly email digest
+- View counting for Most Popular (column exists, increment logic may need verification)
+
+---
+
+## Name Change — Pending
+
+The site is being renamed. "The Brief" and "articleai" are being replaced. Frontrunner: **thebrief.fyi**. Decision imminent. When confirmed, a find-and-replace is needed across: site title, OG tags, JSON-LD, manifest.json, PDF footer, About page, Creators page, nav logo text, all hardcoded references. Do not introduce new hardcoded references to "The Brief" in the meantime.

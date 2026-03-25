@@ -1,4 +1,4 @@
-# ArticleAI — Project Status
+# The Brief — Project Status
 
 **Last updated:** 22 March 2026
 

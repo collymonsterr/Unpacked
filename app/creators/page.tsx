@@ -4,7 +4,7 @@ import Link from 'next/link'
 import CreatorsCTA from './CreatorsCTA'
 
 export const metadata = {
-  title: 'For Creators — ArticleAI',
+  title: 'For Creators — The Brief',
   description:
     'Turn your expertise into beautiful, shareable articles — and earn from every recommendation.',
 }
@@ -42,7 +42,7 @@ export default function CreatorsPage() {
           className="text-base md:text-lg max-w-2xl leading-relaxed"
           style={{ color: 'var(--text-secondary)' }}
         >
-          You know your niche. ArticleAI gives you the tools to create stunning, visual,
+          You know your niche. The Brief gives you the tools to create stunning, visual,
           opinionated articles in minutes. Share them with your audience. Earn from affiliate
           clicks. Build your reputation.
         </p>
@@ -132,7 +132,7 @@ export default function CreatorsPage() {
         </div>
       </section>
 
-      {/* Why creators love ArticleAI — 4 feature cards */}
+      {/* Why creators love The Brief — 4 feature cards */}
       <section
         className="py-16"
         style={{ backgroundColor: 'var(--card)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}
@@ -142,7 +142,7 @@ export default function CreatorsPage() {
             className="text-xs font-semibold uppercase tracking-widest mb-10 text-center"
             style={{ color: 'var(--accent)' }}
           >
-            Why creators love ArticleAI
+            Why creators love The Brief
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

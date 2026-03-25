@@ -81,8 +81,8 @@ export async function generateMetadata({ params }: Props) {
 
   const title = row.article?.title ?? row.plan?.title ?? row.query
   const description = row.article?.quick_verdict?.one_liner ?? row.plan?.quick_verdict_preview ?? ''
-  const canonicalUrl = `https://articleai-three.vercel.app/article/${row.slug}`
-  const ogImage = row.article?.thumbnail_url ?? `https://articleai-three.vercel.app/api/og/${row.slug}`
+  const canonicalUrl = `https://thebrief.fyi/article/${row.slug}`
+  const ogImage = row.article?.thumbnail_url ?? `https://thebrief.fyi/api/og/${row.slug}`
 
   return {
     title: `${title} — ArticleAI`,
