@@ -74,17 +74,15 @@ export default async function AboutPage() {
         <h2 className="text-2xl md:text-3xl font-bold mb-10 text-center" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
           Every AI answer looks the same.
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[700px] mx-auto">
           {[
-            { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg>, title: 'Wall of text', desc: 'You get 800 words of plain text. No images, no structure, no design. It looks like an email.' },
-            { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>, title: 'Generic AI slop', desc: 'Every AI writes the same thing. Safe, bland, and forgettable.' },
-            { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>, title: 'No opinion', desc: "AI won't pick a winner. \"It depends on your needs\" is not an answer." },
-            { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 21V14l4-4 4 4v7"/><circle cx="16" cy="8" r="2"/><line x1="2" y1="2" x2="22" y2="22"/></svg>, title: 'Useless images', desc: "Random thumbnails and logos that have nothing to do with the topic." },
-            { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>, title: 'Nothing verified', desc: 'The AI states a price confidently. Is it real? Is it current? You have no idea.' },
-            { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>, title: 'Nothing to share', desc: "You get the answer and then what? There's no link, no page, nothing you can send. It exists only in the chat window." },
+            { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg>, title: 'Wall of text', desc: '800 words of plain text. No images, no structure, no design. It looks like an email.' },
+            { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>, title: 'Generic generated output', desc: "Every AI writes the same thing. Safe, bland, forgettable, and won't pick a winner. You've read it a hundred times." },
+            { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>, title: 'Unverified and unchecked', desc: "The AI states prices and facts confidently. Are they real? Are they current? It won't tell you — and it won't check for you." },
+            { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 21V14l4-4 4 4v7"/><circle cx="16" cy="8" r="2"/><line x1="2" y1="2" x2="22" y2="22"/></svg>, title: 'Useless images', desc: "You might get a random thumbnail at the top. Not beautiful, not relevant, not something you'd want to share." },
           ].map((tile) => (
             <div key={tile.title} className="rounded-xl p-5" style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}>
-              <div className="mb-3">{tile.icon}</div>
+              <div className="w-9 h-9 flex items-center justify-center mb-3">{tile.icon}</div>
               <h3 className="text-sm font-bold mb-1" style={{ color: '#1A1714' }}>{tile.title}</h3>
               <p className="text-sm" style={{ color: '#6B6B6B' }}>{tile.desc}</p>
             </div>
@@ -108,19 +106,19 @@ export default async function AboutPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* ChatGPT panel */}
-          <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #E8E3DC' }}>
+          <div className="rounded-2xl overflow-hidden flex flex-col" style={{ border: '1px solid #E8E3DC' }}>
             <div className="px-4 py-2 flex items-center gap-2" style={{ backgroundColor: '#f5f5f4', borderBottom: '1px solid #E8E3DC' }}>
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#94918D' }} />
               <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#94918D' }}>Typical AI Response</span>
             </div>
-            <div className="p-5 text-sm leading-relaxed" style={{ backgroundColor: '#fff', color: '#6B6B6B' }}>
-              <p className="mb-3">🎧 Great question! There are several excellent options for noise-cancelling headphones. Here are some top picks:</p>
-              <p className="mb-2"><strong>1. Sony WH-1000XM5</strong> — These are widely considered the gold standard...</p>
-              <p className="mb-2"><strong>2. Bose QuietComfort Ultra</strong> — Known for exceptional comfort...</p>
-              <p className="mb-2"><strong>3. Apple AirPods Max</strong> — Premium build quality and seamless ecosystem...</p>
-              <p className="mb-2"><strong>4. Sennheiser Momentum 4</strong> — Excellent sound quality...</p>
-              <p className="mt-4 px-2 py-1 rounded" style={{ backgroundColor: '#FEF2F2', color: '#dc2626' }}>Ultimately, the best headphone <strong>depends on your personal preferences</strong> and budget. 😊</p>
-              <p className="mt-3">Don&apos;t forget about accessories like carrying cases and replacement ear pads!</p>
+            <div className="p-5 text-sm leading-relaxed flex-1" style={{ backgroundColor: '#fff', color: '#6B6B6B' }}>
+              <p className="mb-3">Great question! Both the <strong>iPhone 17</strong> and the <strong>Samsung Galaxy S26</strong> are excellent flagship smartphones. Here&apos;s a comparison to help you decide: 📱</p>
+              <p className="mb-3"><strong>iPhone 17</strong> — Apple&apos;s latest flagship features the A19 Pro chip, a 48MP main camera with improved computational photography, and the familiar iOS ecosystem. It offers excellent performance, strong privacy features, and seamless integration with other Apple devices like MacBooks, AirPods, and Apple Watch. The build quality is premium with a titanium frame and ceramic shield front. ✅</p>
+              <p className="mb-3"><strong>Samsung Galaxy S26</strong> — Samsung&apos;s flagship comes with the Snapdragon 8 Elite Gen 2 processor, a versatile triple camera system with a 200MP main sensor, and a stunning Dynamic AMOLED display. Galaxy AI features are deeply integrated, and the phone offers more customisation options than iOS. The S26 Ultra model adds an S Pen and a 5x optical zoom camera. 📸</p>
+              <p className="mb-3"><strong>Key differences:</strong> The iPhone excels in video recording, app optimisation, and ecosystem integration. The Galaxy S26 offers more camera flexibility (especially zoom), a brighter display, and more storage options. Both have similar battery life, though the S26 charges slightly faster. 🔋</p>
+              <p className="mb-3"><strong>Pricing:</strong> The iPhone 17 starts at around $799 for the base model and goes up to $1,199 for the Pro Max. The Galaxy S26 starts at $799 and the Ultra goes up to $1,299. Both phones are available on most major carriers with trade-in deals. 💰</p>
+              <p className="mt-4 px-3 py-2 rounded-lg" style={{ backgroundColor: '#FEF2F2', color: '#dc2626' }}>Ultimately, the best phone for you <strong>depends on your personal preferences</strong> and which ecosystem you&apos;re already invested in. 😊</p>
+              <p className="mt-3">You might also want to consider what accessories you&apos;ll need — a good case ($20–60), screen protector ($10–30), and possibly wireless earbuds if you don&apos;t already have them. Both phones support fast charging, but you&apos;ll need to buy a charger separately as neither includes one in the box.</p>
             </div>
           </div>
 
@@ -144,11 +142,12 @@ export default async function AboutPage() {
 
               {/* Two product rows */}
               {[
-                { name: 'iPhone 17', badge: 'WINNER', badgeColor: '#BA7517', price: 'From $799', desc: 'Best ecosystem, video, and resale value' },
-                { name: 'Samsung Galaxy S26', badge: 'BEST ZOOM', badgeColor: '#6B6B6B', price: 'From $799', desc: 'Best camera zoom and display brightness' },
+                { name: 'iPhone 17', badge: 'WINNER', badgeColor: '#BA7517', price: 'From $799', desc: 'Best ecosystem, video, and resale value', img: 'https://m-cdn.phonearena.com/images/article/178493-wide-two_1200/Samsung-Galaxy-S26-Ultra-vs-iPhone-17-Pro-Max-Sample-Photos-Comparison.webp', alt: 'iPhone 17' },
+                { name: 'Samsung Galaxy S26', badge: 'BEST ZOOM', badgeColor: '#6B6B6B', price: 'From $799', desc: 'Best camera zoom and display brightness', img: 'https://m-cdn.phonearena.com/images/article/178493-wide-two_1200/Samsung-Galaxy-S26-Ultra-vs-iPhone-17-Pro-Max-Sample-Photos-Comparison.webp', alt: 'Samsung Galaxy S26' },
               ].map(p => (
                 <div key={p.name} className="flex items-center gap-3 rounded-lg p-2.5 mb-2" style={{ border: '1px solid #E8E3DC' }}>
-                  <div className="w-10 h-10 rounded-lg shrink-0" style={{ backgroundColor: '#FEF3EC' }} />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.img} alt={p.alt} className="w-14 h-14 rounded-lg shrink-0 object-cover" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <span className="text-xs font-bold" style={{ color: '#1A1714' }}>{p.name}</span>
@@ -287,21 +286,27 @@ export default async function AboutPage() {
 
       {/* Feature 02 — Product Cards */}
       <FeatureBlock num="02" title="Real product cards, automatically sourced." align="right" bullets={['Real images from retailers and review sites', 'Prices verified against live sources', 'Specs, pros/cons, and editorial opinion per product']}>
-        <div className="space-y-3">
+        <div className="space-y-4">
           {[
-            { name: 'Nike Pegasus 41', price: '$140', badge: 'TOP PICK', specs: { 'Drop': '10mm', 'Weight': '266g', 'Cushion': 'React foam' } },
-            { name: 'ASICS Gel-Nimbus 26', price: '$160', badge: 'RUNNER UP', specs: { 'Drop': '8mm', 'Weight': '290g', 'Cushion': 'FF Blast+' } },
+            { name: 'ASICS Gel-Contend 8', price: '$85', tag: 'THE CONSENSUS PICK — BEST DAILY TRAINER UNDER $160', img: 'https://m.media-amazon.com/images/I/51+DIIlx2CL.jpg', specs: 'Drop: 10mm · Weight: 295g · Foam: Gel + EVA · Best for: Daily training', links: ['Check on Zappos →', 'Read on RunRepeat →'] },
+            { name: 'Nike Revolution 7', price: '$70', tag: 'BEST VALUE — UNBEATABLE AT $70', img: 'https://images-na.ssl-images-amazon.com/images/I/71CyTI7k6rL.jpg', specs: 'Drop: 10mm · Weight: Lightweight · Foam: Nike foam · Best for: Beginners', links: ['Nike Official Store →', 'Running Shoes Guru Review →'] },
           ].map(p => (
-            <div key={p.name} className="rounded-xl p-4 flex items-start gap-4" style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}>
-              <div className="w-14 h-14 rounded-lg shrink-0 flex items-center justify-center text-xs font-bold" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>{p.badge.split(' ')[0]}</div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <h4 className="text-sm font-bold" style={{ color: '#1A1714' }}>{p.name}</h4>
-                  <span className="text-sm font-bold" style={{ color: '#BA7517' }}>{p.price}</span>
-                </div>
-                <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>{p.badge}</span>
-                <div className="flex gap-4 mt-2 text-xs" style={{ color: '#6B6B6B' }}>
-                  {Object.entries(p.specs).map(([k, v]) => <span key={k}><strong>{k}:</strong> {v}</span>)}
+            <div key={p.name} className="rounded-xl overflow-hidden" style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}>
+              <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wide" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>{p.tag}</div>
+              <div className="p-4 flex items-start gap-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.img} alt={p.name} className="w-16 h-16 rounded-lg shrink-0 object-contain" style={{ backgroundColor: '#fff' }} />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <h4 className="text-sm font-bold" style={{ color: '#1A1714' }}>{p.name}</h4>
+                    <span className="text-base font-bold" style={{ color: '#BA7517' }}>{p.price}</span>
+                  </div>
+                  <p className="text-[11px] mb-2" style={{ color: '#6B6B6B' }}>{p.specs}</p>
+                  <div className="flex gap-3">
+                    {p.links.map(link => (
+                      <span key={link} className="text-[10px] font-medium" style={{ color: '#BA7517' }}>{link}</span>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
