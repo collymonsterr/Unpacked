@@ -356,7 +356,7 @@ ${optionsPrompt}
 CURRENT ARTICLE:
 ${JSON.stringify(currentArticle)}
 
-Apply the refinement and return the full updated article JSON. Also include a "suggestion_chips" key at the top level with new contextually relevant suggestions:
+Apply the refinement and return the full updated article JSON. Also include a "suggestion_chips" key at the top level with new contextually relevant suggestions. IMPORTANT: The current year is ${currentYear} — if any suggestion includes a year, use ${currentYear}, never 2024 or 2025.
 {
   ...article fields...,
   "suggestion_chips": {

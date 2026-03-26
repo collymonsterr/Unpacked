@@ -256,8 +256,8 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
   "forbidden_components": ["string — list every section type FORBIDDEN for this article type. The writing step will hard-block these."],
   "loading_messages": ["string"],
   "suggestion_chips": {
-    "refinements": ["string"],
-    "related": ["string"]
+    "refinements": ["string — 3 ways to modify THIS article"],
+    "related": ["string — 3 related NEW article topics. If you include a year, use ${new Date().getFullYear()}, never 2024 or 2025."]
   }
 }`
 
@@ -845,7 +845,7 @@ ${JSON.stringify(currentArticle, null, 2)}
 
 Refinement instruction: "${instruction}"${optionsPrompt}
 
-Apply the refinement and return the full updated article JSON. Also append a "suggestion_chips" key at the top level (outside the article structure) with new contextually relevant suggestions:
+Apply the refinement and return the full updated article JSON. Also append a "suggestion_chips" key at the top level (outside the article structure) with new contextually relevant suggestions. IMPORTANT: The current year is ${new Date().getFullYear()} — if any suggestion includes a year, use ${new Date().getFullYear()}, never 2024 or 2025.
 {
   ...article fields...,
   "suggestion_chips": {
