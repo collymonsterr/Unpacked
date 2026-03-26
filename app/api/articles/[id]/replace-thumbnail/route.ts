@@ -30,6 +30,7 @@ export async function POST(
 
   const article = row.article as ArticleContent
   const history = article.thumbnail_history ?? []
+  const summary = article.quick_verdict?.one_liner ?? article.executive_summary?.short_answer ?? ''
 
   // If setting a specific URL directly (from grid picker select)
   try {
@@ -57,7 +58,7 @@ export async function POST(
 
       if (isPreview && count > 1) {
         const urls = await fetchMultipleThumbnailImages(
-          article.title, article.article_type, allSeenUrls, heroQuery, count
+          article.title, article.article_type, allSeenUrls, heroQuery, count, summary, id
         )
         return Response.json({ preview_urls: urls })
       }
@@ -85,7 +86,7 @@ export async function POST(
   // Multi-image preview mode — return array of URLs without saving
   if (isPreview && count > 1 && !useAI) {
     const urls = await fetchMultipleThumbnailImages(
-      article.title, article.article_type, allSeenUrls, heroQuery, count
+      article.title, article.article_type, allSeenUrls, heroQuery, count, summary, id
     )
     return Response.json({ preview_urls: urls })
   }
@@ -95,10 +96,10 @@ export async function POST(
 
   if (useAI) {
     newUrl = await generateHeroImage(article, id)
-      ?? await fetchThumbnailImage(article.title, article.article_type, allSeenUrls, heroQuery)
+      ?? await fetchThumbnailImage(article.title, article.article_type, allSeenUrls, heroQuery, summary, id)
       ?? pickBestArticleImage(article)
   } else {
-    newUrl = await fetchThumbnailImage(article.title, article.article_type, allSeenUrls, heroQuery)
+    newUrl = await fetchThumbnailImage(article.title, article.article_type, allSeenUrls, heroQuery, summary, id)
       ?? pickBestArticleImage(article)
   }
 

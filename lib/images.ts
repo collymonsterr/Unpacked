@@ -186,64 +186,88 @@ function shortenTitle(title: string): string {
  * Each call with excludeUrls uses a different search angle to maximise variety.
  */
 /**
- * Map article topics to visual subjects for hero image search.
- * The key insight: search for what the article is ABOUT, not the article title.
- * "Rent vs Buy" → "beautiful modern house" not "rent vs buy guide"
+ * Generate a hero image search query using Claude Haiku.
+ * Smart, context-aware — replaces the old hardcoded keyword matching.
+ * Falls back to shortenTitle() if the API call fails.
  */
-function getHeroSubject(title: string, articleType: ArticleType): string {
-  const t = title.toLowerCase()
+async function generateHeroQuery(
+  title: string,
+  summary: string,
+  articleId?: string
+): Promise<string> {
+  try {
+    const Anthropic = (await import('@anthropic-ai/sdk')).default
+    const apiKey = process.env.ANTHROPIC_API_KEY
+    if (!apiKey) return shortenTitle(title)
 
-  // Topic-specific mappings
-  if (t.includes('rent') && t.includes('buy')) return 'beautiful modern house exterior'
-  if (t.includes('mortgage')) return 'dream home house keys'
-  if (t.includes('house') && t.includes('afford')) return 'beautiful suburban house'
-  if (t.includes('invest') || t.includes('compound interest')) return 'growing savings investment chart'
-  if (t.includes('retire') || t.includes('retirement')) return 'happy retired couple sunset beach'
-  if (t.includes('budget') || t.includes('finance')) return 'personal finance money management'
-  if (t.includes('inflation')) return 'rising prices grocery shopping'
-  if (t.includes('college') || t.includes('university')) return 'beautiful university campus'
-  if (t.includes('commute')) return 'city commuter highway traffic aerial'
-  if (t.includes('freelance')) return 'freelancer laptop coffee shop workspace'
-  if (t.includes('gym') || t.includes('workout')) return 'modern gym equipment fitness'
-  if (t.includes('dog')) return 'happy dog golden retriever park'
-  if (t.includes('cooking') || t.includes('eating')) return 'beautiful home cooking kitchen'
-  if (t.includes('smoking')) return 'money jar savings health'
-  if (t.includes('subscription')) return 'smartphone apps streaming services'
-  if (t.includes('car') && (t.includes('spend') || t.includes('buy'))) return 'luxury car showroom'
-  if (t.includes('airbnb') || t.includes('rental')) return 'beautiful vacation rental property'
-  if (t.includes('london') || t.includes('lisbon')) return `${t.includes('london') ? 'London' : 'Lisbon'} city skyline beautiful`
-  if (t.includes('dubai')) return 'Dubai skyline beautiful sunset'
-  if (t.includes('robot vacuum')) return 'robot vacuum cleaner product photo top view'
-  if (t.includes('ev') || t.includes('electric')) return 'electric car charging station modern'
-  if (t.includes('ai') || t.includes('llm') || t.includes('chatgpt')) return 'artificial intelligence technology abstract'
-  if (t.includes('vibe coding') || t.includes('programming')) return 'modern code editor developer workspace'
-  if (t.includes('headphone')) return 'premium headphones lifestyle'
-  if (t.includes('keyboard')) return 'mechanical keyboard desk setup'
-  if (t.includes('laptop') || t.includes('macbook')) return 'premium laptop workspace'
-  if (t.includes('guitar')) return 'electric guitar beautiful closeup'
-  if (t.includes('camera')) return 'mirrorless camera photography equipment'
-  if (t.includes('phone') || t.includes('iphone') || t.includes('galaxy')) return 'premium smartphone design'
-  if (t.includes('skincare')) return 'skincare products flatlay clean'
-  if (t.includes('backpack')) return 'premium travel backpack product photography'
-  if (t.includes('travel') && !t.includes('backpack')) return 'beautiful travel destination landscape'
-  if (t.includes('drum')) return 'electronic drum kit studio'
-  if (t.includes('motorbike') || t.includes('motorcycle') || t.includes('superbike')) return 'sports motorcycle dynamic action shot'
+    const anthropic = new Anthropic({ apiKey, maxRetries: 2, timeout: 10_000 })
+    const model = 'claude-haiku-4-5-20251001'
 
-  // Fall back to shortened title
-  return shortenTitle(title)
+    const message = await anthropic.messages.create({
+      model,
+      max_tokens: 50,
+      messages: [{
+        role: 'user',
+        content: `You are helping find a hero image for an editorial article. Given the article title and summary, return a single search query of 3-5 words that would find a strong, relevant, editorial-quality photograph.
+
+Rules:
+- Return ONLY the search query, nothing else
+- If the title contains a specific named product, tool, person, or brand, the search query MUST lead with that name. "OpenClaw AI developer" not "developer coding terminal". Specific names first, generic descriptions only as a last resort.
+- Focus on the most visually concrete aspect of the topic
+- For products: use the actual product or brand name
+- For people: use the person's name + context
+- For concepts: find the most visual representation
+- Never return generic terms like "technology" or "business" alone
+
+Title: ${title}
+Summary: ${summary.slice(0, 200)}
+
+Search query:`,
+      }],
+    })
+
+    // Log the API call
+    try {
+      const { getSupabaseAdmin } = await import('@/lib/supabase')
+      const db = getSupabaseAdmin()
+      await db.from('api_usage_log').insert({
+        call_type: 'hero_query',
+        model,
+        input_tokens: message.usage?.input_tokens ?? 0,
+        output_tokens: message.usage?.output_tokens ?? 0,
+        article_id: articleId ?? null,
+      })
+    } catch {
+      // Non-critical
+    }
+
+    const query = message.content.find(b => b.type === 'text')?.text?.trim() ?? ''
+    if (query.length >= 3 && query.length <= 60) {
+      console.log(`[hero-query] Haiku generated: "${query}" for "${title.slice(0, 40)}..."`)
+      return query
+    }
+
+    console.warn(`[hero-query] Haiku returned invalid query: "${query}" — falling back to title`)
+    return shortenTitle(title)
+  } catch (err) {
+    console.warn(`[hero-query] Haiku failed: ${(err as Error).message} — falling back to title`)
+    return shortenTitle(title)
+  }
 }
 
 export async function fetchThumbnailImage(
   title: string,
   articleType: ArticleType,
   excludeUrls?: string[],
-  heroImageQuery?: string
+  heroImageQuery?: string,
+  summary?: string,
+  articleId?: string
 ): Promise<string | null> {
   const apiKey = process.env.BRAVE_SEARCH_API_KEY
   if (!apiKey) return null
 
-  // Use AI-generated hero query if available, otherwise fall back to topic mapping
-  const baseQuery = heroImageQuery || getHeroSubject(title, articleType)
+  // Use stored hero query if available, otherwise generate one with Haiku
+  const baseQuery = heroImageQuery || await generateHeroQuery(title, summary ?? '', articleId)
   const isReplacing = excludeUrls && excludeUrls.length > 0
 
   // Neutral suffixes for variety on repeat searches — no Unsplash prefix
@@ -301,12 +325,15 @@ export async function fetchMultipleThumbnailImages(
   articleType: ArticleType,
   excludeUrls?: string[],
   heroImageQuery?: string,
-  count: number = 4
+  count: number = 4,
+  summary?: string,
+  articleId?: string
 ): Promise<string[]> {
   const apiKey = process.env.BRAVE_SEARCH_API_KEY
   if (!apiKey) return []
 
-  const baseQuery = heroImageQuery || getHeroSubject(title, articleType)
+  // Use stored hero query if available, otherwise generate one with Haiku
+  const baseQuery = heroImageQuery || await generateHeroQuery(title, summary ?? '', articleId)
   const isReplacing = excludeUrls && excludeUrls.length > 0
 
   const suffixes = ['', 'photo', 'editorial', 'photography', 'image', 'press photo', 'high resolution', 'closeup']

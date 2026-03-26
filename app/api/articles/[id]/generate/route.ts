@@ -173,7 +173,14 @@ export async function POST(
           row.plan.entities,
           row.plan.visual_strategy?.image_density
         ),
-        fetchThumbnailImage(rawArticle.title, rawArticle.article_type),
+        fetchThumbnailImage(
+          rawArticle.title,
+          rawArticle.article_type,
+          undefined,
+          row.plan.hero_image_query,
+          rawArticle.quick_verdict?.one_liner ?? rawArticle.executive_summary?.short_answer ?? '',
+          id
+        ),
       ])
 
       if (row.plan.hero_image_subject) {
