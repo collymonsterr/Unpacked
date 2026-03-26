@@ -6,6 +6,8 @@ import Link from 'next/link'
 import Logo from '@/components/ui/Logo'
 import UserMenu from '@/components/ui/UserMenu'
 import AdminAnalytics from '@/components/AdminAnalytics'
+import AdminUsers from '@/components/AdminUsers'
+import AdminCosts from '@/components/AdminCosts'
 import { useAdminMode } from '@/hooks/useAdminMode'
 import type { ArticleRow } from '@/types/article'
 import { ARTICLE_TYPE_LABELS } from '@/lib/article-config'
@@ -244,7 +246,7 @@ export default function AdminDashboard() {
             className="text-sm mb-6 leading-relaxed"
             style={{ color: 'var(--text-secondary)' }}
           >
-            Triple-click the The Brief logo on the homepage to enable admin mode.
+            Admin access is restricted to authorised accounts.
           </p>
           <Link
             href="/"
@@ -325,6 +327,12 @@ export default function AdminDashboard() {
 
         {/* Analytics charts */}
         <AdminAnalytics />
+
+        {/* Users section */}
+        <AdminUsers />
+
+        {/* Costs section */}
+        <AdminCosts />
 
         {loading ? (
           <div className="flex justify-center py-20">
