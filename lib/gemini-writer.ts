@@ -35,6 +35,27 @@ function releaseSlot(): void {
  * Trimmed writing system prompt — under 2,500 tokens.
  * Imperative, no repetition, JSON schema included.
  */
+/**
+ * Log a Gemini fallback event to api_usage_log for persistent tracking.
+ */
+async function logGeminiFallback(callType: string, errorMessage: string, rawResponse: string, articleId?: string) {
+  try {
+    const { getSupabaseAdmin } = await import('@/lib/supabase')
+    const db = getSupabaseAdmin()
+    await db.from('api_usage_log').insert({
+      call_type: `gemini_fallback_${callType}`,
+      model: 'gemini-2.5-flash',
+      input_tokens: 0,
+      output_tokens: 0,
+      article_id: articleId ?? null,
+      error_message: `${errorMessage} | Raw: ${rawResponse.slice(0, 300)}`,
+    })
+  } catch {
+    // If error_message column doesn't exist yet, this will fail silently
+    console.warn('[gemini-fallback] Could not log fallback to database')
+  }
+}
+
 function getWritingPrompt(currentDate: string, currentYear: number): string {
   return `You are a senior editorial writer for The Brief. Write decisive, well-researched, visually rich articles.
 
@@ -84,6 +105,8 @@ IMAGES BY ARTICLE TYPE — follow these rules strictly:
 - For image_section entries: search_query must describe a specific photographable subject. Never "technology background" or "abstract concept". Only include if you're confident a search will return a relevant photo.
 
 NO CITATION MARKUP: No <cite> tags. Clean prose only.
+
+CRITICAL: Output ONLY the raw JSON object. No markdown code fences. No text before or after the JSON. No explanations. Start your response with { and end with }.
 
 OUTPUT: Return ONLY valid JSON matching this schema:
 
@@ -203,6 +226,9 @@ ${optionsPrompt}`
 
   await acquireSlot()
 
+  let lastError = ''
+  let lastRawResponse = ''
+
   try {
     for (let attempt = 0; attempt < 3; attempt++) {
       console.log(`[gemini-writer] Attempt ${attempt + 1}/3 for "${query.slice(0, 40)}..."`)
@@ -214,7 +240,7 @@ ${optionsPrompt}`
           body: JSON.stringify({
             contents: [{ parts: [{ text: systemPrompt + '\n\n' + userMessage }] }],
             generationConfig: {
-              temperature: 0.7,
+              temperature: 0.3,
               maxOutputTokens: 8192,
             },
           }),
@@ -222,7 +248,9 @@ ${optionsPrompt}`
 
         if (!res.ok) {
           const errText = await res.text()
-          console.error(`[gemini-writer] API error ${res.status}:`, errText.slice(0, 200))
+          lastError = `API error ${res.status}: ${errText.slice(0, 200)}`
+          lastRawResponse = errText.slice(0, 500)
+          console.error(`[gemini-writer] Attempt ${attempt + 1} FAILED — API error ${res.status}:`, errText.slice(0, 200))
           if (res.status >= 500) continue // Retry on server errors
           throw new Error(`Gemini API error: ${res.status}`)
         }
@@ -230,24 +258,29 @@ ${optionsPrompt}`
         const data = await res.json()
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text
         if (!text) {
-          console.error('[gemini-writer] No text in response')
+          lastError = 'Empty response — no text in candidates'
+          lastRawResponse = JSON.stringify(data).slice(0, 500)
+          console.error(`[gemini-writer] Attempt ${attempt + 1} FAILED — empty response, no text in candidates`)
           continue
         }
 
+        lastRawResponse = text.slice(0, 500)
         const jsonStr = extractJSON(text)
         let article: Record<string, unknown>
 
         try {
           article = JSON.parse(jsonStr)
         } catch (parseErr) {
-          console.error(`[gemini-writer] JSON parse failed (attempt ${attempt + 1}):`, (parseErr as Error).message)
+          lastError = `JSON parse failed: ${(parseErr as Error).message}`
+          console.error(`[gemini-writer] Attempt ${attempt + 1} FAILED — JSON parse: ${(parseErr as Error).message}. First 300 chars: ${text.slice(0, 300)}`)
           continue
         }
 
         // Validate schema
         const validation = validateArticleSchema(article)
         if (!validation.valid) {
-          console.error(`[gemini-writer] Schema validation failed (attempt ${attempt + 1}):`, validation.errors.join(', '))
+          lastError = `Schema validation: ${validation.errors.join(', ')}`
+          console.error(`[gemini-writer] Attempt ${attempt + 1} FAILED — schema: ${validation.errors.join(', ')}`)
           continue
         }
 
@@ -271,15 +304,22 @@ ${optionsPrompt}`
         return article as unknown as ArticleContent
 
       } catch (err) {
+        lastError = (err as Error).message
         if (attempt < 2) {
-          console.log(`[gemini-writer] Retrying after error: ${(err as Error).message}`)
+          console.log(`[gemini-writer] Attempt ${attempt + 1} threw — retrying: ${(err as Error).message}`)
           continue
         }
+        // Final attempt — log fallback before throwing
+        console.error(`[gemini-writer] ALL 3 ATTEMPTS FAILED. Last error: ${lastError}. Raw response (first 500 chars): ${lastRawResponse}`)
+        await logGeminiFallback('write', lastError, lastRawResponse, articleId)
         throw err
       }
     }
 
-    throw new Error('Gemini failed after 3 attempts')
+    // All 3 attempts failed via continue (not throw)
+    console.error(`[gemini-writer] ALL 3 ATTEMPTS FAILED (continue path). Last error: ${lastError}. Raw response (first 500 chars): ${lastRawResponse}`)
+    await logGeminiFallback('write', lastError, lastRawResponse, articleId)
+    throw new Error(`Gemini failed after 3 attempts: ${lastError}`)
   } finally {
     releaseSlot()
   }
@@ -323,6 +363,9 @@ Apply the refinement and return the full updated article JSON. Also include a "s
 
   await acquireSlot()
 
+  let lastError = ''
+  let lastRawResponse = ''
+
   try {
     for (let attempt = 0; attempt < 3; attempt++) {
       console.log(`[gemini-refine] Attempt ${attempt + 1}/3 for "${instruction.slice(0, 40)}..."`)
@@ -334,7 +377,7 @@ Apply the refinement and return the full updated article JSON. Also include a "s
           body: JSON.stringify({
             contents: [{ parts: [{ text: systemPrompt + '\n\n' + userMessage }] }],
             generationConfig: {
-              temperature: 0.7,
+              temperature: 0.3,
               maxOutputTokens: 8192,
             },
           }),
@@ -342,7 +385,9 @@ Apply the refinement and return the full updated article JSON. Also include a "s
 
         if (!res.ok) {
           const errText = await res.text()
-          console.error(`[gemini-refine] API error ${res.status}:`, errText.slice(0, 200))
+          lastError = `API error ${res.status}: ${errText.slice(0, 200)}`
+          lastRawResponse = errText.slice(0, 500)
+          console.error(`[gemini-refine] Attempt ${attempt + 1} FAILED — API error ${res.status}:`, errText.slice(0, 200))
           if (res.status >= 500) continue
           throw new Error(`Gemini API error: ${res.status}`)
         }
@@ -351,22 +396,28 @@ Apply the refinement and return the full updated article JSON. Also include a "s
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
 
         if (!text) {
-          console.error('[gemini-refine] Empty response')
+          lastError = 'Empty response'
+          lastRawResponse = JSON.stringify(data).slice(0, 500)
+          console.error(`[gemini-refine] Attempt ${attempt + 1} FAILED — empty response`)
           continue
         }
+
+        lastRawResponse = text.slice(0, 500)
 
         // Extract JSON
         const jsonMatch = text.match(/\{[\s\S]*\}/)
         if (!jsonMatch) {
-          console.error('[gemini-refine] No JSON found in response')
+          lastError = 'No JSON found in response'
+          console.error(`[gemini-refine] Attempt ${attempt + 1} FAILED — no JSON. First 300 chars: ${text.slice(0, 300)}`)
           continue
         }
 
         let parsed: Record<string, unknown>
         try {
           parsed = JSON.parse(jsonMatch[0])
-        } catch {
-          console.error(`[gemini-refine] JSON parse failed (attempt ${attempt + 1})`)
+        } catch (parseErr) {
+          lastError = `JSON parse failed: ${(parseErr as Error).message}`
+          console.error(`[gemini-refine] Attempt ${attempt + 1} FAILED — JSON parse: ${(parseErr as Error).message}`)
           continue
         }
 
@@ -375,7 +426,8 @@ Apply the refinement and return the full updated article JSON. Also include a "s
 
         // Basic validation — must have title and sections
         if (!articleData.title || !Array.isArray(articleData.sections) || articleData.sections.length < 2) {
-          console.error('[gemini-refine] Invalid article structure')
+          lastError = `Invalid structure: title=${!!articleData.title}, sections=${Array.isArray(articleData.sections) ? (articleData.sections as unknown[]).length : 'not array'}`
+          console.error(`[gemini-refine] Attempt ${attempt + 1} FAILED — ${lastError}`)
           continue
         }
 
@@ -402,15 +454,20 @@ Apply the refinement and return the full updated article JSON. Also include a "s
         }
 
       } catch (err) {
+        lastError = (err as Error).message
         if (attempt < 2) {
-          console.log(`[gemini-refine] Retrying after error: ${(err as Error).message}`)
+          console.log(`[gemini-refine] Attempt ${attempt + 1} threw — retrying: ${(err as Error).message}`)
           continue
         }
+        console.error(`[gemini-refine] ALL 3 ATTEMPTS FAILED. Last error: ${lastError}. Raw: ${lastRawResponse.slice(0, 300)}`)
+        await logGeminiFallback('refine', lastError, lastRawResponse, articleId)
         throw err
       }
     }
 
-    throw new Error('Gemini refine failed after 3 attempts')
+    console.error(`[gemini-refine] ALL 3 ATTEMPTS FAILED (continue path). Last error: ${lastError}. Raw: ${lastRawResponse.slice(0, 300)}`)
+    await logGeminiFallback('refine', lastError, lastRawResponse, articleId)
+    throw new Error(`Gemini refine failed after 3 attempts: ${lastError}`)
   } finally {
     releaseSlot()
   }
