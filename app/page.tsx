@@ -66,13 +66,15 @@ async function getHomepageData() {
       .sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0))
       .slice(0, 4)
 
-    // Recent Articles — always newest first, no exceptions
-    const all = [...deduplicated].sort((a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    )
-
-    // Trending IDs — used to exclude from featured fallback
+    // IDs in featured and trending pools — used for exclusions
+    const featuredIds = new Set(featuredPool.map(a => a.id))
+    const trendingIds = new Set(trendingPool.map(a => a.id))
     const trendingIdList = trendingPool.map(a => a.id)
+
+    // Recent Articles — newest first, excluding featured and trending
+    const all = [...deduplicated]
+      .filter(a => !featuredIds.has(a.id) && !trendingIds.has(a.id))
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
     return { featuredPool, trendingPool, trendingIdList, popular, all }
   } catch {

@@ -250,8 +250,65 @@ function ActionButton({
 
 // ── Article Sub-Tabs Component ──
 
-function ArticleSubTabs({ articles }: { articles: ArticleRow[] }) {
+function ArticleSubTabs({ articles: initialArticles }: { articles: ArticleRow[] }) {
+  const [localArticles, setLocalArticles] = useState(initialArticles)
   const [subTab, setSubTab] = useState<'all' | 'featured' | 'trending' | 'hidden' | 'no-image'>('all')
+
+  // Sync with parent if articles prop changes
+  useEffect(() => { setLocalArticles(initialArticles) }, [initialArticles])
+
+  async function toggleFeatured(id: string) {
+    const article = localArticles.find(a => a.id === id)
+    if (!article) return
+    const newVal = !article.is_featured
+    setLocalArticles(prev => prev.map(a => a.id === id ? { ...a, is_featured: newVal } : a))
+    try {
+      const res = await fetch(`/api/articles/${id}/featured`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_featured: newVal }),
+      })
+      if (!res.ok) setLocalArticles(prev => prev.map(a => a.id === id ? { ...a, is_featured: !newVal } : a))
+    } catch {
+      setLocalArticles(prev => prev.map(a => a.id === id ? { ...a, is_featured: !newVal } : a))
+    }
+  }
+
+  async function toggleTrending(id: string) {
+    const article = localArticles.find(a => a.id === id)
+    if (!article) return
+    const newVal = !article.is_trending
+    setLocalArticles(prev => prev.map(a => a.id === id ? { ...a, is_trending: newVal } : a))
+    try {
+      const res = await fetch(`/api/articles/${id}/trending`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_trending: newVal }),
+      })
+      if (!res.ok) setLocalArticles(prev => prev.map(a => a.id === id ? { ...a, is_trending: !newVal } : a))
+    } catch {
+      setLocalArticles(prev => prev.map(a => a.id === id ? { ...a, is_trending: !newVal } : a))
+    }
+  }
+
+  async function toggleHidden(id: string) {
+    const article = localArticles.find(a => a.id === id)
+    if (!article) return
+    const newVal = !article.hidden_from_homepage
+    setLocalArticles(prev => prev.map(a => a.id === id ? { ...a, hidden_from_homepage: newVal } : a))
+    try {
+      const res = await fetch(`/api/articles/${id}/visibility`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hidden: newVal }),
+      })
+      if (!res.ok) setLocalArticles(prev => prev.map(a => a.id === id ? { ...a, hidden_from_homepage: !newVal } : a))
+    } catch {
+      setLocalArticles(prev => prev.map(a => a.id === id ? { ...a, hidden_from_homepage: !newVal } : a))
+    }
+  }
+
+  const articles = localArticles
 
   const featured = articles.filter(a => a.is_featured)
   const trending = articles.filter(a => a.is_trending)
@@ -372,16 +429,7 @@ function ArticleSubTabs({ articles }: { articles: ArticleRow[] }) {
               <div className="flex items-center gap-1 shrink-0">
                 {/* Featured star */}
                 <button
-                  onClick={async () => {
-                    try {
-                      await fetch(`/api/articles/${row.id}/featured`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ is_featured: !row.is_featured }),
-                      })
-                      window.location.reload()
-                    } catch {}
-                  }}
+                  onClick={() => toggleFeatured(row.id)}
                   className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
                   style={{
                     color: row.is_featured ? '#BA7517' : 'var(--text-secondary)',
@@ -397,16 +445,7 @@ function ArticleSubTabs({ articles }: { articles: ArticleRow[] }) {
 
                 {/* Trending fire */}
                 <button
-                  onClick={async () => {
-                    try {
-                      await fetch(`/api/articles/${row.id}/trending`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ is_trending: !row.is_trending }),
-                      })
-                      window.location.reload()
-                    } catch {}
-                  }}
+                  onClick={() => toggleTrending(row.id)}
                   className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
                   style={{
                     color: row.is_trending ? '#BA7517' : 'var(--text-secondary)',
@@ -422,16 +461,7 @@ function ArticleSubTabs({ articles }: { articles: ArticleRow[] }) {
 
                 {/* Hidden eye */}
                 <button
-                  onClick={async () => {
-                    try {
-                      await fetch(`/api/articles/${row.id}/visibility`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ hidden: !row.hidden_from_homepage }),
-                      })
-                      window.location.reload()
-                    } catch {}
-                  }}
+                  onClick={() => toggleHidden(row.id)}
                   className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
                   style={{
                     color: row.hidden_from_homepage ? '#dc2626' : 'var(--text-secondary)',
