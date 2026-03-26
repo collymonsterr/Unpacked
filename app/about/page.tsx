@@ -1,357 +1,473 @@
-'use client'
-
-import { useState } from 'react'
 import Logo from '@/components/ui/Logo'
 import UserMenu from '@/components/ui/UserMenu'
 import SearchForm from '@/components/SearchForm'
-import Link from 'next/link'
 import QuickVerdict from '@/components/sections/QuickVerdict'
+import Link from 'next/link'
+import type { Metadata } from 'next'
+import type { ArticleRow } from '@/types/article'
 
-// ── Sample data for live component demos ──
-
-const SAMPLE_VERDICT = {
-  bullets: [
-    'Sony WH-1000XM6 wins on noise cancellation and sound quality — the best all-rounder under $350',
-    'Bose QC45 is more comfortable for 8+ hour wear but loses on bass response and ANC performance',
-    'If you fly weekly, get the Sony. If you wear them all day at a desk, get the Bose.',
-  ],
-  one_liner: 'The Sony WH-1000XM6 is the better headphone for most people — but Bose wins on pure comfort.',
+export const metadata: Metadata = {
+  title: 'About Unpacked — Build a researched article in three minutes',
+  description: 'We built the interface ChatGPT never did. Structured, visual, opinionated articles with real research and independent fact-checking.',
 }
 
-const SAMPLE_PRODUCT_CARDS = [
-  {
-    name: 'Sony WH-1000XM6',
-    price: '$348',
-    verdict: 'TOP PICK',
-    specs: { 'ANC': 'Industry-leading', 'Battery': '40 hours', 'Weight': '254g' },
-  },
-  {
-    name: 'Bose QuietComfort 45',
-    price: '$279',
-    verdict: 'RUNNER UP',
-    specs: { 'ANC': 'Very good', 'Battery': '24 hours', 'Weight': '238g' },
-  },
-  {
-    name: 'Apple AirPods Max 2',
-    price: '$549',
-    verdict: 'PREMIUM PICK',
-    specs: { 'ANC': 'Excellent', 'Battery': '20 hours', 'Weight': '384g' },
-  },
-]
+async function getFeaturedArticles(): Promise<ArticleRow[]> {
+  try {
+    const { getSupabaseAdmin } = await import('@/lib/supabase')
+    const { data } = await getSupabaseAdmin()
+      .from('articles')
+      .select('id, slug, article, view_count, status, verified_at, created_at')
+      .in('status', ['complete', 'verified'])
+      .order('view_count', { ascending: false })
+      .limit(6)
+    return (data ?? []) as ArticleRow[]
+  } catch {
+    return []
+  }
+}
 
-const SAMPLE_CORRECTIONS = [
-  { original: 'Sony WH-1000XM6 price: $329', corrected: 'Current price: $348 (verified March 2026)' },
-  { original: 'Bose QC45 battery: 22 hours', corrected: 'Actual battery: 24 hours (from Bose spec sheet)' },
-]
+const TYPE_LABELS: Record<string, string> = {
+  buyer_guide: 'Buying Guide', comparison: 'Comparison', decision_guide: 'Decision Guide',
+  explainer: 'Explainer', news: 'News', planning: 'Travel & Living',
+  trend_analysis: 'Trend Analysis', tutorial: 'Tutorial',
+}
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const featuredArticles = await getFeaturedArticles()
+
   return (
     <div style={{ backgroundColor: '#FAFAF8', minHeight: '100vh' }}>
       {/* Nav */}
       <nav className="px-6 py-5 flex items-center justify-between max-w-6xl mx-auto">
         <Logo size="md" />
         <div className="flex items-center gap-3">
-          <Link href="/" className="text-sm font-medium no-underline" style={{ color: 'var(--text-secondary)' }}>
-            Home
-          </Link>
+          <Link href="/" className="text-sm font-medium no-underline" style={{ color: '#94918D' }}>Home</Link>
           <UserMenu />
         </div>
       </nav>
 
-      {/* ═══ HERO ═══ */}
+      {/* ═══ 1. HERO ═══ */}
       <section className="max-w-3xl mx-auto px-4 pt-16 pb-20 text-center">
-        <h1
-          className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-5"
-          style={{ fontFamily: 'var(--font-sora)', color: '#1A1A1A' }}
-        >
-          Build a fully researched, fact-checked article in three minutes.
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-5" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
+          Build a fully<br />researched,<br />fact-checked article<br /><span style={{ color: '#BA7517' }}>in three minutes.</span>
         </h1>
         <p className="text-lg md:text-xl mb-8 max-w-2xl mx-auto" style={{ color: '#6B6B6B' }}>
           Beautifully structured with images, interactive charts, and real opinions from real people — all collated into one polished article you can share.
         </p>
-        <Link
-          href="/"
-          className="inline-block px-7 py-3 rounded-xl text-base font-semibold no-underline"
-          style={{ backgroundColor: '#BA7517', color: '#fff', fontFamily: 'var(--font-sora)' }}
-        >
+        <Link href="/" className="inline-block px-7 py-3 rounded-xl text-base font-semibold no-underline" style={{ backgroundColor: '#BA7517', color: '#fff', fontFamily: 'var(--font-sora)' }}>
           Generate your first article →
         </Link>
       </section>
 
-      {/* ═══ CHALLENGER LINE (dark section) ═══ */}
-      <section className="w-full py-16" style={{ backgroundColor: '#1A1A1A' }}>
+      {/* ═══ 2. CHALLENGER LINE ═══ */}
+      <section className="w-full py-16" style={{ backgroundColor: '#1A1714' }}>
         <div className="max-w-3xl mx-auto px-4 text-center">
-          <h2
-            className="text-3xl md:text-4xl font-extrabold mb-3"
-            style={{ fontFamily: 'var(--font-sora)', color: '#fff' }}
-          >
-            We built the interface ChatGPT never did.
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-3" style={{ fontFamily: 'var(--font-sora)', color: '#fff' }}>
+            We built the interface<br /><span style={{ color: '#BA7517' }}>ChatGPT never did.</span>
           </h2>
-          <p className="text-lg" style={{ color: '#94918D' }}>
-            Same question. Completely different result.
-          </p>
+          <p className="text-lg" style={{ color: 'rgba(255,255,255,0.5)' }}>Same question. Completely different result.</p>
         </div>
       </section>
 
-      {/* ═══ HOW IT WORKS — three steps ═══ */}
-      <section className="max-w-5xl mx-auto px-4 md:px-6 py-20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+      {/* ═══ 3. PROBLEM GRID ═══ */}
+      <section className="max-w-[1060px] mx-auto px-4 md:px-6 py-20">
+        <h2 className="text-2xl md:text-3xl font-bold mb-10 text-center" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
+          Every AI answer looks the same.
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            {
-              num: '01',
-              title: 'Ask anything',
-              desc: 'Type any question, buying decision, or comparison. Any topic, any depth.',
-            },
-            {
-              num: '02',
-              title: 'We research',
-              desc: 'We search the live web, Reddit, forums, and expert reviews. Real data, not recycled training data.',
-            },
-            {
-              num: '03',
-              title: 'You\'re the editor',
-              desc: 'We hand you the first draft. Refine the tone, swap images, adjust sections, and publish something that\'s genuinely yours — under your name.',
-            },
-          ].map((step) => (
-            <div key={step.num} className="text-center md:text-left">
-              <span
-                className="text-xs font-bold tracking-widest uppercase"
-                style={{ color: '#BA7517' }}
-              >
-                Step {step.num}
-              </span>
-              <h3
-                className="text-xl font-bold mt-2 mb-2"
-                style={{ fontFamily: 'var(--font-sora)', color: '#1A1A1A' }}
-              >
-                {step.title}
-              </h3>
-              <p className="text-sm leading-relaxed" style={{ color: '#6B6B6B' }}>
-                {step.desc}
-              </p>
+            { icon: '📄', title: 'Wall of text', desc: 'You get 800 words of plain text. No images, no structure, no design. It looks like an email.' },
+            { icon: '🤖', title: 'Generic AI slop', desc: 'Every AI writes the same thing. Safe, bland, and forgettable.' },
+            { icon: '🤷', title: 'No opinion', desc: "AI won't pick a winner. \"It depends on your needs\" is not an answer." },
+            { icon: '🖼️', title: 'Useless images', desc: "Random thumbnails and logos that have nothing to do with the topic." },
+            { icon: '❓', title: 'Nothing verified', desc: 'The AI states a price confidently. Is it real? Is it current? You have no idea.' },
+            { icon: '🔗', title: 'No sources', desc: "No links, no citations, no way to verify anything. Just trust the AI." },
+          ].map((tile) => (
+            <div key={tile.title} className="rounded-xl p-5" style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}>
+              <span className="text-2xl mb-2 block">{tile.icon}</span>
+              <h3 className="text-sm font-bold mb-1" style={{ color: '#1A1714' }}>{tile.title}</h3>
+              <p className="text-sm" style={{ color: '#6B6B6B' }}>{tile.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ═══ FEATURE BLOCKS — alternating layout ═══ */}
+      {/* ═══ 4. PIVOT HEADING ═══ */}
+      <section className="text-center py-16 px-4">
+        <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-4" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
+          So we built<br /><span style={{ color: '#BA7517' }}>something different.</span>
+        </h2>
+        <p className="text-lg" style={{ color: '#6B6B6B' }}>The research done. The structure built. The answer given. In three minutes.</p>
+      </section>
 
-      {/* Feature 01: Verdict */}
-      <FeatureBlock
-        number="01"
-        title="A clear verdict. Every time."
-        description="No hedging. No &ldquo;it depends on your preferences.&rdquo; Every article picks a winner and tells you why — like a senior product journalist with 15 years of experience."
-        align="left"
-      >
-        <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #E8E3DC' }}>
-          <div className="p-4 md:p-6" style={{ backgroundColor: '#fff' }}>
-            <QuickVerdict data={SAMPLE_VERDICT} />
+      {/* ═══ 5. SIDE-BY-SIDE COMPARISON ═══ */}
+      <section className="max-w-[1060px] mx-auto px-4 md:px-6 py-16">
+        <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-center" style={{ color: '#BA7517', letterSpacing: '0.1em' }}>The difference</p>
+        <h2 className="text-2xl md:text-3xl font-bold mb-2 text-center" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>See it for yourself</h2>
+        <p className="text-base mb-8 text-center" style={{ color: '#6B6B6B' }}>Ask the same question to ChatGPT and to Unpacked. This is what you get.</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* ChatGPT panel */}
+          <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #E8E3DC' }}>
+            <div className="px-4 py-2 flex items-center gap-2" style={{ backgroundColor: '#f5f5f4', borderBottom: '1px solid #E8E3DC' }}>
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#94918D' }} />
+              <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#94918D' }}>Typical AI Response</span>
+            </div>
+            <div className="p-5 text-sm leading-relaxed" style={{ backgroundColor: '#fff', color: '#6B6B6B' }}>
+              <p className="mb-3">🎧 Great question! There are several excellent options for noise-cancelling headphones. Here are some top picks:</p>
+              <p className="mb-2"><strong>1. Sony WH-1000XM5</strong> — These are widely considered the gold standard...</p>
+              <p className="mb-2"><strong>2. Bose QuietComfort Ultra</strong> — Known for exceptional comfort...</p>
+              <p className="mb-2"><strong>3. Apple AirPods Max</strong> — Premium build quality and seamless ecosystem...</p>
+              <p className="mb-2"><strong>4. Sennheiser Momentum 4</strong> — Excellent sound quality...</p>
+              <p className="mt-4 px-2 py-1 rounded" style={{ backgroundColor: '#FEF2F2', color: '#dc2626' }}>Ultimately, the best headphone <strong>depends on your personal preferences</strong> and budget. 😊</p>
+              <p className="mt-3">Don&apos;t forget about accessories like carrying cases and replacement ear pads!</p>
+            </div>
+          </div>
+
+          {/* Unpacked panel */}
+          <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #E8E3DC' }}>
+            <div className="px-4 py-2 flex items-center gap-2" style={{ backgroundColor: '#FEF3EC', borderBottom: '1px solid #E8E3DC' }}>
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#BA7517' }} />
+              <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#BA7517' }}>Unpacked</span>
+            </div>
+            <div className="p-5" style={{ backgroundColor: '#fff' }}>
+              {/* Mini verdict */}
+              <div className="rounded-lg px-3 py-2 mb-3" style={{ backgroundColor: '#FEF3EC', borderLeft: '3px solid #BA7517' }}>
+                <p className="text-xs font-bold" style={{ color: '#BA7517' }}>VERDICT</p>
+                <p className="text-sm font-semibold" style={{ color: '#1A1714' }}>Get the Sony WH-1000XM5</p>
+              </div>
+              {/* Mini stat cards */}
+              <div className="flex gap-2 mb-3">
+                {[{ val: '$279-349', label: 'Price range' }, { val: '5', label: 'Tested' }, { val: '14', label: 'Sources' }].map(s => (
+                  <div key={s.label} className="flex-1 rounded-lg p-2 text-center" style={{ backgroundColor: '#FAFAF8', border: '1px solid #E8E3DC' }}>
+                    <p className="text-sm font-bold" style={{ color: '#BA7517' }}>{s.val}</p>
+                    <p className="text-[10px]" style={{ color: '#94918D' }}>{s.label}</p>
+                  </div>
+                ))}
+              </div>
+              {/* Mini product cards */}
+              {[{ name: 'Sony WH-1000XM5', price: '$348', badge: 'TOP PICK' }, { name: 'Bose QC Ultra', price: '$329', badge: 'RUNNER UP' }].map(p => (
+                <div key={p.name} className="flex items-center gap-3 rounded-lg p-2 mb-2" style={{ border: '1px solid #E8E3DC' }}>
+                  <div className="w-10 h-10 rounded-md flex items-center justify-center text-[8px] font-bold" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>{p.badge.split(' ')[0]}</div>
+                  <div className="flex-1"><p className="text-xs font-bold" style={{ color: '#1A1714' }}>{p.name}</p><p className="text-[10px]" style={{ color: '#BA7517' }}>{p.price}</p></div>
+                </div>
+              ))}
+              {/* Mini chart bars */}
+              <div className="flex items-end gap-1 h-8 mb-2">
+                {[60, 85, 45, 90, 70].map((h, i) => <div key={i} className="flex-1 rounded-t" style={{ height: `${h}%`, backgroundColor: i === 3 ? '#BA7517' : '#E8E3DC' }} />)}
+              </div>
+              {/* Fact-check */}
+              <div className="flex items-center gap-1 text-[10px]" style={{ color: '#059669' }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5" /></svg>
+                3 prices verified, all specs confirmed
+              </div>
+            </div>
+          </div>
+        </div>
+        <p className="text-xs text-center mt-4" style={{ color: '#94918D' }}>
+          Plain text. No images. No data. No verdict. — <span style={{ color: '#BA7517' }}>Visual. Structured. Opinionated. Fact-checked.</span>
+        </p>
+      </section>
+
+      {/* ═══ 6. HOW IT WORKS ═══ */}
+      <section className="max-w-[1060px] mx-auto px-4 md:px-6 py-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>, num: '01', title: 'Ask anything', desc: 'Type any question — a buying decision, a comparison, something you want to understand properly. Any topic, any depth.', tag: 'One sentence from you' },
+            { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 3h-8l-2 4h12l-2-4z"/></svg>, num: '02', title: 'We research', desc: 'We search the live web, Reddit, forums, and expert reviews. Real data, real current prices — not recycled training data from two years ago.', tag: '~2 minutes' },
+            { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>, num: '03', title: "You're the editor", desc: "We hand you the first draft. Refine the tone, swap images, adjust sections, and publish something that's genuinely yours — under your name.", tag: 'Your article. Your voice.' },
+          ].map((step) => (
+            <div key={step.num} className="text-center md:text-left relative">
+              <div className="w-12 h-12 rounded-[10px] flex items-center justify-center mx-auto md:mx-0 mb-4" style={{ backgroundColor: '#BA7517' }}>
+                {step.icon}
+              </div>
+              <span className="text-[10px] font-bold absolute top-0 right-0 md:right-auto md:left-14" style={{ color: '#BA7517' }}>Step {step.num}</span>
+              <h3 className="text-lg font-bold mt-1 mb-2" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>{step.title}</h3>
+              <p className="text-sm leading-relaxed mb-3" style={{ color: '#6B6B6B' }}>{step.desc}</p>
+              <span className="inline-block text-xs font-medium px-3 py-1 rounded-full" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>{step.tag}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ═══ 7. FEATURE BLOCKS ═══ */}
+
+      {/* Feature 01 — Verdict */}
+      <FeatureBlock num="01" title="A clear verdict. Every time." align="left" bullets={['Every article picks a winner and tells you why', 'No hedging, no "it depends on your preference"', 'Written like a senior product journalist']}>
+        <div className="rounded-2xl overflow-hidden p-4 md:p-6" style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}>
+          <QuickVerdict data={{
+            bullets: [
+              'Sony A7C II ($2,199) wins for everyday versatility — best autofocus, lightest body, and superb video in one package',
+              'Fujifilm X-T5 ($1,699) is the pick for photographers who prioritise image quality and film simulations over video features',
+              'Both outperform the Canon R8 on value — the R8 costs more and delivers less in every category except low-light AF'
+            ],
+            one_liner: 'The Sony A7C II is the best all-round mirrorless camera under $2,500 for hybrid shooters.'
+          }} />
+        </div>
+      </FeatureBlock>
+
+      {/* Feature 02 — Product Cards */}
+      <FeatureBlock num="02" title="Real product cards, automatically sourced." align="right" bullets={['Real images from retailers and review sites', 'Prices verified against live sources', 'Specs, pros/cons, and editorial opinion per product']}>
+        <div className="space-y-3">
+          {[
+            { name: 'Nike Pegasus 41', price: '$140', badge: 'TOP PICK', specs: { 'Drop': '10mm', 'Weight': '266g', 'Cushion': 'React foam' } },
+            { name: 'ASICS Gel-Nimbus 26', price: '$160', badge: 'RUNNER UP', specs: { 'Drop': '8mm', 'Weight': '290g', 'Cushion': 'FF Blast+' } },
+          ].map(p => (
+            <div key={p.name} className="rounded-xl p-4 flex items-start gap-4" style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}>
+              <div className="w-14 h-14 rounded-lg shrink-0 flex items-center justify-center text-xs font-bold" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>{p.badge.split(' ')[0]}</div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-1">
+                  <h4 className="text-sm font-bold" style={{ color: '#1A1714' }}>{p.name}</h4>
+                  <span className="text-sm font-bold" style={{ color: '#BA7517' }}>{p.price}</span>
+                </div>
+                <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>{p.badge}</span>
+                <div className="flex gap-4 mt-2 text-xs" style={{ color: '#6B6B6B' }}>
+                  {Object.entries(p.specs).map(([k, v]) => <span key={k}><strong>{k}:</strong> {v}</span>)}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </FeatureBlock>
+
+      {/* Feature 03 — Comparison Table */}
+      <FeatureBlock num="03" title="Interactive charts and comparison tables — generated automatically." align="left" bullets={['Performance ratings across key metrics', 'Winner highlighted per category', 'Data sourced from real benchmarks and reviews']}>
+        <div className="rounded-2xl p-4 md:p-5" style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}>
+          <table className="w-full text-xs">
+            <thead>
+              <tr><th className="text-left pb-3 font-semibold" style={{ color: '#94918D' }}>Metric</th><th className="pb-3 font-semibold text-center" style={{ color: '#1A1714' }}>Sony A7C II</th><th className="pb-3 font-semibold text-center" style={{ color: '#1A1714' }}>Fujifilm X-T5</th><th className="pb-3 font-semibold text-center" style={{ color: '#1A1714' }}>Canon R8</th></tr>
+            </thead>
+            <tbody>
+              {[
+                { metric: 'Autofocus', scores: [95, 82, 88] },
+                { metric: 'Image Quality', scores: [90, 94, 86] },
+                { metric: 'Video', scores: [92, 75, 80] },
+                { metric: 'Value', scores: [88, 91, 72] },
+                { metric: 'Portability', scores: [93, 85, 90] },
+              ].map(row => {
+                const max = Math.max(...row.scores)
+                return (
+                  <tr key={row.metric} style={{ borderTop: '1px solid #F5F4F1' }}>
+                    <td className="py-2 font-medium" style={{ color: '#6B6B6B' }}>{row.metric}</td>
+                    {row.scores.map((s, i) => (
+                      <td key={i} className="py-2 px-1">
+                        <div className="flex items-center gap-1.5 justify-center">
+                          <div className="w-16 h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#F5F4F1' }}>
+                            <div className="h-full rounded-full" style={{ width: `${s}%`, backgroundColor: s === max ? '#BA7517' : '#D3D1C7' }} />
+                          </div>
+                          <span className="font-semibold" style={{ color: s === max ? '#BA7517' : '#94918D' }}>{s}</span>
+                        </div>
+                      </td>
+                    ))}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+          <p className="text-[10px] mt-3" style={{ color: '#94918D' }}>Scores from DXOMARK, DPReview, and expert consensus — verified March 2026</p>
+        </div>
+      </FeatureBlock>
+
+      {/* Feature 04 — Community */}
+      <FeatureBlock num="04" title="What real people are actually saying. Right now." align="right" bullets={['Direct quotes from Reddit, Twitter/X, and forums', 'Sentiment analysis across hundreds of discussions', 'Links to original threads so you can verify']}>
+        <div className="space-y-3">
+          {[
+            { text: "Switched from petrol to EV six months ago. Fuel savings alone cover the higher payment. No regrets.", source: 'r/electricvehicles', border: '#BA7517' },
+            { text: "The charging infrastructure outside cities is still terrible. Two failed stations on my last road trip.", source: 'r/cars', border: '#BA7517' },
+            { text: "Just did the math — my Model 3 costs 3p/mile vs 15p/mile for my old Golf. It's not even close.", source: '@evowner_uk', border: '#1DA1F2' },
+          ].map((q, i) => (
+            <div key={i} className="rounded-xl p-4" style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}>
+              <div className="pl-3 py-1" style={{ borderLeft: `3px solid ${q.border}` }}>
+                <p className="text-sm italic mb-1" style={{ color: '#1A1714' }}>&ldquo;{q.text}&rdquo;</p>
+                <p className="text-xs" style={{ color: q.border === '#1DA1F2' ? '#1DA1F2' : '#BA7517' }}>{q.source}</p>
+              </div>
+            </div>
+          ))}
+          <div className="rounded-xl p-4" style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}>
+            <p className="text-xs font-semibold mb-2" style={{ color: '#6B6B6B' }}>Community sentiment across 1,240 discussions</p>
+            <div className="flex h-3 rounded-full overflow-hidden" style={{ backgroundColor: '#F5F4F1' }}>
+              <div style={{ width: '67%', backgroundColor: '#BA7517' }} />
+              <div style={{ width: '28%', backgroundColor: '#D4A843' }} />
+              <div style={{ width: '5%', backgroundColor: '#D3D1C7' }} />
+            </div>
+            <div className="flex justify-between text-xs mt-1" style={{ color: '#6B6B6B' }}>
+              <span>Pro-EV 67%</span><span>Sceptical 28%</span><span>Neutral 5%</span>
+            </div>
           </div>
         </div>
       </FeatureBlock>
 
-      {/* Feature 02: Calculator */}
-      <FeatureBlock
-        number="02"
-        title="Real calculators. Built into every article."
-        description="Interactive tools that let you plug in your own numbers — mortgage payments, retirement savings, commute costs. Not static text. Real calculators that update as you move the sliders."
-        align="right"
-      >
-        <RentBuyCalculator />
-      </FeatureBlock>
-
-      {/* Feature 03: Product Cards */}
-      <FeatureBlock
-        number="03"
-        title="Real product cards, automatically sourced."
-        description="Every product gets a card with images, specs, price, and an editorial opinion. Sourced from live web search — not training data from 2024."
-        align="left"
-      >
-        <div className="space-y-3">
-          {SAMPLE_PRODUCT_CARDS.map((p) => (
-            <div
-              key={p.name}
-              className="rounded-xl p-4 flex items-start gap-4"
-              style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}
-            >
-              <div
-                className="w-14 h-14 rounded-lg shrink-0 flex items-center justify-center text-xs font-bold"
-                style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}
-              >
-                {p.verdict.split(' ')[0]}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <h4 className="text-sm font-bold" style={{ color: '#1A1A1A' }}>{p.name}</h4>
-                  <span className="text-sm font-bold" style={{ color: '#BA7517' }}>{p.price}</span>
-                </div>
-                <span
-                  className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full"
-                  style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}
-                >
-                  {p.verdict}
-                </span>
-                <div className="flex gap-4 mt-2 text-xs" style={{ color: '#6B6B6B' }}>
-                  {Object.entries(p.specs).map(([k, v]) => (
-                    <span key={k}><strong>{k}:</strong> {v}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </FeatureBlock>
-
-      {/* Feature 04: Image Control */}
-      <FeatureBlock
-        number="04"
-        title="You control the images."
-        description="Not happy with a product photo? Click to search for a better one, or upload your own. Every image in the article is replaceable — hero images, product shots, everything."
-        align="right"
-      >
+      {/* Feature 05 — Image Control */}
+      <FeatureBlock num="05" title="You control the images." align="left" bullets={['Search for better photos from the web', 'Upload your own images', 'Every image in the article is replaceable']}>
         <div className="rounded-2xl p-4" style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}>
           <div className="grid grid-cols-2 gap-2 mb-3">
             {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="aspect-square rounded-lg flex items-center justify-center text-xs"
-                style={{
-                  backgroundColor: i === 1 ? '#FEF3EC' : '#F5F4F1',
-                  border: i === 1 ? '2px solid #BA7517' : '1px solid #E8E3DC',
-                  color: i === 1 ? '#BA7517' : '#94918D',
-                }}
-              >
-                {i === 1 ? '✓ Selected' : `Option ${i}`}
+              <div key={i} className="aspect-square rounded-lg flex items-center justify-center text-xs" style={{
+                backgroundColor: i === 1 ? '#FEF3EC' : '#F5F4F1',
+                border: i === 1 ? '2px solid #BA7517' : '1px solid #E8E3DC',
+                color: i === 1 ? '#BA7517' : '#94918D',
+              }}>
+                {i === 1 && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>}
+                {i === 1 ? ' Selected' : `Option ${i}`}
               </div>
             ))}
           </div>
-          <div
-            className="rounded-lg py-6 text-center text-xs"
-            style={{
-              border: '2px dashed #E8E3DC',
-              color: '#94918D',
-            }}
-          >
-            📁 Or upload your own image
-          </div>
+          <div className="rounded-lg py-6 text-center text-xs" style={{ border: '2px dashed #E8E3DC', color: '#94918D' }}>📁 Or upload your own image</div>
         </div>
       </FeatureBlock>
 
-      {/* Feature 05: Community Opinions */}
-      <FeatureBlock
-        number="05"
-        title="Real opinions from real people."
-        description="We search Reddit, Twitter/X, and specialist forums. You see what actual owners and experts think — not AI-generated fake reviews."
-        align="left"
-      >
-        <div className="space-y-3">
-          <div
-            className="rounded-xl p-4"
-            style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}
-          >
-            <div className="pl-3 py-1 mb-2" style={{ borderLeft: '3px solid #BA7517' }}>
-              <p className="text-sm italic" style={{ color: '#1A1A1A' }}>
-                &ldquo;Had both. The Sony wins on everything except comfort for 8+ hours. The Bose feels like pillows on your ears.&rdquo;
-              </p>
-              <p className="text-xs mt-1" style={{ color: '#BA7517' }}>r/headphones</p>
-            </div>
-          </div>
-          <div
-            className="rounded-xl p-4"
-            style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}
-          >
-            <div className="pl-3 py-1 mb-2" style={{ borderLeft: '3px solid #BA7517' }}>
-              <p className="text-sm italic" style={{ color: '#1A1A1A' }}>
-                &ldquo;For commuting the Sony ANC is unbeatable. I can&apos;t hear the tube at all. Bose lets some low rumble through.&rdquo;
-              </p>
-              <p className="text-xs mt-1" style={{ color: '#BA7517' }}>r/headphoneadvice</p>
-            </div>
-          </div>
-          {/* Sentiment bar */}
-          <div className="rounded-xl p-4" style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}>
-            <p className="text-xs font-semibold mb-2" style={{ color: '#6B6B6B' }}>Community recommendation across 847 discussions</p>
-            <div className="flex h-3 rounded-full overflow-hidden" style={{ backgroundColor: '#F5F4F1' }}>
-              <div style={{ width: '62%', backgroundColor: '#BA7517' }} />
-              <div style={{ width: '31%', backgroundColor: '#D4A843' }} />
-              <div style={{ width: '7%', backgroundColor: '#D3D1C7' }} />
-            </div>
-            <div className="flex justify-between text-xs mt-1" style={{ color: '#6B6B6B' }}>
-              <span>Sony 62%</span>
-              <span>Bose 31%</span>
-              <span>Other 7%</span>
-            </div>
-          </div>
-        </div>
-      </FeatureBlock>
-
-      {/* Feature 06: Fact-checking */}
-      <FeatureBlock
-        number="06"
-        title="Independently fact-checked after every article."
-        description="A second AI — completely separate from the one that wrote it — verifies every price, spec, and claim against live sources. You see exactly what was corrected."
-        align="right"
-      >
+      {/* Feature 06 — Fact-checking */}
+      <FeatureBlock num="06" title="A dedicated fact-checking AI. Not an afterthought." align="right" bullets={['A completely separate AI verifies every claim', 'Prices, specs, and statistics cross-referenced against live sources', 'Corrections applied automatically — you see exactly what changed']}>
         <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #E8E3DC', backgroundColor: '#fff' }}>
           <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid #E8E3DC', backgroundColor: '#f0fdf4' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 6L9 17l-5-5" />
-            </svg>
-            <span className="text-sm font-semibold" style={{ color: '#059669' }}>
-              Fact-check complete — 2 corrections applied
-            </span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span className="text-sm font-semibold" style={{ color: '#059669' }}>Fact-check complete — 3 corrections applied</span>
           </div>
-          <div className="p-4 space-y-3">
-            {SAMPLE_CORRECTIONS.map((c, i) => (
-              <div key={i} className="text-sm">
-                <p className="line-through mb-0.5" style={{ color: '#dc2626', opacity: 0.6 }}>{c.original}</p>
-                <p style={{ color: '#059669' }}>{c.corrected}</p>
-              </div>
-            ))}
+          <div className="p-4 space-y-3 text-sm">
+            <div><p className="line-through mb-0.5" style={{ color: '#dc2626', opacity: 0.6 }}>Federal tax credit of $7,500 applies to all EVs</p><p style={{ color: '#059669' }}>Tax credit eligibility depends on manufacturer caps — Tesla and GM vehicles may not qualify</p></div>
+            <div><p className="line-through mb-0.5" style={{ color: '#dc2626', opacity: 0.6 }}>Average electricity cost: $0.10/kWh</p><p style={{ color: '#059669' }}>US average is $0.16/kWh as of March 2026 (EIA data)</p></div>
+            <div><p className="mb-0.5" style={{ color: '#059669' }}>✓ Range claims for all 5 models verified against EPA ratings — all accurate</p></div>
           </div>
+          <div className="px-4 py-2.5 text-xs" style={{ backgroundColor: '#FEF3EC', color: '#993C1D' }}>A separate AI. A full verification pass. Every article. Not optional.</div>
         </div>
       </FeatureBlock>
 
-      {/* ═══ SOCIAL PROOF BAR ═══ */}
-      <section className="w-full py-12 mt-10" style={{ backgroundColor: '#BA7517' }}>
-        <div className="max-w-4xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-          <div>
-            <p className="text-3xl font-extrabold" style={{ color: '#fff', fontFamily: 'var(--font-sora)' }}>
-              100+
-            </p>
-            <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.75)' }}>
-              Articles generated
-            </p>
-          </div>
-          <div>
-            <p className="text-3xl font-extrabold" style={{ color: '#fff', fontFamily: 'var(--font-sora)' }}>
-              94%
-            </p>
-            <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.75)' }}>
-              Fact-check pass rate
-            </p>
-          </div>
-          <div>
-            <p className="text-3xl font-extrabold" style={{ color: '#fff', fontFamily: 'var(--font-sora)' }}>
-              ~2 min
-            </p>
-            <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.75)' }}>
-              Average generation time
-            </p>
+      {/* ═══ 8. FIRST DRAFT BANNER FEATURE ═══ */}
+      <section className="py-16" style={{ backgroundColor: '#FEF3EC' }}>
+        <div className="max-w-[1060px] mx-auto px-4 md:px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+            <div>
+              <span className="text-xs font-bold tracking-widest uppercase" style={{ color: '#BA7517' }}>Feature 07</span>
+              <h3 className="text-2xl md:text-3xl font-extrabold mt-2 mb-3" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
+                Your first draft banner. The editing starts here.
+              </h3>
+              <p className="text-base leading-relaxed mb-4" style={{ color: '#6B6B6B' }}>
+                The moment your article is ready, a banner slides up with everything you need to start editing. Pre-written prompts, one-click actions, and your fact-check results — all in one place.
+              </p>
+              <ul className="space-y-2 text-sm" style={{ color: '#6B6B6B' }}>
+                {['Four action chips that pre-fill the refine box', 'Fact-check corrections shown inline', 'Share or start editing in one click', 'Dismisses to a floating pill — always accessible'].map(item => (
+                  <li key={item} className="flex items-start gap-2"><span style={{ color: '#BA7517' }}>→</span>{item}</li>
+                ))}
+              </ul>
+            </div>
+            {/* FDB recreation */}
+            <div className="rounded-2xl p-5" style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FEF3EC' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
+                <span className="text-sm font-bold" style={{ color: '#1A1714' }}>Your first draft is complete — now you&apos;re the editor</span>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#ecfdf5', color: '#059669' }}>✓ 10 corrections applied</span>
+              </div>
+              <p className="text-xs mb-3" style={{ color: '#6B6B6B' }}>We did the research, built the structure, and fact-checked the claims.</p>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                {['✍️ Change the tone', '🔄 Swap products', '🖼️ Update the images', '✂️ Rewrite any section'].map((chip, i) => (
+                  <div key={chip} className="rounded-lg p-2 text-xs text-center" style={{ backgroundColor: i === 2 ? '#FEF3EC' : '#FAFAF8', border: `1px solid ${i === 2 ? '#BA7517' : '#E8E3DC'}`, color: '#1A1714' }}>{chip}</div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 justify-end">
+                <span className="px-3 py-1.5 rounded-lg text-xs" style={{ border: '1px solid #E8E3DC', color: '#6B6B6B' }}>Share it</span>
+                <span className="px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ backgroundColor: '#BA7517', color: '#fff' }}>Start editing →</span>
+              </div>
+              <p className="text-[10px] text-right mt-1" style={{ color: '#94918D' }}>Your article is live — share the link whenever you&apos;re ready</p>
+              <div className="mt-3 pt-2 flex items-center gap-1 text-[10px]" style={{ borderTop: '1px solid #E8E3DC', color: '#059669' }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                Fact-check complete — 10 corrections applied
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ═══ FINAL CTA ═══ */}
-      <section className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <h2
-          className="text-3xl md:text-4xl font-extrabold mb-4"
-          style={{ fontFamily: 'var(--font-sora)', color: '#1A1A1A' }}
-        >
-          Your question. A complete article. Three minutes.
-        </h2>
-        <div className="mt-8">
-          <SearchForm autoFocus={false} />
+      {/* ═══ 9. ARTICLE TYPES ═══ */}
+      <section className="w-full py-20" style={{ backgroundColor: '#1A1714' }}>
+        <div className="max-w-[1060px] mx-auto px-4 md:px-6">
+          <h2 className="text-2xl md:text-3xl font-bold mb-3 text-center" style={{ fontFamily: 'var(--font-sora)', color: '#fff' }}>The article shapes itself around the question.</h2>
+          <p className="text-base text-center mb-10" style={{ color: 'rgba(255,255,255,0.5)' }}>A buyer guide generates different components to an explainer. The structure adapts to the question.</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { type: "Buyer's Guide", example: 'Best standing desks for home offices', items: ['Product cards with specs', 'Comparison table', 'Clear verdict', 'Price tracking'] },
+              { type: 'Comparison', example: 'Tesla Model 3 vs BMW i4', items: ['Head-to-head table', 'Winner per category', 'Community sentiment', 'Overall verdict'] },
+              { type: 'Explainer', example: 'How does compound interest work?', items: ['Visual breakdowns', 'Worked examples', 'Interactive calculator', 'Key takeaways'] },
+              { type: 'Trend Analysis', example: 'State of AI in 2026', items: ['Data charts', 'Rankings', 'Expert quotes', 'Source citations'] },
+              { type: 'Decision Guide', example: 'Should I rent or buy?', items: ['Scenario calculator', 'Pros/cons analysis', 'Expert opinion', 'Community data'] },
+              { type: 'Roundup', example: 'Best cities for remote workers', items: ['Ranked list', 'Key stats per entry', 'Cost comparison', 'Community tips'] },
+              { type: 'News & Analysis', example: 'What happened with tariffs?', items: ['Timeline', 'Expert analysis', 'Impact assessment', 'Source links'] },
+              { type: 'Finance', example: 'How to budget on $4k/month', items: ['Budget calculator', 'Savings projections', 'Interactive charts', 'Action steps'] },
+            ].map(card => (
+              <div key={card.type} className="rounded-xl p-4" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <p className="text-[10px] font-semibold uppercase tracking-wide mb-2" style={{ color: '#BA7517' }}>{card.type}</p>
+                <p className="text-sm font-semibold mb-3 leading-snug" style={{ color: '#fff' }}>{card.example}</p>
+                <ul className="space-y-1 text-[11px]" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                  {card.items.map(item => <li key={item}>• {item}</li>)}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
+      </section>
+
+      {/* ═══ 10. SOCIAL PROOF BAR ═══ */}
+      <section className="w-full py-12" style={{ backgroundColor: '#BA7517' }}>
+        <div className="max-w-4xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+          <div>
+            <p className="text-3xl font-extrabold" style={{ color: '#fff', fontFamily: 'var(--font-sora)' }}>
+              {/* PLACEHOLDER — replace with real number from database */}100+
+            </p>
+            <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.75)' }}>Articles generated</p>
+          </div>
+          <div>
+            <p className="text-3xl font-extrabold" style={{ color: '#fff', fontFamily: 'var(--font-sora)' }}>
+              {/* PLACEHOLDER — replace with real number from database */}94%
+            </p>
+            <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.75)' }}>Fact-check pass rate</p>
+          </div>
+          <div>
+            <p className="text-3xl font-extrabold" style={{ color: '#fff', fontFamily: 'var(--font-sora)' }}>
+              {/* PLACEHOLDER — replace with real number from database */}~2 min
+            </p>
+            <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.75)' }}>Average generation time</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 11. FEATURED ARTICLES GRID ═══ */}
+      {featuredArticles.length > 0 && (
+        <section className="max-w-[1060px] mx-auto px-4 md:px-6 py-20">
+          <h2 className="text-2xl font-bold mb-8 text-center" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>See what people are reading</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {featuredArticles.map((row) => {
+              const art = row.article
+              if (!art) return null
+              return (
+                <Link key={row.id} href={`/article/${row.slug}`} className="rounded-xl overflow-hidden no-underline transition-transform hover:scale-[1.02]" style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}>
+                  <div className="h-40 relative" style={{ background: art.thumbnail_url ? `url(${art.thumbnail_url}) center/cover` : 'linear-gradient(135deg, #FEF3EC, #BA7517)' }}>
+                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.4), transparent)' }} />
+                  </div>
+                  <div className="p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: '#BA7517' }}>{TYPE_LABELS[art.article_type] ?? art.article_type}</p>
+                    <h3 className="text-sm font-bold leading-snug line-clamp-2 mb-2" style={{ color: '#1A1714' }}>{art.title}</h3>
+                    <div className="flex items-center gap-2 text-[10px]" style={{ color: '#94918D' }}>
+                      {(row.view_count ?? 0) > 0 && <span>{(row.view_count ?? 0).toLocaleString()} views</span>}
+                      {row.verified_at && <span className="flex items-center gap-0.5" style={{ color: '#059669' }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>Fact-checked
+                      </span>}
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ═══ 12. FINAL CTA ═══ */}
+      <section className="max-w-2xl mx-auto px-4 py-20 text-center">
+        <h2 className="text-3xl md:text-4xl font-extrabold mb-4" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
+          Your question.<br />A complete article.<br /><span style={{ color: '#BA7517' }}>Three minutes.</span>
+        </h2>
+        <p className="text-base mb-8" style={{ color: '#6B6B6B' }}>No credit card. No setup. Just type a question.</p>
+        <SearchForm autoFocus={false} />
       </section>
 
       {/* Footer */}
@@ -368,188 +484,21 @@ export default function AboutPage() {
 
 // ── Feature block layout ──
 
-function FeatureBlock({
-  number,
-  title,
-  description,
-  align,
-  children,
-}: {
-  number: string
-  title: string
-  description: string
-  align: 'left' | 'right'
-  children: React.ReactNode
+function FeatureBlock({ num, title, align, bullets, children }: {
+  num: string; title: string; align: 'left' | 'right'; bullets: string[]; children: React.ReactNode
 }) {
-  const textContent = (
-    <div className="flex-1">
-      <span className="text-xs font-bold tracking-widest uppercase" style={{ color: '#BA7517' }}>
-        Feature {number}
-      </span>
-      <h3
-        className="text-2xl md:text-3xl font-extrabold mt-2 mb-3"
-        style={{ fontFamily: 'var(--font-sora)', color: '#1A1A1A' }}
-      >
-        {title}
-      </h3>
-      <p className="text-base leading-relaxed" style={{ color: '#6B6B6B' }} dangerouslySetInnerHTML={{ __html: description }} />
-    </div>
-  )
-
-  const visual = <div className="flex-1">{children}</div>
-
   return (
-    <section className="max-w-5xl mx-auto px-4 md:px-6 py-10 md:py-14">
+    <section className="max-w-[1060px] mx-auto px-4 md:px-6 py-10 md:py-14" style={{ borderBottom: '1px solid #E8E3DC' }}>
       <div className={`flex flex-col md:flex-row gap-8 md:gap-14 items-start ${align === 'right' ? 'md:flex-row-reverse' : ''}`}>
-        {textContent}
-        {visual}
+        <div className="flex-1">
+          <span className="text-xs font-bold tracking-widest uppercase" style={{ color: '#BA7517' }}>Feature {num}</span>
+          <h3 className="text-2xl md:text-3xl font-extrabold mt-2 mb-3" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>{title}</h3>
+          <ul className="space-y-2 text-sm" style={{ color: '#6B6B6B' }}>
+            {bullets.map(b => <li key={b} className="flex items-start gap-2"><span style={{ color: '#BA7517' }}>→</span>{b}</li>)}
+          </ul>
+        </div>
+        <div className="flex-1 w-full">{children}</div>
       </div>
     </section>
-  )
-}
-
-// ── Rent vs Buy Calculator ──
-
-function RentBuyCalculator() {
-  const [rent, setRent] = useState(1500)
-  const [price, setPrice] = useState(350000)
-  const [deposit, setDeposit] = useState(10)
-  const [term, setTerm] = useState(25)
-
-  const loanAmount = price * (1 - deposit / 100)
-  const monthlyRate = 0.055 / 12 // 5.5% mortgage rate
-  const payments = term * 12
-  const monthlyMortgage = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, payments)) / (Math.pow(1 + monthlyRate, payments) - 1)
-
-  // Break-even: when total rent paid > total buying cost (mortgage + deposit - equity)
-  let breakEvenYears = 0
-  const depositAmount = price * (deposit / 100)
-  for (let year = 1; year <= 40; year++) {
-    const totalRent = rent * 12 * year
-    const totalBuying = monthlyMortgage * 12 * year + depositAmount
-    if (totalRent > totalBuying) {
-      breakEvenYears = year
-      break
-    }
-  }
-  if (breakEvenYears === 0) breakEvenYears = 40
-
-  const totalRentAtBreakeven = rent * 12 * breakEvenYears
-  const totalBuyingAtBreakeven = monthlyMortgage * 12 * breakEvenYears + depositAmount
-
-  return (
-    <div className="rounded-2xl p-5" style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}>
-      <div className="space-y-5">
-        <CalcSlider
-          label="Monthly rent"
-          value={rent}
-          min={500}
-          max={5000}
-          step={50}
-          format={(v) => `£${v.toLocaleString()}`}
-          onChange={setRent}
-        />
-        <CalcSlider
-          label="Home purchase price"
-          value={price}
-          min={100000}
-          max={1000000}
-          step={10000}
-          format={(v) => `£${v.toLocaleString()}`}
-          onChange={setPrice}
-        />
-        <CalcSlider
-          label="Deposit saved"
-          value={deposit}
-          min={5}
-          max={30}
-          step={1}
-          format={(v) => `${v}%`}
-          onChange={setDeposit}
-        />
-        {/* Term toggle */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>Mortgage term</span>
-          </div>
-          <div className="flex gap-2">
-            {[15, 20, 25, 30].map((t) => (
-              <button
-                key={t}
-                onClick={() => setTerm(t)}
-                className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                style={{
-                  backgroundColor: term === t ? '#BA7517' : '#F5F4F1',
-                  color: term === t ? '#fff' : '#6B6B6B',
-                  cursor: 'pointer',
-                  border: term === t ? '1px solid #BA7517' : '1px solid #E8E3DC',
-                }}
-              >
-                {t} years
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Results */}
-      <div className="mt-6 pt-5" style={{ borderTop: '1px solid #E8E3DC' }}>
-        <p
-          className="text-3xl font-extrabold text-center"
-          style={{ color: '#BA7517', fontFamily: 'var(--font-sora)' }}
-        >
-          You break even in {breakEvenYears} years
-        </p>
-        <div className="flex justify-center gap-8 mt-3 text-xs" style={{ color: '#6B6B6B' }}>
-          <span>Total rent: £{Math.round(totalRentAtBreakeven).toLocaleString()}</span>
-          <span>Total buying: £{Math.round(totalBuyingAtBreakeven).toLocaleString()}</span>
-        </div>
-      </div>
-
-      <p className="text-[10px] text-center mt-4" style={{ color: '#94918D' }}>
-        This calculator was generated automatically inside an Unpacked article.
-      </p>
-    </div>
-  )
-}
-
-function CalcSlider({
-  label,
-  value,
-  min,
-  max,
-  step,
-  format,
-  onChange,
-}: {
-  label: string
-  value: number
-  min: number
-  max: number
-  step: number
-  format: (v: number) => string
-  onChange: (v: number) => void
-}) {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>{label}</span>
-        <span className="text-sm font-bold" style={{ color: '#BA7517' }}>{format(value)}</span>
-      </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-[#BA7517]"
-        style={{ cursor: 'pointer' }}
-      />
-      <div className="flex justify-between text-[10px]" style={{ color: '#94918D' }}>
-        <span>{format(min)}</span>
-        <span>{format(max)}</span>
-      </div>
-    </div>
   )
 }
