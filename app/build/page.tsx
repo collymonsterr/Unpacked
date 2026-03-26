@@ -1,7 +1,8 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
+import type { Metadata } from 'next'
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Build Log — Unpacked',
   robots: { index: false, follow: false },
 }
@@ -38,31 +39,79 @@ function stripSensitive(text: string): string {
 
 // ── Parsers ──
 
+/**
+ * Parse the two most recent changelog entries into brief, non-technical summaries.
+ * Groups raw bullets by section heading and outputs one summary per section.
+ */
 function parseRecentChangelog(raw: string): Array<{ date: string; items: string[] }> {
   const entries: Array<{ date: string; items: string[] }> = []
   const lines = raw.split('\n')
-  let current: { date: string; items: string[] } | null = null
+  let current: { date: string; sections: Map<string, string[]> } | null = null
+  let currentSection = ''
 
   for (const line of lines) {
     const dateMatch = line.match(/^## (\d+ \w+ \d{4})\s*[—–-]\s*(.+)/)
     if (dateMatch) {
-      if (current) entries.push(current)
+      if (current) entries.push(summariseEntry(current))
       if (entries.length >= 2) break
-      current = { date: `${dateMatch[1]} — ${dateMatch[2]}`, items: [] }
+      current = { date: `${dateMatch[1]} — ${dateMatch[2]}`, sections: new Map() }
+      currentSection = ''
       continue
     }
     if (current && line.startsWith('### ')) {
-      // Section heading within a date entry — use as a category label
-      current.items.push(`**${line.replace('### ', '')}**`)
+      currentSection = line.replace('### ', '').trim()
       continue
     }
     if (current && line.startsWith('- ')) {
-      const item = line.replace(/^- /, '').replace(/\*\*/g, '').replace(/`[^`]+`/g, '').trim()
-      if (item.length > 10) current.items.push(item)
+      const section = currentSection || 'Changes'
+      if (!current.sections.has(section)) current.sections.set(section, [])
+      current.sections.get(section)!.push(line.replace(/^- /, '').replace(/\*\*/g, '').replace(/`[^`]+`/g, '').trim())
     }
   }
-  if (current && entries.length < 2) entries.push(current)
+  if (current && entries.length < 2) entries.push(summariseEntry(current))
   return entries
+}
+
+/** Convert a grouped changelog entry into brief one-line summaries per section */
+function summariseEntry(entry: { date: string; sections: Map<string, string[]> }): { date: string; items: string[] } {
+  // Map section headings to brief plain-English summaries
+  const summaries: Record<string, string> = {
+    'Architecture (biggest change)': 'Switched to cheaper, faster article generation engine',
+    'Architecture': 'Switched to cheaper, faster article generation engine',
+    'Cost Controls': 'Added usage tracking and duplicate prevention',
+    'Homepage Redesign': 'Redesigned homepage with featured, trending, and popular sections',
+    'Article Bottom Section Redesign': 'Redesigned the article footer with better editing tools',
+    'Article Classification Engine': 'Articles now classified by type with strict structure rules',
+    'Card Summary for Featured Articles': 'Featured articles get auto-generated card summaries',
+    'Verified Badge': 'Added green verified badge to fact-checked articles',
+    'Recent Articles History': 'Added recently visited articles dropdown in nav',
+    'Generation Recovery': 'Articles recover gracefully if you refresh during generation',
+    'Skeleton Loader': 'Added loading skeleton for articles opened via shared links',
+    'Calculator Cleanup': 'Fixed all broken interactive calculators',
+    'Nav Menu': 'Updated navigation menu with account links',
+    'Name Change': 'Renamed the platform to The Brief',
+    'FirstDraftBanner (new feature)': 'Added post-generation editing prompt banner',
+    'Image System Improvements': 'Improved product and hero image search accuracy',
+    'Loading Experience Overhaul': 'Redesigned the article generation loading experience',
+    'Product Cards': 'Richer product descriptions and category-specific specs',
+    'Refine Pipeline': 'Switched article refinement to cheaper model',
+    'Slug Migration': 'Cleaned up all article URLs for better SEO',
+    'Other': 'Various UI polish and small fixes',
+  }
+
+  const items: string[] = []
+  for (const [section, bullets] of entry.sections) {
+    const summary = summaries[section]
+    if (summary) {
+      items.push(summary)
+    } else if (bullets.length > 0) {
+      // Fallback: use first bullet, truncated to 12 words
+      const words = bullets[0].split(/\s+/).slice(0, 12).join(' ')
+      items.push(words + (bullets[0].split(/\s+/).length > 12 ? '...' : ''))
+    }
+  }
+
+  return { date: entry.date, items }
 }
 
 function parseStagedPlan(raw: string): Array<{ name: string; items: Array<{ done: boolean; text: string }> }> {
@@ -244,21 +293,12 @@ export default function BuildPage() {
                   {entry.date}
                 </h3>
                 <ul className="space-y-1.5">
-                  {entry.items.slice(0, 12).map((item, j) => {
-                    if (item.startsWith('**')) {
-                      return (
-                        <li key={j} className="text-xs font-semibold uppercase tracking-wide mt-3" style={{ color: '#BA7517' }}>
-                          {item.replace(/\*\*/g, '')}
-                        </li>
-                      )
-                    }
-                    return (
-                      <li key={j} className="text-sm flex items-start gap-2" style={{ color: '#6B6B6B' }}>
-                        <span className="mt-1.5 w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: '#BA7517' }} />
-                        {item}
-                      </li>
-                    )
-                  })}
+                  {entry.items.slice(0, 15).map((item, j) => (
+                    <li key={j} className="text-sm flex items-start gap-2" style={{ color: '#6B6B6B' }}>
+                      <span className="mt-1.5 w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: '#BA7517' }} />
+                      {item}
+                    </li>
+                  ))}
                 </ul>
               </div>
             ))}
@@ -325,16 +365,16 @@ export default function BuildPage() {
           {/* Section 5 — Known Issues */}
           <Card>
             <SectionLabel>Known Issues &amp; Loose Ends</SectionLabel>
-            <ol className="space-y-2">
+            <div className="space-y-2">
               {knownIssues.map((issue, i) => (
-                <li key={i} className="text-sm flex items-start gap-2" style={{ color: '#6B6B6B' }}>
+                <div key={i} className="text-sm flex items-start gap-2" style={{ color: '#6B6B6B' }}>
                   <span className="text-xs font-bold shrink-0 mt-0.5 w-5 text-center" style={{ color: '#BA7517' }}>
                     {i + 1}
                   </span>
                   {issue}
-                </li>
+                </div>
               ))}
-            </ol>
+            </div>
           </Card>
 
           {/* Footer */}
