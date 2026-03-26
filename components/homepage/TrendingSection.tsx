@@ -1,3 +1,6 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { ArticleRow } from '@/types/article'
@@ -10,11 +13,40 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 interface Props {
-  articles: ArticleRow[]
+  pool: ArticleRow[]
 }
 
-export default function TrendingSection({ articles }: Props) {
-  if (articles.length === 0) return null
+export default function TrendingSection({ pool }: Props) {
+  const [selected, setSelected] = useState<ArticleRow[]>([])
+
+  useEffect(() => {
+    if (pool.length === 0) return
+
+    // Pick 3 from the pool, excluding the last set shown if possible
+    let lastShownIds: string[] = []
+    try {
+      const stored = localStorage.getItem('trendingIds')
+      if (stored) lastShownIds = JSON.parse(stored)
+    } catch {}
+
+    let candidates = pool.filter(a => !lastShownIds.includes(a.id))
+
+    // If not enough fresh candidates, use full pool
+    if (candidates.length < 3) candidates = [...pool]
+
+    // Shuffle and pick 3
+    const shuffled = [...candidates].sort(() => Math.random() - 0.5)
+    const picks = shuffled.slice(0, 3)
+
+    // Store the new selection
+    try {
+      localStorage.setItem('trendingIds', JSON.stringify(picks.map(a => a.id)))
+    } catch {}
+
+    setSelected(picks)
+  }, [pool])
+
+  if (selected.length === 0) return null
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -28,11 +60,11 @@ export default function TrendingSection({ articles }: Props) {
       <SectionHeader title="Trending Today" badge="Updated daily" badgeColor="#1a1a1a" />
 
       <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>
-        {today} — {articles.length} new article{articles.length !== 1 ? 's' : ''} today
+        {today} — {selected.length} new article{selected.length !== 1 ? 's' : ''} today
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {articles.map((row) => {
+        {selected.map((row) => {
           const art = row.article
           const img = art?.thumbnail_url
           const type = art?.article_type ?? ''

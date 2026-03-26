@@ -1,25 +1,9 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  useSortable,
-  rectSortingStrategy,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import type { ArticleRow, ProductCard } from '@/types/article'
-import { useAdminMode } from '@/hooks/useAdminMode'
 import { getReadingTime } from '@/lib/reading-time'
 
 interface Props {
@@ -28,320 +12,163 @@ interface Props {
 
 function getCardImage(row: ArticleRow): string | null {
   if (row.article?.thumbnail_url) return row.article.thumbnail_url
-  const sections = row.article?.sections ?? []
-  const firstCard = sections.find((s): s is ProductCard => s.type === 'product_card')
-  return firstCard?.image_urls?.[0] ?? firstCard?.image_url ?? null
+  const productCards = row.article?.sections?.filter(
+    (s): s is ProductCard => s.type === 'product_card'
+  )
+  return productCards?.[0]?.image_urls?.[0] ?? productCards?.[0]?.image_url ?? null
 }
 
-function formatViewCount(count: number): string {
-  if (count >= 1000) return `${(count / 1000).toFixed(1).replace(/\.0$/, '')}k views`
-  return `${count} views`
+const TYPE_LABELS: Record<string, string> = {
+  buyer_guide: 'Buying Guide', comparison: 'Comparison', decision_guide: 'Decision Guide',
+  explainer: 'Explainer', news: 'News', planning: 'Travel & Living',
+  trend_analysis: 'Trend Analysis', tutorial: 'Tutorial',
 }
 
-function getCategoryLabel(type: string) {
-  const labels: Record<string, string> = {
-    buyer_guide: 'Buying Guide',
-    comparison: 'Comparison',
-    decision_guide: 'Decision Guide',
-    explainer: 'Explainer',
-    news: 'News',
-    planning: 'Travel & Living',
-    trend_analysis: 'Trend Analysis',
-    tutorial: 'Money & Finance',
-  }
-  return labels[type] ?? type.replace(/_/g, ' ')
-}
+// ── Article Card ──
 
-// ── Sortable Article Card ────────────────────────────────────────────────────
-
-function SortableArticleCard({
-  row,
-  isAdmin,
-}: {
-  row: ArticleRow
-  isAdmin: boolean
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: row.id })
-
-  const imageUrl = getCardImage(row)
-  const title = row.article?.title ?? row.plan?.title ?? row.query
-  const type = row.article?.article_type ?? row.plan?.article_type ?? 'buyer_guide'
-  const readTime = row.article ? getReadingTime(row.article) : 0
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : 'auto' as const,
-  }
+function ArticleCard({ row }: { row: ArticleRow }) {
+  const art = row.article
+  const img = getCardImage(row)
+  const type = art?.article_type ?? ''
+  const readTime = art ? getReadingTime(art) : 0
+  const [imgError, setImgError] = useState(false)
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group">
-      <Link
-        href={`/article/${row.slug}`}
-        className="block rounded-2xl overflow-hidden no-underline"
-        style={{
-          backgroundColor: 'var(--card)',
-          boxShadow: isDragging
-            ? '0 8px 32px rgba(0,0,0,0.15)'
-            : '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)',
-          border: '1px solid var(--border)',
-          transition: 'box-shadow 0.2s ease',
-        }}
-      >
-        <div className="relative overflow-hidden" style={{ aspectRatio: '4/3' }}>
-          {imageUrl ? (
-            <Image
-              src={imageUrl}
-              alt={title}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-              unoptimized
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-end p-4">
-              <span
-                className="text-sm font-bold leading-snug line-clamp-2"
-                style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-sora)' }}
-              >
-                {title}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="p-4">
-          <h3
-            className="font-bold leading-snug line-clamp-3 text-base mb-1.5"
-            style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
-          >
-            {title}
-          </h3>
-          <div className="flex items-center gap-2">
-            <span
-              className="text-xs font-medium"
-              style={{ color: '#E07A3A' }}
-            >
-              {getCategoryLabel(type)}
-            </span>
-            {readTime > 0 && (
-              <span
-                className="text-xs"
-                style={{ color: 'var(--text-secondary)', opacity: 0.7 }}
-              >
-                {readTime} min
-              </span>
-            )}
-            {(row.view_count ?? 0) > 10 && (
-              <span
-                className="text-xs"
-                style={{ color: 'var(--text-secondary)', opacity: 0.7 }}
-              >
-                {formatViewCount(row.view_count!)}
-              </span>
-            )}
+    <Link
+      href={`/article/${row.slug}`}
+      className="rounded-xl overflow-hidden no-underline flex flex-col"
+      style={{
+        backgroundColor: 'var(--card)',
+        border: '1px solid var(--border)',
+      }}
+    >
+      <div className="relative" style={{ height: '180px' }}>
+        {img && !imgError ? (
+          <Image
+            src={img}
+            alt={art?.title ?? ''}
+            fill
+            className="object-cover"
+            onError={() => setImgError(true)}
+            unoptimized
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: 'var(--accent-light)' }}>
+            <span className="text-3xl font-bold" style={{ color: 'var(--accent)', opacity: 0.3 }}>U</span>
           </div>
-        </div>
-      </Link>
-
-      {/* Admin: drag handle */}
-      {isAdmin && (
-        <button
-          {...attributes}
-          {...listeners}
-          className="absolute top-2 left-2 z-10 w-8 h-8 flex items-center justify-center rounded-lg cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
-          style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: '#fff' }}
-          title="Drag to reorder"
-          onClick={(e) => e.preventDefault()}
+        )}
+      </div>
+      <div className="p-3 flex-1 flex flex-col">
+        <h3
+          className="text-base font-bold leading-snug line-clamp-3 mb-1"
+          style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)', minHeight: '3.6em' }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="9" cy="5" r="1.5" />
-            <circle cx="15" cy="5" r="1.5" />
-            <circle cx="9" cy="12" r="1.5" />
-            <circle cx="15" cy="12" r="1.5" />
-            <circle cx="9" cy="19" r="1.5" />
-            <circle cx="15" cy="19" r="1.5" />
-          </svg>
-        </button>
-      )}
-    </div>
+          {art?.title}
+        </h3>
+        <p className="text-xs mt-auto" style={{ color: 'var(--accent)' }}>
+          {TYPE_LABELS[type] ?? type.replace(/_/g, ' ')}
+        </p>
+        {readTime > 0 && (
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+            {readTime} min read
+          </p>
+        )}
+      </div>
+    </Link>
   )
 }
 
-// ── Type Filters ─────────────────────────────────────────────────────────────
+// ── Type Filters ──
 
 const TYPE_FILTERS: Array<{ label: string; types: string[] | null }> = [
   { label: 'All', types: null },
   { label: 'Buying Guides', types: ['buyer_guide', 'comparison', 'decision_guide'] },
   { label: 'Finance', types: ['tutorial'] },
   { label: 'Tech', types: ['trend_analysis'] },
-  { label: 'Health', types: [] },
   { label: 'Travel', types: ['planning'] },
   { label: 'Explainers', types: ['explainer', 'news'] },
 ]
 
-// ── Main Grid Component ──────────────────────────────────────────────────────
+// ── Main Grid ──
 
-export default function RecentArticlesGrid({ articles: initialArticles }: Props) {
-  const isAdmin = useAdminMode()
-  const [articles, setArticles] = useState(initialArticles)
+export default function RecentArticlesGrid({ articles }: Props) {
   const [activeFilter, setActiveFilter] = useState<string[] | null>(null)
   const [activeFilterLabel, setActiveFilterLabel] = useState<string>('All')
-  const [sortMode, setSortMode] = useState<'manual' | 'newest'>('manual')
-  const [saving, setSaving] = useState(false)
   const [visibleCount, setVisibleCount] = useState(24)
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  // Always newest first
+  const sorted = [...articles].sort((a, b) =>
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
 
-  const sortedArticles = sortMode === 'newest'
-    ? [...articles].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    : articles
-
-  const filteredArticles = activeFilter && activeFilter.length > 0
-    ? sortedArticles.filter((a) => {
+  const filtered = activeFilter && activeFilter.length > 0
+    ? sorted.filter((a) => {
         const type = a.article?.article_type ?? a.plan?.article_type ?? ''
         return activeFilter.includes(type)
       })
-    : sortedArticles
-
-  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-
-    const oldIndex = articles.findIndex((a) => a.id === active.id)
-    const newIndex = articles.findIndex((a) => a.id === over.id)
-    if (oldIndex === -1 || newIndex === -1) return
-
-    // Optimistic reorder
-    const newArticles = arrayMove(articles, oldIndex, newIndex)
-    setArticles(newArticles)
-    setSortMode('manual') // Switch to manual mode after drag
-
-    // Save new order to API
-    setSaving(true)
-    try {
-      const orderedIds = newArticles.map((a) => a.id)
-      await fetch('/api/articles/reorder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderedIds }),
-      })
-    } catch {
-      // Revert on failure
-      setArticles(articles)
-    } finally {
-      setSaving(false)
-    }
-  }, [articles])
+    : sorted
 
   if (articles.length === 0) return null
+
+  const visible = filtered.slice(0, visibleCount)
+  const hasMore = filtered.length > visibleCount
 
   return (
     <section className="w-full max-w-6xl mx-auto px-4 md:px-6 pb-16">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <h2
-            className="text-lg font-bold"
-            style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-secondary)' }}
-          >
-            Recent Articles
-          </h2>
-          {saving && (
-            <span className="text-xs" style={{ color: 'var(--accent)' }}>Saving...</span>
-          )}
-        </div>
+        <h2
+          className="text-lg font-bold"
+          style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-secondary)' }}
+        >
+          Recent Articles
+        </h2>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Category filters */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {TYPE_FILTERS.map(({ label, types }) => {
-              const isActive = activeFilterLabel === label
-              return (
-                <button
-                  key={label}
-                  onClick={() => { setActiveFilter(types); setActiveFilterLabel(label) }}
-                  className="px-3 py-1 rounded-full text-xs font-medium transition-all"
-                  style={{
-                    backgroundColor: isActive ? 'var(--accent)' : 'transparent',
-                    color: isActive ? '#fff' : 'var(--text-secondary)',
-                    border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {label}
-                </button>
-              )
-            })}
-          </div>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {TYPE_FILTERS.map(({ label, types }) => {
+            const isActive = activeFilterLabel === label
+            return (
+              <button
+                key={label}
+                onClick={() => { setActiveFilter(types); setActiveFilterLabel(label) }}
+                className="px-3 py-1 rounded-full text-xs font-medium transition-all"
+                style={{
+                  backgroundColor: isActive ? 'var(--accent)' : 'transparent',
+                  color: isActive ? '#fff' : 'var(--text-secondary)',
+                  border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
+                  cursor: 'pointer',
+                }}
+              >
+                {label}
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      {(() => {
-        const visibleArticles = filteredArticles.slice(0, visibleCount)
-        const hasMore = filteredArticles.length > visibleCount
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {visible.map((row) => (
+          <ArticleCard key={row.id} row={row} />
+        ))}
+      </div>
 
-        return (
-          <>
-            {isAdmin && sortMode === 'manual' && !activeFilter ? (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext items={visibleArticles.map(a => a.id)} strategy={rectSortingStrategy}>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {visibleArticles.map((row) => (
-                      <SortableArticleCard
-                        key={row.id}
-                        row={row}
-                        isAdmin={isAdmin}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {visibleArticles.map((row) => (
-                  <SortableArticleCard
-                    key={row.id}
-                    row={row}
-                    isAdmin={false}
-                  />
-                ))}
-              </div>
-            )}
+      {hasMore && (
+        <div className="text-center mt-8">
+          <button
+            onClick={() => setVisibleCount(prev => prev + 24)}
+            className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105"
+            style={{
+              backgroundColor: 'var(--card)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border)',
+              cursor: 'pointer',
+            }}
+          >
+            Show more ({filtered.length - visibleCount} remaining)
+          </button>
+        </div>
+      )}
 
-            {hasMore && (
-              <div className="text-center mt-8">
-                <button
-                  onClick={() => setVisibleCount(prev => prev + 24)}
-                  className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105"
-                  style={{
-                    backgroundColor: 'var(--card)',
-                    color: 'var(--text-secondary)',
-                    border: '1px solid var(--border)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Show more ({filteredArticles.length - visibleCount} remaining)
-                </button>
-              </div>
-            )}
-          </>
-        )
-      })()}
-
-      {filteredArticles.length === 0 && activeFilter && (
+      {filtered.length === 0 && activeFilter && (
         <p className="text-center py-12 text-sm" style={{ color: 'var(--text-secondary)' }}>
           No {activeFilterLabel.toLowerCase()} articles yet.
         </p>

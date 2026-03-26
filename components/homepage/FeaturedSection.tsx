@@ -14,15 +14,16 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 interface Props {
-  articles: ArticleRow[]
+  pool: ArticleRow[]
+  fallbackArticles?: ArticleRow[]
 }
 
-export default function FeaturedSection({ articles }: Props) {
+export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) {
   const [heroArticle, setHeroArticle] = useState<ArticleRow | null>(null)
   const [smallArticles, setSmallArticles] = useState<ArticleRow[]>([])
 
   useEffect(() => {
-    if (articles.length === 0) return
+    if (pool.length === 0) return
 
     const storedHeroId = localStorage.getItem('featuredHeroId')
     const hasVisited = localStorage.getItem('hasVisitedFeatured')
@@ -30,22 +31,36 @@ export default function FeaturedSection({ articles }: Props) {
     let hero: ArticleRow
 
     if (!hasVisited || !storedHeroId) {
-      // First visit: use position 1 article
-      hero = articles.find(a => a.featured_position === 1) ?? articles[0]
+      // First visit: random hero from pool
+      hero = pool[Math.floor(Math.random() * pool.length)]
       localStorage.setItem('featuredHeroId', hero.id)
       localStorage.setItem('hasVisitedFeatured', 'true')
     } else {
       // Returning visitor: random, excluding previous hero
-      const candidates = articles.filter(a => a.id !== storedHeroId)
+      const candidates = pool.filter(a => a.id !== storedHeroId)
       hero = candidates.length > 0
         ? candidates[Math.floor(Math.random() * candidates.length)]
-        : articles[0]
+        : pool[0]
       localStorage.setItem('featuredHeroId', hero.id)
     }
 
+    // Small cards: 4 most recent from remaining pool, then fill from fallback if needed
+    const remaining = pool
+      .filter(a => a.id !== hero.id)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+    let cards = remaining.slice(0, 4)
+
+    // Fill remaining slots from fallback articles (excluding trending)
+    if (cards.length < 4 && fallbackArticles.length > 0) {
+      const poolIds = new Set(pool.map(a => a.id))
+      const fillers = fallbackArticles.filter(a => !poolIds.has(a.id))
+      cards = [...cards, ...fillers].slice(0, 4)
+    }
+
     setHeroArticle(hero)
-    setSmallArticles(articles.filter(a => a.id !== hero.id).slice(0, 4))
-  }, [articles])
+    setSmallArticles(cards)
+  }, [pool, fallbackArticles])
 
   if (!heroArticle) {
     // SSR/loading: show a placeholder to avoid layout shift

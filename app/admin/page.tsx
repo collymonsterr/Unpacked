@@ -379,6 +379,8 @@ export default function AdminDashboard() {
           </div>
         ) : (
           <>
+            {/* Sub-tabs for article filtering */}
+            <ArticleSubTabs articles={articles} />
             {/* Desktop table */}
             <div
               className="hidden md:block rounded-xl overflow-hidden"
@@ -899,5 +901,239 @@ function ActionButton({
     >
       {children}
     </button>
+  )
+}
+
+// ── Article Sub-Tabs Component ──
+
+function ArticleSubTabs({ articles }: { articles: ArticleRow[] }) {
+  const [subTab, setSubTab] = useState<'all' | 'featured' | 'trending' | 'hidden' | 'no-image'>('all')
+
+  const featured = articles.filter(a => a.is_featured)
+  const trending = articles.filter(a => a.is_trending)
+  const hidden = articles.filter(a => a.hidden_from_homepage)
+  const noImage = articles.filter(a => !a.article?.thumbnail_url)
+
+  const filteredArticles = (() => {
+    switch (subTab) {
+      case 'featured': return featured
+      case 'trending': return trending
+      case 'hidden': return hidden
+      case 'no-image': return noImage
+      default: return articles
+    }
+  })()
+
+  const tabs = [
+    { id: 'all' as const, label: 'All', count: articles.length },
+    { id: 'featured' as const, label: 'Featured', count: featured.length },
+    { id: 'trending' as const, label: 'Trending', count: trending.length },
+    { id: 'hidden' as const, label: 'Hidden', count: hidden.length },
+    { id: 'no-image' as const, label: 'No Image', count: noImage.length },
+  ]
+
+  return (
+    <div>
+      {/* Sub-tab bar */}
+      <div className="flex items-center gap-1 mb-4 flex-wrap">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setSubTab(tab.id)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+            style={{
+              backgroundColor: subTab === tab.id ? 'var(--accent)' : 'transparent',
+              color: subTab === tab.id ? '#fff' : 'var(--text-secondary)',
+              border: subTab === tab.id ? '1px solid var(--accent)' : '1px solid var(--border)',
+              cursor: 'pointer',
+            }}
+          >
+            {tab.label}
+            {tab.count > 0 && (
+              <span
+                className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px]"
+                style={{
+                  backgroundColor: subTab === tab.id ? 'rgba(255,255,255,0.2)' : 'var(--bg)',
+                }}
+              >
+                {tab.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Filtered article count */}
+      <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
+        {filteredArticles.length} article{filteredArticles.length !== 1 ? 's' : ''}
+        {subTab === 'featured' && ' in featured pool'}
+        {subTab === 'trending' && ' in trending pool'}
+        {subTab === 'hidden' && ' hidden from homepage'}
+        {subTab === 'no-image' && ' without hero image'}
+      </p>
+
+      {/* Article list */}
+      <div className="space-y-2">
+        {filteredArticles.map((row) => {
+          const art = row.article
+          const img = art?.thumbnail_url
+          const type = art?.article_type ?? ''
+          const date = new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+          return (
+            <div
+              key={row.id}
+              className="flex items-center gap-3 rounded-xl p-3"
+              style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
+            >
+              {/* Thumbnail */}
+              <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0" style={{ backgroundColor: 'var(--bg)' }}>
+                {img ? (
+                  <Image src={img} alt="" width={48} height={48} className="w-full h-full object-cover" unoptimized />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-xs" style={{ color: 'var(--text-secondary)' }}>—</div>
+                )}
+              </div>
+
+              {/* Title + meta */}
+              <div className="flex-1 min-w-0">
+                <Link
+                  href={`/article/${row.slug}`}
+                  className="text-sm font-semibold leading-snug line-clamp-1 no-underline hover:opacity-80"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  {art?.title ?? row.query}
+                </Link>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[10px] uppercase font-semibold" style={{ color: 'var(--accent)' }}>
+                    {(ARTICLE_TYPE_LABELS as Record<string, string>)[type] ?? type.replace(/_/g, ' ')}
+                  </span>
+                  <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{date}</span>
+                  <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{row.view_count ?? 0} views</span>
+                  {/* Pool badges */}
+                  {row.is_featured && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>
+                      ★ Featured
+                    </span>
+                  )}
+                  {row.is_trending && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>
+                      🔥 Trending
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Action icons */}
+              <div className="flex items-center gap-1 shrink-0">
+                {/* Featured star */}
+                <button
+                  onClick={async () => {
+                    try {
+                      await fetch(`/api/articles/${row.id}/featured`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ is_featured: !row.is_featured }),
+                      })
+                      window.location.reload()
+                    } catch {}
+                  }}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
+                  style={{
+                    color: row.is_featured ? '#BA7517' : 'var(--text-secondary)',
+                    backgroundColor: row.is_featured ? '#FEF3EC' : 'transparent',
+                    cursor: 'pointer',
+                  }}
+                  title={row.is_featured ? 'Remove from featured' : 'Add to featured'}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill={row.is_featured ? '#BA7517' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                </button>
+
+                {/* Trending fire */}
+                <button
+                  onClick={async () => {
+                    try {
+                      await fetch(`/api/articles/${row.id}/trending`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ is_trending: !row.is_trending }),
+                      })
+                      window.location.reload()
+                    } catch {}
+                  }}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
+                  style={{
+                    color: row.is_trending ? '#BA7517' : 'var(--text-secondary)',
+                    backgroundColor: row.is_trending ? '#FEF3EC' : 'transparent',
+                    cursor: 'pointer',
+                  }}
+                  title={row.is_trending ? 'Remove from trending' : 'Add to trending'}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill={row.is_trending ? '#BA7517' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+                  </svg>
+                </button>
+
+                {/* Hidden eye */}
+                <button
+                  onClick={async () => {
+                    try {
+                      await fetch(`/api/articles/${row.id}/visibility`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ hidden: !row.hidden_from_homepage }),
+                      })
+                      window.location.reload()
+                    } catch {}
+                  }}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
+                  style={{
+                    color: row.hidden_from_homepage ? '#dc2626' : 'var(--text-secondary)',
+                    backgroundColor: row.hidden_from_homepage ? '#fef2f2' : 'transparent',
+                    cursor: 'pointer',
+                  }}
+                  title={row.hidden_from_homepage ? 'Show on homepage' : 'Hide from homepage'}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {row.hidden_from_homepage ? (
+                      <>
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </>
+                    ) : (
+                      <>
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </>
+                    )}
+                  </svg>
+                </button>
+
+                {/* Link to article */}
+                <Link
+                  href={`/article/${row.slug}`}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors no-underline"
+                  style={{ color: 'var(--text-secondary)', cursor: 'pointer' }}
+                  title="View article"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="7" y1="17" x2="17" y2="7" />
+                    <polyline points="7 7 17 7 17 17" />
+                  </svg>
+                </Link>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {filteredArticles.length === 0 && (
+        <p className="text-center py-8 text-sm" style={{ color: 'var(--text-secondary)' }}>
+          No articles in this view.
+        </p>
+      )}
+    </div>
   )
 }

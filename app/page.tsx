@@ -28,7 +28,7 @@ async function getHomepageData() {
     // Single query — get all visible articles with all flags
     const { data } = await db
       .from('articles')
-      .select('id, slug, query, status, plan, article, pinned, hidden_from_homepage, sort_order, root_article_id, parent_article_id, is_featured, featured_position, is_trending, trending_set_at, view_count, user_id, user_name, user_avatar, fact_check, verified_at, created_at, updated_at, suggestion_chips, card_summary')
+      .select('id, slug, query, status, plan, article, hidden_from_homepage, root_article_id, parent_article_id, is_featured, is_trending, trending_set_at, view_count, user_id, user_name, user_avatar, fact_check, verified_at, created_at, updated_at, suggestion_chips, card_summary')
       .in('status', ['complete', 'verified'])
       .eq('hidden_from_homepage', false)
       .order('created_at', { ascending: false })
@@ -47,53 +47,41 @@ async function getHomepageData() {
     }
     const deduplicated = Array.from(latestByChain.values())
 
-    // Split into sections
-    const featured = deduplicated
+    // Featured pool — full pool passed to client for random rotation
+    const featuredPool = deduplicated
       .filter(a => a.is_featured)
-      .sort((a, b) => {
-        const ap = a.featured_position ?? 999
-        const bp = b.featured_position ?? 999
-        if (ap !== bp) return ap - bp
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      })
-      .slice(0, 5)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
-    const trending = deduplicated
+    // Trending pool — full pool passed to client for random rotation
+    const trendingPool = deduplicated
       .filter(a => a.is_trending)
       .sort((a, b) => {
         const at = a.trending_set_at ? new Date(a.trending_set_at).getTime() : 0
         const bt = b.trending_set_at ? new Date(b.trending_set_at).getTime() : 0
         return bt - at
       })
-      .slice(0, 3)
 
+    // Most popular — top 4 by views, fully automatic
     const popular = [...deduplicated]
       .sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0))
       .slice(0, 4)
 
-    // All articles: sorted by pinned, sort_order, then newest
-    const all = deduplicated.sort((a, b) => {
-      const aPinned = a.pinned ? 1 : 0
-      const bPinned = b.pinned ? 1 : 0
-      if (aPinned !== bPinned) return bPinned - aPinned
+    // Recent Articles — always newest first, no exceptions
+    const all = [...deduplicated].sort((a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
 
-      const aOrder = a.sort_order as number | null | undefined
-      const bOrder = b.sort_order as number | null | undefined
-      if (aOrder == null && bOrder != null) return -1
-      if (aOrder != null && bOrder == null) return 1
-      if (aOrder != null && bOrder != null) return aOrder - bOrder
+    // Trending IDs — used to exclude from featured fallback
+    const trendingIdList = trendingPool.map(a => a.id)
 
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    })
-
-    return { featured, trending, popular, all }
+    return { featuredPool, trendingPool, trendingIdList, popular, all }
   } catch {
-    return { featured: [], trending: [], popular: [], all: [] }
+    return { featuredPool: [], trendingPool: [], trendingIdList: [], popular: [], all: [] }
   }
 }
 
 export default async function HomePage() {
-  const { featured, trending, popular, all } = await getHomepageData()
+  const { featuredPool, trendingPool, trendingIdList, popular, all } = await getHomepageData()
 
   return (
     <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
@@ -129,17 +117,20 @@ export default async function HomePage() {
       </div>
 
       {/* Featured */}
-      {featured.length > 0 && (
+      {featuredPool.length > 0 && (
         <>
-          <FeaturedSection articles={featured} />
+          <FeaturedSection
+            pool={featuredPool}
+            fallbackArticles={all.filter(a => !a.is_featured && !trendingIdList.includes(a.id)).slice(0, 10)}
+          />
           <div className="max-w-6xl mx-auto px-4 md:px-6 my-14" style={{ borderTop: '1px solid #e2e0d8' }} />
         </>
       )}
 
       {/* Trending Today */}
-      {trending.length > 0 && (
+      {trendingPool.length > 0 && (
         <>
-          <TrendingSection articles={trending} />
+          <TrendingSection pool={trendingPool} />
           <div className="max-w-6xl mx-auto px-4 md:px-6 my-14" style={{ borderTop: '1px solid #e2e0d8' }} />
         </>
       )}
