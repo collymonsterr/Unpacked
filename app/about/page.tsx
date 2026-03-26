@@ -76,15 +76,15 @@ export default async function AboutPage() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            { icon: '📄', title: 'Wall of text', desc: 'You get 800 words of plain text. No images, no structure, no design. It looks like an email.' },
-            { icon: '🤖', title: 'Generic AI slop', desc: 'Every AI writes the same thing. Safe, bland, and forgettable.' },
-            { icon: '🤷', title: 'No opinion', desc: "AI won't pick a winner. \"It depends on your needs\" is not an answer." },
-            { icon: '🖼️', title: 'Useless images', desc: "Random thumbnails and logos that have nothing to do with the topic." },
-            { icon: '❓', title: 'Nothing verified', desc: 'The AI states a price confidently. Is it real? Is it current? You have no idea.' },
-            { icon: '🔗', title: 'No sources', desc: "No links, no citations, no way to verify anything. Just trust the AI." },
+            { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg>, title: 'Wall of text', desc: 'You get 800 words of plain text. No images, no structure, no design. It looks like an email.' },
+            { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>, title: 'Generic AI slop', desc: 'Every AI writes the same thing. Safe, bland, and forgettable.' },
+            { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>, title: 'No opinion', desc: "AI won't pick a winner. \"It depends on your needs\" is not an answer." },
+            { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 21V14l4-4 4 4v7"/><circle cx="16" cy="8" r="2"/><line x1="2" y1="2" x2="22" y2="22"/></svg>, title: 'Useless images', desc: "Random thumbnails and logos that have nothing to do with the topic." },
+            { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>, title: 'Nothing verified', desc: 'The AI states a price confidently. Is it real? Is it current? You have no idea.' },
+            { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>, title: 'Nothing to share', desc: "You get the answer and then what? There's no link, no page, nothing you can send. It exists only in the chat window." },
           ].map((tile) => (
             <div key={tile.title} className="rounded-xl p-5" style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}>
-              <span className="text-2xl mb-2 block">{tile.icon}</span>
+              <div className="mb-3">{tile.icon}</div>
               <h3 className="text-sm font-bold mb-1" style={{ color: '#1A1714' }}>{tile.title}</h3>
               <p className="text-sm" style={{ color: '#6B6B6B' }}>{tile.desc}</p>
             </div>
@@ -124,42 +124,121 @@ export default async function AboutPage() {
             </div>
           </div>
 
-          {/* Unpacked panel */}
+          {/* Unpacked panel — full recreation matching the mockup */}
           <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #E8E3DC' }}>
             <div className="px-4 py-2 flex items-center gap-2" style={{ backgroundColor: '#FEF3EC', borderBottom: '1px solid #E8E3DC' }}>
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#BA7517' }} />
               <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#BA7517' }}>Unpacked</span>
             </div>
-            <div className="p-5" style={{ backgroundColor: '#fff' }}>
-              {/* Mini verdict */}
-              <div className="rounded-lg px-3 py-2 mb-3" style={{ backgroundColor: '#FEF3EC', borderLeft: '3px solid #BA7517' }}>
-                <p className="text-xs font-bold" style={{ color: '#BA7517' }}>VERDICT</p>
-                <p className="text-sm font-semibold" style={{ color: '#1A1714' }}>Get the Sony WH-1000XM5</p>
+            <div className="p-4" style={{ backgroundColor: '#fff' }}>
+              {/* Comparison chip */}
+              <span className="inline-block text-[10px] font-bold uppercase px-2 py-1 rounded mb-2" style={{ backgroundColor: '#BA7517', color: '#fff' }}>Comparison</span>
+              <h4 className="text-base font-bold mb-3" style={{ color: '#1A1714' }}>iPhone 17 vs Samsung Galaxy S26</h4>
+
+              {/* Verdict box */}
+              <div className="rounded-lg px-3 py-2.5 mb-3" style={{ backgroundColor: '#FEF3EC', borderLeft: '3px solid #BA7517' }}>
+                <p className="text-[10px] font-bold uppercase" style={{ color: '#BA7517' }}>Verdict</p>
+                <p className="text-sm font-bold" style={{ color: '#1A1714' }}>Get the iPhone 17</p>
+                <p className="text-[11px]" style={{ color: '#6B6B6B' }}>Unless you want the best camera zoom, in which case the S26 Ultra edges it.</p>
               </div>
-              {/* Mini stat cards */}
-              <div className="flex gap-2 mb-3">
-                {[{ val: '$279-349', label: 'Price range' }, { val: '5', label: 'Tested' }, { val: '14', label: 'Sources' }].map(s => (
-                  <div key={s.label} className="flex-1 rounded-lg p-2 text-center" style={{ backgroundColor: '#FAFAF8', border: '1px solid #E8E3DC' }}>
-                    <p className="text-sm font-bold" style={{ color: '#BA7517' }}>{s.val}</p>
-                    <p className="text-[10px]" style={{ color: '#94918D' }}>{s.label}</p>
+
+              {/* Two product rows */}
+              {[
+                { name: 'iPhone 17', badge: 'WINNER', badgeColor: '#BA7517', price: 'From $799', desc: 'Best ecosystem, video, and resale value' },
+                { name: 'Samsung Galaxy S26', badge: 'BEST ZOOM', badgeColor: '#6B6B6B', price: 'From $799', desc: 'Best camera zoom and display brightness' },
+              ].map(p => (
+                <div key={p.name} className="flex items-center gap-3 rounded-lg p-2.5 mb-2" style={{ border: '1px solid #E8E3DC' }}>
+                  <div className="w-10 h-10 rounded-lg shrink-0" style={{ backgroundColor: '#FEF3EC' }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="text-xs font-bold" style={{ color: '#1A1714' }}>{p.name}</span>
+                      <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ backgroundColor: p.badgeColor === '#BA7517' ? '#BA7517' : '#6B6B6B', color: '#fff' }}>{p.badge}</span>
+                    </div>
+                    <p className="text-[10px] font-semibold" style={{ color: '#BA7517' }}>{p.price}</p>
+                    <p className="text-[10px]" style={{ color: '#6B6B6B' }}>{p.desc}</p>
+                  </div>
+                </div>
+              ))}
+
+              {/* Community preference */}
+              <div className="mb-3 pt-2" style={{ borderTop: '1px solid #F5F4F1' }}>
+                <p className="text-[10px] font-semibold uppercase tracking-wide mb-2" style={{ color: '#94918D' }}>Community Preference</p>
+                <div className="flex items-center gap-3">
+                  {/* Donut chart */}
+                  <svg width="48" height="48" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="14" fill="none" stroke="#E8E3DC" strokeWidth="4" />
+                    <circle cx="18" cy="18" r="14" fill="none" stroke="#BA7517" strokeWidth="4" strokeDasharray="48.4 87.96" strokeDashoffset="22" />
+                    <circle cx="18" cy="18" r="14" fill="none" stroke="#94918D" strokeWidth="4" strokeDasharray="33.4 87.96" strokeDashoffset="-26.4" />
+                  </svg>
+                  <div className="text-[10px] space-y-0.5">
+                    <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#BA7517' }} /> iPhone 55%</div>
+                    <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#94918D' }} /> Samsung 38%</div>
+                    <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#E8E3DC' }} /> Other 7%</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Head to Head bars */}
+              <div className="mb-3 pt-2" style={{ borderTop: '1px solid #F5F4F1' }}>
+                <p className="text-[10px] font-semibold uppercase tracking-wide mb-2" style={{ color: '#94918D' }}>Head to Head</p>
+                {[
+                  { metric: 'Camera', iphone: 75, samsung: 90 },
+                  { metric: 'Battery', iphone: 85, samsung: 80 },
+                  { metric: 'Display', iphone: 80, samsung: 85 },
+                  { metric: 'Performance', iphone: 92, samsung: 78 },
+                  { metric: 'Value', iphone: 82, samsung: 88 },
+                ].map(row => (
+                  <div key={row.metric} className="flex items-center gap-2 mb-1.5">
+                    <span className="text-[9px] w-16 text-right shrink-0" style={{ color: '#94918D' }}>{row.metric}</span>
+                    <div className="flex-1 flex gap-0.5">
+                      <div className="h-2 rounded-l" style={{ width: `${row.iphone}%`, backgroundColor: row.iphone >= row.samsung ? '#BA7517' : '#E8E3DC' }} />
+                      <div className="h-2 rounded-r" style={{ width: `${row.samsung}%`, backgroundColor: row.samsung > row.iphone ? '#BA7517' : '#E8E3DC' }} />
+                    </div>
+                  </div>
+                ))}
+                <div className="flex justify-between text-[9px] mt-1 px-[72px]" style={{ color: '#94918D' }}><span>iPhone</span><span>Samsung</span></div>
+              </div>
+
+              {/* Specs table */}
+              <table className="w-full text-[10px] mb-3" style={{ borderTop: '1px solid #F5F4F1' }}>
+                <thead>
+                  <tr><th /><th className="py-1.5 text-center font-semibold" style={{ color: '#BA7517' }}>iPhone 17</th><th className="py-1.5 text-center font-semibold" style={{ color: '#94918D' }}>Galaxy S26</th></tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['Camera', '48MP', '200MP'],
+                    ['Battery', 'All day', 'All day'],
+                    ['Display', '6.3" OLED', '6.2" AMOLED'],
+                    ['Storage', '128–512GB', '128GB–1TB'],
+                    ['Price', 'From $799', 'From $799'],
+                  ].map(([label, iphone, samsung]) => (
+                    <tr key={label} style={{ borderTop: '1px solid #F5F4F1' }}>
+                      <td className="py-1.5" style={{ color: '#6B6B6B' }}>{label}</td>
+                      <td className="py-1.5 text-center" style={{ color: '#1A1714' }}>{iphone}</td>
+                      <td className="py-1.5 text-center" style={{ color: '#1A1714' }}>{samsung}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Quote cards */}
+              <div className="space-y-2 mb-3">
+                {[
+                  { text: 'Switched from Samsung to iPhone and the ecosystem just works. But I miss the S Pen.', source: 'r/smartphones', color: '#BA7517' },
+                  { text: "The S26 camera in low light is unreal. iPhone still can't touch it for night photos.", source: 'r/Android', color: '#BA7517' },
+                  { text: 'Just got the iPhone 17 and the build quality is insane. Samsung feels like plastic in comparison.', source: '@techreviewer on X', color: '#1DA1F2' },
+                ].map((q, i) => (
+                  <div key={i} className="pl-3 py-1.5" style={{ borderLeft: `3px solid ${q.color}` }}>
+                    <p className="text-[10px] italic" style={{ color: '#1A1714' }}>&ldquo;{q.text}&rdquo;</p>
+                    <p className="text-[9px] mt-0.5" style={{ color: q.color }}>— {q.source}</p>
                   </div>
                 ))}
               </div>
-              {/* Mini product cards */}
-              {[{ name: 'Sony WH-1000XM5', price: '$348', badge: 'TOP PICK' }, { name: 'Bose QC Ultra', price: '$329', badge: 'RUNNER UP' }].map(p => (
-                <div key={p.name} className="flex items-center gap-3 rounded-lg p-2 mb-2" style={{ border: '1px solid #E8E3DC' }}>
-                  <div className="w-10 h-10 rounded-md flex items-center justify-center text-[8px] font-bold" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>{p.badge.split(' ')[0]}</div>
-                  <div className="flex-1"><p className="text-xs font-bold" style={{ color: '#1A1714' }}>{p.name}</p><p className="text-[10px]" style={{ color: '#BA7517' }}>{p.price}</p></div>
-                </div>
-              ))}
-              {/* Mini chart bars */}
-              <div className="flex items-end gap-1 h-8 mb-2">
-                {[60, 85, 45, 90, 70].map((h, i) => <div key={i} className="flex-1 rounded-t" style={{ height: `${h}%`, backgroundColor: i === 3 ? '#BA7517' : '#E8E3DC' }} />)}
-              </div>
-              {/* Fact-check */}
-              <div className="flex items-center gap-1 text-[10px]" style={{ color: '#059669' }}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5" /></svg>
-                3 prices verified, all specs confirmed
+
+              {/* Fact-check bar */}
+              <div className="rounded-lg px-3 py-2 flex items-center gap-1.5" style={{ backgroundColor: '#f0fdf4' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                <span className="text-[10px] font-semibold" style={{ color: '#059669' }}>2 prices verified, all specs confirmed</span>
               </div>
             </div>
           </div>
@@ -431,9 +510,18 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* ═══ 11. FEATURED ARTICLES GRID ═══ */}
+      {/* ═══ 12. FINAL CTA ═══ */}
+      <section className="max-w-2xl mx-auto px-4 py-20 text-center">
+        <h2 className="text-3xl md:text-4xl font-extrabold mb-4" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
+          Your question.<br />A complete article.<br /><span style={{ color: '#BA7517' }}>Three minutes.</span>
+        </h2>
+        <p className="text-base mb-8" style={{ color: '#6B6B6B' }}>No credit card. No setup. Just type a question.</p>
+        <SearchForm autoFocus={false} />
+      </section>
+
+      {/* ═══ FEATURED ARTICLES GRID (below CTA) ═══ */}
       {featuredArticles.length > 0 && (
-        <section className="max-w-[1060px] mx-auto px-4 md:px-6 py-20">
+        <section className="max-w-[1060px] mx-auto px-4 md:px-6 pb-20">
           <h2 className="text-2xl font-bold mb-8 text-center" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>See what people are reading</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {featuredArticles.map((row) => {
@@ -460,15 +548,6 @@ export default async function AboutPage() {
           </div>
         </section>
       )}
-
-      {/* ═══ 12. FINAL CTA ═══ */}
-      <section className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <h2 className="text-3xl md:text-4xl font-extrabold mb-4" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
-          Your question.<br />A complete article.<br /><span style={{ color: '#BA7517' }}>Three minutes.</span>
-        </h2>
-        <p className="text-base mb-8" style={{ color: '#6B6B6B' }}>No credit card. No setup. Just type a question.</p>
-        <SearchForm autoFocus={false} />
-      </section>
 
       {/* Footer */}
       <footer className="py-8 text-center text-xs" style={{ color: '#94918D', borderTop: '1px solid #E8E3DC' }}>
