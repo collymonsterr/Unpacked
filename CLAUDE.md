@@ -232,6 +232,54 @@ The site must feel like a publication for audience 2 while being a creation tool
 
 ---
 
+## Staged Plan
+
+### Stage 1 — Quick wins (mostly complete)
+- ✅ Name change ArticleAI → The Brief → Unpacked
+- ✅ SEO meta tags and JSON-LD
+- ✅ Sitemap
+- ✅ TrustStrip
+- ✅ Creator CTA
+- ✅ Suggestion chips
+- ✅ Prompt quality tooltip
+- ✅ First draft banner
+- ✅ Admin dashboard with tabs, users, costs
+- ✅ Gemini fallback fix
+- ⬜ Email capture in footer
+- ⬜ Add test-outputs/ to .gitignore
+
+### Stage 2 — Contained new features (next up)
+- ⬜ Mobile reading experience audit
+- ⬜ People also asked chips after article generation
+- ⬜ Post-submit prompt refinement interstitial for vague queries
+- ⬜ Image upload tier-aware controls
+- ⬜ Changelog public page (/updates)
+- ⬜ Profile photo upload
+- ⬜ X/Twitter sentiment for news and trend articles (API required)
+
+### Stage 3 — Database migration (plan carefully)
+- ⬜ Add visibility column: private / unlisted / published
+- ⬜ Add section column: 12 new categories
+- ⬜ Remap existing articles to new categories
+- ⬜ Update all public queries to filter visibility = published
+- ⬜ Visibility selector in first draft banner
+- ⬜ Article visibility badge on article page
+
+### Stage 4 — Homepage redesign and category pages
+- ⬜ Build 12 category pages
+- ⬜ Homepage full redesign
+- ⬜ Sitemap update with category URLs
+- ⬜ Generate 60 strategic seed articles (5 per category)
+
+### Stage 5 — Post-launch monetisation
+- ⬜ Subscription tiers: free / standard $15 / pro $29
+- ⬜ Affiliate links on product cards
+- ⬜ Creator revenue dashboard
+- ⬜ Weekly email digest
+- ⬜ Global search
+
+---
+
 ## Name Change — Completed
 
 Renamed from ArticleAI to **The Brief** (thebrief.fyi) on March 25 2026. All user-facing text, meta tags, OG data, JSON-LD, manifest, export branding, structured data updated. Logo displays as "TheBrief." (The in dark, Brief. in orange). Domain thebrief.fyi pending Vercel connection — currently deployed at articleai-three.vercel.app.
