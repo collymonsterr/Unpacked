@@ -3,6 +3,7 @@ import UserMenu from '@/components/ui/UserMenu'
 import SearchForm from '@/components/SearchForm'
 import QuickVerdict from '@/components/sections/QuickVerdict'
 import Link from 'next/link'
+import RentBuyCalculator from '@/components/about/RentBuyCalculator'
 import type { Metadata } from 'next'
 import type { ArticleRow } from '@/types/article'
 
@@ -90,12 +91,42 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* ═══ 4. PIVOT HEADING ═══ */}
-      <section className="text-center py-16 px-4">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-4" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
-          So we built<br /><span style={{ color: '#BA7517' }}>something different.</span>
-        </h2>
-        <p className="text-lg" style={{ color: '#6B6B6B' }}>The research done. The structure built. The answer given. In three minutes.</p>
+      {/* ═══ 4. PIVOT SECTION ═══ */}
+      <section className="max-w-[1060px] mx-auto px-4 md:px-6 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-[55%_45%] gap-10 items-start">
+          {/* Left column */}
+          <div>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-6" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
+              So we built<br /><span style={{ color: '#BA7517' }}>something different.</span>
+            </h2>
+            <ul className="space-y-3">
+              {[
+                'Every article independently fact-checked by a dedicated AI agent — not a disclaimer, a guarantee',
+                'Real opinions sourced live from Reddit, forums, and expert reviews — not recycled training data',
+                'Charts, tables, and working calculators generated automatically when the article needs them',
+                "Yours to refine, publish, and share under your name — the AI builds the draft, you're the editor",
+              ].map(item => (
+                <li key={item} className="flex items-start gap-2.5 text-base leading-[1.7]" style={{ color: '#3D3530' }}>
+                  <span className="mt-1 shrink-0" style={{ color: '#BA7517' }}>→</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+          {/* Right column — article preview card */}
+          <div className="rounded-xl p-5" style={{ backgroundColor: '#fff', border: '1px solid #E8E2D9', boxShadow: '0 8px 32px rgba(0,0,0,0.06)' }}>
+            <span className="inline-block text-[10px] font-bold uppercase px-2 py-1 rounded mb-3" style={{ backgroundColor: '#BA7517', color: '#fff' }}>Buyer&apos;s Guide</span>
+            <h3 className="text-lg font-bold mb-2 leading-snug" style={{ color: '#1A1714', fontFamily: 'var(--font-sora)' }}>Best Mirrorless Cameras Under $2,500 (2026)</h3>
+            <p className="text-sm leading-relaxed mb-4 line-clamp-2" style={{ color: '#6B6B6B' }}>
+              The Sony A7C II wins for everyday versatility — best autofocus, lightest body, and superb video in one package. But the Fujifilm X-T5 is the pick for photographers who prioritise image quality...
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <span className="text-[11px] font-bold px-2.5 py-1 rounded" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>🏆 Verdict included</span>
+              <span className="text-[11px] font-bold px-2.5 py-1 rounded" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>📊 Chart included</span>
+              <span className="text-[11px] font-bold px-2.5 py-1 rounded" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>✓ Fact-checked</span>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* ═══ 5. SIDE-BY-SIDE COMPARISON ═══ */}
@@ -349,6 +380,7 @@ export default async function AboutPage() {
             </tbody>
           </table>
           <p className="text-[10px] mt-3" style={{ color: '#94918D' }}>Scores from DXOMARK, DPReview, and expert consensus — verified March 2026</p>
+          <RentBuyCalculator />
         </div>
       </FeatureBlock>
 
@@ -416,14 +448,42 @@ export default async function AboutPage() {
         </div>
       </FeatureBlock>
 
-      {/* ═══ 8. FIRST DRAFT BANNER FEATURE ═══ */}
+      {/* ═══ ARTICLE TYPES ═══ */}
+      <section className="w-full py-20" style={{ backgroundColor: '#1A1714' }}>
+        <div className="max-w-[1060px] mx-auto px-4 md:px-6">
+          <h2 className="text-2xl md:text-3xl font-bold mb-3 text-center" style={{ fontFamily: 'var(--font-sora)', color: '#fff' }}>The article shapes itself around the question.</h2>
+          <p className="text-base text-center mb-10" style={{ color: 'rgba(255,255,255,0.5)' }}>A buyer guide generates different components to an explainer. The structure adapts to the question.</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { type: "Buyer's Guide", example: 'Best standing desks for home offices', items: ['Product cards with specs', 'Comparison table', 'Clear verdict', 'Price tracking'] },
+              { type: 'Comparison', example: 'Tesla Model 3 vs BMW i4', items: ['Head-to-head table', 'Winner per category', 'Community sentiment', 'Overall verdict'] },
+              { type: 'Explainer', example: 'How does compound interest work?', items: ['Visual breakdowns', 'Worked examples', 'Interactive calculator', 'Key takeaways'] },
+              { type: 'Trend Analysis', example: 'State of AI in 2026', items: ['Data charts', 'Rankings', 'Expert quotes', 'Source citations'] },
+              { type: 'Decision Guide', example: 'Should I rent or buy?', items: ['Scenario calculator', 'Pros/cons analysis', 'Expert opinion', 'Community data'] },
+              { type: 'Roundup', example: 'Best cities for remote workers', items: ['Ranked list', 'Key stats per entry', 'Cost comparison', 'Community tips'] },
+              { type: 'News & Analysis', example: 'What happened with tariffs?', items: ['Timeline', 'Expert analysis', 'Impact assessment', 'Source links'] },
+              { type: 'Finance', example: 'How to budget on $4k/month', items: ['Budget calculator', 'Savings projections', 'Interactive charts', 'Action steps'] },
+            ].map(card => (
+              <div key={card.type} className="rounded-xl p-4" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <p className="text-[10px] font-semibold uppercase tracking-wide mb-2" style={{ color: '#BA7517' }}>{card.type}</p>
+                <p className="text-sm font-semibold mb-3 leading-snug" style={{ color: '#fff' }}>{card.example}</p>
+                <ul className="space-y-1 text-[11px]" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                  {card.items.map(item => <li key={item}>• {item}</li>)}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ FIRST DRAFT BANNER FEATURE ═══ */}
       <section className="py-16" style={{ backgroundColor: '#FEF3EC' }}>
         <div className="max-w-[1060px] mx-auto px-4 md:px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
             <div>
               <span className="text-xs font-bold tracking-widest uppercase" style={{ color: '#BA7517' }}>Feature 07</span>
               <h3 className="text-2xl md:text-3xl font-extrabold mt-2 mb-3" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
-                Your first draft banner. The editing starts here.
+                Refine it until it&apos;s exactly right.
               </h3>
               <p className="text-base leading-relaxed mb-4" style={{ color: '#6B6B6B' }}>
                 The moment your article is ready, a banner slides up with everything you need to start editing. Pre-written prompts, one-click actions, and your fact-check results — all in one place.
@@ -434,7 +494,6 @@ export default async function AboutPage() {
                 ))}
               </ul>
             </div>
-            {/* FDB recreation */}
             <div className="rounded-2xl p-5" style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FEF3EC' }}>
@@ -463,35 +522,7 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* ═══ 9. ARTICLE TYPES ═══ */}
-      <section className="w-full py-20" style={{ backgroundColor: '#1A1714' }}>
-        <div className="max-w-[1060px] mx-auto px-4 md:px-6">
-          <h2 className="text-2xl md:text-3xl font-bold mb-3 text-center" style={{ fontFamily: 'var(--font-sora)', color: '#fff' }}>The article shapes itself around the question.</h2>
-          <p className="text-base text-center mb-10" style={{ color: 'rgba(255,255,255,0.5)' }}>A buyer guide generates different components to an explainer. The structure adapts to the question.</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { type: "Buyer's Guide", example: 'Best standing desks for home offices', items: ['Product cards with specs', 'Comparison table', 'Clear verdict', 'Price tracking'] },
-              { type: 'Comparison', example: 'Tesla Model 3 vs BMW i4', items: ['Head-to-head table', 'Winner per category', 'Community sentiment', 'Overall verdict'] },
-              { type: 'Explainer', example: 'How does compound interest work?', items: ['Visual breakdowns', 'Worked examples', 'Interactive calculator', 'Key takeaways'] },
-              { type: 'Trend Analysis', example: 'State of AI in 2026', items: ['Data charts', 'Rankings', 'Expert quotes', 'Source citations'] },
-              { type: 'Decision Guide', example: 'Should I rent or buy?', items: ['Scenario calculator', 'Pros/cons analysis', 'Expert opinion', 'Community data'] },
-              { type: 'Roundup', example: 'Best cities for remote workers', items: ['Ranked list', 'Key stats per entry', 'Cost comparison', 'Community tips'] },
-              { type: 'News & Analysis', example: 'What happened with tariffs?', items: ['Timeline', 'Expert analysis', 'Impact assessment', 'Source links'] },
-              { type: 'Finance', example: 'How to budget on $4k/month', items: ['Budget calculator', 'Savings projections', 'Interactive charts', 'Action steps'] },
-            ].map(card => (
-              <div key={card.type} className="rounded-xl p-4" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <p className="text-[10px] font-semibold uppercase tracking-wide mb-2" style={{ color: '#BA7517' }}>{card.type}</p>
-                <p className="text-sm font-semibold mb-3 leading-snug" style={{ color: '#fff' }}>{card.example}</p>
-                <ul className="space-y-1 text-[11px]" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                  {card.items.map(item => <li key={item}>• {item}</li>)}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ 10. SOCIAL PROOF BAR ═══ */}
+      {/* ═══ SOCIAL PROOF BAR ═══ */}
       <section className="w-full py-12" style={{ backgroundColor: '#BA7517' }}>
         <div className="max-w-4xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
           <div>
