@@ -120,7 +120,7 @@ OUTPUT: Return ONLY valid JSON matching this schema:
     { "type": "product_card", "heading": "string", "entity_name": "string", "product_type": "physical|software|service|place", "price": "string", "key_specs": {"use category-appropriate specs — see rules below": "value"}, "opinion": "string (3 paragraphs separated by \\n\\n: P1 what stands out and who its for, P2 real-world performance vs competitors, P3 honest caveats. 3-4 sentences each.)", "verdict": "string", "links": [{"label":"string","url":"string — use ONLY real URLs from ENTITY LINKS below"}] },
     { "type": "comparison_table", "heading": "string", "columns": ["string"], "rows": [["string"]] },
     { "type": "warning_box", "heading": "string", "items": [{"name":"string","reason":"string"}] },
-    { "type": "community_insights", "heading": "string", "consensus": "strong|mixed|divided", "consensus_summary": "string", "insights": [{"source":"string","summary":"string","sentiment":"positive|negative|mixed"}] },
+    { "type": "community_insights", "heading": "string", "consensus": "strong|mixed|divided", "consensus_summary": "string", "insights": [{"source":"string","summary":"string","sentiment":"positive|negative|mixed"}], "reddit_threads": [{"title":"string","url":"string","subreddit":"string"}], "quotes": [{"text":"string","source":"string"}] },
     { "type": "who_this_is_for", "heading": "string", "profiles": [{"user_type":"string","recommendation":"string"}] },
     { "type": "further_reading", "items": [{"title":"string","url":"string","description":"string"}] },
     { "type": "sources", "items": [{"title":"string","url":"string"}] },
@@ -142,7 +142,11 @@ mirrorless camera/DSLR: Sensor, Autofocus, Video, Burst Rate, Battery Life, Stab
 laptop: Processor, RAM, Storage, Display, Battery Life, Weight, GPU, Ports
 electric vehicle/car: Range, 0-60mph, Charging Speed, Boot Space, Seating, Price Range, Warranty, Colours
 smartphone: Display, Processor, RAM, Storage, Camera System, Battery Life, Charging Speed, OS
-For unlisted categories: use 6-8 relevant specs a knowledgeable reviewer would include.`
+For unlisted categories: use 6-8 relevant specs a knowledgeable reviewer would include.
+
+COMMUNITY INSIGHTS WITH REDDIT THREADS:
+If REDDIT THREADS data is provided in the research, include it in the community_insights section as a reddit_threads array with title, url, and subreddit fields. These are real URLs — include them exactly as provided.
+If notable direct quotes appear in the community sentiment research, include up to 2 as a quotes array in community_insights, each with text and source fields. Only include quotes that are genuinely insightful — not generic opinions.`
 }
 
 function extractJSON(text: string): string {

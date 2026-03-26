@@ -13,11 +13,18 @@ interface SearchResult {
   snippet: string
 }
 
+interface RedditThread {
+  title: string
+  url: string
+  subreddit: string
+}
+
 interface ResearchOutput {
   summary: string
   tokenEstimate: number
   searchCount: number
   sources: { title: string; url: string }[]
+  redditThreads: RedditThread[]
 }
 
 async function braveSearch(query: string, count = 8): Promise<SearchResult[]> {
@@ -203,6 +210,36 @@ function compileResearch(
     parts.push('')
   }
 
+  // Extract Reddit threads from sources
+  const redditThreads: RedditThread[] = []
+  try {
+    for (const s of sources) {
+      if (!s.url.includes('reddit.com')) continue
+      if (redditThreads.length >= 5) break
+
+      // Extract subreddit from URL: /r/subreddit/
+      const subMatch = s.url.match(/\/r\/([^/]+)/)
+      const subreddit = subMatch ? `r/${subMatch[1]}` : 'Reddit'
+
+      redditThreads.push({
+        title: s.title,
+        url: s.url,
+        subreddit,
+      })
+    }
+  } catch {
+    // Never fail research because of Reddit extraction
+  }
+
+  // Reddit threads section
+  if (redditThreads.length > 0) {
+    parts.push('REDDIT THREADS:')
+    for (const t of redditThreads) {
+      parts.push(`- [${t.subreddit}] ${t.title} — ${t.url}`)
+    }
+    parts.push('')
+  }
+
   // Sources
   parts.push('SOURCES:')
   for (const s of sources.slice(0, 15)) {
@@ -220,6 +257,7 @@ function compileResearch(
       tokenEstimate: Math.round(trimmed.length / 3.8),
       searchCount: allResults.size,
       sources: sources.slice(0, 15),
+      redditThreads,
     }
   }
 
@@ -228,6 +266,7 @@ function compileResearch(
     tokenEstimate,
     searchCount: allResults.size,
     sources: sources.slice(0, 15),
+    redditThreads,
   }
 }
 
