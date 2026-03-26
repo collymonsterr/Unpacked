@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/api/', '/admin/'],
     },
-    sitemap: 'https://thebrief.fyi/sitemap.xml',
+    sitemap: 'https://unpacked.fyi/sitemap.xml',
   }
 }

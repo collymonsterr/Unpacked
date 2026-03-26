@@ -47,7 +47,7 @@ function addFooter(doc: JsPDFType) {
     doc.setPage(i)
     doc.setFontSize(8)
     doc.setTextColor(MUTED)
-    doc.text('thebrief.fyi', MARGIN_LEFT, FOOTER_Y)
+    doc.text('unpacked.fyi', MARGIN_LEFT, FOOTER_Y)
     doc.text(`${i} / ${page}`, PAGE_WIDTH - MARGIN_RIGHT, FOOTER_Y, { align: 'right' })
   }
 }
@@ -92,7 +92,7 @@ export async function generateArticlePDF(article: ArticleContent, slug: string) 
 
   let y = MARGIN_TOP
 
-  // ─── Header: The Brief branding ───
+  // ─── Header: Unpacked branding ───
   doc.setFontSize(18)
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(DARK)
@@ -103,7 +103,7 @@ export async function generateArticlePDF(article: ArticleContent, slug: string) 
   const aiW = doc.getTextWidth('AI')
   doc.setFontSize(10)
   doc.setTextColor(MUTED)
-  doc.text('thebrief.fyi', MARGIN_LEFT + articleW + aiW + 6, y)
+  doc.text('unpacked.fyi', MARGIN_LEFT + articleW + aiW + 6, y)
   y += 12
 
   // ─── Article title ───
@@ -299,5 +299,5 @@ export async function generateArticlePDF(article: ArticleContent, slug: string) 
 
   // ─── Save ───
   const filename = (slug || article.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')).slice(0, 60)
-  doc.save(`${filename}-thebrief.fyi.pdf`)
+  doc.save(`${filename}-unpacked.fyi.pdf`)
 }

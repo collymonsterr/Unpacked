@@ -1,4 +1,4 @@
-# CHANGELOG.md — findings.fyi (currently The Brief)
+# CHANGELOG.md — findings.fyi (currently Unpacked)
 
 A running log of what has been built, changed, and fixed. Updated at the end of every session.
 
@@ -7,8 +7,8 @@ A running log of what has been built, changed, and fixed. Updated at the end of 
 ## 25 March 2026 — Name change, FirstDraftBanner, image fixes, loading overhaul
 
 ### Name Change
-- Renamed from ArticleAI to The Brief across entire codebase — all meta tags, OG data, JSON-LD, manifest, export branding, about page, creators page, footer, logo text updated
-- Domain references changed to thebrief.fyi
+- Renamed from ArticleAI to Unpacked across entire codebase — all meta tags, OG data, JSON-LD, manifest, export branding, about page, creators page, footer, logo text updated
+- Domain references changed to unpacked.fyi
 
 ### FirstDraftBanner (new feature)
 - Post-generation editing prompt that slides up from bottom 2.5s after article reveals
@@ -69,7 +69,7 @@ A running log of what has been built, changed, and fixed. Updated at the end of 
 - Added `api_usage_log` table — logs every Anthropic/Gemini API call with token counts
 - Added duplicate call guard — prevents same article ID triggering same API call type within 5 minutes
 - Added query caching — checks for similar existing articles before generating, shows "We recently wrote this" with option to generate fresh
-- Deleted 2 unused Anthropic API keys (ArtcileAI2, The Brief3)
+- Deleted 2 unused Anthropic API keys (ArtcileAI2, Unpacked3)
 
 ### Homepage Redesign
 - Four-section homepage: Featured (1 hero + 4 cards), Trending Today (3 dark cards), Most Popular (4 ranked cards), Recent Articles
@@ -141,7 +141,7 @@ A running log of what has been built, changed, and fixed. Updated at the end of 
 ## March 25, 2026
 
 ### Branding
-- Renamed from ArticleAI to The Brief (thebrief.fyi)
+- Renamed from ArticleAI to Unpacked (unpacked.fyi)
 - Updated all user-facing text, meta tags, OG images, JSON-LD, manifest, logos, PDF footer
 - Logo changed from "Article" + "AI" to "The" + "Brief"
 

@@ -263,7 +263,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
             {formattedDate} · {readingTime} min read
           </p>
           <span style={{ color: 'var(--border)' }}>·</span>
-          <ShareButton title={article.title} url={`https://thebrief.fyi/article/${articleRow.slug}`} />
+          <ShareButton title={article.title} url={`https://unpacked.fyi/article/${articleRow.slug}`} />
           <span style={{ color: 'var(--border)' }}>·</span>
           <BookmarkButton articleId={articleRow.id} user={user} />
           {(articleRow.status === 'verified' || articleRow.fact_check) && (
@@ -408,7 +408,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3" data-no-print>
         <ShareButton
           title={article.title}
-          url={`https://thebrief.fyi/article/${articleRow.slug}`}
+          url={`https://unpacked.fyi/article/${articleRow.slug}`}
           variant="bottom-row"
         />
         <button
@@ -481,7 +481,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           refineContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }}
         onShare={async () => {
-          const shareUrl = `https://thebrief.fyi/article/${articleRow.slug}`
+          const shareUrl = `https://unpacked.fyi/article/${articleRow.slug}`
           if (typeof navigator !== 'undefined' && navigator.share) {
             try { await navigator.share({ title: article.title, url: shareUrl }) } catch {}
           } else {

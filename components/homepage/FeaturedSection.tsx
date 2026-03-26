@@ -84,7 +84,7 @@ export default function FeaturedSection({ articles }: Props) {
   const heroImg = heroArt?.thumbnail_url
   const heroReadTime = heroArt ? getReadingTime(heroArt) : 0
   const heroDate = new Date(heroArticle.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
-  const heroAuthorName = heroArticle.user_name ?? 'The Brief'
+  const heroAuthorName = heroArticle.user_name ?? 'Unpacked'
   const heroAuthorInitial = heroAuthorName.charAt(0).toUpperCase()
 
   return (

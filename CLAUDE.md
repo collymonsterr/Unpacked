@@ -1,4 +1,4 @@
-# CLAUDE.md — Project Briefing for The Brief (thebrief.fyi)
+# CLAUDE.md — Project Briefing for Unpacked (unpacked.fyi)
 
 Read this file before doing anything else. It is the single source of truth for this project.
 
@@ -10,9 +10,9 @@ A web platform where users type any question and receive a complete, visual, opi
 
 The platform has a creator model: users put their name on articles and will eventually earn affiliate revenue from product recommendations. Think Wirecutter meets Substack.
 
-**Current URL:** https://thebrief.fyi (Vercel deployment, domain pending connection)
+**Current URL:** https://unpacked.fyi (Vercel deployment, domain pending connection)
 **Repository:** GitHub, auto-deploys to Vercel on push
-**Name:** The Brief (thebrief.fyi). Name change from ArticleAI completed March 25 2026.
+**Name:** Unpacked (unpacked.fyi). Name change from ArticleAI completed March 25 2026.
 
 ---
 
@@ -235,7 +235,7 @@ The site must feel like a publication for audience 2 while being a creation tool
 ## Staged Plan
 
 ### Stage 1 — Quick wins (mostly complete)
-- ✅ Name change ArticleAI → The Brief → Unpacked
+- ✅ Name change ArticleAI → Unpacked → Unpacked
 - ✅ SEO meta tags and JSON-LD
 - ✅ Sitemap
 - ✅ TrustStrip
@@ -282,6 +282,6 @@ The site must feel like a publication for audience 2 while being a creation tool
 
 ## Name Change — Completed
 
-Renamed from ArticleAI to **The Brief** (thebrief.fyi) on March 25 2026. All user-facing text, meta tags, OG data, JSON-LD, manifest, export branding, structured data updated. Logo displays as "TheBrief." (The in dark, Brief. in orange). Domain thebrief.fyi pending Vercel connection — currently deployed at articleai-three.vercel.app.
+Renamed from ArticleAI to **Unpacked** (unpacked.fyi) on March 25 2026. All user-facing text, meta tags, OG data, JSON-LD, manifest, export branding, structured data updated. Logo displays as "Unpacked." (The in dark, Brief. in orange). Domain unpacked.fyi pending Vercel connection — currently deployed at unpacked.fyi.
 
 Note: Some metadata still references `@articleai` for Twitter site tag — update to `@thebrief` when Twitter/X account is created.

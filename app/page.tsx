@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   alternates: {
-    canonical: 'https://thebrief.fyi',
+    canonical: 'https://unpacked.fyi',
   },
 }
 

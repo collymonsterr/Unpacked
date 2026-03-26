@@ -81,11 +81,11 @@ export async function generateMetadata({ params }: Props) {
 
   const title = row.article?.title ?? row.plan?.title ?? row.query
   const description = row.article?.quick_verdict?.one_liner ?? row.plan?.quick_verdict_preview ?? ''
-  const canonicalUrl = `https://thebrief.fyi/article/${row.slug}`
-  const ogImage = row.article?.thumbnail_url ?? `https://thebrief.fyi/api/og/${row.slug}`
+  const canonicalUrl = `https://unpacked.fyi/article/${row.slug}`
+  const ogImage = row.article?.thumbnail_url ?? `https://unpacked.fyi/api/og/${row.slug}`
 
   return {
-    title: `${title} — ArticleAI`,
+    title: `${title} — Unpacked`,
     description,
     alternates: {
       canonical: canonicalUrl,
@@ -94,7 +94,7 @@ export async function generateMetadata({ params }: Props) {
       title,
       description,
       url: canonicalUrl,
-      siteName: 'ArticleAI',
+      siteName: 'Unpacked',
       type: 'article',
       publishedTime: row.created_at,
       modifiedTime: row.updated_at ?? row.created_at,
@@ -112,7 +112,7 @@ export async function generateMetadata({ params }: Props) {
       title,
       description,
       images: [ogImage],
-      site: '@articleai',
+      site: '@unpacked_fyi',
     },
   }
 }

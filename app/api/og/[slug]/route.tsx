@@ -9,7 +9,7 @@ export async function GET(
 ) {
   const { slug } = await params
 
-  let title = 'The Brief'
+  let title = 'Unpacked'
   let articleType = ''
   let verdict = ''
   let thumbnailUrl = ''
@@ -23,7 +23,7 @@ export async function GET(
       : await query.eq('slug', slug).single()
 
     if (data) {
-      title = data.article?.title ?? data.plan?.title ?? data.query ?? 'The Brief'
+      title = data.article?.title ?? data.plan?.title ?? data.query ?? 'Unpacked'
       articleType = data.article?.article_type ?? ''
       verdict = data.article?.quick_verdict?.one_liner ?? ''
       thumbnailUrl = data.article?.thumbnail_url ?? ''

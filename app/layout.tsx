@@ -17,31 +17,31 @@ const outfit = Outfit({
 })
 
 export const metadata: Metadata = {
-  title: 'The Brief — Type a question. Get a complete visual article.',
+  title: 'Unpacked — Type a question. Get a complete visual article.',
   description:
     'Researched from real sources. Written with a clear opinion. Ready in under two minutes.',
-  metadataBase: new URL('https://thebrief.fyi'),
+  metadataBase: new URL('https://unpacked.fyi'),
   openGraph: {
-    title: 'The Brief — Type a question. Get a complete visual article.',
+    title: 'Unpacked — Type a question. Get a complete visual article.',
     description: 'Researched from real sources. Written with a clear opinion. Ready in under two minutes.',
-    url: 'https://thebrief.fyi',
-    siteName: 'The Brief',
+    url: 'https://unpacked.fyi',
+    siteName: 'Unpacked',
     type: 'website',
     images: [
       {
         url: '/og-default.png',
         width: 1200,
         height: 630,
-        alt: 'The Brief',
+        alt: 'Unpacked',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'The Brief — Type a question. Get a complete visual article.',
+    title: 'Unpacked — Type a question. Get a complete visual article.',
     description: 'Researched from real sources. Written with a clear opinion. Ready in under two minutes.',
     images: ['/og-default.png'],
-    site: '@articleai',
+    site: '@unpacked_fyi',
   },
   icons: {
     icon: [

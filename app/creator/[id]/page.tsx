@@ -55,8 +55,8 @@ export async function generateMetadata({ params }: Props) {
   const name = profile?.display_name || data?.user_name || 'Creator'
 
   return {
-    title: `${name} — The Brief`,
-    description: profile?.bio || `Articles created by ${name} on The Brief.`,
+    title: `${name} — Unpacked`,
+    description: profile?.bio || `Articles created by ${name} on Unpacked.`,
   }
 }
 

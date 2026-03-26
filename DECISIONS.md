@@ -78,7 +78,7 @@ Simple links to dedicated pages only. The nav avatar dropdown contains: My Artic
 **Decision: .fyi is the preferred TLD**
 It means "for your information" which aligns with the product's purpose.
 
-**Decision: Do not hardcode "The Brief" anywhere new**
+**Decision: Do not hardcode "Unpacked" anywhere new**
 The name change is imminent. Every new string should use a placeholder or variable. When the name is confirmed, a full find-and-replace will be needed.
 
 ---

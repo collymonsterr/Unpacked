@@ -7,7 +7,7 @@ export default function Footer() {
       style={{ borderTop: '1px solid var(--border)' }}
     >
       <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-        The Brief
+        Unpacked
       </p>
       <div className="flex items-center gap-5">
         <Link

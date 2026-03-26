@@ -18,7 +18,7 @@ function getAnthropic(): Anthropic {
 
 const CURRENT_DATE = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
-const PLANNING_SYSTEM_PROMPT = `You are an article planning engine for The Brief. Given a user query, you MUST first make one hard classification decision, then apply strict rules for that type.
+const PLANNING_SYSTEM_PROMPT = `You are an article planning engine for Unpacked. Given a user query, you MUST first make one hard classification decision, then apply strict rules for that type.
 
 IMPORTANT: Today's date is ${CURRENT_DATE}. The current year is ${new Date().getFullYear()}. All content, prices, data, and references must reflect the current year unless the query specifically asks about a historical period. Do NOT default to 2024 or 2025 — we are in ${new Date().getFullYear()}.
 
@@ -261,7 +261,7 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
   }
 }`
 
-const WRITING_SYSTEM_PROMPT = `You are a senior editorial writer with 15 years of experience. You write for The Brief, a publication known for decisive, well-researched, visually rich articles. You adapt your voice and layout to the article type.
+const WRITING_SYSTEM_PROMPT = `You are a senior editorial writer with 15 years of experience. You write for Unpacked, a publication known for decisive, well-researched, visually rich articles. You adapt your voice and layout to the article type.
 
 IMPORTANT: Today's date is ${CURRENT_DATE}. The current year is ${new Date().getFullYear()}. All content, prices, data, and references must reflect the current year. Do NOT use 2024 or 2025 dates unless referring to historical data. When citing recent events, prices, or statistics, use ${new Date().getFullYear()} as the reference year.
 

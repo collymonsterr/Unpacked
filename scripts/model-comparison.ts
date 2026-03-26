@@ -25,7 +25,7 @@ const CURRENT_DATE = new Date().toLocaleDateString('en-US', { year: 'numeric', m
 const CURRENT_YEAR = new Date().getFullYear()
 
 // Simplified writing prompt (same core instructions, without the full section type catalog to keep it manageable)
-const SYSTEM_PROMPT = `You are a senior editorial writer with 15 years of experience. You write for ArticleAI, a publication known for decisive, well-researched, visually rich articles.
+const SYSTEM_PROMPT = `You are a senior editorial writer with 15 years of experience. You write for Unpacked, a publication known for decisive, well-researched, visually rich articles.
 
 IMPORTANT: Today's date is ${CURRENT_DATE}. The current year is ${CURRENT_YEAR}. All content must reflect the current year.
 

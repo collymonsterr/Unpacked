@@ -57,7 +57,7 @@ async function logGeminiFallback(callType: string, errorMessage: string, rawResp
 }
 
 function getWritingPrompt(currentDate: string, currentYear: number): string {
-  return `You are a senior editorial writer for The Brief. Write decisive, well-researched, visually rich articles.
+  return `You are a senior editorial writer for Unpacked. Write decisive, well-researched, visually rich articles.
 
 DATE: ${currentDate}. Year: ${currentYear}. Use current-year data only.
 

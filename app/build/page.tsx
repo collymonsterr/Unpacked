@@ -89,7 +89,7 @@ function summariseEntry(entry: { date: string; sections: Map<string, string[]> }
     'Skeleton Loader': 'Added loading skeleton for articles opened via shared links',
     'Calculator Cleanup': 'Fixed all broken interactive calculators',
     'Nav Menu': 'Updated navigation menu with account links',
-    'Name Change': 'Renamed the platform to The Brief',
+    'Name Change': 'Renamed the platform to Unpacked',
     'FirstDraftBanner (new feature)': 'Added post-generation editing prompt banner',
     'Image System Improvements': 'Improved product and hero image search accuracy',
     'Loading Experience Overhaul': 'Redesigned the article generation loading experience',
@@ -274,7 +274,7 @@ export default function BuildPage() {
               <span>Recharts</span>
             </div>
             <a
-              href="https://articleai-three.vercel.app"
+              href="https://unpacked.fyi"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block mt-4 text-sm font-semibold no-underline"

@@ -1,6 +1,6 @@
 {
-  "name": "The Brief",
-  "short_name": "The Brief",
+  "name": "Unpacked",
+  "short_name": "Unpacked",
   "description": "Type a question. Get a complete visual article.",
   "start_url": "/",
   "display": "standalone",

@@ -224,7 +224,7 @@ h1, h2, h3, h4, h5, h6 {
 
   /* Add article URL to the bottom */
   .article-page-layout::after {
-    content: "ArticleAI — articleai-three.vercel.app";
+    content: "Unpacked — unpacked.fyi";
     display: block;
     text-align: center;
     font-size: 9pt;

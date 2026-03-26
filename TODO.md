@@ -1,4 +1,4 @@
-# TODO.md — thebrief.fyi (currently The Brief)
+# TODO.md — unpacked.fyi (currently Unpacked)
 
 Last updated: 25 March 2026
 
@@ -7,7 +7,7 @@ Last updated: 25 March 2026
 ## 🔴 Immediate — Fix Before Anything Else
 
 - [ ] **Loading message pacing** — HIGHEST PRIORITY UX BUG. Messages exhaust at ~70 seconds but articles average ~188 seconds. Flat 5s interval, ~17 messages, no adaptive pacing implemented. Results in 1.7+ minutes of dead silence. Fix: implement graduated intervals (fast early, slow mid, long tail). File: `components/ArticleGenerating.tsx`
-- [ ] **Finalise new name and buy domain** — blocks all branding and marketing work. Frontrunner: thebrief.fyi
+- [ ] **Finalise new name and buy domain** — blocks all branding and marketing work. Frontrunner: unpacked.fyi
 - [ ] **Set spending caps** in Anthropic, OpenAI, and Google billing dashboards — recommended as last-line cost defence, not yet confirmed done
 - [ ] **Remove unused env vars from Vercel** — GOOGLE_CUSTOM_SEARCH_API_KEY, GOOGLE_CUSTOM_SEARCH_ENGINE_ID, FAL_API_KEY all confirmed unused
 
@@ -71,7 +71,7 @@ Last updated: 25 March 2026
 
 ### Added March 25 2026
 - [x] **Post-generation first draft banner** — slides up after article reveals, 4 action chips pre-fill refine box, corrections badge, share/edit buttons, dismiss to floating pill. Owner-only.
-- [x] **Name change to The Brief** — all user-facing text, meta tags, OG data, manifest, structured data, export branding updated from ArticleAI to The Brief / thebrief.fyi
+- [x] **Name change to Unpacked** — all user-facing text, meta tags, OG data, manifest, structured data, export branding updated from ArticleAI to Unpacked / unpacked.fyi
 - [x] **TrustStrip component** — three trust signals between masthead and featured section
 - [x] **Creator CTA line** — "Want to publish under your name?" below suggestion chips
 - [x] **Article-type-aware loading subtitles** — Phase 2 subtitle varies by buyer_guide, explainer, news, etc.

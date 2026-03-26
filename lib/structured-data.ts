@@ -6,7 +6,7 @@ export function generateArticleJsonLd(
   createdAt: string,
   updatedAt?: string
 ) {
-  const canonicalUrl = `https://thebrief.fyi/article/${slug}`
+  const canonicalUrl = `https://unpacked.fyi/article/${slug}`
 
   const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
@@ -21,15 +21,15 @@ export function generateArticleJsonLd(
     dateModified: updatedAt ?? createdAt,
     author: {
       '@type': 'Organization',
-      name: 'The Brief',
+      name: 'Unpacked',
     },
     publisher: {
       '@type': 'Organization',
-      name: 'The Brief',
-      url: 'https://thebrief.fyi',
+      name: 'Unpacked',
+      url: 'https://unpacked.fyi',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://thebrief.fyi/favicon-192.png',
+        url: 'https://unpacked.fyi/favicon-192.png',
       },
     },
   }
@@ -51,7 +51,7 @@ export function generateProductJsonLd(
     '@type': 'Product',
     name: product.entity_name,
     description: product.opinion ?? product.verdict ?? '',
-    url: `https://thebrief.fyi/article/${slug}`,
+    url: `https://unpacked.fyi/article/${slug}`,
   }
 
   if (product.image_url ?? product.image_urls?.[0]) {
@@ -77,11 +77,11 @@ export function generateProductJsonLd(
       reviewBody: product.verdict,
       author: {
         '@type': 'Organization',
-        name: 'The Brief',
+        name: 'Unpacked',
       },
       publisher: {
         '@type': 'Organization',
-        name: 'The Brief',
+        name: 'Unpacked',
       },
     }
   }
@@ -98,13 +98,13 @@ export function generateBreadcrumbJsonLd(articleTitle: string, slug: string) {
         '@type': 'ListItem',
         position: 1,
         name: 'Home',
-        item: 'https://thebrief.fyi',
+        item: 'https://unpacked.fyi',
       },
       {
         '@type': 'ListItem',
         position: 2,
         name: articleTitle,
-        item: `https://thebrief.fyi/article/${slug}`,
+        item: `https://unpacked.fyi/article/${slug}`,
       },
     ],
   }
