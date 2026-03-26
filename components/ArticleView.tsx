@@ -463,9 +463,10 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
         firstSectionTitle={
           article.sections.find(s => s.type === 'content_section')?.heading ?? 'introduction'
         }
+        factCheckStatus={factCheckStatus}
+        factCheck={articleRow.fact_check}
         onPrefillRefine={(text) => {
           setRefineValue(text)
-          // Brief amber glow on the refine container
           if (refineContainerRef.current) {
             refineContainerRef.current.style.boxShadow = '0 0 0 3px rgba(186, 117, 23, 0.3)'
             refineContainerRef.current.style.borderRadius = '12px'

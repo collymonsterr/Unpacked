@@ -278,8 +278,9 @@ export default function ArticlePageClient({ initialRow }: Props) {
         />
       ) : null}
 
-      {/* Fixed bottom fact-check bar */}
-      {factCheckStatus !== 'none' && (
+      {/* Fixed bottom fact-check bar — only show when FirstDraftBanner is NOT showing */}
+      {/* The banner has its own fact-check display to avoid overlap */}
+      {factCheckStatus !== 'none' && !(showArticle && wasEverGenerating.current && isOwner) && (
         <FactCheckBar
           status={factCheckStatus}
           factCheck={row.fact_check}
