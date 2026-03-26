@@ -39,7 +39,58 @@ export default function HeroImage({
   // AI generation state
   const [generatingAI, setGeneratingAI] = useState(false)
 
+  // Upload state
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+
   if (error) return null
+
+  async function handleUpload(file: File) {
+    // Client-side validation
+    const allowed = ['image/jpeg', 'image/png', 'image/webp']
+    if (!allowed.includes(file.type)) {
+      setUploadError('Only JPG, PNG, and WebP files are accepted.')
+      setTimeout(() => setUploadError(null), 3000)
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('File too large — maximum 5MB.')
+      setTimeout(() => setUploadError(null), 3000)
+      return
+    }
+
+    setUploading(true)
+    setUploadError(null)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const res = await fetch(`/api/articles/${articleId}/upload-hero`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Upload failed' }))
+        throw new Error(data.error ?? 'Upload failed')
+      }
+
+      const data = await res.json()
+      if (data.article) {
+        onKeep?.(data.article)
+        // Close picker if open
+        setPickerUrls(null)
+        setPickerExcluded([])
+        setPickerError(false)
+        setLoaded(true)
+      }
+    } catch (err) {
+      setUploadError((err as Error).message ?? 'Upload failed. Please try again.')
+      setTimeout(() => setUploadError(null), 3000)
+    } finally {
+      setUploading(false)
+    }
+  }
 
   async function openPicker() {
     if (pickerLoading || saving) return
@@ -285,7 +336,7 @@ export default function HeroImage({
           )}
 
           {/* Admin buttons — only show when picker is NOT open */}
-          {isAdmin && onReplace && !pickerOpen && !generatingAI && (
+          {isAdmin && onReplace && !pickerOpen && !generatingAI && !uploading && (
             <div className="absolute top-3 right-3 z-10 flex gap-2">
               <button
                 onClick={openPicker}
@@ -302,6 +353,28 @@ export default function HeroImage({
                 </svg>
                 New photo
               </button>
+              <label
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity cursor-pointer"
+                style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: '#fff', opacity: 0.85 }}
+                title="Upload your own photo"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                Upload photo
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleUpload(file)
+                    e.target.value = '' // Reset so same file can be selected again
+                  }}
+                />
+              </label>
               <button
                 onClick={handleGenerateAI}
                 disabled={generatingAI}
@@ -316,6 +389,28 @@ export default function HeroImage({
                 </svg>
                 Generate AI
               </button>
+            </div>
+          )}
+
+          {/* Upload loading overlay */}
+          {uploading && (
+            <div
+              className="absolute inset-0 flex items-center justify-center z-20"
+              style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+            >
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ backgroundColor: 'rgba(0,0,0,0.8)', color: '#fff' }}>
+                <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                <span className="text-sm font-semibold">Uploading...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Upload error message */}
+          {uploadError && (
+            <div className="absolute bottom-3 left-3 right-3 z-20">
+              <div className="px-3 py-2 rounded-lg text-xs font-medium text-center" style={{ backgroundColor: 'rgba(220,38,38,0.9)', color: '#fff' }}>
+                {uploadError}
+              </div>
             </div>
           )}
         </div>
