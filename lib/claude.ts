@@ -231,9 +231,11 @@ For hero_image_subject: generate a short description (8-15 words) of the CORE VI
 
 For loading_messages: generate 6-8 short, specific status messages describing what research will be done for THIS article. These are shown to the user while the article generates. Be specific to the query — reference actual product names, subreddits, source types, and data being gathered. Do NOT use generic messages like "Researching..." or "Nearly there". Each message should describe a concrete research action. Examples for "Best noise-cancelling headphones under $300": "Checking what audiophile forums say about ANC performance...", "Comparing noise cancellation test results from rtings.com...", "Reading 6-month owner reviews on Reddit r/headphones...", "Pulling current prices from Amazon and Best Buy..."
 
+TITLE RULES: Article titles must be 50-60 characters maximum. Never exceed 60 characters. Prioritise clarity and specificity over completeness. Drop filler words like "Complete", "Ultimate", "Everything You Need to Know". Good: "Best Noise-Cancelling Headphones Under $300" (44 chars). Bad: "The Complete Ultimate Guide to the Best Noise-Cancelling Headphones Under $300 in 2026" (87 chars).
+
 Respond ONLY with valid JSON matching this schema exactly. No preamble, no markdown fences:
 {
-  "title": "string",
+  "title": "string (50-60 characters max)",
   "article_type": "buyer_guide | comparison | decision_guide | explainer | news | planning | trend_analysis | tutorial",
   "visual_strategy": {
     "image_density": "none | low | medium | high",

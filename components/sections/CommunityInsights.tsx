@@ -87,7 +87,29 @@ export default function CommunityInsights({ section }: { section: CommunityInsig
                 style={{ backgroundColor: sentimentDot[insight.sentiment] ?? '#6b7280' }}
               />
               <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
-                {insight.source}
+                {(() => {
+                  // Extract subreddit from source like "Reddit r/headphones" or "Reddit r/headphoneadvice"
+                  const subMatch = insight.source.match(/r\/(\w+)/i)
+                  if (subMatch) {
+                    const sub = subMatch[0] // e.g. "r/headphones"
+                    const prefix = insight.source.slice(0, insight.source.indexOf(sub)).trim()
+                    return (
+                      <>
+                        {prefix && <>{prefix} </>}
+                        <a
+                          href={`https://reddit.com/${sub}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="no-underline hover:underline"
+                          style={{ color: '#BA7517' }}
+                        >
+                          {sub}
+                        </a>
+                      </>
+                    )
+                  }
+                  return insight.source
+                })()}
               </span>
               {/* Reddit icon next to REDDIT label */}
               {insight.source.toLowerCase().includes('reddit') && (
@@ -141,9 +163,16 @@ export default function CommunityInsights({ section }: { section: CommunityInsig
                   >
                     {thread.title}
                   </p>
-                  <p className="text-xs mt-0.5" style={{ color: '#BA7517' }}>
+                  <a
+                    href={`https://reddit.com/${thread.subreddit.startsWith('r/') ? thread.subreddit : 'r/' + thread.subreddit}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs mt-0.5 no-underline hover:underline block"
+                    style={{ color: '#BA7517' }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {thread.subreddit}
-                  </p>
+                  </a>
                 </div>
                 <svg
                   width="14" height="14" viewBox="0 0 24 24" fill="none"
