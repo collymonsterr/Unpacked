@@ -208,7 +208,7 @@ VISUALISATION RULES BY TYPE:
 
 For research_queries: generate 3-4 short, natural-sounding descriptions of what the system will research. These are shown to the user during loading.
 
-For suggestion_chips: generate 3 refinements (modify this article) and 3 related (generate a new article on a naturally connected topic).
+For suggestion_chips: generate 3 refinements (modify this article) and 3 related (generate a new article on a naturally connected topic). IMPORTANT: If any related topic includes a year, use ${new Date().getFullYear()} — never 2024 or 2025. Omit the year entirely if the topic is evergreen.
 
 For hero_image_query: generate a single search query (5-8 words) that would find a beautiful, magazine-quality hero photograph for this article. Think: what would a photo editor at a premium magazine search for? The image should be aspirational, high-resolution, and have NO text or infographics. Examples: "Rent vs Buy" → "beautiful modern house exterior golden hour", "Best Headphones" → "premium headphones lifestyle minimal desk", "Dubai Travel" → "Dubai marina skyline sunset aerial", "How to Budget" → "elegant notebook pen coffee flatlay". Do NOT include words like "article", "guide", "review", "infographic", or "chart".
 
