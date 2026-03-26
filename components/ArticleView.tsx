@@ -210,6 +210,8 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
               toolbarBusy={toolbarBusy}
               initialPinned={articleRow.pinned ?? false}
               initialHidden={articleRow.hidden_from_homepage ?? false}
+              initialFeatured={articleRow.is_featured ?? false}
+              initialTrending={articleRow.is_trending ?? false}
               onRegenerateImages={handleRegenerateImages}
               onRegenerateArticle={handleRegenerateArticle}
               onCategoryChange={(newType) => {
