@@ -21,6 +21,7 @@ export default function AdminDashboard() {
   const [reorderingId, setReorderingId] = useState<string | null>(null)
   const [heroPreview, setHeroPreview] = useState<Record<string, string | null>>({})
   const [heroRefreshing, setHeroRefreshing] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'overview' | 'articles' | 'costs'>('overview')
 
   const fetchArticles = useCallback(async () => {
     try {
@@ -304,37 +305,68 @@ export default function AdminDashboard() {
           </span>
         </div>
 
-        {/* Backfill card summaries for featured articles */}
-        {articles.some(a => a.is_featured && !(a as unknown as Record<string, unknown>).card_summary) && (
-          <button
-            onClick={async () => {
-              const missing = articles.filter(a => a.is_featured && !(a as unknown as Record<string, unknown>).card_summary)
-              for (const a of missing) {
-                await fetch(`/api/articles/${a.id}/featured`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ is_featured: true }),
-                })
-              }
-              alert(`Triggered card summary generation for ${missing.length} featured article(s). Refresh in a few seconds.`)
-            }}
-            className="px-4 py-2 rounded-lg text-xs font-semibold mb-4"
-            style={{ backgroundColor: 'var(--accent)', color: '#fff', cursor: 'pointer' }}
-          >
-            Generate missing card summaries ({articles.filter(a => a.is_featured && !(a as unknown as Record<string, unknown>).card_summary).length})
-          </button>
+        {/* Tab navigation */}
+        <div className="flex items-center gap-1 mb-6" style={{ borderBottom: '1px solid var(--border)' }}>
+          {(['overview', 'articles', 'costs'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className="px-4 py-2.5 text-sm font-medium transition-colors relative"
+              style={{
+                color: activeTab === tab ? 'var(--accent)' : 'var(--text-secondary)',
+                fontFamily: 'var(--font-outfit)',
+                cursor: 'pointer',
+                backgroundColor: 'transparent',
+                border: 'none',
+              }}
+            >
+              {tab === 'overview' ? 'Overview' : tab === 'articles' ? 'Articles' : 'Costs'}
+              {activeTab === tab && (
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-0.5"
+                  style={{ backgroundColor: 'var(--accent)' }}
+                />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab: Overview */}
+        {activeTab === 'overview' && (
+          <>
+            {/* Backfill card summaries for featured articles */}
+            {articles.some(a => a.is_featured && !(a as unknown as Record<string, unknown>).card_summary) && (
+              <button
+                onClick={async () => {
+                  const missing = articles.filter(a => a.is_featured && !(a as unknown as Record<string, unknown>).card_summary)
+                  for (const a of missing) {
+                    await fetch(`/api/articles/${a.id}/featured`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ is_featured: true }),
+                    })
+                  }
+                  alert(`Triggered card summary generation for ${missing.length} featured article(s). Refresh in a few seconds.`)
+                }}
+                className="px-4 py-2 rounded-lg text-xs font-semibold mb-4"
+                style={{ backgroundColor: 'var(--accent)', color: '#fff', cursor: 'pointer' }}
+              >
+                Generate missing card summaries ({articles.filter(a => a.is_featured && !(a as unknown as Record<string, unknown>).card_summary).length})
+              </button>
+            )}
+
+            <AdminAnalytics />
+            <AdminUsers />
+          </>
         )}
 
-        {/* Analytics charts */}
-        <AdminAnalytics />
+        {/* Tab: Costs */}
+        {activeTab === 'costs' && (
+          <AdminCosts />
+        )}
 
-        {/* Users section */}
-        <AdminUsers />
-
-        {/* Costs section */}
-        <AdminCosts />
-
-        {loading ? (
+        {/* Tab: Articles */}
+        {activeTab === 'articles' && (loading ? (
           <div className="flex justify-center py-20">
             <div
               className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
@@ -818,7 +850,7 @@ export default function AdminDashboard() {
               })}
             </div>
           </>
-        )}
+        ))}
       </main>
     </div>
   )
