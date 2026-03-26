@@ -97,6 +97,12 @@ function summariseEntry(entry: { date: string; sections: Map<string, string[]> }
     'Refine Pipeline': 'Switched article refinement to cheaper model',
     'Slug Migration': 'Cleaned up all article URLs for better SEO',
     'Other': 'Various UI polish and small fixes',
+    'Naming & Domain': 'Renamed to Unpacked — domain live at unpacked.fyi',
+    'Admin Dashboard': 'Admin dashboard with three tabs: Overview, Articles, Costs',
+    'Gemini Reliability Fix': 'Fixed Gemini failing 66% of writes — now succeeds reliably',
+    'FirstDraftBanner': 'Post-generation editing prompt with action chips',
+    'Mobile & UX': 'Mobile touch targets fixed, banner optimised for small screens',
+    'Documentation': 'CLAUDE.md created as automatic context file',
   }
 
   const items: string[] = []

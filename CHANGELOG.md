@@ -1,6 +1,41 @@
-# CHANGELOG.md — findings.fyi (currently Unpacked)
+# CHANGELOG.md — Unpacked (unpacked.fyi)
 
 A running log of what has been built, changed, and fixed. Updated at the end of every session.
+
+---
+
+## 26 March 2026 — Rename to Unpacked, admin dashboard, Gemini reliability fix
+
+### Naming & Domain
+- Renamed from Unpacked to Unpacked — 26 files updated across metadata, OG tags, JSON-LD, logo, footer, share URLs, PDF export, AI prompts, and documentation
+- Domain unpacked.fyi connected in Vercel with SSL, DNS via Namecheap A records
+- Logo updated to "Un" (dark) + "packed." (orange)
+
+### Admin Dashboard
+- Restructured admin page into three tabs: Overview, Articles, Costs
+- AdminUsers component — total users, new this week/month, recent signups table
+- AdminCosts component — spend by provider, daily chart, average cost per article
+
+### Gemini Reliability Fix
+- Gemini Flash was failing 66% of article writes, silently falling back to Sonnet at 25x cost
+- Fixed: temperature lowered from 0.7 to 0.3, explicit JSON-only output instruction added
+- Persistent fallback logging added to api_usage_log with error_message column
+
+### FirstDraftBanner
+- Post-generation editing prompt that slides up 2.5s after article reveals
+- Four action chips pre-fill the refine textarea: change tone, swap products, rewrite section, change angle
+- Corrections count badge, share and edit buttons, dismiss to floating pill
+- Owner-only — never shown to readers visiting shared articles
+
+### Mobile & UX
+- Mobile reading audit completed — touch targets fixed on share, bookmark, fact-check buttons
+- FirstDraftBanner reduced to 2 chips on mobile with expandable "More options"
+- TrustStrip component added between masthead and featured section
+- Creator CTA line added below suggestion chips on homepage
+
+### Documentation
+- AGENTS.md renamed to CLAUDE.md — now read automatically at every session start
+- Staged plan added to CLAUDE.md with 5 phases and completion markers
 
 ---
 
