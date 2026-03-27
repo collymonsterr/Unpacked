@@ -29,7 +29,7 @@ export function generateArticleJsonLd(
       url: 'https://unpacked.fyi',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://unpacked.fyi/favicon-192.png',
+        url: 'https://unpacked.fyi/android-chrome-192x192.png',
       },
     },
   }
