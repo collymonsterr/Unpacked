@@ -9,6 +9,7 @@ const QUESTIONS = [
     title: 'Best Mirrorless Cameras Under $2,500 (2026)',
     bg: 'linear-gradient(135deg,#2D3A4A,#1A2230)',
     icon: '📷',
+    image: 'https://images-na.ssl-images-amazon.com/images/I/71xMB0--4yL.jpg',
     stats: [
       { value: '6', label: 'TESTED' },
       { value: '14', label: 'SOURCES' },
@@ -21,6 +22,8 @@ const QUESTIONS = [
       { label: '📋 Specs table', color: '#BA7517', bg: '#FDF6E9' },
       { label: '💬 Community', color: '#059669', bg: '#ECFDF5' },
     ],
+    community: [{ label: 'Sony A7C II', pct: 64 }, { label: 'Fujifilm X-T5', pct: 28 }],
+    quote: { source: 'r/mirrorless', text: 'The A7C II autofocus is genuinely scary good. Nothing touches it at this price.' },
   },
   {
     text: 'Is it cheaper to rent or buy in London right now?',
@@ -28,6 +31,7 @@ const QUESTIONS = [
     title: 'Should I Rent or Buy in London? The 2026 Breakdown',
     bg: 'linear-gradient(135deg,#2D4A3E,#1A2E26)',
     icon: '🏠',
+    image: 'https://obyywahmmkrpsimjbdua.supabase.co/storage/v1/object/public/article-images/heroes/c573ab2b-528a-4ec7-82c8-9d4b9dca31f8-1774126013769.jpg',
     stats: [
       { value: '3.4yr', label: 'BREAK-EVEN' },
       { value: '22', label: 'SOURCES' },
@@ -40,6 +44,8 @@ const QUESTIONS = [
       { label: '📊 Cost chart', color: '#BA7517', bg: '#FDF6E9' },
       { label: '💬 Community', color: '#059669', bg: '#ECFDF5' },
     ],
+    community: [{ label: 'Renting', pct: 58 }, { label: 'Buying', pct: 34 }],
+    quote: { source: 'r/HousingUK', text: 'Ran the numbers three times. Renting wins clearly until at least year 4 in London.' },
   },
   {
     text: "What's the real cost of owning a dog in 2026?",
@@ -47,6 +53,7 @@ const QUESTIONS = [
     title: 'The Real Cost of Owning a Dog in 2026',
     bg: 'linear-gradient(135deg,#3A4A2D,#22301A)',
     icon: '🐕',
+    image: 'https://worldanimalfoundation.org/wp-content/uploads/2023/08/cost_of_owning_a_dog_calculator.jpg',
     stats: [
       { value: '$3,200', label: 'ANNUAL' },
       { value: '18', label: 'SOURCES' },
@@ -59,6 +66,8 @@ const QUESTIONS = [
       { label: '📊 Annual breakdown', color: '#BA7517', bg: '#FDF6E9' },
       { label: '💬 Owner reviews', color: '#059669', bg: '#ECFDF5' },
     ],
+    community: [{ label: 'Worth it', pct: 71 }, { label: 'Too expensive', pct: 22 }],
+    quote: { source: 'r/dogs', text: 'Budgeted £1,500/year. Actual first year cost: £3,200. The vet bills alone...' },
   },
   {
     text: 'Best running shoes under $160 for daily training?',
@@ -66,6 +75,7 @@ const QUESTIONS = [
     title: 'Best Running Shoes Under $160 (March 2026)',
     bg: 'linear-gradient(135deg,#4A3A2D,#30221A)',
     icon: '👟',
+    image: 'https://runtothefinish.com/wp-content/uploads/2023/09/running-shoe-lights.jpg',
     stats: [
       { value: '6', label: 'TESTED' },
       { value: '11', label: 'SOURCES' },
@@ -78,6 +88,8 @@ const QUESTIONS = [
       { label: '📋 Specs table', color: '#BA7517', bg: '#FDF6E9' },
       { label: '💬 Runners', color: '#059669', bg: '#ECFDF5' },
     ],
+    community: [{ label: 'ASICS', pct: 67 }, { label: 'Nike', pct: 24 }],
+    quote: { source: 'r/running', text: 'Gel-Contend 8 at 400 miles and still going. Beats shoes costing twice as much.' },
   },
 ]
 
@@ -152,8 +164,8 @@ export default function AboutHero() {
         @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
         @media (prefers-reduced-motion: reduce) { .anim-fade { animation: none !important; opacity: 1 !important; } }
       `}</style>
-      <section className="max-w-[1060px] mx-auto px-4 md:px-6 pt-12 pb-16">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_340px] gap-10 items-start">
+      <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '48px 48px 64px' }}>
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_380px] items-start" style={{ gap: '64px' }}>
           {/* Left column */}
           <div>
             <h1
@@ -264,9 +276,17 @@ export default function AboutHero() {
                 transition: 'opacity 0.3s',
               }}
             >
-              {/* Thumbnail */}
-              <div style={{ height: '128px', background: q.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: '42px' }}>{q.icon}</span>
+              {/* Thumbnail — real image with gradient fallback */}
+              <div style={{ height: '128px', background: q.bg, position: 'relative', overflow: 'hidden' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={q.image}
+                  alt=""
+                  style={{ width: '100%', height: '128px', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                />
+                {/* Fallback emoji — shows through when image fails */}
+                <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: '42px', pointerEvents: 'none' }}>{q.icon}</span>
               </div>
               {/* Body */}
               <div style={{ padding: '14px 16px' }}>
@@ -298,6 +318,26 @@ export default function AboutHero() {
                       {c.label}
                     </span>
                   ))}
+                </div>
+
+                {/* Community preference bars */}
+                <div style={{ borderTop: '0.5px solid #E8E2D9', marginTop: '10px', paddingTop: '10px' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.5px', color: '#BA7517', textTransform: 'uppercase' as const, marginBottom: '8px' }}>Community preference</p>
+                  {q.community.map((bar, bi) => (
+                    <div key={bar.label} className="flex items-center gap-2 mb-1.5">
+                      <span style={{ fontSize: '11px', color: '#6B6259', width: '80px', flexShrink: 0, textAlign: 'right' as const }}>{bar.label}</span>
+                      <div style={{ flex: 1, height: '4px', borderRadius: '2px', backgroundColor: '#E8E2D9', overflow: 'hidden' }}>
+                        <div style={{ width: `${bar.pct}%`, height: '100%', backgroundColor: '#BA7517', borderRadius: '2px' }} />
+                      </div>
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: bi === 0 ? '#BA7517' : '#9E948A', width: '32px' }}>{bar.pct}%</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Reddit quote */}
+                <div style={{ marginTop: '10px', borderLeft: '3px solid rgba(255,69,0,0.4)', borderRadius: '0 6px 6px 0', backgroundColor: '#fff', padding: '8px 12px' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 700, color: '#FF4500', marginBottom: '3px' }}>{q.quote.source}</p>
+                  <p style={{ fontSize: '12px', fontStyle: 'italic', color: '#6B6259', lineHeight: 1.4 }}>&ldquo;{q.quote.text}&rdquo;</p>
                 </div>
               </div>
             </div>
