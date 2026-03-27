@@ -2,8 +2,9 @@ import Logo from '@/components/ui/Logo'
 import UserMenu from '@/components/ui/UserMenu'
 import SearchForm from '@/components/SearchForm'
 import QuickVerdict from '@/components/sections/QuickVerdict'
-import Link from 'next/link'
+import AboutHero from '@/components/about/AboutHero'
 import RentBuyCalculator from '@/components/about/RentBuyCalculator'
+import Link from 'next/link'
 import type { Metadata } from 'next'
 import type { ArticleRow } from '@/types/article'
 
@@ -47,18 +48,8 @@ export default async function AboutPage() {
         </div>
       </nav>
 
-      {/* ═══ 1. HERO ═══ */}
-      <section className="max-w-3xl mx-auto px-4 pt-16 pb-20 text-center">
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-5" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
-          Build a fully<br />researched,<br />fact-checked article<br /><span style={{ color: '#BA7517' }}>in three minutes.</span>
-        </h1>
-        <p className="text-lg md:text-xl mb-8 max-w-2xl mx-auto" style={{ color: '#6B6B6B' }}>
-          Beautifully structured with images, interactive charts, and real opinions from real people — all collated into one polished article you can share.
-        </p>
-        <Link href="/" className="inline-block px-7 py-3 rounded-xl text-base font-semibold no-underline" style={{ backgroundColor: '#BA7517', color: '#fff', fontFamily: 'var(--font-sora)' }}>
-          Generate your first article →
-        </Link>
-      </section>
+      {/* ═══ 1. HERO — typewriter with article preview card ═══ */}
+      <AboutHero />
 
       {/* ═══ 2. CHALLENGER LINE ═══ */}
       <section className="w-full py-16" style={{ backgroundColor: '#1A1714' }}>
@@ -73,7 +64,7 @@ export default async function AboutPage() {
       {/* ═══ 3. PROBLEM GRID ═══ */}
       <section className="max-w-[1060px] mx-auto px-4 md:px-6 py-20">
         <h2 className="text-2xl md:text-3xl font-bold mb-10 text-center" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
-          Every AI answer looks the same.
+          Why does every LLM answer look the same?
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[700px] mx-auto">
           {[
@@ -124,6 +115,16 @@ export default async function AboutPage() {
               <span className="text-[11px] font-bold px-2.5 py-1 rounded" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>🏆 Verdict included</span>
               <span className="text-[11px] font-bold px-2.5 py-1 rounded" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>📊 Chart included</span>
               <span className="text-[11px] font-bold px-2.5 py-1 rounded" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>✓ Fact-checked</span>
+            </div>
+          </div>
+          {/* Second card — Explainer type */}
+          <div className="rounded-xl p-4 mt-3" style={{ backgroundColor: '#fff', border: '1px solid #E8E2D9', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+            <span className="inline-block text-[9px] font-bold uppercase px-2 py-0.5 rounded mb-2" style={{ backgroundColor: '#BA7517', color: '#fff' }}>Explainer</span>
+            <h4 className="text-base font-bold mb-2 leading-snug" style={{ color: '#1A1714', fontFamily: 'var(--font-sora)' }}>The US National Debt Visualized — $36 Trillion in Context</h4>
+            <div className="flex flex-wrap gap-1.5">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ backgroundColor: '#EFF6FF', color: '#2563EB' }}>📊 Interactive charts</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ backgroundColor: '#FDF6E9', color: '#BA7517' }}>📅 Timeline</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ backgroundColor: '#ECFDF5', color: '#059669' }}>✓ Fact-checked</span>
             </div>
           </div>
         </div>
@@ -283,7 +284,7 @@ export default async function AboutPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
             { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>, num: '01', title: 'Ask anything', desc: 'Type any question — a buying decision, a comparison, something you want to understand properly. Any topic, any depth.', tag: 'One sentence from you' },
-            { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 3h-8l-2 4h12l-2-4z"/></svg>, num: '02', title: 'We research', desc: 'We search the live web, Reddit, forums, and expert reviews. Real data, real current prices — not recycled training data from two years ago.', tag: '~2 minutes' },
+            { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 3h-8l-2 4h12l-2-4z"/></svg>, num: '02', title: 'We research', desc: 'We search the live web, Reddit, forums, and expert reviews. Real data, real current prices — not recycled training data from two years ago.', tag: '~3 minutes' },
             { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>, num: '03', title: "You're the editor", desc: "We hand you the first draft. Refine the tone, swap images, adjust sections, and publish something that's genuinely yours — under your name.", tag: 'Your article. Your voice.' },
           ].map((step) => (
             <div key={step.num} className="text-center md:text-left relative">
@@ -380,9 +381,14 @@ export default async function AboutPage() {
             </tbody>
           </table>
           <p className="text-[10px] mt-3" style={{ color: '#94918D' }}>Scores from DXOMARK, DPReview, and expert consensus — verified March 2026</p>
-          <RentBuyCalculator />
         </div>
       </FeatureBlock>
+
+      {/* Calculator — full-width row below Feature 03 */}
+      <section className="max-w-[1060px] mx-auto px-4 md:px-6 pt-10 pb-14" style={{ borderBottom: '1px solid #E8E3DC' }}>
+        <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: '#BA7517', letterSpacing: '1.5px' }}>Also in this article:</p>
+        <RentBuyCalculator />
+      </section>
 
       {/* Feature 04 — Community */}
       <FeatureBlock num="04" title="What real people are actually saying. Right now." align="right" bullets={['Direct quotes from Reddit, Twitter/X, and forums', 'Sentiment analysis across hundreds of discussions', 'Links to original threads so you can verify']}>
@@ -433,7 +439,7 @@ export default async function AboutPage() {
       </FeatureBlock>
 
       {/* Feature 06 — Fact-checking */}
-      <FeatureBlock num="06" title="A dedicated fact-checking AI. Not an afterthought." align="right" bullets={['A completely separate AI verifies every claim', 'Prices, specs, and statistics cross-referenced against live sources', 'Corrections applied automatically — you see exactly what changed']}>
+      <FeatureBlock num="06" title="A dedicated fact-checking AI 'agent'. Not an afterthought." align="right" bullets={["A dedicated fact-checking AI 'agent' independently verifies every claim", 'Prices, specs, and statistics cross-referenced against live sources', 'Corrections applied automatically — you see exactly what changed']} badge={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: '#2D7A4F', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '20px', marginLeft: '8px' }}>✓ Verified</span>}>
         <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #E8E3DC', backgroundColor: '#fff' }}>
           <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid #E8E3DC', backgroundColor: '#f0fdf4' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
@@ -539,7 +545,7 @@ export default async function AboutPage() {
           </div>
           <div>
             <p className="text-3xl font-extrabold" style={{ color: '#fff', fontFamily: 'var(--font-sora)' }}>
-              {/* PLACEHOLDER — replace with real number from database */}~2 min
+              {/* PLACEHOLDER — replace with real number from database */}~3 min
             </p>
             <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.75)' }}>Average generation time</p>
           </div>
@@ -599,15 +605,15 @@ export default async function AboutPage() {
 
 // ── Feature block layout ──
 
-function FeatureBlock({ num, title, align, bullets, children }: {
-  num: string; title: string; align: 'left' | 'right'; bullets: string[]; children: React.ReactNode
+function FeatureBlock({ num, title, align, bullets, badge, children }: {
+  num: string; title: string; align: 'left' | 'right'; bullets: string[]; badge?: React.ReactNode; children: React.ReactNode
 }) {
   return (
     <section className="max-w-[1060px] mx-auto px-4 md:px-6 py-10 md:py-14" style={{ borderBottom: '1px solid #E8E3DC' }}>
       <div className={`flex flex-col md:flex-row gap-8 md:gap-14 items-start ${align === 'right' ? 'md:flex-row-reverse' : ''}`}>
         <div className="flex-1">
           <span className="text-xs font-bold tracking-widest uppercase" style={{ color: '#BA7517' }}>Feature {num}</span>
-          <h3 className="text-2xl md:text-3xl font-extrabold mt-2 mb-3" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>{title}</h3>
+          <h3 className="text-2xl md:text-3xl font-extrabold mt-2 mb-3 flex items-center flex-wrap" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>{title}{badge}</h3>
           <ul className="space-y-2 text-sm" style={{ color: '#6B6B6B' }}>
             {bullets.map(b => <li key={b} className="flex items-start gap-2"><span style={{ color: '#BA7517' }}>→</span>{b}</li>)}
           </ul>
