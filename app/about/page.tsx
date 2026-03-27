@@ -248,9 +248,9 @@ export default async function AboutPage() {
               const grad = gradients[Math.floor(Math.random() * gradients.length)]
               return (
                 <Link key={row.id} href={`/article/${row.slug}`} className="rounded-xl overflow-hidden no-underline transition-all hover:shadow-lg" style={{ border: '1px solid #E8E2D9' }}>
-                  <div className="h-32 flex items-center justify-center" style={{ background: `linear-gradient(135deg,${grad.split(',')[0]},${grad.split(',')[1]})` }}>
+                  <div className="h-32 relative overflow-hidden" style={{ background: `linear-gradient(135deg,${grad.split(',')[0]},${grad.split(',')[1]})` }}>
                     {art.thumbnail_url ? (
-                      <Image src={art.thumbnail_url} alt="" fill className="object-cover" unoptimized style={{ position: 'absolute' }} />
+                      <Image src={art.thumbnail_url} alt="" fill className="object-cover" unoptimized />
                     ) : null}
                   </div>
                   <div className="p-4" style={{ backgroundColor: '#fff' }}>
