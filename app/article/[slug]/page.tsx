@@ -80,12 +80,13 @@ export async function generateMetadata({ params }: Props) {
   if (!row) return {}
 
   const title = row.article?.title ?? row.plan?.title ?? row.query
-  const description = row.article?.quick_verdict?.one_liner ?? row.plan?.quick_verdict_preview ?? ''
+  const rawDesc = row.article?.quick_verdict?.one_liner ?? row.plan?.quick_verdict_preview ?? ''
+  const description = rawDesc.length > 155 ? rawDesc.slice(0, 152) + '...' : rawDesc
   const canonicalUrl = `https://unpacked.fyi/article/${row.slug}`
   const ogImage = row.article?.thumbnail_url ?? `https://unpacked.fyi/api/og/${row.slug}`
 
   return {
-    title: `${title} — Unpacked`,
+    title: `${title} | Unpacked`,
     description,
     alternates: {
       canonical: canonicalUrl,
