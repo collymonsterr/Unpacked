@@ -153,6 +153,26 @@ export default function ArticlePageClient({ initialRow }: Props) {
     return () => clearTimeout(timer)
   }, [row.status, row.article, showArticle])
 
+  // URL cleanup: replace UUID in URL with clean slug once article is complete
+  // Fires once — when showArticle becomes true and the slug is a proper title-based slug (not a UUID)
+  const urlReplaced = useRef(false)
+  useEffect(() => {
+    if (urlReplaced.current) return
+    if (!showArticle || !row.slug) return
+
+    // Only replace if the current URL contains a UUID (36-char hex pattern)
+    const currentPath = window.location.pathname
+    const isUuidUrl = /\/article\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(currentPath)
+    if (!isUuidUrl) return
+
+    // Don't replace with the same UUID
+    const isSlugUuid = /^[0-9a-f]{8}-[0-9a-f]{4}/.test(row.slug)
+    if (isSlugUuid) return
+
+    urlReplaced.current = true
+    window.history.replaceState(null, '', `/article/${row.slug}`)
+  }, [showArticle, row.slug])
+
   // Handle the transition from ArticleGenerating → ArticleView (called by ArticleGenerating)
   const handleArticleReady = useCallback(() => {
     if (showArticle) return

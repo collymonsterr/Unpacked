@@ -100,12 +100,13 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
         const data = await res.json()
 
         // Navigate when article moves past planning (writing has started)
+        // Use the article ID (UUID) for navigation — the slug may change during generation
         if (data.status === 'generating' || data.status === 'complete' || data.status === 'verified') {
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current)
             pollIntervalRef.current = null
           }
-          router.push(`/article/${pendingSlug}`)
+          router.push(`/article/${pendingId}`)
           return
         }
 
@@ -115,7 +116,7 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
             clearInterval(pollIntervalRef.current)
             pollIntervalRef.current = null
           }
-          router.push(`/article/${pendingSlug}`)
+          router.push(`/article/${pendingId}`)
         }
       } catch {
         // Ignore transient errors
@@ -128,7 +129,7 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
         pollIntervalRef.current = null
       }
     }
-  }, [pendingId, pendingSlug, router])
+  }, [pendingId, router])
 
   async function handleForceNew() {
     setIsLoading(true)
