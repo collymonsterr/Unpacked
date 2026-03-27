@@ -223,19 +223,18 @@ The site must feel like a publication for audience 2 while being a creation tool
 - Trending Today automation (currently manual admin toggle)
 - Tags system
 - Proper PDF export (current export is browser print-to-PDF placeholder)
-- Profile photo upload (settings page exists but upload not wired to Supabase Storage)
+- Profile photo upload (Google avatar is used everywhere — custom upload not wired to Supabase Storage)
 - Weekly email digest
-- View counting for Most Popular (column exists, increment logic may need verification)
-- Image upload for hero images (replacing GPT Image fallback)
 - Admin costs dashboard accuracy (Gemini fallback rate investigation in progress)
 - Article visibility system — private / unlisted / published (Stage 3)
+- Internal linking has no matches yet — activates automatically as article volume grows
 
 ---
 
 ## Staged Plan
 
 ### Stage 1 — Quick wins (mostly complete)
-- ✅ Name change ArticleAI → Unpacked → Unpacked
+- ✅ Name change ArticleAI → Unpacked
 - ✅ SEO meta tags and JSON-LD
 - ✅ Sitemap
 - ✅ TrustStrip
@@ -245,16 +244,27 @@ The site must feel like a publication for audience 2 while being a creation tool
 - ✅ First draft banner
 - ✅ Admin dashboard with tabs, users, costs
 - ✅ Gemini fallback fix
+- ✅ Add test-outputs/ to .gitignore
 - ⬜ Email capture in footer
-- ⬜ Add test-outputs/ to .gitignore
 
 ### Stage 2 — Contained new features (next up)
+- ✅ Article generation 404 bug fixed — navigates by UUID, replaces with clean slug on completion
+- ✅ SEO — Google Search Console, sitemap 124 URLs, robots.txt, JSON-LD structured data
+- ✅ Internal linking infrastructure — client-side injection, zero database writes
+- ✅ About page rebuild — cut to 8 sections, typewriter hero, AI language removed
+- ✅ Calculator fix — strict ID mapping in prompt + positional fallback for existing articles
+- ✅ Reddit community section — real threads, quotes, subreddit links
+- ✅ Hero image upload — owner can upload custom hero image
+- ✅ Haiku-powered hero image queries — replaces broken keyword matching
+- ✅ Pool-based homepage rotation — featured and trending use curated pools
+- ✅ Admin Articles tab redesign — 5 filter tabs, star/flame/eye toggles
+- ✅ OG image sizing fix — OG tags and canonical URLs now correct
 - ⬜ Mobile reading experience audit
 - ⬜ People also asked chips after article generation
 - ⬜ Post-submit prompt refinement interstitial for vague queries
 - ⬜ Image upload tier-aware controls
 - ⬜ Changelog public page (/updates)
-- ⬜ Profile photo upload
+- ⬜ Profile photo upload (Google avatar already used — custom upload optional)
 - ⬜ X/Twitter sentiment for news and trend articles (API required)
 
 ### Stage 3 — Database migration (plan carefully)
