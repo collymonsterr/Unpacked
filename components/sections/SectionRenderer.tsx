@@ -24,6 +24,8 @@ interface Props {
   animated?: boolean
   isAdmin?: boolean
   articleId?: string
+  currentSlug?: string
+  linkableArticles?: Array<{ title: string; slug: string }>
   onReplaceImage?: (sectionIndex: number, imageIndex: number) => Promise<void>
   onSetPrimaryImage?: (sectionIndex: number, imageIndex: number) => Promise<void>
   onArticleUpdated?: (article: ArticleContent) => void
@@ -45,6 +47,8 @@ export default function SectionRenderer({
   animated = false,
   isAdmin,
   articleId,
+  currentSlug,
+  linkableArticles,
   onReplaceImage,
   onSetPrimaryImage,
   onArticleUpdated,
@@ -87,7 +91,7 @@ export default function SectionRenderer({
             case 'warning_box':
               return <WarningBox section={section} />
             case 'content_section':
-              return <ContentSection section={section} />
+              return <ContentSection section={section} currentSlug={currentSlug} relatedArticles={linkableArticles} />
             case 'price_tier_breakdown':
               return <PriceTierBreakdown section={section} />
             case 'community_insights':

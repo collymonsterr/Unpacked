@@ -3,8 +3,38 @@ export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import type { ArticleRow, ProductCard } from '@/types/article'
+import type { LinkableArticle } from '@/lib/internal-links'
 import { generateArticleJsonLd, generateProductJsonLd, generateBreadcrumbJsonLd } from '@/lib/structured-data'
 import ArticlePageClient from './ArticlePageClient'
+
+// Cache internal links data (1 hour) — avoids DB call on every page load
+let cachedLinkArticles: LinkableArticle[] | null = null
+let cacheTimestamp = 0
+const CACHE_TTL = 3600 * 1000 // 1 hour
+
+async function getLinkableArticles(excludeSlug: string): Promise<LinkableArticle[]> {
+  const now = Date.now()
+  if (cachedLinkArticles && now - cacheTimestamp < CACHE_TTL) {
+    return cachedLinkArticles.filter(a => a.slug !== excludeSlug)
+  }
+  try {
+    const db = getSupabaseAdmin()
+    const { data } = await db
+      .from('articles')
+      .select('slug, article')
+      .in('status', ['complete', 'verified'])
+      .order('view_count', { ascending: false })
+      .limit(50)
+    cachedLinkArticles = (data ?? []).map(r => ({
+      title: (r.article as Record<string, unknown>)?.title as string ?? '',
+      slug: r.slug as string,
+    })).filter(a => a.title && a.slug)
+    cacheTimestamp = now
+    return cachedLinkArticles.filter(a => a.slug !== excludeSlug)
+  } catch {
+    return []
+  }
+}
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -58,6 +88,9 @@ export default async function ArticlePage({ params }: Props) {
     }
   }
 
+  // Fetch linkable articles for inline internal links
+  const linkableArticles = await getLinkableArticles(row.slug)
+
   // isOwner is determined client-side via localStorage (no auth for MVP)
   return (
     <>
@@ -68,7 +101,7 @@ export default async function ArticlePage({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
         />
       ))}
-      <ArticlePageClient initialRow={row} />
+      <ArticlePageClient initialRow={row} linkableArticles={linkableArticles} />
     </>
   )
 }

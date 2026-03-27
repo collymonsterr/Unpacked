@@ -15,9 +15,10 @@ import { clearPendingArticle } from '@/lib/pending-article'
 
 interface Props {
   initialRow: ArticleRow
+  linkableArticles?: Array<{ title: string; slug: string }>
 }
 
-export default function ArticlePageClient({ initialRow }: Props) {
+export default function ArticlePageClient({ initialRow, linkableArticles }: Props) {
   const [row, setRow] = useState(initialRow)
 
   // Determine if article is already complete on initial load
@@ -264,6 +265,7 @@ export default function ArticlePageClient({ initialRow }: Props) {
             isAdmin={isAdmin}
             isNew={wasEverGenerating.current}
             factCheckStatus={factCheckStatus}
+            linkableArticles={linkableArticles}
           />
         </div>
       ) : showGenerating ? (

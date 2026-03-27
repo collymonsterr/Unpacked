@@ -1,5 +1,6 @@
 import React from 'react'
 import type { ContentSection as ContentSectionType } from '@/types/article'
+import { injectInternalLinks, type LinkableArticle } from '@/lib/internal-links'
 
 /**
  * Split a long paragraph that uses bold as section markers into separate blocks.
@@ -52,7 +53,10 @@ function breakLongParagraphs(text: string): string[] {
   return chunks
 }
 
-function renderContent(content: string) {
+function renderContent(content: string, linkTransform?: (text: string) => string) {
+  // Pipeline: text → injectLinks → boldify → HTML
+  const transform = (text: string) => boldify(linkTransform ? linkTransform(text) : text)
+
   const paragraphs = content.split(/\n\n+/)
   const elements: React.ReactElement[] = []
 
@@ -66,7 +70,7 @@ function renderContent(content: string) {
       elements.push(
         <ul key={i} className="list-disc pl-5 mb-4 space-y-1">
           {items.map((item, j) => (
-            <li key={j} dangerouslySetInnerHTML={{ __html: boldify(item.slice(2)) }} />
+            <li key={j} dangerouslySetInnerHTML={{ __html: transform(item.slice(2)) }} />
           ))}
         </ul>
       )
@@ -91,7 +95,7 @@ function renderContent(content: string) {
               {boldMatch[2] && (
                 <p
                   className="leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: boldify(boldMatch[2]) }}
+                  dangerouslySetInnerHTML={{ __html: transform(boldMatch[2]) }}
                 />
               )}
             </div>
@@ -107,7 +111,7 @@ function renderContent(content: string) {
           <p
             key={`${i}-${j}-${k}`}
             className="mb-4 leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: boldify(chunks[k]) }}
+            dangerouslySetInnerHTML={{ __html: transform(chunks[k]) }}
           />
         )
       }
@@ -121,7 +125,18 @@ function boldify(text: string) {
   return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
 }
 
-export default function ContentSection({ section }: { section: ContentSectionType }) {
+interface ContentSectionProps {
+  section: ContentSectionType
+  currentSlug?: string
+  relatedArticles?: LinkableArticle[]
+}
+
+export default function ContentSection({ section, currentSlug, relatedArticles }: ContentSectionProps) {
+  // Build the link transform if we have linkable articles
+  const linkTransform = (currentSlug && relatedArticles?.length)
+    ? (text: string) => injectInternalLinks(text, currentSlug, relatedArticles, 3)
+    : undefined
+
   return (
     <div className="mb-8">
       <h2
@@ -131,7 +146,7 @@ export default function ContentSection({ section }: { section: ContentSectionTyp
         {section.heading}
       </h2>
       <div className="prose-content" style={{ color: 'var(--text-primary)' }}>
-        {renderContent(section.content)}
+        {renderContent(section.content, linkTransform)}
       </div>
     </div>
   )

@@ -31,9 +31,10 @@ interface Props {
   isAdmin?: boolean
   isNew?: boolean
   factCheckStatus?: 'none' | 'checking' | 'verified'
+  linkableArticles?: Array<{ title: string; slug: string }>
 }
 
-export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNew, factCheckStatus = 'none' }: Props) {
+export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNew, factCheckStatus = 'none', linkableArticles }: Props) {
   const router = useRouter()
   const { user } = useUser()
   const [article, setArticle] = useState(articleRow.article!)
@@ -347,6 +348,8 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           animated
           isAdmin={isOwner}
           articleId={articleRow.id}
+          currentSlug={articleRow.slug}
+          linkableArticles={linkableArticles}
           onReplaceImage={handleReplaceImage}
           onSetPrimaryImage={handleSetPrimaryImage}
           onArticleUpdated={(updated) => setArticle(updated)}
