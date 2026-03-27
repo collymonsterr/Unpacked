@@ -874,39 +874,87 @@ function calcEngagementRingBudget(inputs: Record<string, number>): CalcResult {
 
 // ── Calculator dispatcher ────────────────────────────────────────────────────
 
+// Expected input IDs per calculator type — used for positional fallback
+const EXPECTED_INPUTS: Record<string, string[]> = {
+  compound_interest: ['starting_age', 'monthly_savings', 'annual_return', 'retirement_age'],
+  mortgage: ['home_price', 'down_payment', 'interest_rate', 'loan_term'],
+  mortgage_payoff: ['mortgage_balance', 'mortgage_rate', 'extra_payment', 'investment_return'],
+  roi_comparison: ['initial_investment', 'rate_a', 'rate_b', 'years'],
+  budget: ['monthly_income', 'housing', 'transport', 'food', 'utilities', 'entertainment'],
+  commute_cost: ['miles_one_way', 'work_days', 'hourly_wage', 'commute_time'],
+  subscription_audit: ['streaming_count', 'avg_streaming_cost', 'software_count', 'avg_software_cost'],
+  cooking_comparison: ['restaurant_meals_week', 'avg_meal_cost', 'home_cooking_cost', 'household_size'],
+  gym_comparison: ['monthly_gym_cost', 'home_gym_cost', 'visits_per_month', 'annual_fees', 'travel_costs'],
+  smoking_cost: ['packs_per_day', 'pack_price', 'years_smoking', 'investment_return'],
+  house_affordability: ['annual_income', 'monthly_debts', 'down_payment', 'mortgage_rate'],
+  freelance_comparison: ['salary', 'hourly_rate', 'billable_hours', 'health_insurance'],
+  dog_ownership: ['annual_cost', 'region_multiplier', 'lifespan'],
+  cost_of_living_comparison: ['monthly_salary', 'rent_preference', 'lifestyle_spending'],
+  rental_comparison: ['nightly_rate', 'monthly_rent', 'occupancy_rate', 'property_value'],
+  college_savings: ['child_age', 'college_type', 'target_coverage', 'annual_return'],
+  car_budget: ['gross_income', 'take_home_percentage', 'insurance_monthly', 'fuel_monthly'],
+  salary_calculator: ['family_size', 'children', 'area_preference', 'lifestyle'],
+  baby_cost: ['location', 'childcare', 'feeding', 'income_loss'],
+  engagement_ring_budget: ['annual_income', 'monthly_rent_mortgage', 'monthly_debt_payments', 'monthly_other_expenses', 'monthly_savings_goal', 'current_ring_savings'],
+}
+
+/**
+ * Remap input values to expected IDs if the actual IDs don't match.
+ * Falls back to positional mapping — first slider value maps to first expected ID, etc.
+ */
+function remapInputs(type: string, inputs: Record<string, number>): Record<string, number> {
+  const expected = EXPECTED_INPUTS[type]
+  if (!expected) return inputs
+
+  // Check if at least half the expected IDs are present
+  const matchCount = expected.filter(id => inputs[id] !== undefined).length
+  if (matchCount >= expected.length / 2) return inputs // IDs match well enough
+
+  // Positional fallback: map actual values (in insertion order) to expected IDs
+  const actualValues = Object.values(inputs)
+  const remapped: Record<string, number> = { ...inputs } // Keep originals too
+  for (let i = 0; i < expected.length && i < actualValues.length; i++) {
+    remapped[expected[i]] = actualValues[i]
+  }
+  return remapped
+}
+
 function runCalculation(
   type: string,
   inputs: Record<string, number>,
   _formula?: string,
   outputIds?: string[]
 ): CalcResult {
+  // Remap inputs if IDs don't match expected — positional fallback
+  const remapped = remapInputs(type, inputs)
+
   switch (type) {
     // Tier 1 — original named types
-    case 'compound_interest': return calcCompoundInterest(inputs)
-    case 'mortgage': return calcMortgage(inputs)
-    case 'roi_comparison': return calcRoiComparison(inputs)
-    case 'budget': return calcBudget(inputs)
+    case 'compound_interest': return calcCompoundInterest(remapped)
+    case 'mortgage': return calcMortgage(remapped)
+    case 'roi_comparison': return calcRoiComparison(remapped)
+    case 'budget': return calcBudget(remapped)
     // Tier 2 — promoted from custom
-    case 'commute_cost': return calcCommuteCost(inputs)
-    case 'subscription_audit': return calcSubscriptionAudit(inputs)
-    case 'cooking_comparison': return calcCookingComparison(inputs)
-    case 'gym_comparison': return calcGymComparison(inputs)
-    case 'smoking_cost': return calcSmokingCost(inputs)
-    case 'house_affordability': return calcHouseAffordability(inputs)
-    case 'freelance_comparison': return calcFreelanceComparison(inputs)
-    case 'dog_ownership': return calcDogOwnership(inputs)
-    case 'cost_of_living_comparison': return calcCostOfLivingComparison(inputs)
-    case 'rental_comparison': return calcRentalComparison(inputs)
-    case 'mortgage_payoff': return calcMortgagePayoff(inputs)
-    case 'college_savings': return calcCollegeSavings(inputs)
-    case 'car_budget': return calcCarBudget(inputs)
-    case 'salary_calculator': return calcSalaryCalculator(inputs)
-    case 'baby_cost': return calcBabyCost(inputs)
-    case 'engagement_ring_budget': return calcEngagementRingBudget(inputs)
+    case 'commute_cost': return calcCommuteCost(remapped)
+    case 'subscription_audit': return calcSubscriptionAudit(remapped)
+    case 'cooking_comparison': return calcCookingComparison(remapped)
+    case 'gym_comparison': return calcGymComparison(remapped)
+    case 'smoking_cost': return calcSmokingCost(remapped)
+    case 'house_affordability': return calcHouseAffordability(remapped)
+    case 'freelance_comparison': return calcFreelanceComparison(remapped)
+    case 'dog_ownership': return calcDogOwnership(remapped)
+    case 'cost_of_living_comparison': return calcCostOfLivingComparison(remapped)
+    case 'rental_comparison': return calcRentalComparison(remapped)
+    case 'mortgage_payoff': return calcMortgagePayoff(remapped)
+    case 'college_savings': return calcCollegeSavings(remapped)
+    case 'car_budget': return calcCarBudget(remapped)
+    case 'salary_calculator': return calcSalaryCalculator(remapped)
+    case 'baby_cost': return calcBabyCost(remapped)
+    case 'engagement_ring_budget': return calcEngagementRingBudget(remapped)
     // Legacy fallback — pattern matching for old articles
     case 'custom':
     default:
-      return calcCustom(inputs, outputIds ?? [])
+      return calcCustom(remapped, outputIds ?? [])
   }
 }
 
@@ -972,12 +1020,32 @@ export default function InteractiveCalculator({ section }: { section: Interactiv
     setValues(prev => ({ ...prev, [id]: val }))
   }, [])
 
-  const result = useMemo(
+  const rawResult = useMemo(
     () => runCalculation(section.calculator_type, values, section.formula, section.outputs?.map(o => o.id)),
     [section.calculator_type, section.formula, values]
   )
 
   const outputDefs = section.outputs ?? []
+
+  // Remap outputs: if the section's output IDs don't match the calc function's output IDs,
+  // map by position so values still render correctly
+  const result = useMemo(() => {
+    const outputs = rawResult.outputs
+    const outKeys = Object.keys(outputs)
+    const defIds = outputDefs.map(d => d.id)
+
+    // Check if output IDs match
+    const matchCount = defIds.filter(id => outputs[id] !== undefined && outputs[id] !== 0).length
+    if (matchCount >= defIds.length / 2) return rawResult // IDs match well enough
+
+    // Positional fallback: map calc output values to section output IDs by position
+    const outValues = Object.values(outputs)
+    const remappedOutputs: Record<string, number> = { ...outputs }
+    for (let i = 0; i < defIds.length && i < outValues.length; i++) {
+      remappedOutputs[defIds[i]] = outValues[i]
+    }
+    return { ...rawResult, outputs: remappedOutputs }
+  }, [rawResult, outputDefs])
 
   return (
     <div className="mb-8">

@@ -95,7 +95,28 @@ VISUAL REQUIREMENTS:
 
 FORBIDDEN COMPONENTS: Check the plan's forbidden_components array. Do NOT generate any listed section type.
 
-CALCULATOR: For finance/cost topics, include an interactive_calculator. Use ONLY named types: compound_interest, mortgage, mortgage_payoff, roi_comparison, budget, commute_cost, subscription_audit, cooking_comparison, gym_comparison, smoking_cost, house_affordability, freelance_comparison, dog_ownership, cost_of_living_comparison, rental_comparison, college_savings, car_budget, salary_calculator, baby_cost, engagement_ring_budget.
+CALCULATOR: For finance/cost topics, include an interactive_calculator. Use ONLY named types with EXACTLY these input and output IDs. Using any other IDs will break the calculator.
+- compound_interest: inputs: starting_age, monthly_savings, annual_return, retirement_age. outputs: total_saved, total_contributed, interest_earned.
+- mortgage: inputs: home_price, down_payment, interest_rate, loan_term. outputs: monthly_payment, total_paid, total_interest.
+- mortgage_payoff: inputs: mortgage_balance, mortgage_rate, extra_payment, investment_return. outputs: interest_saved, time_saved, effective_return.
+- roi_comparison: inputs: initial_investment, rate_a, rate_b, years. outputs: option_a_total, option_b_total, difference.
+- budget: inputs: monthly_income, housing, transport, food, utilities, entertainment. outputs: total_expenses, remaining, savings_rate.
+- commute_cost: inputs: miles_one_way, work_days, hourly_wage, commute_time. outputs: annual_vehicle_cost, annual_time_cost, total_annual_cost.
+- subscription_audit: inputs: streaming_count, avg_streaming_cost, software_count, avg_software_cost. outputs: monthly_total, annual_total, vs_average.
+- cooking_comparison: inputs: restaurant_meals_week, avg_meal_cost, home_cooking_cost, household_size. outputs: annual_savings, cost_difference.
+- gym_comparison: inputs: monthly_gym_cost, home_gym_cost, visits_per_month, annual_fees, travel_costs. outputs: gym_total_5yr, home_gym_total_5yr, savings.
+- smoking_cost: inputs: packs_per_day, pack_price, years_smoking, investment_return. outputs: direct_cost, opportunity_cost, total_cost.
+- house_affordability: inputs: annual_income, monthly_debts, down_payment, mortgage_rate. outputs: max_house_price, monthly_payment, front_end_ratio.
+- freelance_comparison: inputs: salary, hourly_rate, billable_hours, health_insurance. outputs: employee_takehome, freelance_takehome, difference.
+- dog_ownership: inputs: annual_cost, region_multiplier, lifespan. outputs: lifetime_cost, monthly_budget.
+- cost_of_living_comparison: inputs: monthly_salary, rent_preference, lifestyle_spending. outputs: london_disposable, lisbon_disposable, savings_difference.
+- rental_comparison: inputs: nightly_rate, monthly_rent, occupancy_rate, property_value. outputs: str_monthly, ltr_net, annual_difference.
+- college_savings: inputs: child_age, college_type, target_coverage, annual_return. outputs: monthly_savings, total_saved, projected_cost.
+- car_budget: inputs: gross_income, take_home_percentage, insurance_monthly, fuel_monthly. outputs: monthly_take_home, max_transportation_budget, available_for_payment.
+- salary_calculator: inputs: family_size, children, area_preference, lifestyle. outputs: monthly_salary, housing_budget, school_costs.
+- baby_cost: inputs: location, childcare, feeding, income_loss. outputs: total_first_year, monthly_average.
+- engagement_ring_budget: inputs: annual_income, monthly_rent_mortgage, monthly_debt_payments, monthly_other_expenses, monthly_savings_goal, current_ring_savings. outputs: monthly_disposable_income, conservative_budget, comfortable_budget, total_available_budget.
+CRITICAL: Do NOT invent new input or output IDs. Use EXACTLY the IDs listed above for the calculator type you choose. If no type fits, use roi_comparison as the closest match.
 
 IMAGES BY ARTICLE TYPE — follow these rules strictly:
 - buyer_guide, comparison, decision_guide: MANDATORY 4-5 images per product card (set image_count: 5 in each product_card). Hero image always required. Include 1-2 image_section entries between major text sections for articles over 800 words.
