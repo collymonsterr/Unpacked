@@ -104,27 +104,29 @@ export default async function AboutPage() {
               ))}
             </ul>
           </div>
-          {/* Right column — article preview card */}
-          <div className="rounded-xl p-5" style={{ backgroundColor: '#fff', border: '1px solid #E8E2D9', boxShadow: '0 8px 32px rgba(0,0,0,0.06)' }}>
-            <span className="inline-block text-[10px] font-bold uppercase px-2 py-1 rounded mb-3" style={{ backgroundColor: '#BA7517', color: '#fff' }}>Buyer&apos;s Guide</span>
-            <h3 className="text-lg font-bold mb-2 leading-snug" style={{ color: '#1A1714', fontFamily: 'var(--font-sora)' }}>Best Mirrorless Cameras Under $2,500 (2026)</h3>
-            <p className="text-sm leading-relaxed mb-4 line-clamp-2" style={{ color: '#6B6B6B' }}>
-              The Sony A7C II wins for everyday versatility — best autofocus, lightest body, and superb video in one package. But the Fujifilm X-T5 is the pick for photographers who prioritise image quality...
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <span className="text-[11px] font-bold px-2.5 py-1 rounded" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>🏆 Verdict included</span>
-              <span className="text-[11px] font-bold px-2.5 py-1 rounded" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>📊 Chart included</span>
-              <span className="text-[11px] font-bold px-2.5 py-1 rounded" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>✓ Fact-checked</span>
+          {/* Right column — two stacked article preview cards */}
+          <div className="flex flex-col" style={{ gap: '12px' }}>
+            <div className="rounded-xl p-5" style={{ backgroundColor: '#fff', border: '1px solid #E8E2D9', boxShadow: '0 8px 32px rgba(0,0,0,0.06)' }}>
+              <span className="inline-block text-[10px] font-bold uppercase px-2 py-1 rounded mb-3" style={{ backgroundColor: '#BA7517', color: '#fff' }}>Buyer&apos;s Guide</span>
+              <h3 className="text-lg font-bold mb-2 leading-snug" style={{ color: '#1A1714', fontFamily: 'var(--font-sora)' }}>Best Mirrorless Cameras Under $2,500 (2026)</h3>
+              <p className="text-sm leading-relaxed mb-4 line-clamp-2" style={{ color: '#6B6B6B' }}>
+                The Sony A7C II wins for everyday versatility — best autofocus, lightest body, and superb video in one package. But the Fujifilm X-T5 is the pick for photographers who prioritise image quality...
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>🏆 Verdict included</span>
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>📊 Chart included</span>
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>✓ Fact-checked</span>
+              </div>
             </div>
-          </div>
-          {/* Second card — Explainer type */}
-          <div className="rounded-xl p-4 mt-3" style={{ backgroundColor: '#fff', border: '1px solid #E8E2D9', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
-            <span className="inline-block text-[9px] font-bold uppercase px-2 py-0.5 rounded mb-2" style={{ backgroundColor: '#BA7517', color: '#fff' }}>Explainer</span>
-            <h4 className="text-base font-bold mb-2 leading-snug" style={{ color: '#1A1714', fontFamily: 'var(--font-sora)' }}>The US National Debt Visualized — $36 Trillion in Context</h4>
-            <div className="flex flex-wrap gap-1.5">
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ backgroundColor: '#EFF6FF', color: '#2563EB' }}>📊 Interactive charts</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ backgroundColor: '#FDF6E9', color: '#BA7517' }}>📅 Timeline</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ backgroundColor: '#ECFDF5', color: '#059669' }}>✓ Fact-checked</span>
+            <div className="rounded-xl p-4" style={{ backgroundColor: '#fff', border: '1px solid #E8E2D9', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+              <span className="inline-block text-[9px] font-bold uppercase px-2 py-0.5 rounded mb-2" style={{ backgroundColor: '#BA7517', color: '#fff' }}>Explainer</span>
+              <h4 className="text-base font-bold mb-1.5 leading-snug" style={{ color: '#1A1714', fontFamily: 'var(--font-sora)' }}>The US National Debt Visualized — $36 Trillion in Context</h4>
+              <p className="text-xs leading-relaxed mb-3" style={{ color: '#6B6B6B' }}>How $36 trillion breaks down by era, president, and cause — visualised interactively.</p>
+              <div className="flex flex-wrap gap-1.5">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ backgroundColor: '#EFF6FF', color: '#2563EB' }}>📊 Interactive charts</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ backgroundColor: '#FDF6E9', color: '#BA7517' }}>📅 Timeline</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ backgroundColor: '#ECFDF5', color: '#059669' }}>✓ Fact-checked</span>
+              </div>
             </div>
           </div>
         </div>
@@ -134,7 +136,8 @@ export default async function AboutPage() {
       <section className="max-w-[1060px] mx-auto px-4 md:px-6 py-16">
         <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-center" style={{ color: '#BA7517', letterSpacing: '0.1em' }}>The difference</p>
         <h2 className="text-2xl md:text-3xl font-bold mb-2 text-center" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>See it for yourself</h2>
-        <p className="text-base mb-8 text-center" style={{ color: '#6B6B6B' }}>Ask the same question to ChatGPT and to Unpacked. This is what you get.</p>
+        <p className="text-base mb-2 text-center" style={{ color: '#6B6B6B' }}>Ask the same question to ChatGPT and see the difference for yourself.</p>
+        <p className="text-sm mb-8 text-center" style={{ color: '#9E948A' }}>Beautifully constructed with images, charts, interactive graphs, and real opinions from real people.</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* ChatGPT panel */}
@@ -209,25 +212,31 @@ export default async function AboutPage() {
                 </div>
               </div>
 
-              {/* Head to Head bars */}
+              {/* Head to Head — diverging bars */}
               <div className="mb-3 pt-2" style={{ borderTop: '1px solid #F5F4F1' }}>
                 <p className="text-[10px] font-semibold uppercase tracking-wide mb-2" style={{ color: '#94918D' }}>Head to Head</p>
                 {[
-                  { metric: 'Camera', iphone: 75, samsung: 90 },
-                  { metric: 'Battery', iphone: 85, samsung: 80 },
-                  { metric: 'Display', iphone: 80, samsung: 85 },
-                  { metric: 'Performance', iphone: 92, samsung: 78 },
-                  { metric: 'Value', iphone: 82, samsung: 88 },
-                ].map(row => (
-                  <div key={row.metric} className="flex items-center gap-2 mb-1.5">
-                    <span className="text-[9px] w-16 text-right shrink-0" style={{ color: '#94918D' }}>{row.metric}</span>
-                    <div className="flex-1 flex gap-0.5">
-                      <div className="h-2 rounded-l" style={{ width: `${row.iphone}%`, backgroundColor: row.iphone >= row.samsung ? '#BA7517' : '#E8E3DC' }} />
-                      <div className="h-2 rounded-r" style={{ width: `${row.samsung}%`, backgroundColor: row.samsung > row.iphone ? '#BA7517' : '#E8E3DC' }} />
+                  { metric: 'Camera', iphone: 72, samsung: 88 },
+                  { metric: 'Battery', iphone: 78, samsung: 75 },
+                  { metric: 'Display', iphone: 82, samsung: 86 },
+                  { metric: 'Performance', iphone: 90, samsung: 88 },
+                  { metric: 'Value', iphone: 76, samsung: 80 },
+                ].map(row => {
+                  const maxScore = Math.max(row.iphone, row.samsung)
+                  return (
+                    <div key={row.metric} className="flex items-center gap-1 mb-1.5">
+                      <span className="text-[9px] w-[52px] text-right shrink-0" style={{ color: '#94918D' }}>{row.metric}</span>
+                      <div className="flex-1 flex items-center">
+                        {/* iPhone bar — grows from centre leftward */}
+                        <div className="flex-1 flex justify-end"><div className="h-[5px] rounded-l" style={{ width: `${(row.iphone / maxScore) * 80}%`, backgroundColor: row.iphone >= row.samsung ? '#BA7517' : '#D4C9B8' }} /></div>
+                        <div style={{ width: '1px', height: '10px', backgroundColor: '#E8E2D9', flexShrink: 0 }} />
+                        {/* Samsung bar — grows from centre rightward */}
+                        <div className="flex-1"><div className="h-[5px] rounded-r" style={{ width: `${(row.samsung / maxScore) * 80}%`, backgroundColor: row.samsung > row.iphone ? '#BA7517' : '#D4C9B8' }} /></div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-                <div className="flex justify-between text-[9px] mt-1 px-[72px]" style={{ color: '#94918D' }}><span>iPhone</span><span>Samsung</span></div>
+                  )
+                })}
+                <div className="flex justify-between text-[9px] mt-1" style={{ color: '#94918D', paddingLeft: '56px' }}><span>iPhone</span><span>Samsung</span></div>
               </div>
 
               {/* Specs table */}
@@ -287,12 +296,12 @@ export default async function AboutPage() {
             { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 3h-8l-2 4h12l-2-4z"/></svg>, num: '02', title: 'We research', desc: 'We search the live web, Reddit, forums, and expert reviews. Real data, real current prices — not recycled training data from two years ago.', tag: '~3 minutes' },
             { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>, num: '03', title: "You're the editor", desc: "We hand you the first draft. Refine the tone, swap images, adjust sections, and publish something that's genuinely yours — under your name.", tag: 'Your article. Your voice.' },
           ].map((step) => (
-            <div key={step.num} className="text-center md:text-left relative">
+            <div key={step.num} className="text-center md:text-left">
+              <span className="text-[10px] font-bold mb-2 block" style={{ color: '#BA7517' }}>Step {step.num}</span>
               <div className="w-12 h-12 rounded-[10px] flex items-center justify-center mx-auto md:mx-0 mb-4" style={{ backgroundColor: '#BA7517' }}>
                 {step.icon}
               </div>
-              <span className="text-[10px] font-bold absolute top-0 right-0 md:right-auto md:left-14" style={{ color: '#BA7517' }}>Step {step.num}</span>
-              <h3 className="text-lg font-bold mt-1 mb-2" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>{step.title}</h3>
+              <h3 className="text-lg font-bold mb-2" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>{step.title}</h3>
               <p className="text-sm leading-relaxed mb-3" style={{ color: '#6B6B6B' }}>{step.desc}</p>
               <span className="inline-block text-xs font-medium px-3 py-1 rounded-full" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>{step.tag}</span>
             </div>
@@ -423,14 +432,20 @@ export default async function AboutPage() {
       <FeatureBlock num="05" title="You control the images." align="left" bullets={['Search for better photos from the web', 'Upload your own images', 'Every image in the article is replaceable']}>
         <div className="rounded-2xl p-4" style={{ backgroundColor: '#fff', border: '1px solid #E8E3DC' }}>
           <div className="grid grid-cols-2 gap-2 mb-3">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="aspect-square rounded-lg flex items-center justify-center text-xs" style={{
-                backgroundColor: i === 1 ? '#FEF3EC' : '#F5F4F1',
-                border: i === 1 ? '2px solid #BA7517' : '1px solid #E8E3DC',
-                color: i === 1 ? '#BA7517' : '#94918D',
-              }}>
-                {i === 1 && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>}
-                {i === 1 ? ' Selected' : `Option ${i}`}
+            {[
+              { url: 'https://obyywahmmkrpsimjbdua.supabase.co/storage/v1/object/public/article-images/hero-images/df4300ab-1c47-4d00-b795-3f5203f7ccea/1774547556795.jpg', selected: true },
+              { url: 'https://runtothefinish.com/wp-content/uploads/2023/09/running-shoe-lights.jpg', selected: false },
+              { url: 'https://marathonhandbook.com/wp-content/uploads/running-shoe-roundup-featured-image.jpg', selected: false },
+              { url: 'https://m-cdn.phonearena.com/images/article/178493-wide-two_1200/Samsung-Galaxy-S26-Ultra-vs-iPhone-17-Pro-Max-Sample-Photos-Comparison.webp', selected: false },
+            ].map((img, i) => (
+              <div key={i} className="relative rounded-lg overflow-hidden" style={{ aspectRatio: '16/10', border: img.selected ? '2px solid #BA7517' : '1px solid #E8E3DC' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                {img.selected && (
+                  <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: '#BA7517' }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -458,7 +473,7 @@ export default async function AboutPage() {
       <section className="w-full py-20" style={{ backgroundColor: '#1A1714' }}>
         <div className="max-w-[1060px] mx-auto px-4 md:px-6">
           <h2 className="text-2xl md:text-3xl font-bold mb-3 text-center" style={{ fontFamily: 'var(--font-sora)', color: '#fff' }}>The article shapes itself around the question.</h2>
-          <p className="text-base text-center mb-10" style={{ color: 'rgba(255,255,255,0.5)' }}>A buyer guide generates different components to an explainer. The structure adapts to the question.</p>
+          <p className="text-base text-center mb-10 max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.5)' }}>A buyer&apos;s guide generates product cards, a verdict, and a comparison table. An explainer generates charts, data, and a timeline. A decision guide generates a working calculator. The structure is never the same twice — because the question never is.</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               { type: "Buyer's Guide", example: 'Best standing desks for home offices', items: ['Product cards with specs', 'Comparison table', 'Clear verdict', 'Price tracking'] },
@@ -559,6 +574,7 @@ export default async function AboutPage() {
         </h2>
         <p className="text-base mb-8" style={{ color: '#6B6B6B' }}>No credit card. No setup. Just type a question.</p>
         <SearchForm autoFocus={false} />
+        <p className="text-sm mt-3" style={{ color: '#9E948A' }}>Give it a try now — it takes three minutes.</p>
       </section>
 
       {/* ═══ FEATURED ARTICLES GRID (below CTA) ═══ */}
