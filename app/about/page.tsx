@@ -8,8 +8,24 @@ import type { Metadata } from 'next'
 import type { ArticleRow } from '@/types/article'
 
 export const metadata: Metadata = {
-  title: 'About Unpacked — Build a researched article in three minutes',
-  description: 'We built the interface ChatGPT never did. Structured, visual, opinionated articles with real research and independent fact-checking.',
+  title: 'About Unpacked — Build a researched article in minutes',
+  description: 'Build a fully researched, fact-checked article on anything in three minutes. Beautifully structured with images, charts, and real opinions.',
+  alternates: { canonical: 'https://unpacked.fyi/about' },
+  openGraph: {
+    title: 'About Unpacked — Build a researched article in minutes',
+    description: 'Build a fully researched, fact-checked article on anything in three minutes. Beautifully structured with images, charts, and real opinions.',
+    url: 'https://unpacked.fyi/about',
+    siteName: 'Unpacked',
+    type: 'website',
+    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'Unpacked' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About Unpacked — Build a researched article in minutes',
+    description: 'Build a fully researched, fact-checked article on anything in three minutes. Beautifully structured with images, charts, and real opinions.',
+    images: ['/og-default.png'],
+    site: '@unpacked_fyi',
+  },
 }
 
 async function getFeaturedArticles(): Promise<ArticleRow[]> {

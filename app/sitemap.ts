@@ -12,7 +12,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: 'https://unpacked.fyi/about',
       lastModified: new Date(),
       changeFrequency: 'monthly',
-      priority: 0.6,
+      priority: 0.8,
     },
     {
       url: 'https://unpacked.fyi/creators',
@@ -37,7 +37,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           url: `https://unpacked.fyi/article/${row.slug}`,
           lastModified: new Date(row.updated_at ?? row.created_at),
           changeFrequency: 'weekly',
-          priority: 0.8,
+          priority: 0.7,
         })
       }
     }
