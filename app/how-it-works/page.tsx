@@ -17,8 +17,10 @@ const C = {
 const NAV_ITEMS = [
   { id: 'problem', label: 'The problem' },
   { id: 'output', label: 'The output' },
+  { id: 'breaking-news', label: 'Breaking news' },
   { id: 'why-now', label: 'Why this became possible' },
   { id: 'the-gap', label: 'The gap nobody filled' },
+  { id: 'trust', label: 'Built for trust' },
   { id: 'how-it-grows', label: 'How it grows' },
   { id: 'wirecutter', label: 'The proven model' },
   { id: 'business-model', label: 'Business model' },
@@ -239,7 +241,8 @@ export default function HowItWorksPage() {
         <h1 style={{ fontSize: 'clamp(38px, 5.5vw, 60px)', fontWeight: 700, letterSpacing: '-2px', lineHeight: 1.05, color: C.ink, marginBottom: '20px', fontFamily: 'var(--font-sora)' }}>
           The internet,<br />properly <span style={{ color: C.amber }}>synthesised.</span>
         </h1>
-        <p style={{ fontSize: '20px', color: C.inkLight, lineHeight: 1.65, maxWidth: '680px', margin: 0 }}>A publishing platform where anyone can build a fully researched, fact-checked article on any topic in minutes — with subscription revenue, affiliate commissions, and a built-in viral distribution loop that means the users market it for you.</p>
+        <p style={{ fontSize: '20px', color: C.inkLight, lineHeight: 1.65, maxWidth: '780px', margin: '0 0 20px 0' }}>A system that produces, ranks, and distributes the best answers to questions people already care about — with a creator ecosystem, a viral distribution loop, and economics that only improve over time.</p>
+        <p style={{ fontSize: '17px', color: C.inkLight, lineHeight: 1.7, maxWidth: '720px', margin: 0 }}>A publishing platform where anyone can publish a fully researched, fact-checked article on any topic in minutes — earning affiliate commissions, building their reputation, and sharing content that travels.</p>
       </div>
 
       <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
@@ -400,18 +403,6 @@ export default function HowItWorksPage() {
           ))}
         </div>
 
-        {/* Breaking news callout */}
-        <div style={{ marginTop: '20px', background: C.amberPale, border: `1px solid ${C.amberLight}`, borderRadius: '10px', padding: '20px 22px' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: C.amber, marginBottom: '10px' }}>Breaking news — a new way to cover what&apos;s happening</div>
-          <p style={{ fontSize: '14px', color: C.inkMid, marginBottom: '10px', lineHeight: 1.65 }}>Unpacked has a unique ability to research everything happening right now — pulling the latest discussion from Twitter and Reddit, surveying news sources, and synthesising community consensus into a structured, shareable article within minutes of a story breaking.</p>
-          <p style={{ fontSize: '14px', color: C.inkMid, marginBottom: '12px', lineHeight: 1.65 }}>What makes it genuinely different is the live data layer. Prediction market odds from Polymarket, economic indicators from FRED, real-time financial feeds, and community sentiment from forums can all be woven directly into the article at generation time. No other platform combines live data sources, real community opinion, and editorial structure into a single publishable article this quickly. The result is a format that simply hasn&apos;t existed before.</p>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {['Polymarket odds', 'FRED economic data', 'Reddit sentiment', 'Twitter/X consensus', 'Live pricing feeds'].map((tag) => (
-              <span key={tag} style={{ fontSize: '12px', background: 'white', border: `1px solid ${C.amberLight}`, color: C.amberDark, padding: '3px 10px', borderRadius: '12px', fontWeight: 600 }}>{tag}</span>
-            ))}
-          </div>
-        </div>
-
         {/* Stat grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" style={{ margin: '28px 0 0' }}>
           {[
@@ -429,6 +420,34 @@ export default function HowItWorksPage() {
 
       <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
 
+      {/* ─── Breaking news ─── */}
+      <section id="breaking-news" style={{ padding: '56px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
+        <SecLabel>Breaking news</SecLabel>
+        <h2 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px', color: C.ink, marginBottom: '14px', fontFamily: 'var(--font-sora)' }}>Breaking news — a format that doesn&apos;t exist <span style={{ color: C.amber }}>anywhere else</span></h2>
+        <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '16px' }}>Every other platform that covers breaking news is reactive and slow. A journalist files a story hours after an event. An AI summariser pulls headlines from RSS feeds. Neither tells you what people actually think right now, what the real-world odds are, or what the data says at this moment.</p>
+        <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '16px' }}>Unpacked can synthesise a complete, structured, shareable briefing on any breaking story by simultaneously pulling from multiple live sources at the moment of generation.</p>
+        <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '24px' }}><strong style={{ color: C.ink, fontWeight: 600 }}>What makes it different is the combination:</strong></p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ margin: '0 0 28px' }}>
+          {[
+            { t: 'Polymarket prediction odds', d: 'Real-money crowd-sourced probability on any measurable outcome. "Markets currently give this a 67% probability" is a data point no newspaper can offer in real time.' },
+            { t: 'FRED economic indicators', d: 'Live Federal Reserve data on inflation, interest rates, GDP, and housing. Hard numbers from a trusted source embedded directly into the article.' },
+            { t: 'Reddit community sentiment', d: 'What people are actually saying in the last few hours, not archived posts from yesterday. Dominant narratives, dissenting views, and community consensus — attributed and structured.' },
+            { t: 'Stock market impact', d: 'Live price movements for any publicly traded companies involved in the story, shown as stat cards with percentage change.' },
+            { t: 'Google Trends', d: 'Search interest volume showing whether public attention is rising or falling on the story in real time.' },
+          ].map((card) => (
+            <div key={card.t} style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '10px', padding: '18px' }}>
+              <h4 style={{ fontSize: '14px', fontWeight: 700, color: C.ink, marginBottom: '5px' }}>{card.t}</h4>
+              <p style={{ fontSize: '13px', color: C.inkLight, margin: 0, lineHeight: 1.55 }}>{card.d}</p>
+            </div>
+          ))}
+        </div>
+
+        <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: 0 }}>The result is a format that simply hasn&apos;t existed before — assembled in under three minutes, fully shareable, with data points and community opinions that won&apos;t appear together anywhere else for hours. If ever.</p>
+      </section>
+
+      <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
+
       {/* ─── Why now ─── */}
       <section id="why-now" style={{ padding: '56px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
         <SecLabel>Why this has only now become possible</SecLabel>
@@ -442,7 +461,7 @@ export default function HowItWorksPage() {
             { period: 'Early 2024', w: '100%', amount: '$1.00+', note: 'Unviable', noteColor: C.inkFaint },
             { period: 'Late 2024', w: '35%', amount: '$0.35', note: 'Marginal', noteColor: C.inkFaint },
             { period: 'Mid 2025', w: '18%', amount: '$0.175', note: 'Viable', noteColor: C.amber },
-            { period: 'Now', w: '10%', amount: '$0.10', note: '80%+ margin', noteColor: C.green },
+            { period: 'Now', w: '10%', amount: '~$0.10', note: '~80%+ margin (falling)', noteColor: C.green },
             { period: '2026–27', w: '4%', amount: '$0.03–05', note: '↓ falling', noteColor: C.green, barColor: C.green, amountColor: C.green },
           ].map((row) => (
             <div key={row.period} style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '10px' }}>
@@ -470,6 +489,29 @@ export default function HowItWorksPage() {
 
       <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
 
+      {/* ─── Trust layer ─── */}
+      <section id="trust" style={{ padding: '56px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
+        <SecLabel>Built for trust at scale</SecLabel>
+        <h2 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px', color: C.ink, marginBottom: '14px', fontFamily: 'var(--font-sora)' }}>Built for trust <span style={{ color: C.amber }}>at scale.</span></h2>
+        <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '24px' }}>The biggest risk for any AI content platform is quality collapse — the moment readers learn to distrust the output, the brand collapses with it. Unpacked has structural trust mechanisms built into the architecture, not bolted on afterwards.</p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '0 0 24px' }}>
+          <div>
+            <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '8px' }}><strong style={{ color: C.ink, fontWeight: 600 }}>Independent fact-checking</strong> — A dedicated verification model, deliberately different from the writing model, independently checks every price, specification, and claim after generation. Corrections are shown transparently. Readers see exactly what changed and why.</p>
+          </div>
+          <div>
+            <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '8px' }}><strong style={{ color: C.ink, fontWeight: 600 }}>Community quality signals</strong> — Readers vote on whether articles are helpful and whether verdicts are convincing. These signals feed a ranking system that surfaces the best articles and buries weak ones without editorial intervention.</p>
+          </div>
+          <div>
+            <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '8px' }}><strong style={{ color: C.ink, fontWeight: 600 }}>Canonical topic control</strong> — A single canonical article per topic prevents the SEO dilution and trust erosion that comes from dozens of near-identical AI-generated pieces competing against each other on the same domain.</p>
+          </div>
+        </div>
+
+        <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: 0 }}><strong style={{ color: C.ink, fontWeight: 600 }}>The result:</strong> A content library that gets more trustworthy over time, not less — because the structural incentives reward quality rather than volume.</p>
+      </section>
+
+      <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
+
       {/* ─── How it grows ─── */}
       <section id="how-it-grows" style={{ padding: '56px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
         <SecLabel>How it grows</SecLabel>
@@ -477,10 +519,10 @@ export default function HowItWorksPage() {
         <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '16px' }}>Every article shared is a discovery moment. Unpacked was designed for the formats where this content travels naturally — and the creator model means users are financially motivated to distribute it.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5" style={{ margin: '24px 0' }}>
           {[
-            { t: 'Reddit & forums', d: 'Thorough, opinionated articles with a clear verdict. Exactly what Reddit rewards. One well-placed article drives hundreds of organic visits.' },
-            { t: 'Twitter/X & LinkedIn', d: 'The article preview looks like nothing else in any feed. Finance, tech, and business content travels particularly well in professional networks.' },
-            { t: 'Creators & bloggers', d: 'Users publish under their name, share to their audience, and earn affiliate commission from what they create. Distribution with no marketing spend.' },
-            { t: 'SEO — compounding', d: 'Every article is a long-tail keyword asset. Written once, it generates organic traffic for years. The content library is the moat.' },
+            { t: 'Reddit & forums', d: 'Thorough, opinionated articles with a clear verdict — exactly what Reddit rewards. Auto-generated native summaries mean creators share correctly formatted content without effort. One well-placed article drives hundreds of organic visits.' },
+            { t: 'Twitter/X & LinkedIn', d: 'Auto-generated threads and posts mean one click turns any article into platform-native content. The article preview looks like nothing else in any feed. Finance, tech, and breaking news travel particularly well in professional networks.' },
+            { t: 'Screenshot loop', d: 'Every verdict box, chart, and comparison table carries baked-in Unpacked branding. When screenshots travel on social — and they do — the brand travels with them. Zero paid distribution required.' },
+            { t: 'SEO — compounding', d: 'Every article is a long-tail keyword asset. A canonical topic system prevents duplicate dilution. Remix and fork mechanics turn the library into a collaborative moat. Written once, it generates organic traffic for years.' },
           ].map((g) => (
             <div key={g.t} style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '10px', padding: '16px 18px' }}>
               <h4 style={{ fontSize: '14px', fontWeight: 700, color: C.ink, marginBottom: '4px' }}>{g.t}</h4>
@@ -489,33 +531,37 @@ export default function HowItWorksPage() {
           ))}
         </div>
 
-        {/* Viral loop diagram */}
+        {/* Viral loop — 8-step flywheel */}
         <div style={{ margin: '24px 0', background: 'white', border: `1px solid ${C.border}`, borderRadius: '14px', overflow: 'hidden' }}>
           <div style={{ padding: '14px 20px', borderBottom: `1px solid ${C.border}` }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: C.amber, marginBottom: '2px' }}>The viral loop</div>
-            <div style={{ fontSize: '13px', color: C.inkFaint }}>Every article shared brings the next user in</div>
+            <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: C.amber, marginBottom: '2px' }}>The flywheel</div>
+            <div style={{ fontSize: '13px', color: C.inkFaint }}>Every article shared brings the next user in — and the content library compounds</div>
           </div>
           <div style={{ padding: '20px 24px' }}>
-            <svg viewBox="0 0 640 220" width="100%" xmlns="http://www.w3.org/2000/svg">
-              <defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#BA7517" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></marker></defs>
-              <rect x="220" y="10" width="200" height="44" rx="8" fill="#FDF6E9" stroke="#F0D9A8" strokeWidth="1"/>
-              <text x="320" y="28" textAnchor="middle" fontFamily="var(--font-outfit), DM Sans, sans-serif" fontSize="12" fontWeight="700" fill="#1A1714">Generates article</text>
-              <text x="320" y="44" textAnchor="middle" fontFamily="var(--font-outfit), DM Sans, sans-serif" fontSize="11" fill="#6B6259">any topic, any type</text>
-              <rect x="456" y="86" width="168" height="44" rx="8" fill="#FDF6E9" stroke="#F0D9A8" strokeWidth="1"/>
-              <text x="540" y="104" textAnchor="middle" fontFamily="var(--font-outfit), DM Sans, sans-serif" fontSize="12" fontWeight="700" fill="#1A1714">Shares publicly</text>
-              <text x="540" y="120" textAnchor="middle" fontFamily="var(--font-outfit), DM Sans, sans-serif" fontSize="11" fill="#6B6259">earns commission</text>
-              <rect x="220" y="166" width="200" height="44" rx="8" fill="#FDF6E9" stroke="#F0D9A8" strokeWidth="1"/>
-              <text x="320" y="184" textAnchor="middle" fontFamily="var(--font-outfit), DM Sans, sans-serif" fontSize="12" fontWeight="700" fill="#1A1714">New visitor discovers</text>
-              <text x="320" y="200" textAnchor="middle" fontFamily="var(--font-outfit), DM Sans, sans-serif" fontSize="11" fill="#6B6259">clicks through to Unpacked</text>
-              <rect x="16" y="86" width="168" height="44" rx="8" fill="#FDF6E9" stroke="#F0D9A8" strokeWidth="1"/>
-              <text x="100" y="104" textAnchor="middle" fontFamily="var(--font-outfit), DM Sans, sans-serif" fontSize="12" fontWeight="700" fill="#1A1714">Signs up, tries it</text>
-              <text x="100" y="120" textAnchor="middle" fontFamily="var(--font-outfit), DM Sans, sans-serif" fontSize="11" fill="#6B6259">generates their own</text>
-              <text x="320" y="116" textAnchor="middle" fontFamily="var(--font-outfit), DM Sans, sans-serif" fontSize="16" fontWeight="700" fill="#BA7517">↻</text>
-              <path d="M398 28 C468 28 508 64 508 86" fill="none" stroke="#BA7517" strokeWidth="1.5" markerEnd="url(#arr)"/>
-              <path d="M508 130 C508 168 430 182 420 182" fill="none" stroke="#BA7517" strokeWidth="1.5" markerEnd="url(#arr)"/>
-              <path d="M220 188 C155 188 118 162 118 130" fill="none" stroke="#BA7517" strokeWidth="1.5" markerEnd="url(#arr)"/>
-              <path d="M118 86 C118 58 196 28 220 28" fill="none" stroke="#BA7517" strokeWidth="1.5" markerEnd="url(#arr)"/>
-            </svg>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { num: '1', t: 'Creator generates article', d: 'Any topic, any type, under 3 minutes' },
+                { num: '2', t: 'One-click repurposing', d: 'Auto-generates X thread, LinkedIn post, Reddit summary, shareable image cards' },
+                { num: '3', t: 'Article travels', d: 'Screenshots carry Unpacked branding, links drive discovery' },
+                { num: '4', t: 'Readers discover', d: 'Via social, Reddit, search, or embed' },
+                { num: '5', t: 'New users sign up', d: 'Generate their own article' },
+                { num: '6', t: 'Creator earns', d: 'Affiliate commission on purchases driven by their articles' },
+                { num: '7', t: 'Creator remixes', d: 'Fork and improve existing articles, original creator earns attribution and revenue share' },
+                { num: '8', t: 'Content library compounds', d: 'Canonical topics ranked by quality, SEO moat builds' },
+              ].map((step) => (
+                <div key={step.num} style={{ background: C.amberPale, border: `1px solid ${C.amberLight}`, borderRadius: '10px', padding: '14px 16px', position: 'relative' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ width: '22px', height: '22px', minWidth: '22px', borderRadius: '50%', background: C.amber, color: 'white', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{step.num}</span>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: C.ink, lineHeight: 1.3 }}>{step.t}</span>
+                  </div>
+                  <p style={{ fontSize: '12px', color: C.inkLight, margin: 0, lineHeight: 1.45 }}>{step.d}</p>
+                </div>
+              ))}
+            </div>
+            <div style={{ textAlign: 'center', marginTop: '16px' }}>
+              <span style={{ fontSize: '24px', color: C.amber }}>↻</span>
+              <span style={{ fontSize: '12px', color: C.inkFaint, marginLeft: '8px' }}>Cycle repeats — each creator strengthens the next</span>
+            </div>
           </div>
         </div>
       </section>
@@ -575,6 +621,7 @@ export default function HowItWorksPage() {
               { num: '2', t: 'Affiliate commissions', d: 'Every product recommendation links to a retailer. Zero additional content cost. Finance and insurance leads pay $50–120 per conversion. Electronics, travel, health — all categories built in from the start.' },
               { num: '3', t: 'Sponsored articles & API access', d: 'Brands sponsor categories (same model as Wirecutter pre-acquisition). Publishers access the pipeline via API at $0.50–1.00 per article vs $0.10 cost. 80–90% margin, zero sales overhead.' },
               { num: '4', t: 'Creator revenue share', d: 'Creators earn a share of the affiliate commission their articles generate. Financially motivated creators share widely, drive traffic, and bring new users in — without any marketing spend from Unpacked.' },
+              { num: '5', t: 'Network effects', d: 'Every new creator strengthens the platform. A Recommendation Network lets creators cross-promote each other\u2019s articles for a share of affiliate revenue. A Bounty Board directs the creator community toward high-value SEO topics. Creator Spotlights and quality rankings create status incentives that money alone cannot buy. These mechanics compound — the platform becomes more valuable with every creator who joins.' },
             ].map((layer) => (
               <div key={layer.num} style={{ background: C.darkCard, border: `1px solid ${C.darkBorder}`, borderRadius: '10px', padding: '16px 20px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
                 <div style={{ width: '28px', height: '28px', minWidth: '28px', background: 'rgba(186,117,23,0.15)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: C.amber }}>{layer.num}</div>
