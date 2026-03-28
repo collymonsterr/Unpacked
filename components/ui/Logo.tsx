@@ -8,7 +8,7 @@ export default function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   }
 
   return (
-    <Link href="/" className="inline-flex items-center no-underline">
+    <Link href="/" className="inline-flex items-center no-underline py-2">
       <span
         className={`font-extrabold tracking-tight ${sizes[size]}`}
         style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
