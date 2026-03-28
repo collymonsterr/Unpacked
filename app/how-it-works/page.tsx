@@ -75,7 +75,7 @@ function SideNav() {
   return (
     <nav
       className="hidden xl:block fixed w-[160px]"
-      style={{ top: '50%', transform: 'translateY(-50%)', zIndex: 40, left: 'calc(50% - 668px)' }}
+      style={{ top: '45%', transform: 'translateY(-50%)', zIndex: 40, left: 'calc(50% - 700px)' }}
       aria-label="Page sections"
     >
       <ul className="flex flex-col gap-1">
