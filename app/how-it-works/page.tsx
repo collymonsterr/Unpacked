@@ -72,8 +72,8 @@ function SideNav() {
 
   return (
     <nav
-      className="hidden xl:block fixed right-8 w-[160px]"
-      style={{ top: '50%', transform: 'translateY(-50%)', zIndex: 40 }}
+      className="hidden xl:block fixed w-[160px]"
+      style={{ top: '50%', transform: 'translateY(-50%)', zIndex: 40, left: 'calc(50% - 578px)' }}
       aria-label="Page sections"
     >
       <ul className="flex flex-col gap-1">
@@ -219,7 +219,7 @@ function SecLabel({ children }: { children: React.ReactNode }) {
 /* ─── Main page ─── */
 export default function HowItWorksPage() {
   return (
-    <div style={{ background: C.cream, minHeight: '100vh', color: C.ink, fontFamily: 'var(--font-outfit), system-ui, sans-serif', fontSize: '16px', lineHeight: 1.7, overflowX: 'hidden' }}>
+    <div className="hiw-root" style={{ background: C.cream, minHeight: '100vh', color: C.ink, fontFamily: 'var(--font-outfit), system-ui, sans-serif', fontSize: '16px', lineHeight: 1.7, overflowX: 'hidden' }}>
 
       {/* Nav */}
       <nav style={{ padding: '18px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, background: 'rgba(250,250,248,0.95)', backdropFilter: 'blur(12px)', zIndex: 100 }} className="max-sm:!px-5">
@@ -619,6 +619,16 @@ export default function HowItWorksPage() {
         <div style={{ fontSize: '16px', fontWeight: 700, color: C.ink, fontFamily: 'var(--font-sora)' }}>Un<span style={{ color: C.amber }}>packed.</span></div>
         <p style={{ fontSize: '13px', color: C.inkFaint, margin: 0 }}>Not publicly linked · unpacked.fyi</p>
       </footer>
+
+      {/* Scoped overrides — enforce reference HTML sizes against Tailwind preflight */}
+      <style>{`
+        .hiw-root { font-size: 16px !important; line-height: 1.7 !important; }
+        .hiw-root p { font-size: 16px !important; line-height: 1.75 !important; }
+        .hiw-root h1 { font-size: clamp(38px, 5.5vw, 60px) !important; font-weight: 700 !important; letter-spacing: -2px !important; line-height: 1.05 !important; }
+        .hiw-root h2 { font-size: 26px !important; font-weight: 700 !important; letter-spacing: -0.5px !important; line-height: 1.2 !important; }
+        .hiw-root h4 { font-size: 14px !important; font-weight: 700 !important; }
+        .hiw-root section { padding-top: 56px !important; padding-bottom: 56px !important; }
+      `}</style>
     </div>
   )
 }
