@@ -73,7 +73,7 @@ function SideNav() {
   return (
     <nav
       className="hidden xl:block fixed w-[160px]"
-      style={{ top: '50%', transform: 'translateY(-50%)', zIndex: 40, left: 'calc(50% - 578px)' }}
+      style={{ top: '50%', transform: 'translateY(-50%)', zIndex: 40, left: 'calc(50% - 668px)' }}
       aria-label="Page sections"
     >
       <ul className="flex flex-col gap-1">
@@ -231,7 +231,7 @@ export default function HowItWorksPage() {
       <SideNav />
 
       {/* Hero */}
-      <div style={{ padding: '80px 48px 64px', maxWidth: '780px', margin: '0 auto' }} className="max-sm:!px-5">
+      <div style={{ padding: '80px 48px 64px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
         <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2.5px', textTransform: 'uppercase', color: C.amber, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <span style={{ width: '24px', height: '1.5px', background: C.amber, display: 'block' }} />
           The thinking behind Unpacked
@@ -239,13 +239,13 @@ export default function HowItWorksPage() {
         <h1 style={{ fontSize: 'clamp(38px, 5.5vw, 60px)', fontWeight: 700, letterSpacing: '-2px', lineHeight: 1.05, color: C.ink, marginBottom: '20px', fontFamily: 'var(--font-sora)' }}>
           The internet,<br />properly <span style={{ color: C.amber }}>synthesised.</span>
         </h1>
-        <p style={{ fontSize: '18px', color: C.inkLight, lineHeight: 1.65, maxWidth: '580px', margin: 0 }}>A publishing platform where anyone can build a fully researched, fact-checked article on any topic in minutes — with subscription revenue, affiliate commissions, and a built-in viral distribution loop that means the users market it for you.</p>
+        <p style={{ fontSize: '20px', color: C.inkLight, lineHeight: 1.65, maxWidth: '680px', margin: 0 }}>A publishing platform where anyone can build a fully researched, fact-checked article on any topic in minutes — with subscription revenue, affiliate commissions, and a built-in viral distribution loop that means the users market it for you.</p>
       </div>
 
       <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
 
       {/* ─── The problem ─── */}
-      <section id="problem" style={{ padding: '56px 48px', maxWidth: '780px', margin: '0 auto' }} className="max-sm:!px-5">
+      <section id="problem" style={{ padding: '56px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
         <SecLabel>The problem</SecLabel>
         <h2 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px', color: C.ink, marginBottom: '14px', fontFamily: 'var(--font-sora)' }}>AI gives you data. It doesn&apos;t help you make the decision.</h2>
         <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '16px' }}>Every major AI tool has the same flaw: it presents information but won&apos;t commit to an answer. It has no idea what real people think right now, can&apos;t tell you what something costs today, and whatever it produces is a wall of unformatted text you can&apos;t share, publish, or do anything useful with.</p>
@@ -267,71 +267,105 @@ export default function HowItWorksPage() {
 
       {/* Breaker */}
       <div style={{ background: C.dark, padding: '52px 48px', textAlign: 'center' }} className="max-sm:!px-5">
-        <h2 style={{ fontSize: 'clamp(26px, 4vw, 44px)', fontWeight: 700, letterSpacing: '-1.2px', color: 'white', lineHeight: 1.1, marginBottom: '10px', fontFamily: 'var(--font-sora)' }}>We built the output <span style={{ color: C.amber }}>ChatGPT never did.</span></h2>
-        <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Same question. A completely different result.</p>
+        <h2 style={{ fontSize: 'clamp(30px, 5vw, 52px)', fontWeight: 700, letterSpacing: '-1.5px', color: 'white', lineHeight: 1.1, marginBottom: '12px', fontFamily: 'var(--font-sora)' }}>We built the output <span style={{ color: C.amber }}>ChatGPT never did.</span></h2>
+        <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Same question. A completely different result.</p>
       </div>
 
       {/* ─── The output ─── */}
-      <section id="output" style={{ padding: '56px 48px', maxWidth: '780px', margin: '0 auto' }} className="max-sm:!px-5">
+      <section id="output" style={{ padding: '56px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
         <SecLabel>The output</SecLabel>
         <h2 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px', color: C.ink, marginBottom: '14px', fontFamily: 'var(--font-sora)' }}>An afternoon&apos;s research.<br />Compiled in three minutes.</h2>
         <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '16px' }}>Unpacked doesn&apos;t return a chat answer — it produces a complete article. The kind that would take several hours to research properly: live sources, current prices, real community opinions pulled directly from Reddit and forums, independent fact-checking, and a clear verdict. Laid out like a magazine — with interactive charts, product cards, comparison tables, and an editorial hero image.</p>
         <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '16px' }}><strong style={{ color: C.ink, fontWeight: 600 }}>You are the editor.</strong> Adjust the tone, change the focus, swap images, publish it under your name. Share a link that looks like something a publication spent a day on. It costs ten cents to produce.</p>
 
-        {/* Before/After comparison */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5" style={{ margin: '28px 0' }}>
-          {/* ChatGPT side */}
-          <div style={{ borderRadius: '10px', overflow: 'hidden', border: `1px solid ${C.border}` }}>
-            <div style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700, borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: '8px', background: '#F3F4F6', color: '#6B7280' }}>💬 ChatGPT — iPhone 17 vs Galaxy S26?</div>
-            <div style={{ padding: '16px', background: 'white', fontSize: '13px', color: '#4B5563', lineHeight: 1.6 }}>
-              <div style={{ display: 'inline-block', background: '#F3F4F6', color: '#9CA3AF', fontSize: '11px', padding: '2px 8px', borderRadius: '3px', marginBottom: '8px', fontWeight: 600 }}>Great question!</div>
-              <p style={{ marginBottom: '8px', fontSize: '13px' }}>Both are excellent flagships. The iPhone has the A19 chip and strong ecosystem integration. The Galaxy has a 200MP sensor. Both support fast charging but you will need to purchase a charger separately.</p>
-              <div style={{ background: '#FEF2F2', borderRadius: '5px', padding: '10px 12px', margin: '8px 0', fontSize: '13px', color: '#6B7280' }}>Ultimately the best phone <strong>depends on your personal preferences</strong> and which ecosystem you are invested in.</div>
-              <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'italic', marginTop: '4px', marginBottom: 0 }}>No verdict. No real opinions. Nothing to share.</p>
-            </div>
-          </div>
-          {/* Unpacked side */}
-          <div style={{ borderRadius: '10px', overflow: 'hidden', border: `1px solid ${C.border}` }}>
-            <div style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700, borderBottom: `1px solid ${C.amberLight}`, display: 'flex', alignItems: 'center', gap: '8px', background: C.amberPale, color: C.amberDark }}>📄 Unpacked — same question</div>
-            <div style={{ padding: '16px', background: C.cream, fontSize: '13px', color: '#4B5563', lineHeight: 1.6 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: C.amber, color: 'white', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '4px', marginBottom: '12px' }}>🏆 VERDICT</div>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '7px', marginBottom: '12px', padding: 0 }}>
-                {['iPhone 17 wins on video, ecosystem, and resale value', 'Galaxy S26 Ultra wins on camera zoom and display', 'Fly weekly? Get the iPhone. Stills-first? Get the Galaxy.'].map((t, i) => (
-                  <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '7px', fontSize: '12.5px', color: C.inkMid, fontWeight: 500, lineHeight: 1.4 }}>
-                    <span style={{ width: '6px', height: '6px', minWidth: '6px', background: C.amber, borderRadius: '50%', marginTop: '4px' }} />
-                    {t}
-                  </li>
-                ))}
-              </ul>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5" style={{ marginBottom: '10px' }}>
-                <div style={{ borderRadius: '6px', padding: '8px 10px', background: C.amberPale, border: `1px solid ${C.amberLight}` }}>
-                  <div style={{ fontSize: '10px', fontWeight: 700, color: C.amber, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>★ Winner</div>
-                  <div style={{ fontSize: '12.5px', fontWeight: 600, color: C.ink }}>iPhone 17</div>
-                  <div style={{ fontSize: '11px', color: C.inkFaint }}>From $799</div>
-                </div>
-                <div style={{ borderRadius: '6px', padding: '8px 10px', background: 'white', border: `1px solid ${C.border}` }}>
-                  <div style={{ fontSize: '10px', fontWeight: 700, color: C.inkFaint, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Best zoom</div>
-                  <div style={{ fontSize: '12.5px', fontWeight: 600, color: C.ink }}>Galaxy S26</div>
-                  <div style={{ fontSize: '11px', color: C.inkFaint }}>From $799</div>
-                </div>
+        {/* Before/After comparison — full width, stacked for impact */}
+        <div style={{ margin: '36px 0' }}>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4" style={{ alignItems: 'stretch' }}>
+            {/* ChatGPT side — narrower */}
+            <div className="md:col-span-2" style={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '14px 20px', fontSize: '14px', fontWeight: 700, borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: '8px', background: '#F3F4F6', color: '#6B7280' }}>💬 ChatGPT</div>
+              <div style={{ padding: '20px', background: 'white', fontSize: '14px', color: '#4B5563', lineHeight: 1.65, flex: 1 }}>
+                <div style={{ display: 'inline-block', background: '#F3F4F6', color: '#9CA3AF', fontSize: '11px', padding: '3px 10px', borderRadius: '4px', marginBottom: '12px', fontWeight: 600 }}>Great question!</div>
+                <p style={{ marginBottom: '12px', fontSize: '14px' }}>Both are excellent flagships. The iPhone has the A19 chip and strong ecosystem integration. The Galaxy has a 200MP sensor. Both support fast charging but you will need to purchase a charger separately.</p>
+                <div style={{ background: '#FEF2F2', borderRadius: '8px', padding: '14px 16px', margin: '12px 0', fontSize: '14px', color: '#6B7280' }}>Ultimately the best phone <strong>depends on your personal preferences</strong> and which ecosystem you are invested in.</div>
+                <p style={{ fontSize: '12px', color: '#9CA3AF', fontStyle: 'italic', marginTop: '8px', marginBottom: 0, borderTop: '1px solid #F3F4F6', paddingTop: '12px' }}>No verdict. No real opinions. Nothing to share.</p>
               </div>
-              <div style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '10px 12px', marginBottom: '8px' }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: C.inkFaint, marginBottom: '7px' }}>Real opinions — 3,400 Reddit discussions</div>
-                {[{ name: 'iPhone 17', pct: 55, active: true }, { name: 'Galaxy S26', pct: 38, active: false }].map((r) => (
-                  <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: r.active ? '4px' : 0 }}>
-                    <span style={{ fontSize: '11px', color: C.inkLight, width: '56px' }}>{r.name}</span>
-                    <div style={{ flex: 1, height: '4px', background: C.border, borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', borderRadius: '2px', background: r.active ? C.amber : '#D4C9B8', width: `${r.pct}%` }} />
-                    </div>
-                    <span style={{ fontSize: '11px', fontWeight: 600, color: r.active ? C.amber : C.inkFaint, width: '28px', textAlign: 'right' }}>{r.pct}%</span>
+            </div>
+            {/* Unpacked side — wider, richer */}
+            <div className="md:col-span-3" style={{ borderRadius: '14px', overflow: 'hidden', border: `2px solid ${C.amberLight}`, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '14px 20px', fontSize: '14px', fontWeight: 700, borderBottom: `1px solid ${C.amberLight}`, display: 'flex', alignItems: 'center', gap: '8px', background: C.amberPale, color: C.amberDark }}>📄 Unpacked — same question</div>
+              <div style={{ padding: '22px', background: C.cream, flex: 1 }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: C.amber, color: 'white', fontSize: '12px', fontWeight: 700, padding: '5px 12px', borderRadius: '5px', marginBottom: '14px' }}>🏆 VERDICT</div>
+                <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px', padding: 0 }}>
+                  {['iPhone 17 wins on video, ecosystem, and resale value', 'Galaxy S26 Ultra wins on camera zoom and display', 'Fly weekly? Get the iPhone. Stills-first? Get the Galaxy.'].map((t, i) => (
+                    <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '14px', color: C.inkMid, fontWeight: 500, lineHeight: 1.45 }}>
+                      <span style={{ width: '7px', height: '7px', minWidth: '7px', background: C.amber, borderRadius: '50%', marginTop: '5px' }} />
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+                {/* Product cards */}
+                <div className="grid grid-cols-2 gap-2" style={{ marginBottom: '14px' }}>
+                  <div style={{ borderRadius: '8px', padding: '12px 14px', background: C.amberPale, border: `1px solid ${C.amberLight}` }}>
+                    <div style={{ fontSize: '10px', fontWeight: 700, color: C.amber, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>★ Winner</div>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: C.ink }}>iPhone 17</div>
+                    <div style={{ fontSize: '12px', color: C.inkFaint, marginTop: '2px' }}>From $799</div>
                   </div>
-                ))}
+                  <div style={{ borderRadius: '8px', padding: '12px 14px', background: 'white', border: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: '10px', fontWeight: 700, color: C.inkFaint, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>Best zoom</div>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: C.ink }}>Galaxy S26</div>
+                    <div style={{ fontSize: '12px', color: C.inkFaint, marginTop: '2px' }}>From $799</div>
+                  </div>
+                </div>
+                {/* Sentiment bars */}
+                <div style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '8px', padding: '14px 16px', marginBottom: '12px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: C.inkFaint, marginBottom: '10px' }}>Real opinions — 3,400 Reddit discussions</div>
+                  {[{ name: 'iPhone 17', pct: 55, active: true }, { name: 'Galaxy S26', pct: 38, active: false }].map((r) => (
+                    <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: r.active ? '6px' : 0 }}>
+                      <span style={{ fontSize: '12px', color: C.inkLight, width: '70px' }}>{r.name}</span>
+                      <div style={{ flex: 1, height: '6px', background: C.border, borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', borderRadius: '3px', background: r.active ? C.amber : '#D4C9B8', width: `${r.pct}%` }} />
+                      </div>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: r.active ? C.amber : C.inkFaint, width: '32px', textAlign: 'right' }}>{r.pct}%</span>
+                    </div>
+                  ))}
+                </div>
+                {/* Spec comparison mini-table */}
+                <div style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '8px', padding: '14px 16px', marginBottom: '12px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: C.inkFaint, marginBottom: '10px' }}>Key specs compared</div>
+                  <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ padding: '6px 0', borderBottom: `1px solid ${C.border}`, color: C.inkFaint, fontWeight: 600, textAlign: 'left' }}></th>
+                        <th style={{ padding: '6px 0', borderBottom: `1px solid ${C.border}`, color: C.amber, fontWeight: 700, textAlign: 'center' }}>iPhone 17</th>
+                        <th style={{ padding: '6px 0', borderBottom: `1px solid ${C.border}`, color: C.inkMid, fontWeight: 600, textAlign: 'center' }}>Galaxy S26</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        ['Camera', '48MP Fusion', '200MP Wide'],
+                        ['Chip', 'A19 Pro', 'Snapdragon 8+'],
+                        ['Battery', '4,800 mAh', '5,000 mAh'],
+                        ['Price', '$799', '$799'],
+                      ].map(([label, a, b]) => (
+                        <tr key={label}>
+                          <td style={{ padding: '6px 0', color: C.inkFaint, fontWeight: 500, borderBottom: `1px solid ${C.border}` }}>{label}</td>
+                          <td style={{ padding: '6px 0', color: C.ink, fontWeight: 500, textAlign: 'center', borderBottom: `1px solid ${C.border}` }}>{a}</td>
+                          <td style={{ padding: '6px 0', color: C.ink, fontWeight: 500, textAlign: 'center', borderBottom: `1px solid ${C.border}` }}>{b}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div style={{ fontSize: '13px', color: C.green, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '18px', height: '18px', borderRadius: '50%', background: C.greenLight, fontSize: '10px' }}>✓</span>
+                  Prices verified · specs confirmed against live sources
+                </div>
               </div>
-              <div style={{ fontSize: '11.5px', color: C.green, fontWeight: 600 }}>✓ Prices verified · specs confirmed against live sources</div>
             </div>
           </div>
+          <p style={{ textAlign: 'center', fontSize: '13px', color: C.inkFaint, fontStyle: 'italic', marginTop: '12px' }}>Unformatted text you cannot share. <span style={{ color: C.amber, fontWeight: 600, fontStyle: 'normal' }}>vs a polished article that travels.</span></p>
         </div>
-        <p style={{ textAlign: 'center', fontSize: '12px', color: C.inkFaint, fontStyle: 'italic', marginTop: '8px' }}>Unformatted text you cannot share. <span style={{ color: C.amber, fontWeight: 600, fontStyle: 'normal' }}>vs a polished article that travels.</span></p>
 
         {/* Benefit grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5" style={{ margin: '28px 0' }}>
@@ -396,7 +430,7 @@ export default function HowItWorksPage() {
       <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
 
       {/* ─── Why now ─── */}
-      <section id="why-now" style={{ padding: '56px 48px', maxWidth: '780px', margin: '0 auto' }} className="max-sm:!px-5">
+      <section id="why-now" style={{ padding: '56px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
         <SecLabel>Why this has only now become possible</SecLabel>
         <h2 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px', color: C.ink, marginBottom: '14px', fontFamily: 'var(--font-sora)' }}>The economics <span style={{ color: C.amber }}>only just started working.</span></h2>
         <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '16px' }}>Until a year ago, generating a high-quality researched article cost over $1.00 — making consumer subscription pricing loss-making from day one. The models also weren&apos;t reliable enough to produce the structured output Unpacked depends on. Both problems are now solved.</p>
@@ -427,7 +461,7 @@ export default function HowItWorksPage() {
       <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
 
       {/* ─── The gap ─── */}
-      <section id="the-gap" style={{ padding: '56px 48px', maxWidth: '780px', margin: '0 auto' }} className="max-sm:!px-5">
+      <section id="the-gap" style={{ padding: '56px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
         <SecLabel>The gap nobody filled</SecLabel>
         <h2 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px', color: C.ink, marginBottom: '14px', fontFamily: 'var(--font-sora)' }}>Why hasn&apos;t anyone <span style={{ color: C.amber }}>done this before?</span></h2>
         <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '16px' }}>The people who had the technical capability to build this built chat interfaces — because that&apos;s how engineers think. Nobody with editorial instincts sat at the intersection of AI pipeline design and content business models. And nobody connected it to a proven affiliate revenue model that was already generating tens of millions of dollars a year at Wirecutter.</p>
@@ -437,7 +471,7 @@ export default function HowItWorksPage() {
       <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
 
       {/* ─── How it grows ─── */}
-      <section id="how-it-grows" style={{ padding: '56px 48px', maxWidth: '780px', margin: '0 auto' }} className="max-sm:!px-5">
+      <section id="how-it-grows" style={{ padding: '56px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
         <SecLabel>How it grows</SecLabel>
         <h2 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px', color: C.ink, marginBottom: '14px', fontFamily: 'var(--font-sora)' }}>The users market it.<br />The content compounds.</h2>
         <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '16px' }}>Every article shared is a discovery moment. Unpacked was designed for the formats where this content travels naturally — and the creator model means users are financially motivated to distribute it.</p>
@@ -489,7 +523,7 @@ export default function HowItWorksPage() {
       <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
 
       {/* ─── Wirecutter section ─── */}
-      <section id="wirecutter" style={{ padding: '56px 48px', maxWidth: '780px', margin: '0 auto' }} className="max-sm:!px-5">
+      <section id="wirecutter" style={{ padding: '56px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
         <SecLabel>A proven model — modernised</SecLabel>
         <h2 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px', color: C.ink, marginBottom: '14px', fontFamily: 'var(--font-sora)' }}>Wirecutter proved it works.<br /><span style={{ color: C.amber }}>Unpacked removes every constraint.</span></h2>
         <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '16px' }}>Wirecutter was founded in 2011: deep research, one clear recommendation, affiliate commission on every purchase. In five years it drove $150 million in e-commerce annually. The New York Times acquired it for $30 million in 2016. By 2018 it was generating over $20 million a year for the Times. Bootstrapped throughout.</p>
@@ -522,7 +556,7 @@ export default function HowItWorksPage() {
 
       {/* ─── Business model (dark section) ─── */}
       <div id="business-model" style={{ background: C.dark, padding: '64px 0' }}>
-        <div style={{ maxWidth: '780px', margin: '0 auto', padding: '0 48px' }} className="max-sm:!px-5">
+        <div style={{ maxWidth: '960px', margin: '0 auto', padding: '0 48px' }} className="max-sm:!px-5">
           <SecLabel><span style={{ color: 'rgba(186,117,23,0.7)' }}>Business model</span></SecLabel>
           <h2 style={{ color: 'white', marginBottom: '10px', fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px', fontFamily: 'var(--font-sora)' }}>Starts lean. Builds layers.</h2>
           <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 0, fontSize: '16px', lineHeight: 1.75 }}>Subscriptions from day one. Affiliate commissions when traffic makes them meaningful. Everything else follows a growing content library.</p>
@@ -555,7 +589,7 @@ export default function HowItWorksPage() {
       </div>
 
       {/* ─── Path to profitability ─── */}
-      <section id="profitability" style={{ padding: '56px 48px', maxWidth: '780px', margin: '0 auto' }} className="max-sm:!px-5">
+      <section id="profitability" style={{ padding: '56px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
         <SecLabel>Path to profitability</SecLabel>
         <h2 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px', color: C.ink, marginBottom: '14px', fontFamily: 'var(--font-sora)' }}>Profitable at a surprisingly small scale.</h2>
         <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '16px' }}>Strong margins from a very small user base. These milestones assume subscription revenue only — affiliate, API, and sponsorship are incremental on top.</p>
@@ -582,7 +616,7 @@ export default function HowItWorksPage() {
       <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
 
       {/* ─── Founder ─── */}
-      <section id="founder" style={{ padding: '56px 48px', maxWidth: '780px', margin: '0 auto' }} className="max-sm:!px-5">
+      <section id="founder" style={{ padding: '56px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
         <SecLabel>Who built this</SecLabel>
         <h2 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px', color: C.ink, marginBottom: '14px', fontFamily: 'var(--font-sora)' }}>Built by someone who needed it.</h2>
         <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '16px' }}>Unpacked started as a tool built to solve a personal frustration. The moment it produced its first article, it was clear that people loved it — not just because it worked, but because it was genuinely beautiful. Then came the realisation that every article shared was bringing someone new to the platform. And that the same content driving that growth could generate serious revenue. The product, the viral loop, and the business model all emerged from the same starting point.</p>
@@ -604,7 +638,7 @@ export default function HowItWorksPage() {
       <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
 
       {/* ─── CTA ─── */}
-      <div style={{ textAlign: 'center', padding: '80px 48px', maxWidth: '780px', margin: '0 auto' }} className="max-sm:!px-5">
+      <div style={{ textAlign: 'center', padding: '80px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
         <h2 style={{ fontSize: '30px', fontWeight: 700, letterSpacing: '-0.8px', marginBottom: '12px', fontFamily: 'var(--font-sora)', color: C.ink }}>If this resonates, let&apos;s talk.</h2>
         <p style={{ fontSize: '16px', color: C.inkLight, marginBottom: '28px', maxWidth: '500px', marginLeft: 'auto', marginRight: 'auto' }}>Not raising a formal round. Just looking to connect with a small number of people who understand this space — whether as an adviser, an early partner, or someone who wants to be involved as it grows.</p>
         <a href="mailto:colin@unpacked.fyi" style={{ display: 'inline-block', background: C.amber, color: 'white', padding: '14px 32px', borderRadius: '8px', fontSize: '15px', fontWeight: 600, textDecoration: 'none' }}>Get in touch →</a>
@@ -620,14 +654,14 @@ export default function HowItWorksPage() {
         <p style={{ fontSize: '13px', color: C.inkFaint, margin: 0 }}>Not publicly linked · unpacked.fyi</p>
       </footer>
 
-      {/* Scoped overrides — enforce reference HTML sizes against Tailwind preflight */}
+      {/* Scoped overrides — enforce sizes against Tailwind preflight */}
       <style>{`
-        .hiw-root { font-size: 16px !important; line-height: 1.7 !important; }
-        .hiw-root p { font-size: 16px !important; line-height: 1.75 !important; }
-        .hiw-root h1 { font-size: clamp(38px, 5.5vw, 60px) !important; font-weight: 700 !important; letter-spacing: -2px !important; line-height: 1.05 !important; }
-        .hiw-root h2 { font-size: 26px !important; font-weight: 700 !important; letter-spacing: -0.5px !important; line-height: 1.2 !important; }
-        .hiw-root h4 { font-size: 14px !important; font-weight: 700 !important; }
-        .hiw-root section { padding-top: 56px !important; padding-bottom: 56px !important; }
+        .hiw-root { font-size: 18px !important; line-height: 1.7 !important; }
+        .hiw-root p { font-size: 18px !important; line-height: 1.75 !important; }
+        .hiw-root h1 { font-size: clamp(44px, 6vw, 72px) !important; font-weight: 700 !important; letter-spacing: -2.5px !important; line-height: 1.05 !important; }
+        .hiw-root h2 { font-size: 32px !important; font-weight: 700 !important; letter-spacing: -0.8px !important; line-height: 1.15 !important; }
+        .hiw-root h4 { font-size: 16px !important; font-weight: 700 !important; }
+        .hiw-root section { padding-top: 64px !important; padding-bottom: 64px !important; }
       `}</style>
     </div>
   )
