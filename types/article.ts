@@ -10,6 +10,8 @@ export type ArticleType =
 
 export type ArticleStatus = 'planning' | 'generating' | 'complete' | 'verified' | 'error'
 
+export type ArticleVisibility = 'private' | 'unlisted' | 'published'
+
 export type ImageDensity = 'none' | 'low' | 'medium' | 'high'
 
 export interface VisualStrategy {
@@ -326,6 +328,7 @@ export interface ArticleRow {
   featured_position?: number | null
   is_trending?: boolean
   trending_set_at?: string | null
+  visibility?: ArticleVisibility
   created_at: string
   updated_at: string
 }
