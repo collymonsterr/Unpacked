@@ -5,6 +5,13 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts'
 
+interface FallbackStats {
+  geminiWritesLast24h: number
+  geminiFallbacksLast24h: number
+  fallbackRate24h: number // percentage, 0-100
+  estimatedExtraCost24h: number
+}
+
 interface CostsData {
   totalCost: number
   costByProvider: Record<string, number>
@@ -13,6 +20,7 @@ interface CostsData {
   avgCostPerArticle: number
   dailyCosts: { date: string; cost: number }[]
   totalCalls: number
+  fallbackStats?: FallbackStats
   note: string
 }
 
@@ -71,6 +79,83 @@ export default function AdminCosts() {
         <CostCard label="Articles this month" value={String(data.articlesThisMonth)} />
         <CostCard label="API calls this month" value={String(data.totalCalls)} />
       </div>
+
+      {/* Fallback alert — shown when 24h fallback rate > 5% */}
+      {data.fallbackStats && data.fallbackStats.fallbackRate24h > 5 && (
+        <div
+          className="flex items-start gap-3 rounded-xl px-4 py-3 mb-5"
+          style={{ backgroundColor: '#FEF3EC', border: '1px solid #F5C28A' }}
+        >
+          <span className="text-lg leading-none mt-0.5">⚠️</span>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: '#BA7517' }}>
+              High Gemini fallback rate ({data.fallbackStats.fallbackRate24h.toFixed(1)}% in last 24h)
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: '#8C6010' }}>
+              {data.fallbackStats.geminiFallbacksLast24h} of {data.fallbackStats.geminiWritesLast24h + data.fallbackStats.geminiFallbacksLast24h} writes fell back to Sonnet — estimated extra cost: ${data.fallbackStats.estimatedExtraCost24h.toFixed(2)}. Check server logs for Gemini errors.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Fallback breakdown — last 24h */}
+      {data.fallbackStats && (
+        <div
+          className="rounded-xl p-4 mb-5"
+          style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
+        >
+          <p
+            className="text-xs font-semibold uppercase tracking-wider mb-3"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            Gemini fallback rate (last 24h)
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <p className="text-lg font-bold" style={{ color: 'var(--accent)', fontFamily: 'var(--font-sora)' }}>
+                {data.fallbackStats.geminiWritesLast24h}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Gemini Flash writes</p>
+            </div>
+            <div>
+              <p
+                className="text-lg font-bold"
+                style={{
+                  color: data.fallbackStats.geminiFallbacksLast24h > 0 ? '#BA7517' : 'var(--accent)',
+                  fontFamily: 'var(--font-sora)',
+                }}
+              >
+                {data.fallbackStats.geminiFallbacksLast24h}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Sonnet fallbacks</p>
+            </div>
+            <div>
+              <p
+                className="text-lg font-bold"
+                style={{
+                  color: data.fallbackStats.fallbackRate24h > 5 ? '#BA7517' : 'var(--accent)',
+                  fontFamily: 'var(--font-sora)',
+                }}
+              >
+                {data.fallbackStats.fallbackRate24h.toFixed(1)}%
+              </p>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Fallback rate</p>
+            </div>
+            <div>
+              <p
+                className="text-lg font-bold"
+                style={{
+                  color: data.fallbackStats.estimatedExtraCost24h > 0 ? '#BA7517' : 'var(--accent)',
+                  fontFamily: 'var(--font-sora)',
+                }}
+              >
+                ${data.fallbackStats.estimatedExtraCost24h.toFixed(2)}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Est. extra cost</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Daily spend chart + breakdown side by side */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

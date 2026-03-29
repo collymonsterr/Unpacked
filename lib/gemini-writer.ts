@@ -7,6 +7,8 @@ import type { ArticleContent, ArticlePlan } from '@/types/article'
 
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
+const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
+
 // Concurrency control
 let activeGenerations = 0
 const MAX_CONCURRENT = parseInt(process.env.GEMINI_MAX_CONCURRENT ?? '3', 10)
@@ -253,15 +255,30 @@ ${optionsPrompt}`
 
   let lastError = ''
   let lastRawResponse = ''
+  // Delay before next attempt — overridden to 8s for rate limits
+  let nextDelay = 0
 
   try {
     for (let attempt = 0; attempt < 3; attempt++) {
+      // Progressive delay between attempts: 2s → 5s (or 8s after a 429)
+      if (attempt > 0) {
+        console.log(`[gemini-writer] Waiting ${nextDelay}ms before attempt ${attempt + 1}...`)
+        await sleep(nextDelay)
+      }
+      // Default delay for next attempt — may be overridden by 429 handling below
+      nextDelay = attempt === 0 ? 2000 : 5000
+
       console.log(`[gemini-writer] Attempt ${attempt + 1}/3 for "${query.slice(0, 40)}..."`)
+
+      // Per-attempt 90-second timeout — catches silent hangs
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 90_000)
 
       try {
         const res = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             contents: [{ parts: [{ text: systemPrompt + '\n\n' + userMessage }] }],
             generationConfig: {
@@ -270,14 +287,20 @@ ${optionsPrompt}`
             },
           }),
         })
+        clearTimeout(timeoutId)
 
         if (!res.ok) {
           const errText = await res.text()
           lastError = `API error ${res.status}: ${errText.slice(0, 200)}`
           lastRawResponse = errText.slice(0, 500)
           console.error(`[gemini-writer] Attempt ${attempt + 1} FAILED — API error ${res.status}:`, errText.slice(0, 200))
-          if (res.status >= 500) continue // Retry on server errors
-          throw new Error(`Gemini API error: ${res.status}`)
+          if (res.status === 429) {
+            // Rate limit — retryable with longer delay
+            nextDelay = 8000
+            continue
+          }
+          if (res.status >= 500) continue // Server error — retryable
+          throw new Error(`Gemini API error: ${res.status}`) // 4xx (not 429) — not retryable
         }
 
         const data = await res.json()
@@ -329,15 +352,21 @@ ${optionsPrompt}`
         return article as unknown as ArticleContent
 
       } catch (err) {
+        clearTimeout(timeoutId)
         lastError = (err as Error).message
+        const isTimeout = (err as Error).name === 'AbortError'
+        if (isTimeout) {
+          lastError = 'Request timed out after 90 seconds'
+          console.error(`[gemini-writer] Attempt ${attempt + 1} TIMED OUT after 90s`)
+        }
         if (attempt < 2) {
-          console.log(`[gemini-writer] Attempt ${attempt + 1} threw — retrying: ${(err as Error).message}`)
+          console.log(`[gemini-writer] Attempt ${attempt + 1} threw — retrying: ${lastError}`)
           continue
         }
         // Final attempt — log fallback before throwing
         console.error(`[gemini-writer] ALL 3 ATTEMPTS FAILED. Last error: ${lastError}. Raw response (first 500 chars): ${lastRawResponse}`)
         await logGeminiFallback('write', lastError, lastRawResponse, articleId)
-        throw err
+        throw new Error(lastError)
       }
     }
 
@@ -390,15 +419,30 @@ Apply the refinement and return the full updated article JSON. Also include a "s
 
   let lastError = ''
   let lastRawResponse = ''
+  // Delay before next attempt — overridden to 8s for rate limits
+  let nextDelay = 0
 
   try {
     for (let attempt = 0; attempt < 3; attempt++) {
+      // Progressive delay between attempts: 2s → 5s (or 8s after a 429)
+      if (attempt > 0) {
+        console.log(`[gemini-refine] Waiting ${nextDelay}ms before attempt ${attempt + 1}...`)
+        await sleep(nextDelay)
+      }
+      // Default delay for next attempt — may be overridden by 429 handling below
+      nextDelay = attempt === 0 ? 2000 : 5000
+
       console.log(`[gemini-refine] Attempt ${attempt + 1}/3 for "${instruction.slice(0, 40)}..."`)
+
+      // Per-attempt 90-second timeout — catches silent hangs
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 90_000)
 
       try {
         const res = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             contents: [{ parts: [{ text: systemPrompt + '\n\n' + userMessage }] }],
             generationConfig: {
@@ -407,14 +451,20 @@ Apply the refinement and return the full updated article JSON. Also include a "s
             },
           }),
         })
+        clearTimeout(timeoutId)
 
         if (!res.ok) {
           const errText = await res.text()
           lastError = `API error ${res.status}: ${errText.slice(0, 200)}`
           lastRawResponse = errText.slice(0, 500)
           console.error(`[gemini-refine] Attempt ${attempt + 1} FAILED — API error ${res.status}:`, errText.slice(0, 200))
-          if (res.status >= 500) continue
-          throw new Error(`Gemini API error: ${res.status}`)
+          if (res.status === 429) {
+            // Rate limit — retryable with longer delay
+            nextDelay = 8000
+            continue
+          }
+          if (res.status >= 500) continue // Server error — retryable
+          throw new Error(`Gemini API error: ${res.status}`) // 4xx (not 429) — not retryable
         }
 
         const data = await res.json()
@@ -479,14 +529,21 @@ Apply the refinement and return the full updated article JSON. Also include a "s
         }
 
       } catch (err) {
+        clearTimeout(timeoutId)
         lastError = (err as Error).message
+        const isTimeout = (err as Error).name === 'AbortError'
+        if (isTimeout) {
+          lastError = 'Request timed out after 90 seconds'
+          console.error(`[gemini-refine] Attempt ${attempt + 1} TIMED OUT after 90s`)
+        }
         if (attempt < 2) {
-          console.log(`[gemini-refine] Attempt ${attempt + 1} threw — retrying: ${(err as Error).message}`)
+          console.log(`[gemini-refine] Attempt ${attempt + 1} threw — retrying: ${lastError}`)
           continue
         }
+        // Final attempt — log fallback before throwing
         console.error(`[gemini-refine] ALL 3 ATTEMPTS FAILED. Last error: ${lastError}. Raw: ${lastRawResponse.slice(0, 300)}`)
         await logGeminiFallback('refine', lastError, lastRawResponse, articleId)
-        throw err
+        throw new Error(lastError)
       }
     }
 

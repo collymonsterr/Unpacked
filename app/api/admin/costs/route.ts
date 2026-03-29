@@ -89,6 +89,16 @@ export async function GET() {
       costByType[row.call_type] = (costByType[row.call_type] ?? 0) + cost
     }
 
+    // Fallback stats — last 24 hours
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    const recentRows = rows.filter(r => r.created_at >= oneDayAgo)
+    const geminiWritesLast24h = recentRows.filter(r => r.call_type === 'write' && r.model?.includes('gemini')).length
+    const geminiFallbacksLast24h = recentRows.filter(r => r.call_type === 'gemini_fallback_write').length
+    const totalAttemptedLast24h = geminiWritesLast24h + geminiFallbacksLast24h
+    const fallbackRate24h = totalAttemptedLast24h > 0 ? geminiFallbacksLast24h / totalAttemptedLast24h : 0
+    // Each fallback costs ~$0.09 more than a successful Gemini write ($0.11 Sonnet avg vs $0.02 Gemini avg)
+    const estimatedExtraCost24h = geminiFallbacksLast24h * 0.09
+
     return NextResponse.json({
       totalCost: Math.round(totalCost * 100) / 100,
       costByProvider: Object.fromEntries(
@@ -101,6 +111,12 @@ export async function GET() {
       avgCostPerArticle: Math.round(avgCostPerArticle * 100) / 100,
       dailyCosts,
       totalCalls: rows.length,
+      fallbackStats: {
+        geminiWritesLast24h,
+        geminiFallbacksLast24h,
+        fallbackRate24h: Math.round(fallbackRate24h * 1000) / 10, // percentage, 1dp
+        estimatedExtraCost24h: Math.round(estimatedExtraCost24h * 100) / 100,
+      },
       note: 'Costs are estimates based on token counts. Brave Search and OpenAI image costs are not yet tracked.',
     })
   } catch (err) {
