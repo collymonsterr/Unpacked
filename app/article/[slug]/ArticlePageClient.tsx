@@ -92,15 +92,17 @@ export default function ArticlePageClient({ initialRow, linkableArticles }: Prop
     if (row.status === 'verified' || row.status === 'error') return
     // Stop polling when showing a completed article that wasn't freshly generated
     if (showArticle && row.status === 'complete' && !wasEverGenerating.current) return
-    if (timedOut) return
+
+    // After timeout, keep polling slowly (every 10s) so the article appears automatically
+    // when it finishes — the user shouldn't have to manually click "Check again"
+    const pollInterval = timedOut ? 10000 : 2500
 
     const interval = setInterval(() => {
-      if (Date.now() - pollStartRef.current > 3 * 60 * 1000) {
+      if (!timedOut && Date.now() - pollStartRef.current > 5 * 60 * 1000) {
         setTimedOut(true)
-        return
       }
       poll()
-    }, 2500)
+    }, pollInterval)
     return () => clearInterval(interval)
   }, [row.status, showArticle, poll, timedOut])
 

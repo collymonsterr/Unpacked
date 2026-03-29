@@ -509,7 +509,7 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
             Still working on this one...
           </h2>
           <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-            This is a particularly detailed article and it&apos;s taking a little longer than usual. You can wait here, click Check again to see if it&apos;s ready, or come back in a few minutes.
+            This is a particularly detailed article. It&apos;ll appear here automatically when it&apos;s ready — no need to do anything.
           </p>
           <div className="flex items-center justify-center gap-3">
             <button
