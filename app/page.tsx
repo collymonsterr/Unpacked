@@ -31,6 +31,7 @@ async function getHomepageData() {
       .select('id, slug, query, status, plan, article, hidden_from_homepage, root_article_id, parent_article_id, is_featured, is_trending, trending_set_at, view_count, user_id, user_name, user_avatar, fact_check, verified_at, created_at, updated_at, suggestion_chips, card_summary')
       .in('status', ['complete', 'verified'])
       .eq('hidden_from_homepage', false)
+      .eq('visibility', 'published')
       .order('created_at', { ascending: false })
       .limit(200)
 

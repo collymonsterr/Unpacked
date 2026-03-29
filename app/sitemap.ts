@@ -28,6 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .from('articles')
       .select('slug, updated_at, created_at')
       .in('status', ['complete', 'verified'])
+      .eq('visibility', 'published')
       .order('created_at', { ascending: false })
       .limit(500)
 

@@ -70,6 +70,7 @@ export default async function CreatorProfilePage({ params }: Props) {
     .select('id, slug, query, status, plan, article, created_at')
     .eq('user_id', id)
     .in('status', ['complete', 'verified'])
+    .eq('visibility', 'published')
     .order('created_at', { ascending: false })
 
   if (!articles || articles.length === 0) {

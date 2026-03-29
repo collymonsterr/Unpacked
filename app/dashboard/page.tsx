@@ -27,7 +27,7 @@ export default async function DashboardPage() {
   // Fetch user's articles
   const { data: articles } = await getSupabaseAdmin()
     .from('articles')
-    .select('id, slug, query, status, plan, article, pinned, user_name, user_avatar, view_count, parent_article_id, root_article_id, created_at')
+    .select('id, slug, query, status, plan, article, pinned, user_name, user_avatar, view_count, parent_article_id, root_article_id, visibility, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 

@@ -47,7 +47,7 @@ function ArticleCard({ row }: { row: ArticleRow }) {
         )}
       </div>
       <div className="p-4">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
           {articleType && <ArticleTypeBadge type={articleType} />}
           {!isComplete && (
             <span
@@ -58,6 +58,17 @@ function ArticleCard({ row }: { row: ArticleRow }) {
               }}
             >
               {row.status}
+            </span>
+          )}
+          {isComplete && (
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+              style={{
+                backgroundColor: row.visibility === 'published' ? '#ecfdf5' : row.visibility === 'unlisted' ? '#eff6ff' : '#f5f5f4',
+                color: row.visibility === 'published' ? '#059669' : row.visibility === 'unlisted' ? '#2563eb' : '#78716c',
+              }}
+            >
+              {row.visibility === 'published' ? '🌐 Published' : row.visibility === 'unlisted' ? '🔗 Unlisted' : '🔒 Private'}
             </span>
           )}
         </div>

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import MenuItem from './MenuItem'
+import type { ArticleVisibility } from '@/types/article'
 
 interface AdminMenuProps {
   articleId: string
@@ -15,10 +16,17 @@ interface AdminMenuProps {
   initialHidden: boolean
   initialFeatured?: boolean
   initialTrending?: boolean
+  initialVisibility?: ArticleVisibility
   onRegenerateImages: () => void
   onRegenerateArticle: () => void
   onCategoryChange: (newType: string) => void
 }
+
+const VISIBILITY_OPTIONS: { value: ArticleVisibility; icon: string; label: string; desc: string }[] = [
+  { value: 'private',   icon: '🔒', label: 'Private',   desc: 'Only you' },
+  { value: 'unlisted',  icon: '🔗', label: 'Unlisted',  desc: 'Anyone with the link' },
+  { value: 'published', icon: '🌐', label: 'Published', desc: 'Listed publicly' },
+]
 
 export default function AdminMenu({
   articleId,
@@ -31,6 +39,7 @@ export default function AdminMenu({
   initialHidden,
   initialFeatured = false,
   initialTrending = false,
+  initialVisibility = 'published',
   onRegenerateImages,
   onRegenerateArticle,
   onCategoryChange,
@@ -41,6 +50,8 @@ export default function AdminMenu({
   const [isHidden, setIsHidden] = useState(initialHidden)
   const [isFeatured, setIsFeatured] = useState(initialFeatured)
   const [isTrending, setIsTrending] = useState(initialTrending)
+  const [visibility, setVisibility] = useState<ArticleVisibility>(initialVisibility)
+  const [visibilityLoading, setVisibilityLoading] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showCategoryPicker, setShowCategoryPicker] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -66,7 +77,7 @@ export default function AdminMenu({
     setIsHidden(newHidden)
     setMenuOpen(false)
     try {
-      const res = await fetch(`/api/articles/${articleId}/visibility`, {
+      const res = await fetch(`/api/articles/${articleId}/hide`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ hidden: newHidden }),
@@ -74,6 +85,25 @@ export default function AdminMenu({
       if (!res.ok) setIsHidden(!newHidden)
     } catch {
       setIsHidden(!newHidden)
+    }
+  }
+
+  async function handleVisibilityChange(newVisibility: ArticleVisibility) {
+    if (newVisibility === visibility || visibilityLoading) return
+    const prev = visibility
+    setVisibility(newVisibility) // optimistic
+    setVisibilityLoading(true)
+    try {
+      const res = await fetch(`/api/articles/${articleId}/visibility`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visibility: newVisibility }),
+      })
+      if (!res.ok) setVisibility(prev)
+    } catch {
+      setVisibility(prev)
+    } finally {
+      setVisibilityLoading(false)
     }
   }
 
@@ -170,6 +200,34 @@ export default function AdminMenu({
               boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
             }}
           >
+            {/* Visibility selector — owner + admin */}
+            <div className="px-3 pt-2 pb-1">
+              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                Visibility
+              </p>
+              <div className="flex flex-col gap-0.5">
+                {VISIBILITY_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => handleVisibilityChange(opt.value)}
+                    disabled={visibilityLoading}
+                    className="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors"
+                    style={{
+                      backgroundColor: visibility === opt.value ? 'var(--accent-light)' : 'transparent',
+                      color: visibility === opt.value ? 'var(--accent)' : 'var(--text-secondary)',
+                      fontWeight: visibility === opt.value ? 600 : 400,
+                      cursor: visibilityLoading ? 'wait' : 'pointer',
+                    }}
+                  >
+                    <span>{opt.icon}</span>
+                    <span>{opt.label}</span>
+                    <span className="ml-auto opacity-60" style={{ fontSize: '10px' }}>{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ height: '1px', backgroundColor: 'var(--border)', margin: '4px 0' }} />
+
             {/* Admin-only actions */}
             {isAdmin && (
             <MenuItem

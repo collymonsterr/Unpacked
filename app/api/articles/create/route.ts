@@ -87,6 +87,8 @@ export async function POST(request: NextRequest) {
         query: trimmedQuery,
         status: 'planning',
         generation_options: generationOptions,
+        // Logged-out users get 'unlisted' — there's no account to log in to manage a private article
+        visibility: userId ? 'private' : 'unlisted',
         ...(userId ? { user_id: userId, user_name: userName, user_avatar: userAvatar } : {}),
       })
       .select('id, slug')

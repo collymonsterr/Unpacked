@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import type { ArticleVisibility } from '@/types/article'
 
 interface FactCheck {
   issues_found?: boolean
@@ -9,6 +10,8 @@ interface FactCheck {
 }
 
 interface Props {
+  articleId: string
+  initialVisibility: ArticleVisibility
   correctionsCount: number
   sourceCount: number
   firstSectionTitle: string
@@ -47,6 +50,8 @@ const ACTION_CHIPS = [
 ]
 
 export default function FirstDraftBanner({
+  articleId,
+  initialVisibility,
   correctionsCount,
   sourceCount,
   firstSectionTitle,
@@ -61,6 +66,9 @@ export default function FirstDraftBanner({
   const [showPill, setShowPill] = useState(false)
   const [showAllChips, setShowAllChips] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
+  const [visibility, setVisibility] = useState<ArticleVisibility>(initialVisibility)
+  const [publishState, setPublishState] = useState<'idle' | 'loading' | 'done'>('idle')
+  const [linkCopied, setLinkCopied] = useState(false)
 
   // Slide in after 2.5 seconds
   useEffect(() => {
@@ -98,6 +106,43 @@ export default function FirstDraftBanner({
     setShowPill(false)
     setDismissed(false)
     setTimeout(() => setVisible(true), 50)
+  }
+
+  async function handlePublish() {
+    if (publishState === 'loading' || visibility === 'published') return
+    setPublishState('loading')
+    try {
+      const res = await fetch(`/api/articles/${articleId}/visibility`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visibility: 'published' }),
+      })
+      if (res.ok) {
+        setVisibility('published')
+        setPublishState('done')
+      } else {
+        setPublishState('idle')
+      }
+    } catch {
+      setPublishState('idle')
+    }
+  }
+
+  async function handleShareLinkOnly() {
+    try {
+      const res = await fetch(`/api/articles/${articleId}/visibility`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visibility: 'unlisted' }),
+      })
+      if (res.ok) setVisibility('unlisted')
+    } catch {
+      // best-effort
+    }
+    const shareUrl = `${window.location.origin}/article/${window.location.pathname.split('/').pop()}`
+    try { await navigator.clipboard.writeText(window.location.href) } catch {}
+    setLinkCopied(true)
+    setTimeout(() => setLinkCopied(false), 2000)
   }
 
   const fcCorrections = factCheck?.total_issues ?? correctionsCount
@@ -235,18 +280,45 @@ export default function FirstDraftBanner({
 
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 sm:justify-end">
+            {/* Share link only — always shown */}
             <button
-              onClick={handleShare}
+              onClick={visibility === 'published' ? handleShare : handleShareLinkOnly}
               className="w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-medium transition-colors text-center"
               style={{
                 backgroundColor: '#fff',
-                color: shareCopied ? '#059669' : 'var(--text-secondary)',
+                color: linkCopied || shareCopied ? '#059669' : 'var(--text-secondary)',
                 border: '1px solid #E8E3DC',
                 cursor: 'pointer',
               }}
             >
-              {shareCopied ? 'Link copied ✓' : 'Share it'}
+              {linkCopied || shareCopied ? 'Link copied ✓' : 'Share link'}
             </button>
+
+            {/* Publish — only shown when not yet published */}
+            {visibility !== 'published' && (
+              <button
+                onClick={handlePublish}
+                disabled={publishState === 'loading'}
+                className="w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-semibold transition-colors text-center"
+                style={{
+                  backgroundColor: publishState === 'done' ? '#059669' : '#1A1714',
+                  color: '#fff',
+                  cursor: publishState === 'loading' ? 'wait' : 'pointer',
+                  opacity: publishState === 'loading' ? 0.7 : 1,
+                }}
+              >
+                {publishState === 'loading' ? 'Publishing…' : publishState === 'done' ? 'Published ✓' : 'Publish →'}
+              </button>
+            )}
+            {visibility === 'published' && (
+              <span
+                className="w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-semibold text-center"
+                style={{ backgroundColor: '#ecfdf5', color: '#059669', border: '1px solid #bbf7d0' }}
+              >
+                Published ✓
+              </span>
+            )}
+
             <button
               onClick={handleStartEditing}
               className="w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-semibold transition-colors text-center"
@@ -260,9 +332,13 @@ export default function FirstDraftBanner({
             </button>
           </div>
 
-          {/* Muted text below buttons */}
+          {/* Muted status text below buttons */}
           <p className="text-[10px] text-center sm:text-right mt-2" style={{ color: 'var(--text-secondary)' }}>
-            Your article is live — share the link whenever you&apos;re ready
+            {visibility === 'published'
+              ? 'Published — visible on the homepage'
+              : visibility === 'unlisted'
+              ? 'Shared via link — not listed on the homepage'
+              : 'Not published yet — only you can see this article'}
           </p>
 
           {/* Fact-check bar — inside the banner, below buttons */}

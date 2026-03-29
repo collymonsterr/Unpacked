@@ -23,6 +23,7 @@ async function getLinkableArticles(excludeSlug: string): Promise<LinkableArticle
       .from('articles')
       .select('slug, article')
       .in('status', ['complete', 'verified'])
+      .eq('visibility', 'published')
       .order('view_count', { ascending: false })
       .limit(50)
     cachedLinkArticles = (data ?? []).map(r => ({
@@ -72,6 +73,24 @@ export default async function ArticlePage({ params }: Props) {
   const row = await getArticle(slug)
 
   if (!row) notFound()
+
+  // Visibility gate — private articles are only accessible to owner or admin
+  const visibility = row.visibility ?? 'published' // treat legacy null as published
+  if (visibility === 'private') {
+    try {
+      const { createServerSupabase } = await import('@/lib/supabase')
+      const supabase = await createServerSupabase()
+      const { data: { user } } = await supabase.auth.getUser()
+      const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
+      const isAdmin = !!(user?.email && adminEmail && user.email.toLowerCase() === adminEmail.toLowerCase())
+      const isOwner = user && user.id === row.user_id
+      if (!isOwner && !isAdmin) notFound()
+    } catch {
+      notFound()
+    }
+  }
+  // 'unlisted' = accessible to anyone with the URL, not listed publicly — no gate needed
+  // 'published' = fully public — no gate needed
 
   // JSON-LD structured data
   const jsonLdScripts: Record<string, unknown>[] = []

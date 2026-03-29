@@ -213,6 +213,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
               initialHidden={articleRow.hidden_from_homepage ?? false}
               initialFeatured={articleRow.is_featured ?? false}
               initialTrending={articleRow.is_trending ?? false}
+              initialVisibility={articleRow.visibility ?? 'published'}
               onRegenerateImages={handleRegenerateImages}
               onRegenerateArticle={handleRegenerateArticle}
               onCategoryChange={(newType) => {
@@ -458,6 +459,8 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
     {/* First Draft Banner — shown to owner on freshly generated articles */}
     {isNew && isOwner && (
       <FirstDraftBanner
+        articleId={articleRow.id}
+        initialVisibility={articleRow.visibility ?? 'private'}
         correctionsCount={articleRow.fact_check?.total_issues ?? 0}
         sourceCount={(() => {
           const src = article.sections.find(s => s.type === 'sources')

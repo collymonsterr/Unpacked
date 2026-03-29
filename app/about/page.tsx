@@ -35,6 +35,7 @@ async function getFeaturedArticles(): Promise<ArticleRow[]> {
       .from('articles')
       .select('id, slug, article, view_count, status, verified_at, created_at')
       .in('status', ['complete', 'verified'])
+      .eq('visibility', 'published')
       .order('view_count', { ascending: false })
       .limit(6)
     return (data ?? []) as ArticleRow[]
@@ -262,9 +263,19 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* ═══ 7. FEATURED ARTICLES ═══ */}
+      {/* ═══ 7. FINAL CTA ═══ */}
+      <section className="max-w-[600px] mx-auto px-4 py-20 text-center">
+        <h2 className="text-3xl md:text-4xl font-extrabold mb-4" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
+          Your question.<br />The best answer on the internet.<br /><span style={{ color: '#BA7517' }}>Three minutes.</span>
+        </h2>
+        <p className="text-base mb-8" style={{ color: '#6B6B6B' }}>No credit card. No setup. Just type a question.</p>
+        <SearchForm autoFocus={false} />
+        <p className="text-sm mt-4" style={{ color: '#9E948A' }}>Give it a try now — it takes three minutes.</p>
+      </section>
+
+      {/* ═══ 8. FEATURED ARTICLES ═══ */}
       {featuredArticles.length > 0 && (
-        <section className="max-w-[1060px] mx-auto px-4 md:px-6 py-20">
+        <section className="max-w-[1060px] mx-auto px-4 md:px-6 pb-20">
           <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-center" style={{ color: '#BA7517', letterSpacing: '0.1em' }}>From the platform</p>
           <h2 className="text-2xl md:text-3xl font-bold mb-10 text-center" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>See what others have built.</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -294,16 +305,6 @@ export default async function AboutPage() {
           </div>
         </section>
       )}
-
-      {/* ═══ 8. FINAL CTA ═══ */}
-      <section className="max-w-[600px] mx-auto px-4 py-20 text-center">
-        <h2 className="text-3xl md:text-4xl font-extrabold mb-4" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
-          Your question.<br />The best answer on the internet.<br /><span style={{ color: '#BA7517' }}>Three minutes.</span>
-        </h2>
-        <p className="text-base mb-8" style={{ color: '#6B6B6B' }}>No credit card. No setup. Just type a question.</p>
-        <SearchForm autoFocus={false} />
-        <p className="text-sm mt-4" style={{ color: '#9E948A' }}>Give it a try now — it takes three minutes.</p>
-      </section>
 
       {/* Footer */}
       <footer className="py-8 text-center text-xs" style={{ color: '#94918D', borderTop: '1px solid #E8E2D9' }}>
