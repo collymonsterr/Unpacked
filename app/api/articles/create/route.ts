@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user is authenticated and load their preferences
     let userId: string | undefined
+    let userEmail: string | undefined
     let userName: string | undefined
     let userAvatar: string | undefined
     try {
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         userId = user.id
+        userEmail = user.email ?? undefined
         userName = user.user_metadata?.full_name ?? undefined
         userAvatar = user.user_metadata?.avatar_url ?? undefined
 
@@ -87,8 +89,13 @@ export async function POST(request: NextRequest) {
         query: trimmedQuery,
         status: 'planning',
         generation_options: generationOptions,
-        // Logged-out users get 'unlisted' — there's no account to log in to manage a private article
-        visibility: userId ? 'private' : 'unlisted',
+        // Admin articles publish immediately; logged-in users start private; logged-out get unlisted
+        visibility: (() => {
+          if (!userId) return 'unlisted'
+          const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
+          if (adminEmail && userEmail && userEmail.toLowerCase() === adminEmail.toLowerCase()) return 'published'
+          return 'private'
+        })(),
         ...(userId ? { user_id: userId, user_name: userName, user_avatar: userAvatar } : {}),
       })
       .select('id, slug')

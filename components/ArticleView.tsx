@@ -198,7 +198,19 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
       {/* Header */}
       <div className="mb-6 relative">
         <div className="flex items-start justify-between mb-3">
-          <div /> {/* Spacer */}
+          {/* Visibility badge — shown to owner when article is not published */}
+          {isOwner && articleRow.visibility && articleRow.visibility !== 'published' ? (
+            <span
+              className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
+              style={{
+                backgroundColor: articleRow.visibility === 'unlisted' ? '#eff6ff' : '#f5f5f4',
+                color: articleRow.visibility === 'unlisted' ? '#2563eb' : '#78716c',
+                border: `1px solid ${articleRow.visibility === 'unlisted' ? '#bfdbfe' : '#e7e5e4'}`,
+              }}
+            >
+              {articleRow.visibility === 'unlisted' ? '🔗 Unlisted' : '🔒 Private'}
+            </span>
+          ) : <div />}
 
           {/* Admin menu — small gear icon */}
           {isOwner && (
