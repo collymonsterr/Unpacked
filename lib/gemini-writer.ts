@@ -283,7 +283,7 @@ ${optionsPrompt}`
             contents: [{ parts: [{ text: systemPrompt + '\n\n' + userMessage }] }],
             generationConfig: {
               temperature: 0.3,
-              maxOutputTokens: 8192,
+              maxOutputTokens: 65536,
             },
           }),
         })
@@ -447,7 +447,7 @@ Apply the refinement and return the full updated article JSON. Also include a "s
             contents: [{ parts: [{ text: systemPrompt + '\n\n' + userMessage }] }],
             generationConfig: {
               temperature: 0.3,
-              maxOutputTokens: 8192,
+              maxOutputTokens: 65536,
             },
           }),
         })
