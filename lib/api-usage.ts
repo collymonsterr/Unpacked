@@ -42,6 +42,7 @@ export function logApiCall(params: {
   inputTokens?: number
   outputTokens?: number
   articleId?: string
+  errorMessage?: string
 }): void {
   try {
     const db = getSupabaseAdmin()
@@ -52,6 +53,7 @@ export function logApiCall(params: {
         input_tokens: params.inputTokens ?? null,
         output_tokens: params.outputTokens ?? null,
         article_id: params.articleId ?? null,
+        error_message: params.errorMessage ?? null,
       })
       .then(({ error }) => {
         if (error) console.error('[api-usage] Log failed:', error.message)

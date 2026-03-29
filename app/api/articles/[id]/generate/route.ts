@@ -161,8 +161,9 @@ export async function POST(
           rawArticle = await writeWithGemini(row.query, row.plan, researchWithLinks, optionsPrompt, id)
         } catch (geminiErr) {
           // Fallback to Sonnet if Gemini fails
-          console.log('[fallback] Gemini Flash failed — falling back to Sonnet:', (geminiErr as Error).message)
-          rawArticle = await writeWithSonnet(row.query, row.plan, researchWithLinks, storedOptions, id)
+          const geminiErrMsg = (geminiErr as Error).message
+          console.log('[fallback] Gemini Flash failed — falling back to Sonnet:', geminiErrMsg)
+          rawArticle = await writeWithSonnet(row.query, row.plan, researchWithLinks, storedOptions, id, geminiErrMsg)
         }
       }
 

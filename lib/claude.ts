@@ -702,6 +702,7 @@ export async function writeWithSonnet(
   research: string,
   options?: GenOptions,
   articleId?: string,
+  fallbackReason?: string,
 ): Promise<ArticleContent> {
   if (articleId && isDuplicateCall(articleId, 'write')) {
     throw new Error('Duplicate writing call blocked')
@@ -744,6 +745,7 @@ ${optionsPrompt}`,
       inputTokens: message.usage?.input_tokens,
       outputTokens: message.usage?.output_tokens,
       articleId,
+      errorMessage: fallbackReason,
     })
 
     const textBlocks = message.content.filter((b) => b.type === 'text')

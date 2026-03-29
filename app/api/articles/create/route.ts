@@ -156,8 +156,9 @@ export async function POST(request: NextRequest) {
             const optsPrompt = optsParts.length > 0 ? '\n\nPREFERENCES:\n' + optsParts.join('\n') : ''
             rawArticle = await writeWithGemini(trimmedQuery, plan, research.summary, optsPrompt, data.id)
           } catch (geminiErr) {
-            console.log('[fallback] Gemini failed — falling back to Sonnet:', (geminiErr as Error).message)
-            rawArticle = await writeWithSonnet(trimmedQuery, plan, research.summary, generationOptions, data.id)
+            const geminiErrMsg = (geminiErr as Error).message
+            console.log('[fallback] Gemini failed — falling back to Sonnet:', geminiErrMsg)
+            rawArticle = await writeWithSonnet(trimmedQuery, plan, research.summary, generationOptions, data.id, geminiErrMsg)
           }
         }
 
