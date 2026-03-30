@@ -180,6 +180,9 @@ export default function AdminDashboard() {
         )}
 
         {/* Tab: Articles */}
+        {activeTab === 'articles' && !loading && (
+          <BackfillChipsButton articles={articles} />
+        )}
         {activeTab === 'articles' && (loading ? (
           <div className="flex justify-center py-20">
             <div
@@ -198,6 +201,49 @@ export default function AdminDashboard() {
           </>
         ))}
       </main>
+    </div>
+  )
+}
+
+function BackfillChipsButton({ articles }: { articles: ArticleRow[] }) {
+  const [status, setStatus] = useState<'idle' | 'running' | 'done'>('idle')
+  const [result, setResult] = useState<string | null>(null)
+
+  const missing = articles.filter(a => !(a as unknown as Record<string, unknown>).suggestion_chips)
+  if (missing.length === 0) return null
+
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      <button
+        onClick={async () => {
+          setStatus('running')
+          setResult(null)
+          try {
+            const res = await fetch('/api/admin/backfill-chips', { method: 'POST' })
+            const data = await res.json()
+            setResult(data.message ?? `Updated ${data.updated}, skipped ${data.skipped}`)
+          } catch {
+            setResult('Backfill failed — check server logs')
+          } finally {
+            setStatus('idle')
+          }
+        }}
+        disabled={status === 'running'}
+        className="px-4 py-2 rounded-lg text-xs font-semibold disabled:opacity-50"
+        style={{ backgroundColor: 'var(--accent)', color: '#fff', cursor: status === 'running' ? 'not-allowed' : 'pointer' }}
+      >
+        {status === 'running' ? (
+          <span className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin inline-block" />
+            Generating chips...
+          </span>
+        ) : (
+          `Backfill suggestion chips (${missing.length} missing)`
+        )}
+      </button>
+      {result && (
+        <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{result}</span>
+      )}
     </div>
   )
 }

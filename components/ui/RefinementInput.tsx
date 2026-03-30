@@ -77,43 +77,56 @@ export default function RefinementInput({ onSubmit, isLoading, externalValue, on
           className="flex items-center justify-between px-4 py-2.5"
           style={{ borderTop: '1px solid var(--border)' }}
         >
-          <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-            Refine this article or start a new one
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={isLoading || !value.trim()}
-              onClick={() => {
-                const trimmed = value.trim()
-                if (!trimmed) return
-                // Navigate to homepage with the query pre-filled
-                window.location.href = `/?q=${encodeURIComponent(trimmed)}`
-              }}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity disabled:opacity-30"
-              style={{
-                backgroundColor: 'transparent',
-                color: 'var(--text-secondary)',
-                border: '1px solid var(--border)',
-                cursor: isLoading || !value.trim() ? 'not-allowed' : 'pointer',
-              }}
-            >
-              New article
-            </button>
-            <button
-              type="button"
-              onClick={handleRefine}
-              disabled={isLoading || !value.trim()}
-              className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-opacity disabled:opacity-30"
-              style={{
-                backgroundColor: 'var(--accent)',
-                color: '#fff',
-                cursor: isLoading || !value.trim() ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {isLoading ? 'Updating...' : 'Refine'}
-            </button>
-          </div>
+          {isLoading ? (
+            <div className="flex items-center gap-2.5 w-full">
+              <div
+                className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent animate-spin shrink-0"
+                style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
+              />
+              <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                Refining your article — this takes 20–40 seconds...
+              </span>
+            </div>
+          ) : (
+            <>
+              <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                Refine this article or start a new one
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!value.trim()}
+                  onClick={() => {
+                    const trimmed = value.trim()
+                    if (!trimmed) return
+                    window.location.href = `/?q=${encodeURIComponent(trimmed)}`
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity disabled:opacity-30"
+                  style={{
+                    backgroundColor: 'transparent',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid var(--border)',
+                    cursor: !value.trim() ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  New article
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRefine}
+                  disabled={!value.trim()}
+                  className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-opacity disabled:opacity-30"
+                  style={{
+                    backgroundColor: 'var(--accent)',
+                    color: '#fff',
+                    cursor: !value.trim() ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  Refine
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

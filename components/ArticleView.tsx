@@ -14,7 +14,7 @@ import RefinementInput from './ui/RefinementInput'
 import ShareButton from './ui/ShareButton'
 import BookmarkButton from './ui/BookmarkButton'
 import RelatedArticles from './RelatedArticles'
-import ArticleFeedback from './ui/ArticleFeedback'
+import ArticleVoting from './ui/ArticleVoting'
 import FactCheckBar, { FactCheckBadge } from './ui/FactCheckBar'
 import FirstDraftBanner from './FirstDraftBanner'
 import MenuItem from './article/MenuItem'
@@ -24,6 +24,7 @@ import AdminMenu from './article/AdminMenu'
 import { buildNavItems } from '@/lib/section-ids'
 import { getReadingTime } from '@/lib/reading-time'
 import { useUser } from '@/hooks/useUser'
+import SignInNudge from './ui/SignInNudge'
 
 interface Props {
   articleRow: ArticleRow
@@ -41,6 +42,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
   const [chips, setChips] = useState(articleRow.suggestion_chips)
   const [isRefining, setIsRefining] = useState(false)
   const [refineError, setRefineError] = useState<string | null>(null)
+  const [refineSuccess, setRefineSuccess] = useState(false)
   const [isRegeneratingImages, setIsRegeneratingImages] = useState(false)
   const [isRegeneratingArticle, setIsRegeneratingArticle] = useState(false)
   const [toolbarBusy, setToolbarBusy] = useState<string | null>(null)
@@ -127,9 +129,10 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
 
       const data = await res.json()
 
-      // If the refine created a new child article, redirect to it
+      // If the refine created a new child article, show success then redirect
       if (data.newSlug) {
-        router.push(`/article/${data.newSlug}`)
+        setRefineSuccess(true)
+        setTimeout(() => router.push(`/article/${data.newSlug}`), 1800)
         return
       }
 
@@ -371,28 +374,41 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
 
       {/* ─── Bottom sections (hidden in print) ─── */}
 
-      {/* 1. Feedback row — centred */}
-      <div className="mt-10 mb-8" data-no-print>
-        <ArticleFeedback articleId={articleRow.id} />
-      </div>
+      {/* Voting — helpfulness + verdict conviction */}
+      <ArticleVoting
+        articleId={articleRow.id}
+        hasVerdict={!!article.quick_verdict?.one_liner}
+      />
 
       <div style={{ borderTop: '1px solid var(--border)' }} />
 
-      {/* 2. Chat-style refine input */}
+      {/* 2. Chat-style refine input + suggestion chips */}
       <div className="mt-8" data-no-print ref={refineContainerRef}>
-        {refineError && (
-          <p className="text-sm text-red-600 mb-3">{refineError}</p>
+        {user ? (
+          <>
+            {refineSuccess && (
+              <p className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: '#16a34a' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Done! Opening your refined article...
+              </p>
+            )}
+            {refineError && (
+              <p className="text-sm text-red-600 mb-3">{refineError}</p>
+            )}
+            <RefinementInput
+              onSubmit={handleRefine}
+              isLoading={isRefining}
+              externalValue={refineValue}
+              onExternalValueChange={setRefineValue}
+            />
+          </>
+        ) : (
+          <SignInNudge user={user} articleId={articleRow.id} />
         )}
-        <RefinementInput
-          onSubmit={handleRefine}
-          isLoading={isRefining}
-          externalValue={refineValue}
-          onExternalValueChange={setRefineValue}
-        />
       </div>
 
-      {/* 3. Two-column: Refinements + Related topics */}
-      {chips && (chips.refinements.length > 0 || chips.related.length > 0) && (
+      {/* 3. Two-column: Refinements + Related topics — logged-in only */}
+      {user && chips && (chips.refinements.length > 0 || chips.related.length > 0) && (
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8" data-no-print>
           {/* Left: Suggested Refinements */}
           <div>
