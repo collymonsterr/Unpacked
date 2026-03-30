@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import type { ArticleRow, ProductCard } from '@/types/article'
 import type { LinkableArticle } from '@/lib/internal-links'
-import { generateArticleJsonLd, generateProductJsonLd, generateBreadcrumbJsonLd } from '@/lib/structured-data'
+import { generateArticleJsonLd, generateProductJsonLd, generateBreadcrumbJsonLd, generateClaimReviewJsonLd, generateVerdictReviewJsonLd } from '@/lib/structured-data'
 import ArticlePageClient from './ArticlePageClient'
 
 // Cache internal links data (1 hour) — avoids DB call on every page load
@@ -95,7 +95,10 @@ export default async function ArticlePage({ params }: Props) {
   // JSON-LD structured data
   const jsonLdScripts: Record<string, unknown>[] = []
   if (row.article) {
-    jsonLdScripts.push(generateArticleJsonLd(row.article, row.slug, row.created_at, row.updated_at))
+    jsonLdScripts.push(generateArticleJsonLd(row.article, row.slug, row.created_at, row.updated_at, {
+      authorName: row.user_name,
+      verifiedAt: row.verified_at,
+    }))
     jsonLdScripts.push(generateBreadcrumbJsonLd(row.article.title, row.slug))
 
     // Add product schema for the top pick
@@ -104,6 +107,19 @@ export default async function ArticlePage({ params }: Props) {
     )
     if (topProduct) {
       jsonLdScripts.push(generateProductJsonLd(topProduct, row.article.title, row.slug))
+    }
+
+    // Add ClaimReview schema for each fact-check correction
+    if (row.fact_check?.issues_found && row.fact_check.issues.length > 0) {
+      const canonicalUrl = `https://unpacked.fyi/article/${row.slug}`
+      const claimReviews = generateClaimReviewJsonLd(row.fact_check, canonicalUrl)
+      jsonLdScripts.push(...claimReviews)
+    }
+
+    // Add Review schema from the editorial verdict
+    const verdictReview = generateVerdictReviewJsonLd(row.article, row.slug)
+    if (verdictReview) {
+      jsonLdScripts.push(verdictReview)
     }
   }
 

@@ -59,6 +59,14 @@ function extractPrices(text: string): string[] {
   return [...new Set(matches)]
 }
 
+// Remove characters that would break JSON string parsing if Gemini copies
+// research text verbatim into a JSON field without escaping.
+// Double quotes are the primary cause — they terminate string literals early.
+// Backslashes are secondary — a lone \ before a non-escape char is also invalid JSON.
+function sanitizeSnippet(text: string): string {
+  return text.replace(/"/g, "'").replace(/\\/g, '/')
+}
+
 function generateSearchQueries(
   query: string,
   entities: { name: string }[],
@@ -133,7 +141,7 @@ function compileResearch(
           // Extract specs/features from snippet
           if (r.snippet.length > 50) {
             const specs = specMap.get(entity.name) ?? []
-            specs.push(r.snippet.slice(0, 200))
+            specs.push(sanitizeSnippet(r.snippet.slice(0, 200)))
             specMap.set(entity.name, specs)
           }
         }
@@ -143,12 +151,12 @@ function compileResearch(
       if (isReddit || isTwitter) {
         if (r.snippet.length > 30) {
           const source = isReddit ? 'Reddit' : 'Twitter/X'
-          communityInsights.push(`${source}: ${r.snippet.slice(0, 200)}`)
+          communityInsights.push(`${source}: ${sanitizeSnippet(r.snippet.slice(0, 200))}`)
         }
       } else {
         // General topic facts
         if (r.snippet.length > 40) {
-          topicFacts.push(r.snippet.slice(0, 200))
+          topicFacts.push(sanitizeSnippet(r.snippet.slice(0, 200)))
         }
       }
     }
@@ -235,7 +243,7 @@ function compileResearch(
   if (redditThreads.length > 0) {
     parts.push('REDDIT THREADS:')
     for (const t of redditThreads) {
-      parts.push(`- [${t.subreddit}] ${t.title} — ${t.url}`)
+      parts.push(`- [${t.subreddit}] ${sanitizeSnippet(t.title)} — ${t.url}`)
     }
     parts.push('')
   }
@@ -243,7 +251,7 @@ function compileResearch(
   // Sources
   parts.push('SOURCES:')
   for (const s of sources.slice(0, 15)) {
-    parts.push(`- ${s.title} — ${s.url}`)
+    parts.push(`- ${sanitizeSnippet(s.title)} — ${s.url}`)
   }
 
   const summary = parts.join('\n')
