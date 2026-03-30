@@ -16,25 +16,20 @@ export default function SignInNudge({ user, articleId, onSignedIn, overlay = fal
   const [dismissed, setDismissed] = useState(false)
   const [signingIn, setSigningIn] = useState(false)
   const [welcomeName, setWelcomeName] = useState<string | null>(null)
-  const [shouldShow, setShouldShow] = useState(false)
+  // Overlay mode: start visible immediately (no flash of article before blur kicks in).
+  // Inline mode: start hidden and reveal after checking localStorage (SSR-safe).
+  const [shouldShow, setShouldShow] = useState(() => overlay && !user)
 
-  // Check if we should show at all
+  // Inline mode: check localStorage after mount
   useEffect(() => {
-    if (user) return // Already signed in
+    if (overlay) return // Already initialised above
+    if (user) return
     if (typeof window === 'undefined') return
-
-    // Overlay mode always shows (no localStorage gate)
-    if (overlay) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: SSR-safe way to read localStorage
-      setShouldShow(true)
-      return
-    }
-
     try {
       const dismissCount = parseInt(localStorage.getItem('signin_nudge_dismissed') ?? '0', 10)
-      if (dismissCount >= 3) return // They've said no 3 times
+      if (dismissCount >= 3) return
     } catch {}
-
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: SSR-safe localStorage read
     setShouldShow(true)
   }, [user, overlay])
 
@@ -151,6 +146,7 @@ export default function SignInNudge({ user, articleId, onSignedIn, overlay = fal
         <div
           className="generation-fade-in"
           style={{
+            position: 'relative',
             backgroundColor: '#fff',
             borderRadius: '20px',
             padding: '40px 36px',
@@ -160,6 +156,26 @@ export default function SignInNudge({ user, articleId, onSignedIn, overlay = fal
             boxShadow: '0 24px 60px rgba(0,0,0,0.25)',
           }}
         >
+          {/* Tiny dismiss X — top-right, subtle */}
+          <button
+            onClick={handleDismiss}
+            aria-label="Dismiss"
+            style={{
+              position: 'absolute',
+              top: 14,
+              right: 16,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: '#aaa',
+              padding: 4,
+              lineHeight: 1,
+              fontSize: 18,
+            }}
+          >
+            ×
+          </button>
+
           {/* Unpacked wordmark */}
           <p
             className="text-lg font-bold mb-6"
@@ -181,7 +197,7 @@ export default function SignInNudge({ user, articleId, onSignedIn, overlay = fal
           <button
             onClick={handleSignIn}
             disabled={signingIn}
-            className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-60 mb-4"
+            className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-60"
             style={{ backgroundColor: 'var(--accent)', color: '#fff', fontFamily: 'var(--font-sora)' }}
           >
             {signingIn ? (
@@ -200,14 +216,6 @@ export default function SignInNudge({ user, articleId, onSignedIn, overlay = fal
                 Sign in with Google
               </>
             )}
-          </button>
-
-          <button
-            onClick={handleDismiss}
-            className="text-xs"
-            style={{ color: 'var(--text-secondary)', opacity: 0.6 }}
-          >
-            Continue without signing in
           </button>
         </div>
       </div>
