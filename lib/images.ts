@@ -255,92 +255,29 @@ Search query:`,
   }
 }
 
-export async function fetchThumbnailImage(
-  title: string,
-  articleType: ArticleType,
-  excludeUrls?: string[],
-  heroImageQuery?: string,
-  summary?: string,
-  articleId?: string
-): Promise<string | null> {
-  const apiKey = process.env.BRAVE_SEARCH_API_KEY
-  if (!apiKey) return null
-
-  // Use stored hero query if available, otherwise generate one with Haiku
-  const baseQuery = heroImageQuery || await generateHeroQuery(title, summary ?? '', articleId)
-  const isReplacing = excludeUrls && excludeUrls.length > 0
-
-  // Neutral suffixes for variety on repeat searches — no Unsplash prefix
-  const suffixes = [
-    '',
-    'photo',
-    'editorial',
-    'photography',
-    'image',
-    'press photo',
-    'high resolution',
-    'closeup',
-  ]
-
-  const angleIndex = isReplacing ? (excludeUrls?.length ?? 0) % suffixes.length : 0
-  const suffix = suffixes[angleIndex]
-  const query = suffix ? `${baseQuery} ${suffix}` : baseQuery
-  console.log('[thumbnail] Search query:', query, `(angle ${angleIndex}, AI query: ${!!heroImageQuery})`)
-
-  const excludeSet = new Set(excludeUrls ?? [])
-
-  try {
-    const url = new URL('https://api.search.brave.com/res/v1/images/search')
-    url.searchParams.set('q', query)
-    url.searchParams.set('count', '20') // Fetch more to have options after filtering
-    url.searchParams.set('safesearch', 'strict')
-
-    const res = await fetch(url.toString(), {
-      headers: {
-        'Accept': 'application/json',
-        'X-Subscription-Token': apiKey,
-      },
-    })
-    if (!res.ok) return null
-
-    const data = await res.json()
-    const results: BraveImageResult[] = data.results ?? []
-
-    // Filter, rank, and exclude already-seen URLs
-    const filtered = filterAndRankImageUrls(results)
-      .filter((u) => !excludeSet.has(u))
-
-    return filtered[0] ?? null
-  } catch {
-    return null
-  }
-}
-
 /**
- * Fetch multiple thumbnail image candidates in a single Brave search.
- * Returns up to `count` URLs after filtering and excluding seen URLs.
+ * Shared hero image search helper.
+ * Resolves the search query (from heroImageQuery or Haiku), calls Brave Images,
+ * filters and ranks the results, and excludes already-seen URLs.
  */
-export async function fetchMultipleThumbnailImages(
+async function resolveHeroImageUrls(
   title: string,
-  articleType: ArticleType,
   excludeUrls?: string[],
   heroImageQuery?: string,
-  count: number = 4,
   summary?: string,
-  articleId?: string
+  articleId?: string,
 ): Promise<string[]> {
   const apiKey = process.env.BRAVE_SEARCH_API_KEY
   if (!apiKey) return []
 
-  // Use stored hero query if available, otherwise generate one with Haiku
   const baseQuery = heroImageQuery || await generateHeroQuery(title, summary ?? '', articleId)
   const isReplacing = excludeUrls && excludeUrls.length > 0
 
+  // Neutral suffixes for variety on repeat searches
   const suffixes = ['', 'photo', 'editorial', 'photography', 'image', 'press photo', 'high resolution', 'closeup']
   const angleIndex = isReplacing ? (excludeUrls?.length ?? 0) % suffixes.length : 0
   const suffix = suffixes[angleIndex]
   const query = suffix ? `${baseQuery} ${suffix}` : baseQuery
-  console.log('[thumbnail-multi] Search query:', query, `(count: ${count}, excluded: ${excludeUrls?.length ?? 0})`)
 
   const excludeSet = new Set(excludeUrls ?? [])
 
@@ -360,14 +297,42 @@ export async function fetchMultipleThumbnailImages(
 
     const data = await res.json()
     const results: BraveImageResult[] = data.results ?? []
-
-    const filtered = filterAndRankImageUrls(results)
-      .filter((u) => !excludeSet.has(u))
-
-    return filtered.slice(0, count)
+    return filterAndRankImageUrls(results).filter((u) => !excludeSet.has(u))
   } catch {
     return []
   }
+}
+
+export async function fetchThumbnailImage(
+  title: string,
+  articleType: ArticleType,
+  excludeUrls?: string[],
+  heroImageQuery?: string,
+  summary?: string,
+  articleId?: string
+): Promise<string | null> {
+  const urls = await resolveHeroImageUrls(title, excludeUrls, heroImageQuery, summary, articleId)
+  const query = heroImageQuery || '(generated)'
+  console.log('[thumbnail] Search query:', query, `(angle ${excludeUrls?.length ?? 0}, AI query: ${!!heroImageQuery})`)
+  return urls[0] ?? null
+}
+
+/**
+ * Fetch multiple thumbnail image candidates in a single Brave search.
+ * Returns up to `count` URLs after filtering and excluding seen URLs.
+ */
+export async function fetchMultipleThumbnailImages(
+  title: string,
+  articleType: ArticleType,
+  excludeUrls?: string[],
+  heroImageQuery?: string,
+  count: number = 4,
+  summary?: string,
+  articleId?: string
+): Promise<string[]> {
+  const urls = await resolveHeroImageUrls(title, excludeUrls, heroImageQuery, summary, articleId)
+  console.log('[thumbnail-multi] Search query:', heroImageQuery || '(generated)', `(count: ${count}, excluded: ${excludeUrls?.length ?? 0})`)
+  return urls.slice(0, count)
 }
 
 /**

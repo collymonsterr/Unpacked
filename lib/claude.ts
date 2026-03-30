@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import type { ArticlePlan, ArticleContent, ArticleType } from '@/types/article'
 import { VISUAL_DEFAULTS } from '@/lib/article-config'
 import { isDuplicateCall, logApiCall } from '@/lib/api-usage'
+import { extractJSON } from '@/lib/utils/extract-json'
 
 // Lazy-init so the env var is always available at call time (not module-load time)
 let _anthropic: Anthropic | null = null
@@ -555,17 +556,6 @@ IMPORTANT:
 - Minimum 2 visualisations per article.
 - Return ONLY valid JSON.`
 
-function extractJSON(text: string): string {
-  // Strip markdown fences if present
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/)
-  if (fenced) return fenced[1].trim()
-  // Find first { ... } block
-  const start = text.indexOf('{')
-  const end = text.lastIndexOf('}')
-  if (start !== -1 && end !== -1) return text.slice(start, end + 1)
-  return text.trim()
-}
-
 interface GenOptions {
   length?: 'quick' | 'standard' | 'deep'
   tone?: 'opinionated' | 'balanced' | 'casual'
@@ -575,7 +565,7 @@ interface GenOptions {
   language?: string
 }
 
-function buildOptionsPrompt(options: GenOptions): string {
+export function buildOptionsPrompt(options: GenOptions): string {
   const parts: string[] = []
 
   // Length
@@ -781,12 +771,6 @@ ${optionsPrompt}`,
   }
 
   throw lastError ?? new Error('Failed to parse article JSON after retries')
-}
-
-// Keep old writeArticle as alias for backward compat (now uses Sonnet + Brave, no web search)
-export async function writeArticle(query: string, plan: ArticlePlan, options?: GenOptions, articleId?: string): Promise<ArticleContent> {
-  // This function is now only called as a fallback — the generate route uses writeWithGemini or writeWithSonnet directly
-  return writeWithSonnet(query, plan, '(No pre-research available — use your knowledge carefully)', options, articleId)
 }
 
 /**

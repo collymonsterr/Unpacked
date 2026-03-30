@@ -65,10 +65,9 @@ export default function FirstDraftBanner({
   const [dismissed, setDismissed] = useState(false)
   const [showPill, setShowPill] = useState(false)
   const [showAllChips, setShowAllChips] = useState(false)
-  const [shareCopied, setShareCopied] = useState(false)
+  const [copied, setCopied] = useState(false)
   const [visibility, setVisibility] = useState<ArticleVisibility>(initialVisibility)
   const [publishState, setPublishState] = useState<'idle' | 'loading' | 'done'>('idle')
-  const [linkCopied, setLinkCopied] = useState(false)
 
   // Slide in after 2.5 seconds
   useEffect(() => {
@@ -98,8 +97,8 @@ export default function FirstDraftBanner({
 
   function handleShare() {
     onShare()
-    setShareCopied(true)
-    setTimeout(() => setShareCopied(false), 2000)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   function handleReopen() {
@@ -141,8 +140,8 @@ export default function FirstDraftBanner({
     }
     const shareUrl = `${window.location.origin}/article/${window.location.pathname.split('/').pop()}`
     try { await navigator.clipboard.writeText(window.location.href) } catch {}
-    setLinkCopied(true)
-    setTimeout(() => setLinkCopied(false), 2000)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   const fcCorrections = factCheck?.total_issues ?? correctionsCount
@@ -286,12 +285,12 @@ export default function FirstDraftBanner({
               className="w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-medium transition-colors text-center"
               style={{
                 backgroundColor: '#fff',
-                color: linkCopied || shareCopied ? '#059669' : 'var(--text-secondary)',
+                color: copied ? '#059669' : 'var(--text-secondary)',
                 border: '1px solid #E8E3DC',
                 cursor: 'pointer',
               }}
             >
-              {linkCopied || shareCopied ? 'Link copied ✓' : 'Share link'}
+              {copied ? 'Link copied ✓' : 'Share link'}
             </button>
 
             {/* Publish — only shown when not yet published */}

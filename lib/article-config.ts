@@ -106,12 +106,12 @@ export const VISUAL_DEFAULTS: Record<ArticleType, VisualStrategy> = {
 
 /** Human-readable labels for each article type */
 export const ARTICLE_TYPE_LABELS: Record<ArticleType, string> = {
-  buyer_guide: 'Buyer Guide',
+  buyer_guide: 'Buying Guide',
   comparison: 'Comparison',
   decision_guide: 'Decision Guide',
   explainer: 'Explainer',
-  news: 'News & Current Events',
-  planning: 'Planning Guide',
-  trend_analysis: 'Trend & Market Analysis',
-  tutorial: 'Tutorial / How-to',
+  news: 'News',
+  planning: 'Travel & Living',
+  trend_analysis: 'Trend Analysis',
+  tutorial: 'Tutorial',
 }

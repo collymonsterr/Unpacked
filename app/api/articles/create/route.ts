@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { after } from 'next/server'
-import { planArticle, writeWithSonnet } from '@/lib/claude'
+import { planArticle, writeWithSonnet, buildOptionsPrompt } from '@/lib/claude'
 import { writeWithGemini } from '@/lib/gemini-writer'
 import { runBraveResearch } from '@/lib/brave-research'
 import { enrichArticleWithImages, fetchThumbnailImage } from '@/lib/images'
@@ -156,13 +156,7 @@ export async function POST(request: NextRequest) {
         } else {
           try {
             console.log('[create] Writing with Gemini Flash')
-            const optsParts: string[] = []
-            if (generationOptions?.length === 'quick') optsParts.push('LENGTH: Concise. 800-1200 words.')
-            if (generationOptions?.tone === 'balanced') optsParts.push('TONE: Balanced.')
-            if (generationOptions?.tone === 'casual') optsParts.push('TONE: Casual.')
-            if (generationOptions?.visual === 'minimal') optsParts.push('VISUALS: Minimal.')
-            if (generationOptions?.visual === 'maximum') optsParts.push('VISUALS: Maximum.')
-            const optsPrompt = optsParts.length > 0 ? '\n\nPREFERENCES:\n' + optsParts.join('\n') : ''
+            const optsPrompt = buildOptionsPrompt(generationOptions)
             rawArticle = await writeWithGemini(trimmedQuery, plan, research.summary, optsPrompt, data.id)
           } catch (geminiErr) {
             const geminiErrMsg = (geminiErr as Error).message

@@ -4,6 +4,8 @@
  * for the writing model (Gemini or Sonnet).
  */
 
+import type { ArticleType } from '@/types/article'
+
 const BRAVE_API = 'https://api.search.brave.com/res/v1/web/search'
 const BRAVE_IMAGE_API = 'https://api.search.brave.com/res/v1/images/search'
 
@@ -70,7 +72,7 @@ function sanitizeSnippet(text: string): string {
 function generateSearchQueries(
   query: string,
   entities: { name: string }[],
-  articleType: string,
+  articleType: ArticleType,
   searchCount: number
 ): string[] {
   const year = new Date().getFullYear()
@@ -88,8 +90,8 @@ function generateSearchQueries(
   // ~10-20% Reddit/forum
   queries.push(`${query} reddit ${year}`)
 
-  // ~10-20% pricing
-  if (['buyer_guide', 'comparison', 'decision_guide'].includes(articleType)) {
+  // ~10-20% pricing (product-focused types)
+  if ((['buyer_guide', 'comparison', 'decision_guide'] as ArticleType[]).includes(articleType)) {
     queries.push(`${query} price comparison ${year}`)
   }
 
@@ -281,7 +283,7 @@ function compileResearch(
 export async function runBraveResearch(
   query: string,
   entities: { name: string }[],
-  articleType: string,
+  articleType: ArticleType,
   length: 'quick' | 'standard' | 'deep' = 'standard',
 ): Promise<ResearchOutput> {
   const searchCounts = { quick: 5, standard: 7, deep: 9 }

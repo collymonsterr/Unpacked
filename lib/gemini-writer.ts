@@ -4,6 +4,7 @@
  */
 
 import type { ArticleContent, ArticlePlan } from '@/types/article'
+import { extractJSON } from '@/lib/utils/extract-json'
 
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
@@ -33,10 +34,6 @@ function releaseSlot(): void {
   }
 }
 
-/**
- * Trimmed writing system prompt — under 2,500 tokens.
- * Imperative, no repetition, JSON schema included.
- */
 /**
  * Log a Gemini fallback event to api_usage_log for persistent tracking.
  */
@@ -170,15 +167,6 @@ For unlisted categories: use 6-8 relevant specs a knowledgeable reviewer would i
 COMMUNITY INSIGHTS WITH REDDIT THREADS:
 If REDDIT THREADS data is provided in the research, include it in the community_insights section as a reddit_threads array with title, url, and subreddit fields. These are real URLs — include them exactly as provided.
 If notable direct quotes appear in the community sentiment research, include up to 2 as a quotes array in community_insights, each with text and source fields. Only include quotes that are genuinely insightful — not generic opinions.`
-}
-
-function extractJSON(text: string): string {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/)
-  if (fenced) return fenced[1].trim()
-  const start = text.indexOf('{')
-  const end = text.lastIndexOf('}')
-  if (start !== -1 && end !== -1) return text.slice(start, end + 1)
-  return text.trim()
 }
 
 interface ValidateResult {
@@ -479,17 +467,11 @@ Apply the refinement and return the full updated article JSON. Also include a "s
 
         lastRawResponse = text.slice(0, 500)
 
-        // Extract JSON
-        const jsonMatch = text.match(/\{[\s\S]*\}/)
-        if (!jsonMatch) {
-          lastError = 'No JSON found in response'
-          console.error(`[gemini-refine] Attempt ${attempt + 1} FAILED — no JSON. First 300 chars: ${text.slice(0, 300)}`)
-          continue
-        }
-
+        // Extract and parse JSON
+        const jsonStr = extractJSON(text)
         let parsed: Record<string, unknown>
         try {
-          parsed = JSON.parse(jsonMatch[0])
+          parsed = JSON.parse(jsonStr)
         } catch (parseErr) {
           lastError = `JSON parse failed: ${(parseErr as Error).message}`
           console.error(`[gemini-refine] Attempt ${attempt + 1} FAILED — JSON parse: ${(parseErr as Error).message}`)

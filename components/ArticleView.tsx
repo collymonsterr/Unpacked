@@ -23,6 +23,7 @@ import HeroImage from './article/HeroImage'
 import AdminMenu from './article/AdminMenu'
 import { buildNavItems } from '@/lib/section-ids'
 import { getReadingTime } from '@/lib/reading-time'
+import { ARTICLE_TYPE_LABELS } from '@/lib/article-config'
 import { useUser } from '@/hooks/useUser'
 import SignInNudge from './ui/SignInNudge'
 
@@ -46,7 +47,6 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
   const [isRegeneratingImages, setIsRegeneratingImages] = useState(false)
   const [isRegeneratingArticle, setIsRegeneratingArticle] = useState(false)
   const [toolbarBusy, setToolbarBusy] = useState<string | null>(null)
-  const [exportState] = useState<'idle' | 'generating' | 'done'>('idle')
   const [refineValue, setRefineValue] = useState('')
   const refineContainerRef = useRef<HTMLDivElement>(null)
   const hasMissingImages = useMemo(() => {
@@ -247,14 +247,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           className="text-sm font-medium uppercase tracking-wide mb-3"
           style={{ color: '#E07A3A' }}
         >
-          {(() => {
-            const labels: Record<string, string> = {
-              buyer_guide: 'Buying Guide', comparison: 'Comparison', decision_guide: 'Decision Guide',
-              explainer: 'Explainer', news: 'News', planning: 'Travel & Living',
-              trend_analysis: 'Trend Analysis', tutorial: 'Tutorial',
-            }
-            return labels[article.article_type] ?? article.article_type.replace(/_/g, ' ')
-          })()}
+          {ARTICLE_TYPE_LABELS[article.article_type] ?? article.article_type.replace(/_/g, ' ')}
         </p>
         <div className="flex items-center gap-3 flex-wrap">
           {articleRow.user_name && (
