@@ -25,6 +25,7 @@ export default function SignInNudge({ user, articleId, onSignedIn, overlay = fal
 
     // Overlay mode always shows (no localStorage gate)
     if (overlay) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: SSR-safe way to read localStorage
       setShouldShow(true)
       return
     }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
+import Link from 'next/link'
 import type { ArticleRow } from '@/types/article'
 import ArticleTypeBadge from './ui/ArticleTypeBadge'
 import SignInNudge from './ui/SignInNudge'
@@ -382,7 +383,7 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
               <div className="mt-4 p-4 rounded-xl" style={{ backgroundColor: 'var(--accent-light)', border: '1px solid #f0d5be' }}>
                 <p className="text-sm font-semibold mb-1" style={{ color: 'var(--accent)' }}>Still working on this one...</p>
                 <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>This is a particularly detailed article and it&apos;s taking a little longer than usual. You can wait here, click Check again to see if it&apos;s ready, or come back in a few minutes.</p>
-                <a href="/" className="text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Go home</a>
+                <Link href="/" className="text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Go home</Link>
               </div>
             )}
           </div>

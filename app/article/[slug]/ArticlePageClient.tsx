@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import Link from 'next/link'
 import type { ArticleRow } from '@/types/article'
 import ArticleGenerating from '@/components/ArticleGenerating'
 import ArticleView from '@/components/ArticleView'
@@ -86,6 +87,7 @@ export default function ArticlePageClient({ initialRow, linkableArticles }: Prop
   }, [showArticle, row.article, initialRow.slug])
 
   const [timedOut, setTimedOut] = useState(false)
+  // eslint-disable-next-line react-hooks/purity -- useRef initial value is set once on mount only
   const pollStartRef = useRef(Date.now())
 
   // Poll while article is not yet verified
@@ -245,20 +247,20 @@ export default function ArticlePageClient({ initialRow, linkableArticles }: Prop
               : 'The generation timed out or hit an error. Start a new search to try again.'}
           </p>
           <div className="flex items-center justify-center gap-3">
-            <a
+            <Link
               href="/"
               className="px-5 py-2.5 rounded-xl text-sm font-semibold no-underline"
               style={{ backgroundColor: 'var(--accent)', color: '#fff', fontFamily: 'var(--font-sora)' }}
             >
               Ask a new question →
-            </a>
-            <a
+            </Link>
+            <Link
               href="/"
               className="px-5 py-2.5 rounded-xl text-sm font-medium no-underline"
               style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)', fontFamily: 'var(--font-sora)' }}
             >
               Go home
-            </a>
+            </Link>
           </div>
         </div>
       ) : showArticle && row.article ? (
