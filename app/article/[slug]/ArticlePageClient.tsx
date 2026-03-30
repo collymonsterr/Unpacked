@@ -12,6 +12,7 @@ import { useAdminMode } from '@/hooks/useAdminMode'
 import { useUser } from '@/hooks/useUser'
 import { addRecentArticle } from '@/lib/recent-articles'
 import { clearPendingArticle } from '@/lib/pending-article'
+import SignInNudge from '@/components/ui/SignInNudge'
 
 interface Props {
   initialRow: ArticleRow
@@ -42,6 +43,7 @@ export default function ArticlePageClient({ initialRow, linkableArticles }: Prop
   const isAdmin = useAdminMode()
   const { user } = useUser()
   const isOwner = isAdmin || (user != null && row.user_id === user.id)
+  const [signInOverlayDismissed, setSignInOverlayDismissed] = useState(false)
 
   const poll = useCallback(async () => {
     try {
@@ -200,6 +202,7 @@ export default function ArticlePageClient({ initialRow, linkableArticles }: Prop
   const showError = row.status === 'error'
   const showGenerating = !showArticle && !showError && isGenerating
   const showSkeleton = !showArticle && !showError && !showGenerating
+  const showSignInOverlay = showArticle && !user && !signInOverlayDismissed
 
   return (
     <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
@@ -259,21 +262,31 @@ export default function ArticlePageClient({ initialRow, linkableArticles }: Prop
           </div>
         </div>
       ) : showArticle && row.article ? (
-        <div
-          style={{
-            opacity: fadeState === 'article' ? 1 : 0,
-            transition: 'opacity 0.4s ease',
-          }}
-        >
-          <ArticleView
-            articleRow={row}
-            isOwner={isOwner}
-            isAdmin={isAdmin}
-            isNew={wasEverGenerating.current}
-            factCheckStatus={factCheckStatus}
-            linkableArticles={linkableArticles}
-          />
-        </div>
+        <>
+          <div
+            style={{
+              opacity: fadeState === 'article' ? 1 : 0,
+              transition: 'opacity 0.4s ease',
+            }}
+          >
+            <ArticleView
+              articleRow={row}
+              isOwner={isOwner}
+              isAdmin={isAdmin}
+              isNew={wasEverGenerating.current}
+              factCheckStatus={factCheckStatus}
+              linkableArticles={linkableArticles}
+            />
+          </div>
+          {showSignInOverlay && (
+            <SignInNudge
+              user={user}
+              articleId={initialRow.id}
+              overlay={true}
+              onDismiss={() => setSignInOverlayDismissed(true)}
+            />
+          )}
+        </>
       ) : showGenerating ? (
         <div
           style={{

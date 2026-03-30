@@ -85,7 +85,7 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
   // Show sign-in nudge ~45s in
   useEffect(() => {
     if (user || !planRevealed) return
-    const timer = setTimeout(() => setShowSignIn(true), 40000)
+    const timer = setTimeout(() => setShowSignIn(true), 20000)
     return () => clearTimeout(timer)
   }, [user, planRevealed])
 
