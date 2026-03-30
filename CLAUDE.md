@@ -1,39 +1,33 @@
-# CLAUDE.md — Project Briefing for Unpacked (unpacked.fyi)
+# CLAUDE.md — Unpacked (unpacked.fyi)
 
-Read this file before doing anything else. It is the single source of truth for this project.
+Read this before doing anything. Technical facts only — for current feature state see BUILD.md, for roadmap see PLAN.md.
 
 ---
 
 ## What This Project Is
 
-A web platform where users type any question and receive a complete, visual, opinionated article in 2–3 minutes. Not a chat response — a full editorial article with product cards, comparison tables, interactive charts, editorial photos, real user opinions pulled from Reddit and forums, and a clear verdict that picks a winner. After generation, a second AI independently fact-checks every price, spec, and claim.
+A web platform where users type any question and receive a complete, visual, opinionated article in 2–3 minutes. Every article picks a winner. After generation, a second AI independently fact-checks every price and claim. Users put their name on articles and will eventually earn affiliate revenue from product recommendations.
 
-The platform has a creator model: users put their name on articles and will eventually earn affiliate revenue from product recommendations. Think Wirecutter meets Substack.
-
-**Current URL:** https://unpacked.fyi (Vercel deployment, domain pending connection)
-**Repository:** GitHub, auto-deploys to Vercel on push
-**Name:** Unpacked (unpacked.fyi). Name change from ArticleAI completed March 25 2026.
+**URL:** https://unpacked.fyi | **Repo:** GitHub → Vercel auto-deploy | **Name:** Unpacked (unpacked.fyi)
 
 ---
 
 ## The Founder
 
-Solo non-developer. Uses Claude Code as the primary development tool. All prompts need to be detailed and explicit — specify exact UI elements, exact behaviour, exact colours and sizes, fallback logic. Vague prompts lead to wrong implementations.
+Solo non-developer using Claude Code as primary dev tool. All prompts must be explicit: exact UI elements, exact behaviour, exact colours and sizes, fallback logic. Vague prompts lead to broken implementations.
 
 ---
 
 ## CRITICAL: Development Workflow
 
-**Use the investigate-plan-approve-code workflow for any significant change.**
+**Use investigate-plan-approve-code for any significant change.**
 
 1. **Investigate** — read and show the current relevant code first
 2. **Plan** — write out exactly what you intend to change and why
-3. **Approve** — wait for the founder to confirm the plan before touching anything
+3. **Approve** — wait for founder confirmation before touching anything
 4. **Code** — only then implement
 
-This workflow exists because Claude Code has made mistakes implementing things incorrectly and breaking existing functionality when diving straight into code. It applies to: anything touching the generation flow, homepage layout, article page structure, or any multi-component change.
-
-Small cosmetic tweaks (copy changes, colour adjustments, single-component fixes) can go direct.
+Applies to: anything touching the generation flow, homepage layout, article page structure, or any multi-component change. Small cosmetic tweaks (copy, colour, single-component) can go direct.
 
 **Never assume something is implemented without verifying it in the code first.**
 
@@ -41,111 +35,104 @@ Small cosmetic tweaks (copy changes, colour adjustments, single-component fixes)
 
 ## Tech Stack
 
-- **Framework:** Next.js (App Router) deployed on Vercel Pro
+- **Framework:** Next.js (App Router), Vercel Pro
 - **Database:** Supabase (PostgreSQL) — https://obyywahmmkrpsimjbdua.supabase.co
-- **Auth:** Google OAuth via Supabase Auth (no email/password login)
+- **Auth:** Google OAuth via Supabase Auth (no email/password)
 - **Storage:** Supabase Storage (bucket: article-images)
-- **CSS:** Tailwind CSS
-- **Charts:** Recharts
+- **CSS:** Tailwind CSS | **Charts:** Recharts
 
 ---
 
 ## AI Pipeline
 
-### Default pipeline (used for most articles)
-1. **Planning:** Claude Haiku — classifies article type, decides structure, produces `forbidden_components`
-2. **Research:** Brave Search API — runs 4–10 searches, extracts structured research summary (~3,000–4,000 tokens). File: `lib/brave-research.ts`
-3. **Writing:** Google Gemini 2.5 Flash — generates full article JSON from research summary. File: `lib/gemini-writer.ts`
-4. **Cost:** ~$0.02–0.03 per article
+### Default (most articles)
+1. **Planning:** Claude Haiku — classifies type, decides structure, produces `forbidden_components`
+2. **Research:** Brave Search API — 4–10 searches, condensed summary (~3,000–4,000 tokens) → `lib/brave-research.ts`
+3. **Writing:** Gemini 2.5 Flash — full article JSON → `lib/gemini-writer.ts`
+4. **Cost:** ~$0.02–0.03/article
 
-### Premium / deep dive pipeline
-- Same planning and Brave research steps
-- Writing uses Claude Sonnet instead of Gemini Flash
-- Sonnet does NOT use the web search tool — research comes from Brave only
-- Also used as automatic fallback if Gemini fails (JSON schema validation with 2 retries before fallback)
-- **Cost:** ~$0.08–0.12 per article
+### Premium / deep dive
+- Same planning + Brave research; writing uses Claude Sonnet (~$0.08–0.12/article)
+- Sonnet does NOT use web search — research comes from Brave only
+- Automatic fallback if Gemini fails (JSON validation, 2 retries before fallback)
 
-### Fact-checking (all articles, runs after delivery)
-- Google Gemini 2.5 Flash with Google Search grounding
-- Runs asynchronously after article is delivered to user
-- Independently verifies prices, specs, statistics, claims
-- Corrections applied automatically
-- User sees: "Fact-checking this article against live sources..." then "Verified — X corrections applied"
-- Deliberate choice to use a different model from the writer to avoid self-reinforcing errors
+### Fact-checking (all articles, async)
+- Gemini 2.5 Flash with Google Search grounding
+- Runs asynchronously after article delivered; independently verifies prices, specs, claims
+- Deliberate different model from writer — prevents self-reinforcing errors
 - API key: GOOGLE_GEMINI_API_KEY
 
-### Hero image generation
-- Primary: Brave image search for real editorial photos
-- GPT Image fallback being removed — replaced with image upload feature (planned)
-- Smart subject extraction via `hero_image_subject` in plan to ensure images match the topic
-- 2×2 grid picker for admin to choose from 4 candidates
+### Hero images
+- Primary: Brave image search for real editorial photos (2×2 picker)
+- Owner can upload custom hero image
+- Haiku-powered query generation via `hero_image_subject` in plan
 
 ---
 
-## Article Classification Engine
+## Article Classification (7 types)
 
-The planning step classifies every query into one of 7 article types before writing begins:
+Comparison, Explainer, Buyer Guide, Decision Guide, Tutorial, News, Trend Analysis
 
-- Comparison, Explainer, Buyer Guide, Decision Guide, Tutorial, News, Trend Analysis
-
-Each type has Required, Allowed, and Forbidden component rules. The `forbidden_components` field in the plan JSON is passed to the writing prompt as a HARD CONSTRAINT. Visuals are conditional based on article type — not included by default.
-
-This was built to stop every article looking like a generic blog post.
+Each type has Required/Allowed/Forbidden component rules. The `forbidden_components` field in the plan JSON is passed to the writing prompt as a HARD CONSTRAINT. Visuals are conditional by type.
 
 ---
 
 ## Database — Key Columns on Articles Table
 
-- `is_featured` boolean — article appears in Featured section
-- `featured_position` integer — controls order; hero article is whichever featured article the localStorage rotation logic selects (no separate is_hero column)
-- `card_summary` text — punchy one-liner generated by Haiku for hero card display, editable in admin
-- `is_trending` boolean — article appears in Trending Today section
-- `trending_set_at` timestamp — when trending flag was set
-- `view_count` integer — used for Most Popular section
-- `hidden_from_homepage` boolean — admin can hide articles
-- `sort_order` integer — manual admin reorder
-- `generation_options` JSONB — stores length, tone, visual density settings
+- `visibility` — private / unlisted / published (default: unlisted for anon, private for logged-in, published for admin)
+- `is_featured`, `featured_position` — Featured section control (no separate is_hero column)
+- `card_summary` — punchy one-liner for hero card, editable in admin
+- `is_trending`, `trending_set_at` — Trending Today section (manual admin toggle)
+- `view_count` — Most Popular section
+- `hidden_from_homepage` — hides from homepage grid; article still accessible via URL
+- `sort_order` — manual admin reorder
+- `generation_options` JSONB — length, tone, visual density settings
 - `forbidden_components` — in plan JSON, passed to writing prompt
-- `fact_check` JSONB — fact-check results
-- `verified_at` timestamp — when fact-check completed
-- `parent_article_id` and `root_article_id` — article lineage for refine/fork chain
+- `fact_check` JSONB, `verified_at` — fact-check results
+- `parent_article_id`, `root_article_id` — refine/fork lineage
 - `user_id`, `user_name`, `user_avatar` — creator attribution
 
 ---
 
-## localStorage Keys in Use
+## localStorage Keys
 
-- `pendingArticleId` — article being generated, used for recovery on refresh/tab switch
-- `hasVisitedFeatured` — controls hero card rotation (first visit vs return)
-- `featuredHeroId` — last featured article shown as hero, excluded from next random selection
-- `recentArticles` — array of up to 10 recently visited articles
+- `pendingArticleId` — article being generated; recovery on refresh/tab switch
+- `hasVisitedFeatured` — hero card rotation (first visit vs return)
+- `featuredHeroId` — last featured article shown as hero, excluded from next selection
+- `recentArticles` — up to 10 recently visited articles
+- `unpacked_votes_[articleId]` — vote state per article
+- `unpacked_session_id` — anonymous session for voting
 
 ---
 
 ## Key Files and Components
 
-- `components/SearchForm.tsx` — homepage search/generate form, Phase 1 loading
-- `app/article/[slug]/ArticlePageClient.tsx` — article page, rendering conditions, polling, completion detection
-- `components/ArticleGenerating.tsx` — loading messages, message pacing, progress display
+- `components/SearchForm.tsx` — homepage search/generate form
+- `app/article/[slug]/ArticlePageClient.tsx` — article page, rendering, polling, completion detection
+- `components/ArticleGenerating.tsx` — loading messages and progress display
+- `components/ArticleOptions.tsx` — generation options: length, tone (opinionated/balanced/casual), visual density
+- `components/ui/ArticleVoting.tsx` — voting (helpful/not_helpful + convinced/not_convinced)
 - `lib/brave-research.ts` — Brave Search pre-research pipeline
-- `lib/gemini-writer.ts` — Gemini Flash article generation
+- `lib/gemini-writer.ts` — Gemini Flash article generation + `refineWithGemini()`
+- `lib/claude.ts` — Haiku planning + Sonnet premium/fallback + `refineArticle()`
+- `lib/structured-data.ts` — JSON-LD: Article, Person, ClaimReview, Review, BreadcrumbList
 
 ---
 
-## Homepage Structure (Four Sections)
+## Homepage Structure
 
-1. **Featured** — 1 hero card left (2fr) + 2×2 small cards right (3fr), fixed 540px height. Hero is selected by admin via featured toggle; rotation logic uses localStorage.
-2. **Trending Today** — exactly 3 dark-style cards, manually toggled by admin via `is_trending`
-3. **Most Popular** — top 4 articles by `view_count` with numbered rank badges
-4. **Recent Articles** — 3 cards per row with category filter pills
+1. **Featured** — 1 hero card left (2fr) + 2×2 small cards right (3fr), 540px height
+2. **Trending Today** — exactly 3 dark-style cards (manual admin toggle)
+3. **Most Popular** — top 4 by `view_count` with rank badges
+4. **Recent Articles** — 3 per row with category filter pills
 
 ---
 
 ## Admin System
 
-Admin detected by matching authenticated user email against `NEXT_PUBLIC_ADMIN_EMAIL` env var.
+Admin = authenticated user email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 
-Per-article controls: Featured toggle, Trending toggle, Hero pin (only one at a time), Hide, Delete, Drag-to-reorder, Category change, Regenerate, Hero image refresh, `card_summary` edit field, Backfill button for card summaries.
+Per-article controls: Featured toggle, Trending toggle, Hero pin (one at a time), Hide, Delete, Drag-to-reorder, Category change, Regenerate, Hero image refresh, `card_summary` edit, Backfill.
 
 **Permission model:**
 - Admin only: delete, pin, visibility, update-type, reorder, regenerate, featured/trending toggles
@@ -153,46 +140,41 @@ Per-article controls: Featured toggle, Trending toggle, Hero pin (only one at a 
 - Authenticated: refine (creates a fork)
 - Public: view, record view, feedback, fact-check, export
 
-**Article visibility:** Currently all articles are public. A three-state visibility system (private / unlisted / published) is planned for Stage 3, alongside the category restructure. Until then, `hidden_from_homepage` is the only visibility control — it hides from the homepage grid but the article is still accessible via direct URL.
-
 ---
 
 ## Rate Limiting
 
-- Create: 10 articles per hour per user ID or IP
-- Refine: 20 per hour
-- Stored in Supabase `rate_limits` table (not in-memory — works correctly on serverless Vercel)
+- Create: 10/hour per user ID or IP | Refine: 20/hour
+- Stored in Supabase `rate_limits` table (not in-memory — serverless safe)
 
 ---
 
 ## Cost Controls
 
-- `api_usage_log` table logs every Anthropic/Gemini API call with token counts
-- Duplicate call guard prevents same article ID triggering the same API call type within 5 minutes
-- Query caching checks for similar existing articles before generating — shows "We recently wrote this" with option to generate fresh
-- Concurrency limiter: default 3 concurrent generations (GEMINI_MAX_CONCURRENT=3)
+- `api_usage_log` table logs every API call with token counts
+- Duplicate call guard: same article ID + call type blocked within 5 minutes
+- Query caching: checks for similar existing articles before generating
+- Concurrency limiter: GEMINI_MAX_CONCURRENT=3
 
 ---
 
 ## Design System
 
 - **Background:** warm cream/off-white (#FAFAF8)
-- **Primary accent:** orange/amber (#BA7517 for amber, #993C1D for category text)
+- **Primary accent:** orange/amber (#BA7517 amber, #993C1D category text)
 - **Feel:** Wirecutter meets The Verge — editorial, warm, opinionated
-- **Cards:** subtle borders, rounded corners, generous whitespace
-- **Verdict box:** trophy SVG icon in amber, grey background (#f0efed), italic serif text
-- **Verified badge:** green shield on hero card image corner. Label is "Verified" — NOT "Fact-checked"
-- **Author avatars:** initials circles
+- **Verdict box:** trophy SVG in amber, grey background (#f0efed), italic serif text
+- **Verified badge:** green shield. Label: "Verified" — NOT "Fact-checked"
 
 ---
 
 ## Environment Variables
 
 ```
-ANTHROPIC_API_KEY              # Haiku planning + Sonnet premium writing
+ANTHROPIC_API_KEY              # Haiku planning + Sonnet premium/fallback
 GOOGLE_GEMINI_API_KEY          # Gemini Flash writing + fact-checking
 BRAVE_SEARCH_API_KEY           # Web research + image search (paid plan, $5/1000 queries)
-OPENAI_API_KEY                 # GPT Image hero image generation
+OPENAI_API_KEY                 # GPT Image hero (legacy, phasing out)
 NEXT_PUBLIC_SUPABASE_URL       # https://obyywahmmkrpsimjbdua.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY  # Public key
 SUPABASE_SERVICE_ROLE_KEY      # Server-side only — never in client code
@@ -200,98 +182,15 @@ NEXT_PUBLIC_ADMIN_EMAIL        # Admin user's email
 GEMINI_MAX_CONCURRENT=3        # Concurrent generation limit
 ```
 
-**Safe to remove from Vercel (confirmed unused):**
-- GOOGLE_CUSTOM_SEARCH_API_KEY
-- GOOGLE_CUSTOM_SEARCH_ENGINE_ID
-- FAL_API_KEY
-
 ---
 
-## Two Audiences — Important for Copy and Branding
+## Two Audiences
 
-1. **Creators** — type questions, generate articles, share them, eventually earn affiliate revenue
+1. **Creators** — generate articles, share them, earn affiliate revenue (eventually)
 2. **Organic readers** — arrive via shared links on Reddit, social, etc.
 
-The site must feel like a publication for audience 2 while being a creation tool for audience 1. Do not write copy that frames the product as "an AI tool" — frame it as a publishing platform.
+Frame as a publishing platform, not an AI tool.
 
 ---
 
-## What's Not Built Yet (Do Not Assume These Exist)
-
-- Affiliate link integration
-- Subscription tiers / usage limits / paywall
-- Trending Today automation (currently manual admin toggle)
-- Tags system
-- Proper PDF export (current export is browser print-to-PDF placeholder)
-- Profile photo upload (Google avatar is used everywhere — custom upload not wired to Supabase Storage)
-- Weekly email digest
-- Admin costs dashboard accuracy (Gemini fallback rate investigation in progress)
-- Article visibility system — private / unlisted / published (Stage 3)
-- Internal linking has no matches yet — activates automatically as article volume grows
-
----
-
-## Staged Plan
-
-### Stage 1 — Quick wins (mostly complete)
-- ✅ Name change ArticleAI → Unpacked
-- ✅ SEO meta tags and JSON-LD
-- ✅ Sitemap
-- ✅ TrustStrip
-- ✅ Creator CTA
-- ✅ Suggestion chips
-- ✅ Prompt quality tooltip
-- ✅ First draft banner
-- ✅ Admin dashboard with tabs, users, costs
-- ✅ Gemini fallback fix
-- ✅ Add test-outputs/ to .gitignore
-- ⬜ Email capture in footer
-
-### Stage 2 — Contained new features (next up)
-- ✅ Article generation 404 bug fixed — navigates by UUID, replaces with clean slug on completion
-- ✅ SEO — Google Search Console, sitemap 124 URLs, robots.txt, JSON-LD structured data
-- ✅ Internal linking infrastructure — client-side injection, zero database writes
-- ✅ About page rebuild — cut to 8 sections, typewriter hero, AI language removed
-- ✅ Calculator fix — strict ID mapping in prompt + positional fallback for existing articles
-- ✅ Reddit community section — real threads, quotes, subreddit links
-- ✅ Hero image upload — owner can upload custom hero image
-- ✅ Haiku-powered hero image queries — replaces broken keyword matching
-- ✅ Pool-based homepage rotation — featured and trending use curated pools
-- ✅ Admin Articles tab redesign — 5 filter tabs, star/flame/eye toggles
-- ✅ OG image sizing fix — OG tags and canonical URLs now correct
-- ⬜ Mobile reading experience audit
-- ⬜ People also asked chips after article generation
-- ⬜ Post-submit prompt refinement interstitial for vague queries
-- ⬜ Image upload tier-aware controls
-- ⬜ Changelog public page (/updates)
-- ⬜ Profile photo upload (Google avatar already used — custom upload optional)
-- ⬜ X/Twitter sentiment for news and trend articles (API required)
-
-### Stage 3 — Database migration (plan carefully)
-- ⬜ Add visibility column: private / unlisted / published
-- ⬜ Add section column: 12 new categories
-- ⬜ Remap existing articles to new categories
-- ⬜ Update all public queries to filter visibility = published
-- ⬜ Visibility selector in first draft banner
-- ⬜ Article visibility badge on article page
-
-### Stage 4 — Homepage redesign and category pages
-- ⬜ Build 12 category pages
-- ⬜ Homepage full redesign
-- ⬜ Sitemap update with category URLs
-- ⬜ Generate 60 strategic seed articles (5 per category)
-
-### Stage 5 — Post-launch monetisation
-- ⬜ Subscription tiers: free / standard $15 / pro $29
-- ⬜ Affiliate links on product cards
-- ⬜ Creator revenue dashboard
-- ⬜ Weekly email digest
-- ⬜ Global search
-
----
-
-## Name Change — Completed
-
-Renamed from ArticleAI to **Unpacked** (unpacked.fyi) on March 25 2026. All user-facing text, meta tags, OG data, JSON-LD, manifest, export branding, structured data updated. Logo displays as "Unpacked." (The in dark, Brief. in orange). Domain unpacked.fyi pending Vercel connection — currently deployed at unpacked.fyi.
-
-Note: Some metadata still references `@articleai` for Twitter site tag — update to `@thebrief` when Twitter/X account is created.
+See BUILD.md for current feature state. See PLAN.md for the forward build plan.
