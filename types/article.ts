@@ -329,6 +329,7 @@ export interface ArticleRow {
   is_trending?: boolean
   trending_set_at?: string | null
   visibility?: ArticleVisibility
+  generation_options?: Record<string, unknown> | null
   created_at: string
   updated_at: string
 }

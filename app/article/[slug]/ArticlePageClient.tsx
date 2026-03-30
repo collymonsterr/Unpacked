@@ -232,19 +232,23 @@ export default function ArticlePageClient({ initialRow, linkableArticles }: Prop
             </svg>
           </div>
           <p className="text-2xl font-bold mb-2" style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}>
-            We couldn&apos;t load this article
+            {(row.generation_options as Record<string, unknown> | null)?._error === 'topic_refused'
+              ? "We couldn't write about this topic"
+              : 'Something went wrong generating this article'}
           </p>
           <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-            Something went wrong. The article might have been removed, or there was a server issue.
+            {(row.generation_options as Record<string, unknown> | null)?._error === 'topic_refused'
+              ? "This sometimes happens with politically sensitive topics — the AI declined to write about it. Try rephrasing your question or approaching it from a different angle."
+              : 'The generation timed out or hit an error. Start a new search to try again.'}
           </p>
           <div className="flex items-center justify-center gap-3">
-            <button
-              onClick={() => window.location.reload()}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold"
-              style={{ backgroundColor: 'var(--accent)', color: '#fff', fontFamily: 'var(--font-sora)', cursor: 'pointer' }}
+            <a
+              href="/"
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold no-underline"
+              style={{ backgroundColor: 'var(--accent)', color: '#fff', fontFamily: 'var(--font-sora)' }}
             >
-              Try again
-            </button>
+              Ask a new question →
+            </a>
             <a
               href="/"
               className="px-5 py-2.5 rounded-xl text-sm font-medium no-underline"

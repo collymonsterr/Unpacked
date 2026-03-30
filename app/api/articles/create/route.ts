@@ -78,6 +78,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Cleanup: reset articles stuck in 'generating' for >10 minutes
+    // Fire-and-forget — runs on every new generation request, no cron needed
+    getSupabaseAdmin()
+      .from('articles')
+      .update({ status: 'error' })
+      .eq('status', 'generating')
+      .lt('updated_at', new Date(Date.now() - 10 * 60 * 1000).toISOString())
+      .then(() => {}) // intentionally fire and forget
+
     // Generate slug from the query (not the title — we don't have it yet)
     const slug = await generateUniqueSlug(trimmedQuery)
 
@@ -215,10 +224,17 @@ export async function POST(request: NextRequest) {
           console.error('[create] Fact-check failed:', fcErr)
         }
       } catch (err) {
-        console.error('[create] Generation failed:', err)
+        const errCode = (err as NodeJS.ErrnoException).code
+        const isRefused = errCode === 'PLANNING_REFUSED' || errCode === 'PLANNING_PARSE_ERROR'
+        console.error(`[create] Generation failed (${errCode ?? 'unknown'}):`, err)
         await db
           .from('articles')
-          .update({ status: 'error' })
+          .update({
+            status: 'error',
+            ...(isRefused && {
+              generation_options: { ...(generationOptions ?? {}), _error: 'topic_refused' },
+            }),
+          })
           .eq('id', data.id)
       }
     })

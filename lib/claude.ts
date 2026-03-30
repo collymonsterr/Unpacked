@@ -679,7 +679,25 @@ export async function planArticle(query: string, options?: GenOptions, articleId
   })
 
   const text = message.content.find((b) => b.type === 'text')?.text ?? ''
-  const plan = JSON.parse(extractJSON(text)) as ArticlePlan
+
+  // Detect Haiku refusals before attempting JSON parse
+  const refusalSignals = ["i can't", "i cannot", "i'm unable", "i won't", "i am unable", "i'm not able"]
+  const lowerText = text.toLowerCase()
+  const isRefusal = refusalSignals.some(s => lowerText.includes(s)) || text.trim().length === 0
+  if (isRefusal) {
+    const err = new Error('Planning refused: Haiku declined to plan this article')
+    ;(err as NodeJS.ErrnoException).code = 'PLANNING_REFUSED'
+    throw err
+  }
+
+  let plan: ArticlePlan
+  try {
+    plan = JSON.parse(extractJSON(text)) as ArticlePlan
+  } catch {
+    const err = new Error('Planning parse error: could not extract valid JSON from Haiku response')
+    ;(err as NodeJS.ErrnoException).code = 'PLANNING_PARSE_ERROR'
+    throw err
+  }
 
   // Ensure visual_strategy exists — fall back to defaults if AI didn't return it
   if (!plan.visual_strategy) {
