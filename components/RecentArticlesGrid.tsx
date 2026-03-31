@@ -19,9 +19,12 @@ function getCardImage(row: ArticleRow): string | null {
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  buyer_guide: 'Buying Guide', comparison: 'Comparison', decision_guide: 'Decision Guide',
-  explainer: 'Explainer', news: 'News', planning: 'Travel & Living',
-  trend_analysis: 'Trend Analysis', tutorial: 'Tutorial',
+  buyer_guide: 'Buyer Guide', comparison: 'Comparison', decision_guide: 'Decision Guide',
+  explainer: 'Explainer', how_to: 'How-To', roundup: 'Roundup',
+  news_analysis: 'News Analysis', trend_analysis: 'Trend Analysis',
+  breaking_news: 'Breaking News', deep_dive: 'Deep Dive',
+  // Legacy types (old articles may still have these)
+  news: 'News', planning: 'Travel & Living', tutorial: 'Tutorial',
 }
 
 // ── Article Card ──
@@ -82,11 +85,11 @@ function ArticleCard({ row }: { row: ArticleRow }) {
 
 const TYPE_FILTERS: Array<{ label: string; types: string[] | null }> = [
   { label: 'All', types: null },
-  { label: 'Buying Guides', types: ['buyer_guide', 'comparison', 'decision_guide'] },
-  { label: 'Finance', types: ['tutorial'] },
-  { label: 'Tech', types: ['trend_analysis'] },
-  { label: 'Travel', types: ['planning'] },
-  { label: 'Explainers', types: ['explainer', 'news'] },
+  { label: 'Buying Guides', types: ['buyer_guide', 'comparison', 'roundup'] },
+  { label: 'Decisions', types: ['decision_guide', 'how_to'] },
+  { label: 'Analysis', types: ['trend_analysis', 'deep_dive'] },
+  { label: 'News', types: ['news_analysis', 'breaking_news'] },
+  { label: 'Explainers', types: ['explainer'] },
 ]
 
 // ── Main Grid ──

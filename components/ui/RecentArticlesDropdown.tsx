@@ -5,14 +5,11 @@ import Link from 'next/link'
 import { getRecentArticles, clearRecentArticles, type RecentArticle } from '@/lib/recent-articles'
 
 const TYPE_LABELS: Record<string, string> = {
-  buyer_guide: 'Buying Guide',
-  comparison: 'Comparison',
-  decision_guide: 'Decision Guide',
-  explainer: 'Explainer',
-  news: 'News',
-  planning: 'Travel & Living',
-  trend_analysis: 'Trend Analysis',
-  tutorial: 'Tutorial',
+  buyer_guide: 'Buyer Guide', comparison: 'Comparison', decision_guide: 'Decision Guide',
+  explainer: 'Explainer', how_to: 'How-To', roundup: 'Roundup',
+  news_analysis: 'News Analysis', trend_analysis: 'Trend Analysis',
+  breaking_news: 'Breaking News', deep_dive: 'Deep Dive',
+  news: 'News', planning: 'Travel & Living', tutorial: 'Tutorial',
 }
 
 export default function RecentArticlesDropdown() {

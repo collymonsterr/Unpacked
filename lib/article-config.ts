@@ -1,4 +1,6 @@
-import type { ArticleType, VisualStrategy } from '@/types/article'
+import type { ArticleType } from '@/lib/article-types'
+import { ARTICLE_TYPES, getArticleTypeLabel } from '@/lib/article-types'
+import type { VisualStrategy } from '@/types/article'
 
 /**
  * Default visual strategies per article type.
@@ -54,7 +56,31 @@ export const VISUAL_DEFAULTS: Record<ArticleType, VisualStrategy> = {
     use_callout_boxes: true,
     use_quote_blocks: true,
   },
-  news: {
+  how_to: {
+    image_density: 'low',
+    use_product_cards: false,
+    use_image_gallery: false,
+    use_comparison_table: false,
+    use_charts: true,
+    use_timelines: false,
+    use_stat_cards: false,
+    use_worked_examples: true,
+    use_callout_boxes: true,
+    use_quote_blocks: false,
+  },
+  roundup: {
+    image_density: 'high',
+    use_product_cards: true,
+    use_image_gallery: true,
+    use_comparison_table: false,
+    use_charts: true,
+    use_timelines: false,
+    use_stat_cards: true,
+    use_worked_examples: false,
+    use_callout_boxes: false,
+    use_quote_blocks: true,
+  },
+  news_analysis: {
     image_density: 'low',
     use_product_cards: false,
     use_image_gallery: false,
@@ -65,18 +91,6 @@ export const VISUAL_DEFAULTS: Record<ArticleType, VisualStrategy> = {
     use_worked_examples: false,
     use_callout_boxes: true,
     use_quote_blocks: true,
-  },
-  planning: {
-    image_density: 'medium',
-    use_product_cards: false,
-    use_image_gallery: false,
-    use_comparison_table: true,
-    use_charts: true,
-    use_timelines: true,
-    use_stat_cards: true,
-    use_worked_examples: true,
-    use_callout_boxes: true,
-    use_quote_blocks: false,
   },
   trend_analysis: {
     image_density: 'low',
@@ -90,28 +104,33 @@ export const VISUAL_DEFAULTS: Record<ArticleType, VisualStrategy> = {
     use_callout_boxes: true,
     use_quote_blocks: true,
   },
-  tutorial: {
+  breaking_news: {
     image_density: 'low',
     use_product_cards: false,
     use_image_gallery: false,
     use_comparison_table: false,
+    use_charts: false,
+    use_timelines: true,
+    use_stat_cards: true,
+    use_worked_examples: false,
+    use_callout_boxes: false,
+    use_quote_blocks: true,
+  },
+  deep_dive: {
+    image_density: 'medium',
+    use_product_cards: false,
+    use_image_gallery: false,
+    use_comparison_table: true,
     use_charts: true,
-    use_timelines: false,
-    use_stat_cards: false,
+    use_timelines: true,
+    use_stat_cards: true,
     use_worked_examples: true,
     use_callout_boxes: true,
-    use_quote_blocks: false,
+    use_quote_blocks: true,
   },
 }
 
-/** Human-readable labels for each article type */
-export const ARTICLE_TYPE_LABELS: Record<ArticleType, string> = {
-  buyer_guide: 'Buying Guide',
-  comparison: 'Comparison',
-  decision_guide: 'Decision Guide',
-  explainer: 'Explainer',
-  news: 'News',
-  planning: 'Travel & Living',
-  trend_analysis: 'Trend Analysis',
-  tutorial: 'Tutorial',
-}
+/** Human-readable labels for each article type — delegates to centralised source */
+export const ARTICLE_TYPE_LABELS: Record<ArticleType, string> = Object.fromEntries(
+  Object.entries(ARTICLE_TYPES).map(([key, val]) => [key, val.label])
+) as Record<ArticleType, string>

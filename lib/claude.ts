@@ -1,8 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk'
-import type { ArticlePlan, ArticleContent, ArticleType } from '@/types/article'
+import type { ArticlePlan, ArticleContent, ArticleType, ResearchManifest, EntityCard, ResearchSynthesis } from '@/types/article'
 import { VISUAL_DEFAULTS } from '@/lib/article-config'
+import { ARTICLE_TYPE_LIST } from '@/lib/article-types'
 import { isDuplicateCall, logApiCall } from '@/lib/api-usage'
 import { extractJSON } from '@/lib/utils/extract-json'
+import { buildStructuredResearchPrompt } from '@/lib/structured-research-prompt'
 
 // Lazy-init so the env var is always available at call time (not module-load time)
 let _anthropic: Anthropic | null = null
@@ -30,32 +32,41 @@ STEP 1: CLASSIFY THE ARTICLE TYPE (HARD DECISION — MAKE THIS FIRST)
 Read the query language and user intent. Choose EXACTLY ONE type. This decision controls everything that follows.
 
 CLASSIFICATION MAP:
-- "Best…" or "top…" or "recommended…" → buyer_guide
-- "X vs Y" or "X or Y" or "X compared to Y" → comparison
-- "How does…" or "What is…" or "Why does…" or "…explained" → explainer
-- "How to…" or "How do I…" or "Steps to…" or "Guide to doing…" → tutorial
-- "Trends in…" or "Most popular…" or "Fastest growing…" or "State of…" → trend_analysis
-- "Should I…" or "Is it worth…" or "Are X worth it?" → decision_guide
+- "Best X for Y" or "top…" or "recommended…" → buyer_guide (help buy the right thing)
+- "X vs Y" or "X or Y" or "X compared to Y" → comparison (head-to-head 2-3 items)
+- "How does…" or "What is…" or "Why does…" or "…explained" → explainer (teach a concept)
+- "How to…" or "How do I…" or "Steps to…" or "Guide to doing…" → how_to (step-by-step task)
+- "Top 10…" or "Best… roundup" or curated list requests → roundup (editorial list with opinions)
+- "Trends in…" or "Most popular…" or "Fastest growing…" or "State of…" → trend_analysis (data-driven market analysis)
+- "Should I…" or "Is it worth…" or "Are X worth it?" → decision_guide (personal life/career decision)
 - "How much does…" or "Can I afford…" or "What will it cost…" → decision_guide (calculator-driven)
+- "What happened with…" or "Why did X…" or analysis of a recent event → news_analysis (what it means + what happens next)
+- Breaking/developing event, just happened, urgent → breaking_news (essential picture in under 2 min reading)
+- Complex ongoing topic requiring comprehensive treatment → deep_dive (complete picture, long-form)
 
 The valid types are:
-- buyer_guide: Ranking multiple purchasable products with a winner
-- comparison: Head-to-head between exactly 2-3 specific things
-- decision_guide: Helping the reader make a personal decision (often with a calculator)
-- explainer: Teaching a concept or answering "how/what/why"
-- tutorial: Step-by-step instructions to accomplish something
-- trend_analysis: Data-driven market or industry analysis
-- planning: Travel, lifestyle, or strategic planning guides
-- news: Current events and recent developments
+- buyer_guide: Help the reader buy the right thing with confidence — picks a winner
+- comparison: Head-to-head between exactly 2-3 specific things — picks a winner
+- explainer: Help the reader understand something clearly
+- how_to: Step-by-step task completion
+- roundup: Curated list with genuine editorial opinion — picks a best overall
+- decision_guide: Help the reader make a personal life or career decision (often with a calculator)
+- trend_analysis: Is this trend real, overhyped, or misunderstood?
+- news_analysis: What a recent event means and what happens next
+- breaking_news: Essential picture on a breaking event in under 2 minutes reading
+- deep_dive: Complete picture on a complex ongoing topic — long-form, authoritative
 
 EXAMPLES:
-- "What is compound interest?" → explainer (NOT buyer_guide, NOT tutorial)
+- "What is compound interest?" → explainer (NOT buyer_guide, NOT how_to)
 - "Best laptops under $1000" → buyer_guide
 - "iPhone 17 vs Samsung S26" → comparison
-- "How to start investing with $1000" → tutorial
+- "How to start investing with $1000" → how_to
 - "Should I buy or lease a car?" → decision_guide
-- "State of the EV market in 2026" → trend_analysis
-- "Best cities for digital nomads" → planning
+- "State of the EV market in ${new Date().getFullYear()}" → trend_analysis
+- "Top 10 budget travel destinations" → roundup
+- "What the new EU AI Act means for startups" → news_analysis
+- "OpenAI just released GPT-6" → breaking_news
+- "The complete guide to the US housing crisis" → deep_dive
 
 ═══════════════════════════════════════════════════════════════
 STEP 2: APPLY STRICT RULES FOR THE CLASSIFIED TYPE
@@ -64,45 +75,65 @@ STEP 2: APPLY STRICT RULES FOR THE CLASSIFIED TYPE
 After classifying, apply the REQUIRED, ALLOWED, and FORBIDDEN rules below. These are hard constraints, not suggestions.
 
 BUYER GUIDE:
-  REQUIRED: product_card (one per recommended product), comparison_table, clear verdict naming a winner
-  ALLOWED: product images, specs, pros/cons per product, price information, bar_chart, comparison_matrix, stat_cards, community_insights, price_tier_breakdown, warning_box
-  FORBIDDEN: long theoretical explanations, concept diagrams unrelated to products, generic filler content_sections that don't set up the recommendations
+  REQUIRED: product_card (one per recommended product), comparison_table, clear verdict naming a winner, community_insights (Reddit section)
+  ALLOWED: product images, specs, pros/cons per product, price information, bar_chart, comparison_matrix, stat_cards, price_tier_breakdown, warning_box, interactive_calculator, key_takeaways
+  FORBIDDEN: forecast_section, timeline, live_data_cards, long theoretical explanations, concept diagrams unrelated to products
+  LENGTH: 1200-2000 words. TONE: confident and practical.
 
 COMPARISON:
-  REQUIRED: comparison_table (side-by-side), winner declared per category, overall verdict
-  ALLOWED: brief specs per option, one bar_chart or comparison_matrix if data supports it, stat_cards, community_insights, head_to_head
-  FORBIDDEN: product_card sections, large image galleries, long introductory theory sections, price_tier_breakdown
+  REQUIRED: comparison_table (side-by-side), winner declared per category, overall verdict, community_insights (Reddit section)
+  ALLOWED: product_cards, one bar_chart or comparison_matrix if data supports it, stat_cards, head_to_head, interactive_charts, key_takeaways
+  FORBIDDEN: forecast_section, timeline, live_data_cards, large image galleries, long introductory theory sections, price_tier_breakdown
+  LENGTH: 800-1500 words. TONE: direct and authoritative.
 
 EXPLAINER:
-  REQUIRED: clear logical structure, plain language definitions, worked examples or scenarios
-  ALLOWED: line_chart, bar_chart, pie_chart, stat_cards (to illustrate concepts with data), one interactive_calculator if directly relevant to the concept, warning_box for common misconceptions
+  REQUIRED: key_takeaways, clear logical structure, plain language definitions, worked examples or scenarios
+  ALLOWED: line_chart, bar_chart, pie_chart, stat_cards (to illustrate concepts with data), community_insights, data_visualisation, faq_section, quote_blocks
   ALLOWED (conditional images): up to 3 editorial images but ONLY where ALL THREE conditions are true: (1) the subject is concrete and photographable, (2) the image would appear in a real magazine article on this topic, (3) a search will return a real photo not a logo/icon/stock cliché. If any condition fails, include NO image for that section.
-  FORBIDDEN: product_card, product image galleries, comparison_table, affiliate-style recommendation sections, price_tier_breakdown, who_this_is_for
+  FORBIDDEN: product_card, product image galleries, comparison_table, affiliate-style recommendation sections, pricing, buy_links
+  LENGTH: 600-3500 words. TONE: clear and authoritative.
 
-TUTORIAL (How-To):
-  REQUIRED: numbered steps, clear outcome stated upfront in the verdict
-  ALLOWED: stat_cards for key metrics, warning_box for common mistakes, one interactive_calculator if the topic involves personalised numbers
-  FORBIDDEN: product_card, comparison_table, price_tier_breakdown, large image galleries
+HOW-TO:
+  REQUIRED: numbered_steps, prerequisites_list, clear outcome stated upfront in the verdict
+  ALLOWED: key_takeaways, faq_section, quote_blocks, stat_cards for key metrics, warning_box for common mistakes
+  FORBIDDEN: comparison_table, verdict_box, forecast_section, live_data_cards, product_card, price_tier_breakdown, large image galleries
+  LENGTH: 600-1500 words. TONE: practical and clear.
+
+ROUNDUP:
+  REQUIRED: verdict_box picking a best overall
+  ALLOWED: product_cards, interactive_charts, community_insights (Reddit section), key_takeaways, quote_blocks
+  FORBIDDEN: comparison_table, forecast_section, calculators
+  LENGTH: 1000-2000 words. TONE: opinionated and curated.
 
 DECISION GUIDE (Opinion/Verdict + Calculator-driven):
-  REQUIRED: a clear stated opinion or recommendation with reasoning, at least one data visualisation supporting the argument
-  ALLOWED: interactive_calculator as centrepiece (REQUIRED if the query involves personal numbers like cost, affordability, worth), comparison_table if comparing 2-3 options, bar_chart, stat_cards, community_insights
-  FORBIDDEN: product_card (discuss options in content_sections instead), large image galleries, long neutral balanced sections that avoid taking a position
+  REQUIRED: verdict_box with clear stated opinion or recommendation, community_insights (Reddit section), at least one data visualisation
+  ALLOWED: interactive_calculator as centrepiece (REQUIRED if the query involves personal numbers like cost, affordability, worth), interactive_charts, data_visualisation, bar_chart, stat_cards, key_takeaways, quote_blocks
+  FORBIDDEN: product_card (discuss options in content_sections instead), comparison_table, large image galleries, long neutral balanced sections that avoid taking a position
+  LENGTH: 1200-2000 words. TONE: thoughtful and advisory.
 
 TREND ANALYSIS:
-  REQUIRED: 3-5 data charts (line_chart, bar_chart, pie_chart, treemap), sourced statistics, rankings or ordered lists
-  ALLOWED: stat_cards, timeline, brief commentary per item, comparison_table for summary
-  FORBIDDEN: product_card, interactive_calculator, tutorial steps, who_this_is_for
+  REQUIRED: verdict_box (is this trend real, overhyped, or misunderstood?), community_insights (Reddit section)
+  ALLOWED: live_data_cards, quote_blocks, timeline, key_takeaways, data_visualisation, 3-5 data charts (line_chart, bar_chart, pie_chart, treemap), stat_cards
+  FORBIDDEN: product_card, comparison_table, calculators, buy_links
+  LENGTH: 1200-3500 words. TONE: investigative.
 
-PLANNING:
-  REQUIRED: specific actionable recommendations with real numbers/places/timelines, comparison_table or ranked list
-  ALLOWED: stat_cards, bar_chart, image_section (for destinations/places), timeline if planning involves phases, interactive_calculator if budget-related
-  FORBIDDEN: product_card (unless recommending specific purchasable items), long abstract theory sections
+NEWS ANALYSIS:
+  REQUIRED: verdict_box (editorial position on what this means), forecast_section (what happens next)
+  ALLOWED: live_data_cards, community_insights, quote_blocks, timeline, data_visualisation, key_takeaways, stat_cards for headline numbers, bar_chart, line_chart
+  FORBIDDEN: product_card, comparison_table, calculators, buy_links, how-to steps, price_tier_breakdown
+  LENGTH: 800-1500 words. TONE: analytical and confident.
 
-NEWS:
-  REQUIRED: lead with the most important insight, stat_cards for headline numbers
-  ALLOWED: timeline for chronology, bar_chart, line_chart, community_insights
-  FORBIDDEN: product_card, interactive_calculator, tutorial steps, price_tier_breakdown
+BREAKING NEWS:
+  REQUIRED: live_data_cards, what_to_watch section
+  ALLOWED: quote_blocks, timeline, data_visualisation, stat_cards
+  FORBIDDEN: product_card, comparison_table, calculators, verdict_box, lengthy_explainer
+  LENGTH: 300-600 words (under 2 min reading). TONE: urgent but controlled.
+
+DEEP DIVE:
+  REQUIRED: verdict_box (bold thesis), forecast_section, community_insights (Reddit section)
+  ALLOWED: live_data_cards, quote_blocks, timeline, data_visualisation, interactive_charts, key_takeaways, stat_cards, line_chart, bar_chart, pie_chart, treemap
+  FORBIDDEN: product_card, calculators, buy_links
+  LENGTH: 2000-5000 words. TONE: authoritative and engaging.
 
 ═══════════════════════════════════════════════════════════════
 STEP 3: SET VISUAL STRATEGY AND FORBIDDEN COMPONENTS
@@ -111,23 +142,29 @@ STEP 3: SET VISUAL STRATEGY AND FORBIDDEN COMPONENTS
 Based on the type rules above, set the visual_strategy AND populate forbidden_components.
 
 The forbidden_components array MUST list every component type that is FORBIDDEN for this article type. The writing step will treat this as a hard constraint. Examples:
-- explainer → forbidden_components: ["product_card", "comparison_table", "price_tier_breakdown", "who_this_is_for"]
-- buyer_guide → forbidden_components: []
-- comparison → forbidden_components: ["product_card", "price_tier_breakdown"]
-- tutorial → forbidden_components: ["product_card", "comparison_table", "price_tier_breakdown"]
+- explainer → forbidden_components: ["product_card", "comparison_table", "pricing", "buy_links"]
+- buyer_guide → forbidden_components: ["forecast_section", "timeline", "live_data_cards"]
+- comparison → forbidden_components: ["forecast_section", "timeline", "live_data_cards"]
+- how_to → forbidden_components: ["comparison_table", "verdict_box", "forecast_section", "live_data_cards"]
+- roundup → forbidden_components: ["comparison_table", "forecast_section", "calculators"]
+- news_analysis → forbidden_components: ["product_card", "comparison_table", "calculators", "buy_links"]
+- breaking_news → forbidden_components: ["product_card", "comparison_table", "calculators", "verdict_box", "lengthy_explainer"]
+- deep_dive → forbidden_components: ["product_card", "calculators", "buy_links"]
 
 Visual strategy rules:
-- Product articles (buyer_guide) → product photography, image_density "high"
-- Concept articles (explainer, tutorial) → diagrams/charts only, image_density "none" or "low"
+- Product articles (buyer_guide, comparison) → product photography, image_density "high"
+- Curated lists (roundup) → product photography, image_density "high"
+- Concept articles (explainer, how_to) → diagrams/charts only, image_density "none" or "low"
 - Finance/decision articles (decision_guide) → charts and calculator, image_density "low"
-- Data articles (trend_analysis, news) → charts as primary visual, image_density "low"
-- Planning articles → contextual photos of places, image_density "medium"
+- Data articles (trend_analysis, news_analysis) → charts as primary visual, image_density "low"
+- Breaking news → minimal, image_density "low"
+- Deep dives → mixed, image_density "medium"
 
 If no visual type is REQUIRED or ALLOWED for a section, no visual should be generated for that section. Visuals must earn their place — they are not decoration.
 
 For the entities array: identify every specific product, brand, or item that will be featured AND needs an image.
-- For buyer_guide/comparison/decision_guide: list products with image search queries
-- For explainer/tutorial/trend_analysis/news/planning: entities should be EMPTY or contain only items where a real photograph adds value (e.g., a specific place, a specific device). Do NOT add entities for abstract concepts.
+- For buyer_guide/comparison/decision_guide/roundup: list products with image search queries
+- For explainer/how_to/trend_analysis/news_analysis/breaking_news/deep_dive: entities should be EMPTY or contain only items where a real photograph adds value (e.g., a specific place, a specific device). Do NOT add entities for abstract concepts.
 
 For entities search_query: this is used to find product and subject images via Brave image search. Follow these rules precisely:
 
@@ -202,12 +239,51 @@ VISUALISATION RULES BY TYPE:
 - comparison: MUST have 1+ comparison_matrix. Bar chart or stat cards optional.
 - decision_guide: MUST have 1+ bar_chart or stat_cards or comparison_matrix.
 - explainer: MUST have 2-4 charts. Prefer line_chart, bar_chart, stat_cards, pie_chart. Use to illustrate concepts with data, NOT to decorate.
-- tutorial: 1-2 charts where data supports the teaching. stat_cards for key metrics.
+- how_to: 1-2 charts where data supports the teaching. stat_cards for key metrics.
+- roundup: 1-2 charts (bar_chart for rankings). stat_cards for quick comparison.
 - trend_analysis: MUST have 3-5 charts. Line charts for trends, pie charts for share, bar charts for rankings, treemaps for breakdowns.
-- news: 1-3 charts. stat_cards for headline numbers, timeline for chronology.
-- planning: 1-3 charts. Bar charts for cost comparisons, stat_cards for key metrics.
+- news_analysis: 1-3 charts. stat_cards for headline numbers, timeline for chronology.
+- breaking_news: stat_cards only. Minimal visuals — speed over decoration.
+- deep_dive: MUST have 3-5 charts. Mix of line_chart, bar_chart, stat_cards, timeline. Data-rich throughout.
 
 For research_queries: generate 3-4 short, natural-sounding descriptions of what the system will research. These are shown to the user during loading.
+
+═══════════════════════════════════════════════════════════════
+STEP 6: BUILD THE RESEARCH MANIFEST
+═══════════════════════════════════════════════════════════════
+
+The research_manifest tells the research engine exactly what to search for. Be specific and targeted — generic queries waste API calls.
+
+For brave_queries: generate 4-8 specific search queries. Each has a "purpose" tag from: core_facts, economic_impact, background, wider_context, product_review, pricing, specs, community, expert_opinion, comparison, how_to, alternatives.
+- buyer_guide/comparison/roundup: focus on product_review, pricing, specs, community queries
+- explainer/how_to: focus on core_facts, expert_opinion, how_to queries
+- news_analysis/breaking_news: focus on core_facts, background, wider_context queries
+- trend_analysis/deep_dive: focus on core_facts, economic_impact, wider_context, expert_opinion queries
+- decision_guide: focus on core_facts, community, comparison, pricing queries
+- Include the current year in time-sensitive queries
+- Each query should target a different angle — no duplicates
+
+For reddit_queries: generate 1-3 Reddit search queries with targeted subreddits. Examples:
+- "best wireless earbuds" → subreddits: ["headphones", "audiophile", "BudgetAudiophile"]
+- "should I buy or lease a car" → subreddits: ["personalfinance", "askcarsales", "whatcarshouldIbuy"]
+- "Iran Strait of Hormuz" → subreddits: ["worldnews", "geopolitics", "economics"]
+- For explainers/how_to: use subreddits where people ask and answer questions
+- For product articles: use enthusiast subreddits where users share real experiences
+
+For image_queries: specify hero image search and product images.
+- hero: {query (5-8 words for a magazine-quality photo), style: editorial_photo | news_photo | product_photo | abstract}
+- products: array of {entity_name, query} for each product needing an image (buyer_guide/comparison/roundup only, empty for other types)
+
+For article_type_confidence: integer 0-100 representing how certain you are about the classification.
+- 90-100: clear match, no alternatives needed
+- 70-89: strong match but another type could work — provide alternative_types
+- Below 70: uncertain — provide alternative_types
+
+For alternative_types: 0-2 alternative article types that could also work for this query. Only include when confidence < 90. These are shown to the user as switchable options.
+
+For category: classify into exactly one of: tech, finance, health_fitness, travel, home_living, entertainment, science, business, automotive, culture, current_affairs, ai_future.
+
+For sections: an array of {heading, purpose} defining the article structure. Each section should have a clear heading and a short purpose description explaining what that section covers. This guides the writing model.
 
 For suggestion_chips: generate 3 refinements (modify this article) and 3 related (generate a new article on a naturally connected topic). IMPORTANT: If any related topic includes a year, use ${new Date().getFullYear()} — never 2024 or 2025. Omit the year entirely if the topic is evergreen.
 
@@ -237,7 +313,10 @@ TITLE RULES: Article titles must be 50-60 characters maximum. Never exceed 60 ch
 Respond ONLY with valid JSON matching this schema exactly. No preamble, no markdown fences:
 {
   "title": "string (50-60 characters max)",
-  "article_type": "buyer_guide | comparison | decision_guide | explainer | news | planning | trend_analysis | tutorial",
+  "article_type": "buyer_guide | comparison | decision_guide | explainer | how_to | roundup | trend_analysis | news_analysis | breaking_news | deep_dive",
+  "article_type_confidence": 85,
+  "alternative_types": ["string — 0-2 alternative types, only when confidence < 90"],
+  "category": "tech | finance | health_fitness | travel | home_living | entertainment | science | business | automotive | culture | current_affairs | ai_future",
   "visual_strategy": {
     "image_density": "none | low | medium | high",
     "use_product_cards": false,
@@ -253,6 +332,15 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
   "quick_verdict_preview": "string",
   "entities": [{ "name": "string", "product_category": "string", "search_query": "string" }],
   "sections_outline": ["string"],
+  "sections": [{ "heading": "string", "purpose": "string — what this section covers" }],
+  "research_manifest": {
+    "brave_queries": [{ "query": "string — specific search query", "purpose": "core_facts | product_review | pricing | specs | community | expert_opinion | comparison | how_to | alternatives | economic_impact | background | wider_context" }],
+    "reddit_queries": [{ "query": "string", "subreddits": ["string — 2-4 relevant subreddits"] }],
+    "image_queries": {
+      "hero": { "query": "string — 5-8 word magazine-quality photo search", "style": "editorial_photo | news_photo | product_photo | abstract" },
+      "products": [{ "entity_name": "string", "query": "string" }]
+    }
+  },
   "research_queries": ["string"],
   "hero_image_query": "string",
   "hero_image_subject": "string",
@@ -342,22 +430,28 @@ Don't just jump straight into product cards. A great article sets the scene firs
 
 The community_insights section should feel like "here's what real people are saying" — not a footnote. If consensus is strong ("Reddit universally recommends X"), say that upfront. If it's divided, explain the camps. Reference specific subreddits or threads when possible.
 
-FOR KNOWLEDGE ARTICLES (explainer, tutorial):
+FOR KNOWLEDGE ARTICLES (explainer, how_to):
 - Explain clearly with concrete examples. Avoid abstract hand-waving.
 - Use worked examples, calculations, and scenarios to illustrate concepts.
 - Break complex ideas into digestible steps.
 - Take a position on the "best way" to think about or approach the topic.
 
-FOR ANALYSIS ARTICLES (trend_analysis, news):
+FOR ROUNDUP ARTICLES:
+- This is a curated editorial list, not a product dump. Have genuine opinions.
+- Each item should have a clear reason for inclusion and a clear opinion.
+- Pick a "best overall" and defend the choice. Don't hedge.
+
+FOR ANALYSIS ARTICLES (trend_analysis, news_analysis, deep_dive):
 - Lead with the most important insight, not the background.
 - Use data to support every claim.
 - Provide context and historical perspective.
 - Make predictions and take positions on where things are heading.
+- Deep dives should be comprehensive — leave no major angle uncovered.
 
-FOR PLANNING ARTICLES (planning):
-- Be specific and actionable. Give real numbers, real places, real timelines.
-- Rank options clearly. Don't just list — recommend.
-- Include practical warnings about common mistakes.
+FOR BREAKING NEWS:
+- Lead with what happened and why it matters. No preamble.
+- Keep it under 600 words. Speed over depth.
+- End with "what to watch" — what comes next.
 
 BANNED PHRASES (never use these):
 - "there are many great options"
@@ -406,10 +500,12 @@ MANDATORY MINIMUMS BY TYPE:
 - comparison: 1+ comparison_matrix + optional bar_chart/stat_cards
 - decision_guide: 1+ bar_chart or comparison_matrix + stat_cards
 - explainer: 2-4 charts (line_chart, bar_chart, stat_cards — to illustrate concepts with data)
-- tutorial: 1-2 charts where data supports teaching
+- how_to: 1-2 charts where data supports teaching
+- roundup: 1-2 charts (bar_chart for rankings, stat_cards for quick comparison)
 - trend_analysis: 3-5 charts (line_chart for trends, pie_chart for share, bar_chart for rankings)
-- news: 1-3 charts (stat_cards for headline numbers, timeline for chronology)
-- planning: 1-3 charts (bar_chart for cost comparisons, stat_cards for key metrics)
+- news_analysis: 1-3 charts (stat_cards for headline numbers, timeline for chronology)
+- breaking_news: stat_cards only — minimal visuals
+- deep_dive: 3-5 charts (mix of line_chart, bar_chart, stat_cards, timeline)
 
 INTERACTIVE CALCULATORS:
 For articles about financial topics, cost comparisons, or planning topics — include an interactive_calculator section. The calculator helps the reader apply the article's advice to their own situation. Configure inputs with sensible defaults and ranges relevant to the article topic.
@@ -473,7 +569,7 @@ Return a JSON object matching this structure. Return ONLY valid JSON. No preambl
 
 {
   "title": "string",
-  "article_type": "buyer_guide | comparison | decision_guide | explainer | news | planning | trend_analysis | tutorial",
+  "article_type": "buyer_guide | comparison | decision_guide | explainer | how_to | roundup | trend_analysis | news_analysis | breaking_news | deep_dive",
   "quick_verdict": {
     "bullets": ["string (3-4 short, punchy bullet points — each one a standalone takeaway. NOT a sentence split up. Each bullet should be a distinct, actionable point like 'The Yamaha Pacifica 112V is the best value under $300' or 'Avoid anything without a humbucker pickup'. Keep each bullet under 15 words.)"],
     "one_liner": "string (a single-sentence summary of the verdict, used for metadata and sharing)"
@@ -551,7 +647,7 @@ For any category not listed above, use 6-8 spec fields that a knowledgeable revi
 IMPORTANT:
 - Use web search extensively. Do not rely on training data alone.
 - Product cards are ONLY for actual purchasable products/services. Never use them for abstract concepts.
-- For explainers and tutorials: use content_section for explanations, worked examples inline, charts for data, warning_box for key caveats.
+- For explainers and how-tos: use content_section for explanations, worked examples inline, charts for data, warning_box for key caveats.
 - Sources must be real URLs from your research.
 - Minimum 2 visualisations per article.
 - Return ONLY valid JSON.`
@@ -655,7 +751,7 @@ export async function planArticle(query: string, options?: GenOptions, articleId
   const model = 'claude-haiku-4-5-20251001'
   const message = await getAnthropic().messages.create({
     model,
-    max_tokens: 2048,
+    max_tokens: 3072,
     system: PLANNING_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: `Plan an article for: "${query}"${optionsPrompt}` }],
   })
@@ -689,15 +785,110 @@ export async function planArticle(query: string, options?: GenOptions, articleId
     throw err
   }
 
+  // ── Enhanced plan validation with full fallback ──
+  // Wrap in try/catch so enhanced field issues never break generation
+  try {
+    // Validate article_type is in allowed list; fall back to 'explainer' if not
+    if (!ARTICLE_TYPE_LIST.includes(plan.article_type)) {
+      console.warn('[planArticle] Unknown article_type:', plan.article_type, '— falling back to explainer')
+      plan.article_type = 'explainer' as ArticleType
+    }
+
+    // Default enhanced fields if Haiku didn't return them
+    if (typeof plan.article_type_confidence !== 'number' || plan.article_type_confidence < 0 || plan.article_type_confidence > 100) {
+      plan.article_type_confidence = 100
+    }
+    if (!Array.isArray(plan.alternative_types)) {
+      plan.alternative_types = []
+    } else {
+      // Filter to valid types only
+      plan.alternative_types = plan.alternative_types.filter(t =>
+        ARTICLE_TYPE_LIST.includes(t as ArticleType) && t !== plan.article_type
+      ).slice(0, 2)
+    }
+    if (!plan.category || typeof plan.category !== 'string') {
+      plan.category = 'tech'
+    }
+
+    // Build sections from sections_outline if Haiku didn't return structured sections
+    if (!Array.isArray(plan.sections) || plan.sections.length === 0) {
+      plan.sections = (plan.sections_outline ?? []).map(heading => ({
+        heading,
+        purpose: '',
+      }))
+    }
+
+    // Build a fallback research_manifest if Haiku didn't return one
+    if (!plan.research_manifest || !plan.research_manifest.brave_queries || plan.research_manifest.brave_queries.length === 0) {
+      plan.research_manifest = buildFallbackManifest(query, plan)
+      console.log('[planArticle] Built fallback research_manifest')
+    }
+  } catch (enhancedErr) {
+    // If any enhanced validation fails, ensure we have safe defaults and continue
+    console.warn('[planArticle] Enhanced field validation failed — using defaults:', (enhancedErr as Error).message)
+    plan.article_type_confidence = plan.article_type_confidence ?? 100
+    plan.alternative_types = plan.alternative_types ?? []
+    plan.category = plan.category ?? 'tech'
+    plan.sections = plan.sections ?? []
+    if (!plan.research_manifest) {
+      plan.research_manifest = buildFallbackManifest(query, plan)
+    }
+  }
+
   // Ensure visual_strategy exists — fall back to defaults if AI didn't return it
   if (!plan.visual_strategy) {
     const articleType = plan.article_type as ArticleType
     plan.visual_strategy = VISUAL_DEFAULTS[articleType] ?? VISUAL_DEFAULTS.explainer
   }
 
-  console.log('[planArticle] type:', plan.article_type, 'visual_strategy:', JSON.stringify(plan.visual_strategy))
+  console.log('[planArticle] type:', plan.article_type, 'confidence:', plan.article_type_confidence, 'category:', plan.category, 'manifest_queries:', plan.research_manifest?.brave_queries?.length ?? 0)
 
   return plan
+}
+
+/**
+ * Build a fallback research manifest from the old-style plan fields.
+ * Used when Haiku doesn't return the enhanced research_manifest.
+ */
+function buildFallbackManifest(query: string, plan: ArticlePlan): ResearchManifest {
+  const year = new Date().getFullYear()
+  const productTypes: ArticleType[] = ['buyer_guide', 'comparison', 'decision_guide', 'roundup']
+  const isProductArticle = productTypes.includes(plan.article_type)
+
+  // Build brave queries from the old research_queries + entity names
+  const braveQueries: ResearchManifest['brave_queries'] = [
+    { query: `${query} ${year}`, purpose: 'core_facts' },
+    { query: `${query} reddit ${year}`, purpose: 'community' },
+  ]
+
+  // Add entity-specific queries for product articles
+  if (isProductArticle) {
+    for (const entity of (plan.entities ?? []).slice(0, 3)) {
+      braveQueries.push({ query: `${entity.name} review ${year}`, purpose: 'product_review' })
+    }
+    braveQueries.push({ query: `${query} price comparison ${year}`, purpose: 'pricing' })
+  } else {
+    braveQueries.push({ query: `${query} expert analysis ${year}`, purpose: 'expert_opinion' })
+    braveQueries.push({ query: `${query} explained`, purpose: 'background' })
+  }
+
+  // Reddit queries
+  const redditQueries: ResearchManifest['reddit_queries'] = [
+    { query: query, subreddits: [] },
+  ]
+
+  // Image queries
+  const imageQueries: ResearchManifest['image_queries'] = {
+    hero: {
+      query: plan.hero_image_query ?? query,
+      style: isProductArticle ? 'product_photo' : 'editorial_photo',
+    },
+    products: isProductArticle
+      ? (plan.entities ?? []).slice(0, 5).map(e => ({ entity_name: e.name, query: e.search_query }))
+      : [],
+  }
+
+  return { brave_queries: braveQueries, reddit_queries: redditQueries, image_queries: imageQueries }
 }
 
 /**
@@ -711,6 +902,8 @@ export async function writeWithSonnet(
   options?: GenOptions,
   articleId?: string,
   fallbackReason?: string,
+  entityCards?: EntityCard[],
+  synthesis?: ResearchSynthesis,
 ): Promise<ArticleContent> {
   if (articleId && isDuplicateCall(articleId, 'write')) {
     throw new Error('Duplicate writing call blocked')
@@ -720,6 +913,8 @@ export async function writeWithSonnet(
   const optionsPrompt = options ? buildOptionsPrompt(options) : ''
   const maxTokens = options?.length === 'quick' ? 8000 : options?.length === 'deep' ? 24000 : 16000
   const model = 'claude-sonnet-4-20250514'
+
+  const structuredResearch = buildStructuredResearchPrompt(entityCards, synthesis)
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const message = await getAnthropic().messages.create({
@@ -737,6 +932,7 @@ ${plan.forbidden_components?.length ? `FORBIDDEN COMPONENTS — DO NOT USE THESE
 
 RESEARCH (from live web search — use these facts and prices):
 ${research}
+${structuredResearch}
 
 Plan:
 - Title: ${plan.title}

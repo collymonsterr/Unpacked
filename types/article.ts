@@ -1,14 +1,8 @@
-export type ArticleType =
-  | 'buyer_guide'
-  | 'comparison'
-  | 'decision_guide'
-  | 'explainer'
-  | 'news'
-  | 'planning'
-  | 'trend_analysis'
-  | 'tutorial'
+// Re-export from the single source of truth
+import type { ArticleType as _ArticleType } from '@/lib/article-types'
+export type ArticleType = _ArticleType
 
-export type ArticleStatus = 'planning' | 'generating' | 'complete' | 'verified' | 'error'
+export type ArticleStatus = 'planning' | 'generating' | 'awaiting_auth' | 'complete' | 'verified' | 'error'
 
 export type ArticleVisibility = 'private' | 'unlisted' | 'published'
 
@@ -40,6 +34,82 @@ export interface SuggestionChips {
   related: string[]
 }
 
+// ── Research Manifest (from enhanced planning) ─────────────────────────────
+
+export interface BraveQuery {
+  query: string
+  purpose: 'core_facts' | 'economic_impact' | 'background' | 'wider_context' | 'product_review' | 'pricing' | 'specs' | 'community' | 'expert_opinion' | 'comparison' | 'how_to' | 'alternatives'
+}
+
+export interface RedditQuery {
+  query: string
+  subreddits: string[]
+}
+
+export interface ImageQueries {
+  hero: { query: string; style: 'editorial_photo' | 'news_photo' | 'product_photo' | 'abstract' }
+  products: Array<{ entity_name: string; query: string }>
+}
+
+export interface ResearchManifest {
+  brave_queries: BraveQuery[]
+  reddit_queries: RedditQuery[]
+  image_queries: ImageQueries
+}
+
+export interface PlanSection {
+  heading: string
+  purpose: string
+}
+
+// ── Entity Cards + Synthesis (from research extraction) ─────────────────────
+
+export type EntityType = 'product' | 'person' | 'company' | 'concept' | 'place' | 'event' | 'data_point'
+
+export interface EntityFact {
+  claim: string
+  source: string
+  source_url: string
+  confidence: 'high' | 'medium' | 'low'
+  finding_id: string
+}
+
+export interface EntityCard {
+  id: string
+  canonical_name: string
+  type: EntityType
+  aliases: string[]
+  facts: EntityFact[]
+  conflicts: string[]
+  community_sentiment: string
+  image_query: string
+  freshness: string
+  relevance_score: number
+  product_fields?: {
+    price?: string
+    category?: string
+    brand?: string
+    key_specs?: Record<string, string>
+  }
+}
+
+export interface ResearchSynthesis {
+  thesis_direction: string
+  comparison_axes: string[]
+  strongest_arguments: Record<string, string>
+  likely_winner: string | null
+  caveats: string[]
+  community_sentiment_summary: string
+  key_data_points: string[]
+  source_quality: string
+  gaps: string[]
+}
+
+export type ArticleCategory =
+  | 'tech' | 'finance' | 'health_fitness' | 'travel' | 'home_living'
+  | 'entertainment' | 'science' | 'business' | 'automotive' | 'culture'
+  | 'current_affairs' | 'ai_future'
+
 export interface ArticlePlan {
   title: string
   article_type: ArticleType
@@ -53,6 +123,12 @@ export interface ArticlePlan {
   hero_image_subject?: string
   forbidden_components?: string[]
   suggestion_chips: SuggestionChips
+  // Enhanced planning fields (Session 1.7A)
+  research_manifest?: ResearchManifest
+  article_type_confidence?: number
+  alternative_types?: string[]
+  category?: ArticleCategory
+  sections?: PlanSection[]
 }
 
 // ── Article Sections (Step 2 output) ─────────────────────────────────────────
@@ -330,6 +406,31 @@ export interface ArticleRow {
   trending_set_at?: string | null
   visibility?: ArticleVisibility
   generation_options?: Record<string, unknown> | null
+  research_preview?: {
+    title: string
+    article_type: string
+    entities_found: string[]
+    source_count: number
+    source_names: string[]
+    teaser_line: string
+    research_query_count: number
+    // Enhanced fields (Session 1.7A)
+    article_type_confidence?: number
+    alternative_types?: string[]
+    category?: string
+    // Enhanced fields (Session 1.7B)
+    source_quality?: string
+  } | null
+  research_findings?: Array<{
+    id: string
+    source: string
+    source_type: 'web' | 'reddit' | 'twitter'
+    url: string
+    content: string
+    used_in_article: boolean
+  }> | null
+  entity_cards?: EntityCard[] | null
+  research_synthesis?: ResearchSynthesis | null
   created_at: string
   updated_at: string
 }

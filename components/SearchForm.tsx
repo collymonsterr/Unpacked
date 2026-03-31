@@ -99,9 +99,9 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
         if (!res.ok) return
         const data = await res.json()
 
-        // Navigate when article moves past planning (writing has started)
+        // Navigate when article moves past planning (writing has started, or paused at auth gate)
         // Use the article ID (UUID) for navigation — the slug may change during generation
-        if (data.status === 'generating' || data.status === 'complete' || data.status === 'verified') {
+        if (data.status === 'generating' || data.status === 'awaiting_auth' || data.status === 'complete' || data.status === 'verified') {
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current)
             pollIntervalRef.current = null

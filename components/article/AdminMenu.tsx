@@ -282,14 +282,16 @@ export default function AdminMenu({
               {showCategoryPicker && (
                 <div className="px-2 py-1 space-y-0.5">
                   {[
-                    { value: 'buyer_guide', label: 'Buying Guide' },
+                    { value: 'buyer_guide', label: 'Buyer Guide' },
                     { value: 'comparison', label: 'Comparison' },
                     { value: 'decision_guide', label: 'Decision Guide' },
                     { value: 'explainer', label: 'Explainer' },
-                    { value: 'tutorial', label: 'Tutorial' },
-                    { value: 'planning', label: 'Travel & Living' },
+                    { value: 'how_to', label: 'How-To' },
+                    { value: 'roundup', label: 'Roundup' },
+                    { value: 'news_analysis', label: 'News Analysis' },
                     { value: 'trend_analysis', label: 'Trend Analysis' },
-                    { value: 'news', label: 'News' },
+                    { value: 'breaking_news', label: 'Breaking News' },
+                    { value: 'deep_dive', label: 'Deep Dive' },
                   ].map(({ value, label }) => (
                     <button
                       key={value}

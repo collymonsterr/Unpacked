@@ -3,8 +3,9 @@
  * Takes pre-researched data from Brave and generates structured article JSON.
  */
 
-import type { ArticleContent, ArticlePlan } from '@/types/article'
+import type { ArticleContent, ArticlePlan, EntityCard, ResearchSynthesis } from '@/types/article'
 import { extractJSON } from '@/lib/utils/extract-json'
+import { buildStructuredResearchPrompt } from '@/lib/structured-research-prompt'
 
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
@@ -88,9 +89,13 @@ VISUAL REQUIREMENTS:
 - buyer_guide: product_cards + comparison_table + bar_chart + stat_cards
 - comparison: product_cards + comparison_table (min 8 rows) + comparison_matrix
 - explainer: 2+ charts (line_chart, bar_chart, stat_cards)
-- tutorial: 1-2 charts where data helps
+- how_to: 1-2 charts where data helps
+- roundup: 1-2 charts (bar_chart for rankings, stat_cards)
 - trend_analysis: 3-5 charts
-- All types: minimum 2 visualisations
+- news_analysis: 1-3 charts (stat_cards, timeline)
+- breaking_news: stat_cards only — minimal visuals
+- deep_dive: 3-5 charts (mix of line_chart, bar_chart, stat_cards, timeline)
+- All types: minimum 2 visualisations (except breaking_news)
 
 FORBIDDEN COMPONENTS: Check the plan's forbidden_components array. Do NOT generate any listed section type.
 
@@ -118,10 +123,11 @@ CALCULATOR: For finance/cost topics, include an interactive_calculator. Use ONLY
 CRITICAL: Do NOT invent new input or output IDs. Use EXACTLY the IDs listed above for the calculator type you choose. If no type fits, use roi_comparison as the closest match.
 
 IMAGES BY ARTICLE TYPE — follow these rules strictly:
-- buyer_guide, comparison, decision_guide: MANDATORY 4-5 images per product card (set image_count: 5 in each product_card). Hero image always required. Include 1-2 image_section entries between major text sections for articles over 800 words.
+- buyer_guide, comparison, decision_guide, roundup: MANDATORY 4-5 images per product card (set image_count: 5 in each product_card). Hero image always required. Include 1-2 image_section entries between major text sections for articles over 800 words.
 - explainer: 1-3 contextual editorial images only if subject is concrete and photographable. No product images unless specific products discussed.
-- news, trend_analysis: Hero image required. 1-2 editorial image_section entries if relevant. No product images unless specific products discussed.
-- tutorial: Step illustration images where they genuinely clarify a step. Not mandatory but encouraged.
+- news_analysis, trend_analysis, deep_dive: Hero image required. 1-2 editorial image_section entries if relevant. No product images unless specific products discussed.
+- how_to: Step illustration images where they genuinely clarify a step. Not mandatory but encouraged.
+- breaking_news: Hero image only. No other images — speed over visuals.
 - For image_section entries: search_query must describe a specific photographable subject. Never "technology background" or "abstract concept". Only include if you're confident a search will return a relevant photo.
 
 NO CITATION MARKUP: No <cite> tags. Clean prose only.
@@ -132,7 +138,7 @@ OUTPUT: Return ONLY valid JSON matching this schema:
 
 {
   "title": "string",
-  "article_type": "buyer_guide|comparison|decision_guide|explainer|news|planning|trend_analysis|tutorial",
+  "article_type": "buyer_guide|comparison|decision_guide|explainer|how_to|roundup|trend_analysis|news_analysis|breaking_news|deep_dive",
   "quick_verdict": { "bullets": ["string (3-4 short punchy points, <15 words each)"], "one_liner": "string" },
   "executive_summary": { "short_answer": "string", "key_takeaways": ["string"], "watch_out_for": ["string"] },
   "sections": [
@@ -215,6 +221,8 @@ export async function writeWithGemini(
   research: string,
   optionsPrompt: string,
   articleId?: string,
+  entityCards?: EntityCard[],
+  synthesis?: ResearchSynthesis,
 ): Promise<ArticleContent> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY
   if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY not set')
@@ -222,6 +230,8 @@ export async function writeWithGemini(
   const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   const currentYear = new Date().getFullYear()
   const systemPrompt = getWritingPrompt(currentDate, currentYear)
+
+  const structuredResearch = buildStructuredResearchPrompt(entityCards, synthesis)
 
   const userMessage = `Write a complete article in valid JSON format.
 
@@ -237,6 +247,7 @@ PLAN:
 
 RESEARCH (from live web search — use these facts and prices):
 ${research}
+${structuredResearch}
 ${optionsPrompt}`
 
   await acquireSlot()

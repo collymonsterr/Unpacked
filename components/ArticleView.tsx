@@ -250,7 +250,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           className="text-sm font-medium uppercase tracking-wide mb-3"
           style={{ color: '#E07A3A' }}
         >
-          {ARTICLE_TYPE_LABELS[article.article_type] ?? article.article_type.replace(/_/g, ' ')}
+          {(ARTICLE_TYPE_LABELS as Record<string, string>)[article.article_type] ?? article.article_type.replace(/_/g, ' ')}
         </p>
         {articleRow.user_name && (
           <div className="flex items-center gap-3 mb-3">

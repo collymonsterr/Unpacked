@@ -21,14 +21,11 @@ function getCardImage(row: ArticleRow): string | null {
 
 function getArticleTypeLabel(type: string) {
   const labels: Record<string, string> = {
-    buyer_guide: 'Buyer Guide',
-    comparison: 'Comparison',
-    decision_guide: 'Decision Guide',
-    explainer: 'Explainer',
-    news: 'News',
-    planning: 'Planning Guide',
-    trend_analysis: 'Trend Analysis',
-    tutorial: 'Tutorial',
+    buyer_guide: 'Buyer Guide', comparison: 'Comparison', decision_guide: 'Decision Guide',
+    explainer: 'Explainer', how_to: 'How-To', roundup: 'Roundup',
+    news_analysis: 'News Analysis', trend_analysis: 'Trend Analysis',
+    breaking_news: 'Breaking News', deep_dive: 'Deep Dive',
+    news: 'News', planning: 'Planning Guide', tutorial: 'Tutorial',
   }
   return labels[type] ?? type.replace(/_/g, ' ')
 }

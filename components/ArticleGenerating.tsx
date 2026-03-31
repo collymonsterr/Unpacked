@@ -4,8 +4,6 @@ import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import type { ArticleRow } from '@/types/article'
 import ArticleTypeBadge from './ui/ArticleTypeBadge'
-import SignInNudge from './ui/SignInNudge'
-import { useUser } from '@/hooks/useUser'
 
 interface Props {
   row: ArticleRow
@@ -34,10 +32,8 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
   const [showEducation, setShowEducation] = useState(false)
   const [showStructure, setShowStructure] = useState(false)
   const [articleReady, setArticleReady] = useState(false)
-  const [showSignIn, setShowSignIn] = useState(false)
   const readyFired = useRef(false)
   const messageIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const { user } = useUser()
 
   const plan = row.plan
   const isComplete = row.status === 'complete' || row.status === 'verified'
@@ -83,12 +79,6 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
     }
   }, [planRevealed, isNewUser])
 
-  // Show sign-in nudge ~45s in
-  useEffect(() => {
-    if (user || !planRevealed) return
-    const timer = setTimeout(() => setShowSignIn(true), 20000)
-    return () => clearTimeout(timer)
-  }, [user, planRevealed])
 
   // Article-type-aware message sets — each tells the research → analysis → writing → finishing story
   const TYPE_MESSAGES: Record<string, string[]> = {
@@ -137,6 +127,81 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
       'This isn\'t a five-second AI summary — it\'s a properly researched article...',
       'Almost there...',
     ],
+    news_analysis: [
+      'Pulling in the latest reporting on this...',
+      'Cross-referencing multiple sources for accuracy...',
+      'Checking what\'s confirmed versus what\'s still speculation...',
+      'Looking at expert reaction and analysis...',
+      'Building the timeline of what happened...',
+      'Writing the analysis — what it means and what happens next...',
+      'Fact-checking everything before it reaches you...',
+      'This isn\'t a five-second AI summary — it\'s a properly researched article...',
+      'Almost there...',
+    ],
+    breaking_news: [
+      'Pulling in the latest confirmed reporting...',
+      'Separating confirmed facts from speculation...',
+      'Cross-referencing multiple sources...',
+      'Checking official statements and expert reaction...',
+      'Building the essential picture...',
+      'Writing the breakdown...',
+      'Fact-checking everything before it reaches you...',
+      'Almost there...',
+    ],
+    how_to: [
+      'Researching the best approaches to this...',
+      'Checking expert guides and tutorials...',
+      'Looking at what real people recommend on Reddit and forums...',
+      'Identifying the most reliable step-by-step methods...',
+      'Noting common mistakes and how to avoid them...',
+      'Building the instructions...',
+      'Writing each step with practical detail...',
+      'Adding tips and troubleshooting notes...',
+      'Fact-checking everything before it reaches you...',
+      'This isn\'t a five-second AI summary — it\'s a properly researched article...',
+      'Almost there...',
+    ],
+    roundup: [
+      'Pulling from multiple expert sources and review sites...',
+      'Checking real user sentiment on Reddit and forums...',
+      'Filtering out sponsored content and outdated information...',
+      'Comparing specs, performance data, and pricing across options...',
+      'Ranking the contenders based on consistent patterns...',
+      'Working out the top picks for different needs...',
+      'Writing the main sections and product breakdowns...',
+      'Assembling data tables and comparisons...',
+      'Adding pricing and availability data...',
+      'Writing the verdict...',
+      'Fact-checking everything before it reaches you...',
+      'This isn\'t a five-second AI summary — it\'s a properly researched article...',
+      'Almost there...',
+    ],
+    trend_analysis: [
+      'Researching the latest data and developments...',
+      'Cross-referencing multiple expert sources...',
+      'Identifying the key patterns and inflection points...',
+      'Looking at what the data actually shows versus the hype...',
+      'Building the timeline and trajectory...',
+      'Writing the analysis...',
+      'Assembling charts and data visualisations...',
+      'Fact-checking everything before it reaches you...',
+      'This isn\'t a five-second AI summary — it\'s a properly researched article...',
+      'Almost there...',
+    ],
+    deep_dive: [
+      'Casting a wide net across sources and databases...',
+      'Pulling in expert analysis and academic research...',
+      'Cross-referencing claims across independent sources...',
+      'Mapping out the key dimensions of this topic...',
+      'Identifying the nuances most coverage misses...',
+      'Building the deep structure...',
+      'Writing the comprehensive breakdown...',
+      'Adding supporting data, charts, and evidence...',
+      'Fact-checking everything before it reaches you...',
+      'This isn\'t a five-second AI summary — it\'s a properly researched article...',
+      'Almost there...',
+    ],
+    // Legacy type fallback
     news: [
       'Pulling in the latest reporting on this...',
       'Cross-referencing multiple sources for accuracy...',
@@ -344,8 +409,14 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
                   comparison: 'Real expert reviews, real user opinions, real prices — fact-checked before you read it.',
                   decision_guide: 'Real expert reviews, real user opinions, real prices — fact-checked before you read it.',
                   explainer: 'Real sources, multiple perspectives, fact-checked — so you actually understand it.',
-                  news: 'Live sources, expert analysis, fact-checked — what\'s actually happening and why it matters.',
+                  how_to: 'Step-by-step guidance drawn from real expert sources — tested and fact-checked.',
+                  roundup: 'Real expert reviews, real user opinions, real prices — fact-checked before you read it.',
+                  news_analysis: 'Live sources, expert analysis, fact-checked — what it means and what happens next.',
                   trend_analysis: 'Live sources, expert analysis, fact-checked — what\'s actually happening and why it matters.',
+                  breaking_news: 'Developing story — essential facts, verified sources, updated as it unfolds.',
+                  deep_dive: 'Comprehensive analysis from multiple sources — the complete picture, fact-checked.',
+                  // Legacy
+                  news: 'Live sources, expert analysis, fact-checked — what\'s actually happening and why it matters.',
                   tutorial: 'Step-by-step guidance drawn from real expert sources — tested and fact-checked.',
                   planning: 'Real recommendations, local insights, up-to-date information — fact-checked before you read it.',
                 }
@@ -422,14 +493,7 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
             </div>
           )}
 
-          {/* ─── 4. SIGN-IN NUDGE ─── */}
-          {showSignIn && !articleReady && (
-            <div className="mb-4">
-              <SignInNudge user={user} articleId={row.id} />
-            </div>
-          )}
-
-          {/* ─── 5. ARTICLE STRUCTURE (quiet, at the bottom) ─── */}
+          {/* ─── 4. ARTICLE STRUCTURE (quiet, at the bottom) ─── */}
           {(plan.entities.length > 0 || plan.sections_outline.length > 0) && !articleReady && (
             <div className="mt-6 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
               <button

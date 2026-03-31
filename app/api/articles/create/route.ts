@@ -1,15 +1,13 @@
 import { NextRequest } from 'next/server'
 import { after } from 'next/server'
-import { planArticle, writeWithSonnet, buildOptionsPrompt } from '@/lib/claude'
-import { writeWithGemini } from '@/lib/gemini-writer'
-import { runBraveResearch } from '@/lib/brave-research'
-import { enrichArticleWithImages, fetchThumbnailImage } from '@/lib/images'
-import { pickBestArticleImage } from '@/lib/imagen'
-import { runFactCheck, applyCorrections } from '@/lib/fact-check'
+import { planArticle } from '@/lib/claude'
+import { executeResearch } from '@/lib/research-orchestrator'
 import { getSupabaseAdmin, createServerSupabase } from '@/lib/supabase'
 import { generateUniqueSlug } from '@/lib/slug'
 import { checkRateLimit, getRateLimitInfo } from '@/lib/rate-limit'
 import { findCachedArticle } from '@/lib/query-cache'
+import { buildResearchPreview } from '@/lib/research-preview'
+import { runWritePipeline } from '@/lib/write-pipeline'
 
 export async function POST(request: NextRequest) {
   try {
@@ -87,8 +85,18 @@ export async function POST(request: NextRequest) {
       .lt('updated_at', new Date(Date.now() - 10 * 60 * 1000).toISOString())
       .then(() => {}) // intentionally fire and forget
 
+    // Cleanup: reset articles stuck in 'awaiting_auth' for >24 hours
+    getSupabaseAdmin()
+      .from('articles')
+      .update({ status: 'error' })
+      .eq('status', 'awaiting_auth')
+      .lt('updated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .then(() => {}) // intentionally fire and forget
+
     // Generate slug from the query (not the title — we don't have it yet)
     const slug = await generateUniqueSlug(trimmedQuery)
+
+    const isAuthenticated = !!userId
 
     // Save to Supabase immediately with status 'planning' — no plan yet
     const { data, error } = await getSupabaseAdmin()
@@ -113,11 +121,11 @@ export async function POST(request: NextRequest) {
     if (error) throw error
 
     // Respond immediately — user navigates to article page in <1s
-    // ALL work (plan, write, images, fact-check) runs in the background
+    // Background work runs in after() — differs based on auth status
     after(async () => {
       const db = getSupabaseAdmin()
       try {
-        // Phase 1: Plan the article
+        // ── Phase 1: Plan the article ──
         console.log('[create] Planning article for:', trimmedQuery.slice(0, 50), 'options:', JSON.stringify(generationOptions))
         const plan = await planArticle(trimmedQuery, generationOptions, data.id)
 
@@ -135,95 +143,63 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', data.id)
 
-        console.log('[create] Plan complete, now researching:', plan.title.slice(0, 50))
+        console.log('[create] Plan complete, now researching:', plan.title.slice(0, 50), 'manifest_queries:', plan.research_manifest?.brave_queries?.length ?? 0)
 
-        // Phase 2a: Brave pre-research
+        // ── Phase 2: Parallel research via orchestrator ──
+        // research_manifest is guaranteed by planArticle() (fallback built if AI didn't return one)
         const length = (generationOptions?.length as 'quick' | 'standard' | 'deep') ?? 'standard'
-        const research = await runBraveResearch(
-          trimmedQuery,
-          plan.entities ?? [],
-          plan.article_type,
+        const manifest = plan.research_manifest ?? {
+          brave_queries: [{ query: trimmedQuery, purpose: 'core_facts' as const }],
+          reddit_queries: [{ query: trimmedQuery, subreddits: [] }],
+          image_queries: { hero: { query: trimmedQuery, style: 'editorial_photo' as const }, products: [] },
+        }
+        const research = await executeResearch(
+          manifest,
+          plan,
           length,
         )
 
-        // Save research findings immediately — preserved even if writing fails
-        if (research.findings.length > 0) {
+        // Save research findings + entity cards + synthesis immediately — preserved even if writing fails
+        const researchUpdate: Record<string, unknown> = {}
+        if (research.findings.length > 0) researchUpdate.research_findings = research.findings
+        if (research.entityCards.length > 0) researchUpdate.entity_cards = research.entityCards
+        if (research.synthesis) researchUpdate.research_synthesis = research.synthesis
+
+        if (Object.keys(researchUpdate).length > 0) {
           await db
             .from('articles')
-            .update({ research_findings: research.findings })
+            .update(researchUpdate)
             .eq('id', data.id)
         }
 
-        // Phase 2b: Write the article
-        let rawArticle
-        const isDeep = length === 'deep'
-
-        if (isDeep) {
-          console.log('[create] Writing with Sonnet (deep mode)')
-          rawArticle = await writeWithSonnet(trimmedQuery, plan, research.summary, generationOptions, data.id)
+        // ── Fork: authenticated users continue to writing; anonymous users pause ──
+        if (isAuthenticated) {
+          // Authenticated: run the full writing pipeline without pausing
+          console.log('[create] Authenticated user — continuing to write:', plan.title.slice(0, 50))
+          await runWritePipeline({
+            articleId: data.id,
+            query: trimmedQuery,
+            plan,
+            researchSummary: research.summary,
+            generationOptions,
+            entityCards: research.entityCards,
+            synthesis: research.synthesis,
+          })
         } else {
-          try {
-            console.log('[create] Writing with Gemini Flash')
-            const optsPrompt = buildOptionsPrompt(generationOptions)
-            rawArticle = await writeWithGemini(trimmedQuery, plan, research.summary, optsPrompt, data.id)
-          } catch (geminiErr) {
-            const geminiErrMsg = (geminiErr as Error).message
-            console.log('[fallback] Gemini failed — falling back to Sonnet:', geminiErrMsg)
-            rawArticle = await writeWithSonnet(trimmedQuery, plan, research.summary, generationOptions, data.id, geminiErrMsg)
-          }
-        }
+          // Anonymous: build preview, save it, and pause at awaiting_auth
+          console.log('[create] Anonymous user — pausing at research preview:', plan.title.slice(0, 50))
+          const preview = buildResearchPreview(plan, research.findings, research.entityCards, research.synthesis)
 
-        // Phase 3: Enrich images + hero thumbnail (parallel)
-        const [enrichedArticle, heroUrl] = await Promise.all([
-          enrichArticleWithImages(
-            rawArticle,
-            plan.entities,
-            plan.visual_strategy?.image_density
-          ),
-          fetchThumbnailImage(
-            rawArticle.title,
-            rawArticle.article_type,
-            undefined,
-            plan.hero_image_query,
-            rawArticle.quick_verdict?.one_liner ?? rawArticle.executive_summary?.short_answer ?? '',
-            data.id
-          ),
-        ])
-
-        enrichedArticle.thumbnail_url = heroUrl ?? pickBestArticleImage(enrichedArticle)
-
-        // Store hero_image_query on article for future thumbnail replacements
-        if (plan.hero_image_query) {
-          (enrichedArticle as unknown as Record<string, unknown>).hero_image_query = plan.hero_image_query
-        }
-
-        // Save complete article
-        await db
-          .from('articles')
-          .update({ article: enrichedArticle, status: 'complete' })
-          .eq('id', data.id)
-
-        console.log('[create] Article complete, starting fact-check')
-
-        // Phase 4: Fact-check (non-blocking — article is already readable)
-        try {
-          const factCheckResult = await runFactCheck(enrichedArticle)
-          let finalArticle = enrichedArticle
-          if (factCheckResult.issues_found && factCheckResult.issues.length > 0) {
-            finalArticle = applyCorrections(enrichedArticle, factCheckResult)
-          }
           await db
             .from('articles')
             .update({
-              article: finalArticle,
-              fact_check: factCheckResult,
-              verified_at: new Date().toISOString(),
-              status: 'verified',
+              research_preview: preview,
+              status: 'awaiting_auth',
             })
             .eq('id', data.id)
-          console.log('[create] Fact-check done:', factCheckResult.total_issues, 'issues')
-        } catch (fcErr) {
-          console.error('[create] Fact-check failed:', fcErr)
+
+          // Pipeline stops here. Writing will be triggered by /api/articles/[id]/start-writing
+          // after the user signs in and claims the article.
         }
       } catch (err) {
         const errCode = (err as NodeJS.ErrnoException).code

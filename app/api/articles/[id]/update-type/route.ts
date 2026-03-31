@@ -2,8 +2,9 @@ import { NextRequest } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/auth-check'
 import { isValidUUID } from '@/lib/validate'
+import { ARTICLE_TYPE_LIST } from '@/lib/article-types'
 
-const VALID_TYPES = ['buyer_guide', 'comparison', 'decision_guide', 'explainer', 'news', 'planning', 'trend_analysis', 'tutorial']
+const VALID_TYPES = ARTICLE_TYPE_LIST as readonly string[]
 
 export async function POST(
   request: NextRequest,

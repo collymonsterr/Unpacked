@@ -6,6 +6,9 @@ import type { ArticleRow } from '@/types/article'
 import ArticleGenerating from '@/components/ArticleGenerating'
 import ArticleView from '@/components/ArticleView'
 import ArticleSkeleton from '@/components/ArticleSkeleton'
+import ResearchPreview from '@/components/ResearchPreview'
+import SignInGate from '@/components/SignInGate'
+import SignInBar from '@/components/SignInBar'
 import Logo from '@/components/ui/Logo'
 import UserMenu from '@/components/ui/UserMenu'
 import FactCheckBar from '@/components/ui/FactCheckBar'
@@ -13,7 +16,6 @@ import { useAdminMode } from '@/hooks/useAdminMode'
 import { useUser } from '@/hooks/useUser'
 import { addRecentArticle } from '@/lib/recent-articles'
 import { clearPendingArticle } from '@/lib/pending-article'
-import SignInNudge from '@/components/ui/SignInNudge'
 
 interface Props {
   initialRow: ArticleRow
@@ -40,14 +42,18 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
   // Track whether this article was/is being generated (reactive — updates with row.status)
   const isGenerating = row.status === 'generating' || row.status === 'planning'
   const wasEverGenerating = useRef(
-    initialRow.status === 'generating' || initialRow.status === 'planning'
+    initialRow.status === 'generating' || initialRow.status === 'planning' || initialRow.status === 'awaiting_auth'
   )
   if (isGenerating) wasEverGenerating.current = true
 
   const isAdmin = useAdminMode()
-  const { user } = useUser()
+  const { user, loading: userLoading } = useUser()
   const isOwner = isAdmin || (user != null && row.user_id === user.id)
-  const [signInOverlayDismissed, setSignInOverlayDismissed] = useState(false)
+
+  // Sign-in gate state
+  const [gateDismissed, setGateDismissed] = useState(false)
+  const [claimInProgress, setClaimInProgress] = useState(false)
+  const claimAttempted = useRef(false)
 
   const poll = useCallback(async () => {
     try {
@@ -65,6 +71,29 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
       // ignore transient fetch errors
     }
   }, [initialRow.id])
+
+  // ── Auto-claim: if user is authenticated and article is awaiting_auth, start writing ──
+  useEffect(() => {
+    if (userLoading) return // Wait until we know auth state
+    if (!user) return // Not logged in
+    if (row.status !== 'awaiting_auth') return // Not in gate state
+    if (claimAttempted.current) return // Already tried
+    claimAttempted.current = true
+    setClaimInProgress(true)
+
+    console.log('[article-page] User authenticated, auto-claiming article')
+    fetch(`/api/articles/${initialRow.id}/start-writing`, { method: 'POST' })
+      .then(res => {
+        if (res.ok) {
+          // Force a poll to pick up the new status
+          poll()
+        } else {
+          console.error('[article-page] Auto-claim failed:', res.status)
+        }
+      })
+      .catch(err => console.error('[article-page] Auto-claim error:', err))
+      .finally(() => setClaimInProgress(false))
+  }, [user, userLoading, row.status, initialRow.id, poll])
 
   // Track view (debounced: 1 view per article per 5 minutes via localStorage)
   useEffect(() => {
@@ -93,15 +122,16 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
   // eslint-disable-next-line react-hooks/purity -- useRef initial value is set once on mount only
   const pollStartRef = useRef(Date.now())
 
-  // Poll while article is not yet verified
+  // Poll while article is not yet verified (but NOT while awaiting_auth — that's paused)
   useEffect(() => {
     // Stop polling when verified or errored
     if (row.status === 'verified' || row.status === 'error') return
+    // Stop polling when awaiting_auth (paused state — no server work happening)
+    if (row.status === 'awaiting_auth' && !claimInProgress) return
     // Stop polling when showing a completed article that wasn't freshly generated
     if (showArticle && row.status === 'complete' && !wasEverGenerating.current) return
 
     // After timeout, keep polling slowly (every 10s) so the article appears automatically
-    // when it finishes — the user shouldn't have to manually click "Check again"
     const pollInterval = timedOut ? 10000 : 2500
 
     const interval = setInterval(() => {
@@ -111,17 +141,18 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
       poll()
     }, pollInterval)
     return () => clearInterval(interval)
-  }, [row.status, showArticle, poll, timedOut])
+  }, [row.status, showArticle, poll, timedOut, claimInProgress])
 
   // Page Visibility API — poll immediately when tab becomes visible
   useEffect(() => {
     if (showArticle && (row.status === 'verified' || !wasEverGenerating.current)) return
+    if (row.status === 'awaiting_auth' && !claimInProgress) return
     function handleVisibility() {
       if (document.visibilityState === 'visible') poll()
     }
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)
-  }, [showArticle, row.status, poll])
+  }, [showArticle, row.status, poll, claimInProgress])
 
   // Clear pending article from localStorage when article is ready
   useEffect(() => {
@@ -129,11 +160,6 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
   }, [showArticle, row.article])
 
   // CRITICAL: Direct completion detection
-  // If the article becomes complete/verified and has content, show it — regardless
-  // of whether we went through ArticleGenerating or not. This handles:
-  // - Page refresh mid-generation where status is already 'complete' on load
-  // - Fast articles that complete before ArticleGenerating even mounts
-  // - Race conditions where the rendering path was wrong
   useEffect(() => {
     if (showArticle) return // Already showing
     if (!row.article) return // No content yet
@@ -149,8 +175,6 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
     }
 
     // If we were generating and it just completed, do the transition
-    // (This is the safety net — ArticleGenerating's onReady should handle this,
-    // but if it didn't fire for any reason, this catches it after 2 seconds)
     const timer = setTimeout(() => {
       if (!showArticle) {
         clearPendingArticle()
@@ -164,18 +188,15 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
   }, [row.status, row.article, showArticle])
 
   // URL cleanup: replace UUID in URL with clean slug once article is complete
-  // Fires once — when showArticle becomes true and the slug is a proper title-based slug (not a UUID)
   const urlReplaced = useRef(false)
   useEffect(() => {
     if (urlReplaced.current) return
     if (!showArticle || !row.slug) return
 
-    // Only replace if the current URL contains a UUID (36-char hex pattern)
     const currentPath = window.location.pathname
     const isUuidUrl = /\/article\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(currentPath)
     if (!isUuidUrl) return
 
-    // Don't replace with the same UUID
     const isSlugUuid = /^[0-9a-f]{8}-[0-9a-f]{4}/.test(row.slug)
     if (isSlugUuid) return
 
@@ -203,11 +224,16 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
     return 'none'
   })()
 
-  // Determine which view to show
+  // ── Determine which view to show ──
   const showError = row.status === 'error'
-  const showGenerating = !showArticle && !showError && isGenerating
-  const showSkeleton = !showArticle && !showError && !showGenerating
-  const showSignInOverlay = showArticle && !user && !signInOverlayDismissed
+  const showAwaitingAuth = !showArticle && !showError && row.status === 'awaiting_auth' && !claimInProgress
+  const showGenerating = !showArticle && !showError && !showAwaitingAuth && isGenerating
+  const showSkeleton = !showArticle && !showError && !showAwaitingAuth && !showGenerating
+
+  // Show sign-in gate overlay when awaiting auth and user is not logged in
+  const showSignInGate = showAwaitingAuth && !user && !gateDismissed
+  // Show persistent sign-in bar when gate was dismissed
+  const showSignInBottomBar = showAwaitingAuth && !user && gateDismissed
 
   return (
     <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
@@ -266,35 +292,42 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
             </Link>
           </div>
         </div>
-      ) : showArticle && row.article ? (
+      ) : showAwaitingAuth ? (
         <>
-          <div
-            style={{
-              opacity: fadeState === 'article' ? 1 : 0,
-              transition: 'opacity 0.4s ease',
-            }}
-          >
-            <ArticleView
-              articleRow={row}
-              isOwner={isOwner}
-              isAdmin={isAdmin}
-              isNew={wasEverGenerating.current}
-              factCheckStatus={factCheckStatus}
-              linkableArticles={linkableArticles}
-              creatorBio={creatorBio}
-              creatorTwitterUrl={creatorTwitterUrl}
-              creatorLinkedinUrl={creatorLinkedinUrl}
-            />
-          </div>
-          {showSignInOverlay && (
-            <SignInNudge
-              user={user}
+          <ResearchPreview
+            preview={row.research_preview!}
+            query={row.query}
+            articleId={initialRow.id}
+          />
+          {showSignInGate && (
+            <SignInGate
               articleId={initialRow.id}
-              overlay={true}
-              onDismiss={() => setSignInOverlayDismissed(true)}
+              onDismiss={() => setGateDismissed(true)}
             />
           )}
+          {showSignInBottomBar && (
+            <SignInBar />
+          )}
         </>
+      ) : showArticle && row.article ? (
+        <div
+          style={{
+            opacity: fadeState === 'article' ? 1 : 0,
+            transition: 'opacity 0.4s ease',
+          }}
+        >
+          <ArticleView
+            articleRow={row}
+            isOwner={isOwner}
+            isAdmin={isAdmin}
+            isNew={wasEverGenerating.current}
+            factCheckStatus={factCheckStatus}
+            linkableArticles={linkableArticles}
+            creatorBio={creatorBio}
+            creatorTwitterUrl={creatorTwitterUrl}
+            creatorLinkedinUrl={creatorLinkedinUrl}
+          />
+        </div>
       ) : showGenerating ? (
         <div
           style={{
@@ -327,8 +360,7 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
         />
       ) : null}
 
-      {/* Fixed bottom fact-check bar — only show when FirstDraftBanner is NOT showing */}
-      {/* The banner has its own fact-check display to avoid overlap */}
+      {/* Fixed bottom fact-check bar */}
       {factCheckStatus !== 'none' && !(showArticle && wasEverGenerating.current && isOwner) && (
         <FactCheckBar
           status={factCheckStatus}

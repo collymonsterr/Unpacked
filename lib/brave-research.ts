@@ -4,7 +4,7 @@
  * for the writing model (Gemini or Sonnet).
  */
 
-import type { ArticleType } from '@/types/article'
+import type { ArticleType } from '@/lib/article-types'
 
 const BRAVE_API = 'https://api.search.brave.com/res/v1/web/search'
 const BRAVE_IMAGE_API = 'https://api.search.brave.com/res/v1/images/search'
@@ -39,7 +39,7 @@ interface ResearchOutput {
   findings: ResearchFinding[]
 }
 
-async function braveSearch(query: string, count = 8): Promise<SearchResult[]> {
+export async function braveSearch(query: string, count = 8): Promise<SearchResult[]> {
   const apiKey = process.env.BRAVE_SEARCH_API_KEY
   if (!apiKey) return []
 
@@ -101,7 +101,7 @@ function generateSearchQueries(
   queries.push(`${query} reddit ${year}`)
 
   // ~10-20% pricing (product-focused types)
-  if ((['buyer_guide', 'comparison', 'decision_guide'] as ArticleType[]).includes(articleType)) {
+  if ((['buyer_guide', 'comparison', 'decision_guide', 'roundup'] as ArticleType[]).includes(articleType)) {
     queries.push(`${query} price comparison ${year}`)
   }
 
@@ -116,7 +116,9 @@ function generateSearchQueries(
   return queries.slice(0, searchCount)
 }
 
-function compileResearch(
+export { type SearchResult, type ResearchOutput, type ResearchFinding }
+
+export function compileResearch(
   allResults: Map<string, SearchResult[]>,
   entities: { name: string }[],
 ): ResearchOutput {
@@ -337,6 +339,51 @@ function compileResearch(
   }
 }
 
+/**
+ * Execute an array of Brave search queries in parallel.
+ * Cap at 6 simultaneous to avoid rate limits — if more than 6, split into two batches.
+ */
+export async function executeBraveQueries(
+  queries: Array<{ query: string; purpose?: string }>,
+  resultsPerQuery = 6,
+): Promise<Map<string, SearchResult[]>> {
+  const allResults = new Map<string, SearchResult[]>()
+  const MAX_PARALLEL = 6
+
+  if (queries.length <= MAX_PARALLEL) {
+    // All at once
+    const results = await Promise.all(
+      queries.map(async (q) => {
+        const r = await braveSearch(q.query, resultsPerQuery)
+        return [q.query, r] as const
+      })
+    )
+    for (const [q, r] of results) {
+      allResults.set(q, r)
+    }
+  } else {
+    // Split into batches of MAX_PARALLEL
+    const batches: Array<{ query: string; purpose?: string }>[] = []
+    for (let i = 0; i < queries.length; i += MAX_PARALLEL) {
+      batches.push(queries.slice(i, i + MAX_PARALLEL))
+    }
+    for (const batch of batches) {
+      const results = await Promise.all(
+        batch.map(async (q) => {
+          const r = await braveSearch(q.query, resultsPerQuery)
+          return [q.query, r] as const
+        })
+      )
+      for (const [q, r] of results) {
+        allResults.set(q, r)
+      }
+    }
+  }
+
+  return allResults
+}
+
+/** @deprecated Use executeResearch() from research-orchestrator.ts instead */
 export async function runBraveResearch(
   query: string,
   entities: { name: string }[],

@@ -16,14 +16,11 @@ interface AnalyticsData {
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  buyer_guide: 'Buying Guide',
-  comparison: 'Comparison',
-  decision_guide: 'Decision Guide',
-  explainer: 'Explainer',
-  tutorial: 'Tutorial',
-  planning: 'Travel & Living',
-  trend_analysis: 'Trend Analysis',
-  news: 'News',
+  buyer_guide: 'Buyer Guide', comparison: 'Comparison', decision_guide: 'Decision Guide',
+  explainer: 'Explainer', how_to: 'How-To', roundup: 'Roundup',
+  news_analysis: 'News Analysis', trend_analysis: 'Trend Analysis',
+  breaking_news: 'Breaking News', deep_dive: 'Deep Dive',
+  news: 'News', planning: 'Travel & Living', tutorial: 'Tutorial',
 }
 
 const COLORS = ['#E07A3A', '#D3D1C7', '#94918D', '#6B6B6B', '#1A1A1A', '#FEF3EC', '#f0d5be', '#c4a882']
