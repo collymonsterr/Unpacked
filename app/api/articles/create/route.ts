@@ -160,16 +160,19 @@ export async function POST(request: NextRequest) {
         )
 
         // Save research findings + entity cards + synthesis immediately — preserved even if writing fails
+        console.log(`[create] SAVE CHECK: findings=${research.findings.length}, entityCards=${research.entityCards?.length ?? 'undefined'}, synthesis=${research.synthesis ? 'yes' : 'no'}`)
         const researchUpdate: Record<string, unknown> = {}
         if (research.findings.length > 0) researchUpdate.research_findings = research.findings
         if (research.entityCards.length > 0) researchUpdate.entity_cards = research.entityCards
         if (research.synthesis) researchUpdate.research_synthesis = research.synthesis
 
+        console.log(`[create] SAVE KEYS: ${Object.keys(researchUpdate).join(', ')}`)
         if (Object.keys(researchUpdate).length > 0) {
-          await db
+          const { error: saveErr } = await db
             .from('articles')
             .update(researchUpdate)
             .eq('id', data.id)
+          if (saveErr) console.error('[create] SAVE ERROR:', saveErr)
         }
 
         // ── Fork: authenticated users continue to writing; anonymous users pause ──

@@ -173,16 +173,23 @@ export function extractEntityCards(
   findings: Finding[],
   articleType: ArticleType,
 ): EntityCard[] {
+  console.log(`[entity-extraction] ENTER: planEntities=${planEntities.length}, findings=${findings.length}, articleType=${articleType}`)
+  console.log(`[entity-extraction] RAW planEntities: ${JSON.stringify(planEntities.slice(0, 3))}`)
+
   const cards: EntityCard[] = []
   const freshness = new Date().toISOString().slice(0, 7) // "2026-03"
 
   for (let i = 0; i < planEntities.length; i++) {
     const raw = planEntities[i]
+    console.log(`[entity-extraction] Entity ${i}: typeof=${typeof raw}, value=${JSON.stringify(raw)}`)
     // Defensive: skip if entity has no name (malformed data)
     const entity: PlanEntity = typeof raw === 'string'
       ? { name: raw, product_category: '', search_query: raw }
       : raw
-    if (!entity.name) continue
+    if (!entity.name) {
+      console.log(`[entity-extraction] SKIPPING entity ${i}: no name after normalization`)
+      continue
+    }
 
     const aliases = generateAliases(entity.name)
     const entityType = inferEntityType(entity, articleType)
@@ -245,5 +252,6 @@ export function extractEntityCards(
   // Sort by relevance descending
   cards.sort((a, b) => b.relevance_score - a.relevance_score)
 
+  console.log(`[entity-extraction] EXIT: returning ${cards.length} cards, names=${cards.map(c => c.canonical_name).join(', ')}`)
   return cards
 }

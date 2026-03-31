@@ -98,10 +98,12 @@ export async function executeResearch(
   // ── Step 3: Extract entity cards (sync, pure) ──
   let entityCards: EntityCard[] = []
   try {
-    entityCards = extractEntityCards(plan.entities ?? [], compiled.findings, plan.article_type)
-    console.log(`[research-orchestrator] Extracted ${entityCards.length} entity cards`)
+    const planEntities = plan.entities ?? []
+    console.log(`[research-orchestrator] PRE-EXTRACT: plan.entities length=${planEntities.length}, types=${planEntities.map(e => typeof e).join(',')}, sample=${JSON.stringify(planEntities.slice(0, 2))}, findings count=${compiled.findings.length}`)
+    entityCards = extractEntityCards(planEntities, compiled.findings, plan.article_type)
+    console.log(`[research-orchestrator] POST-EXTRACT: ${entityCards.length} entity cards returned`)
   } catch (err) {
-    console.warn('[research-orchestrator] Entity extraction failed — continuing without cards:', (err as Error).message)
+    console.warn('[research-orchestrator] Entity extraction failed — continuing without cards:', (err as Error).message, (err as Error).stack)
   }
 
   // ── Step 4: Build synthesis via Haiku ──
