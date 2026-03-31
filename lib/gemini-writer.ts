@@ -3,9 +3,10 @@
  * Takes pre-researched data from Brave and generates structured article JSON.
  */
 
-import type { ArticleContent, ArticlePlan, EntityCard, ResearchSynthesis } from '@/types/article'
+import type { ArticleContent, ArticlePlan, EntityCard, ResearchSynthesis, ArticleBlueprint } from '@/types/article'
 import { extractJSON } from '@/lib/utils/extract-json'
 import { buildStructuredResearchPrompt } from '@/lib/structured-research-prompt'
+import { formatBlueprintForPrompt } from '@/lib/blueprint'
 
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
@@ -223,6 +224,7 @@ export async function writeWithGemini(
   articleId?: string,
   entityCards?: EntityCard[],
   synthesis?: ResearchSynthesis,
+  blueprint?: ArticleBlueprint,
 ): Promise<ArticleContent> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY
   if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY not set')
@@ -232,6 +234,7 @@ export async function writeWithGemini(
   const systemPrompt = getWritingPrompt(currentDate, currentYear)
 
   const structuredResearch = buildStructuredResearchPrompt(entityCards, synthesis)
+  const blueprintSection = blueprint ? formatBlueprintForPrompt(blueprint) : ''
 
   const userMessage = `Write a complete article in valid JSON format.
 
@@ -239,7 +242,7 @@ QUERY: ${query}
 
 ARTICLE TYPE: ${plan.article_type}
 FORBIDDEN COMPONENTS: ${JSON.stringify(plan.forbidden_components ?? [])}
-
+${blueprintSection}
 PLAN:
 - Title: ${plan.title}
 - Entities: ${plan.entities.map(e => e.name).join(', ')}

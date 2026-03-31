@@ -1,10 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk'
-import type { ArticlePlan, ArticleContent, ArticleType, ResearchManifest, EntityCard, ResearchSynthesis } from '@/types/article'
+import type { ArticlePlan, ArticleContent, ArticleType, ResearchManifest, EntityCard, ResearchSynthesis, ArticleBlueprint } from '@/types/article'
 import { VISUAL_DEFAULTS } from '@/lib/article-config'
 import { ARTICLE_TYPE_LIST } from '@/lib/article-types'
 import { isDuplicateCall, logApiCall } from '@/lib/api-usage'
 import { extractJSON } from '@/lib/utils/extract-json'
 import { buildStructuredResearchPrompt } from '@/lib/structured-research-prompt'
+import { formatBlueprintForPrompt } from '@/lib/blueprint'
 
 // Lazy-init so the env var is always available at call time (not module-load time)
 let _anthropic: Anthropic | null = null
@@ -928,6 +929,7 @@ export async function writeWithSonnet(
   fallbackReason?: string,
   entityCards?: EntityCard[],
   synthesis?: ResearchSynthesis,
+  blueprint?: ArticleBlueprint,
 ): Promise<ArticleContent> {
   if (articleId && isDuplicateCall(articleId, 'write')) {
     throw new Error('Duplicate writing call blocked')
@@ -939,6 +941,7 @@ export async function writeWithSonnet(
   const model = 'claude-sonnet-4-20250514'
 
   const structuredResearch = buildStructuredResearchPrompt(entityCards, synthesis)
+  const blueprintSection = blueprint ? formatBlueprintForPrompt(blueprint) : ''
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const message = await getAnthropic().messages.create({
@@ -953,7 +956,7 @@ export async function writeWithSonnet(
 Article type: ${plan.article_type}
 
 ${plan.forbidden_components?.length ? `FORBIDDEN COMPONENTS — DO NOT USE THESE SECTION TYPES:\n${plan.forbidden_components.map(c => `- ${c}`).join('\n')}\n` : ''}
-
+${blueprintSection}
 RESEARCH (from live web search — use these facts and prices):
 ${research}
 ${structuredResearch}

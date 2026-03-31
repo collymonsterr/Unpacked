@@ -105,6 +105,44 @@ export interface ResearchSynthesis {
   gaps: string[]
 }
 
+// ── Blueprint + Editorial Pass (Session 1.7C) ────────────────────────────────
+
+export interface BlueprintSection {
+  id: string
+  heading: string
+  purpose: string
+  key_points: string[]
+  evidence_ids: string[]
+  target_words: number
+  components: string[]
+}
+
+export interface ArticleBlueprint {
+  thesis: string
+  verdict_statement: string
+  winner: string | null
+  sections: BlueprintSection[]
+  evidence_map: Record<string, string[]>
+  what_not_to_say: string[]
+  forbidden_phrases: string[]
+  tone_notes: string
+  target_word_count: number
+}
+
+export interface EditorIssue {
+  section_id: string
+  issue_type: 'hedging' | 'ai_phrase' | 'weak_verdict' | 'filler' | 'missing_attribution'
+  description: string
+  severity: 'low' | 'medium' | 'high'
+}
+
+export interface EditorResult {
+  score: number
+  issues: EditorIssue[]
+  rewrites: Record<string, string>
+  verdict_rewrite?: string
+}
+
 export type ArticleCategory =
   | 'tech' | 'finance' | 'health_fitness' | 'travel' | 'home_living'
   | 'entertainment' | 'science' | 'business' | 'automotive' | 'culture'
@@ -431,6 +469,7 @@ export interface ArticleRow {
   }> | null
   entity_cards?: EntityCard[] | null
   research_synthesis?: ResearchSynthesis | null
+  blueprint?: ArticleBlueprint | null
   created_at: string
   updated_at: string
 }
