@@ -810,6 +810,23 @@ export async function planArticle(query: string, options?: GenOptions, articleId
       plan.category = 'tech'
     }
 
+    // Normalize entities — Haiku may return strings instead of objects
+    if (Array.isArray(plan.entities)) {
+      plan.entities = plan.entities.map(e => {
+        if (typeof e === 'string') {
+          return { name: e, product_category: '', search_query: e }
+        }
+        if (e && typeof e === 'object' && !e.name && (e as unknown as Record<string, unknown>).canonical_name) {
+          // Handle unexpected shape
+          const raw = e as unknown as Record<string, unknown>
+          return { name: String(raw.canonical_name), product_category: '', search_query: String(raw.canonical_name) }
+        }
+        return e
+      })
+    } else {
+      plan.entities = []
+    }
+
     // Build sections from sections_outline if Haiku didn't return structured sections
     if (!Array.isArray(plan.sections) || plan.sections.length === 0) {
       plan.sections = (plan.sections_outline ?? []).map(heading => ({

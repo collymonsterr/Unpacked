@@ -177,7 +177,13 @@ export function extractEntityCards(
   const freshness = new Date().toISOString().slice(0, 7) // "2026-03"
 
   for (let i = 0; i < planEntities.length; i++) {
-    const entity = planEntities[i]
+    const raw = planEntities[i]
+    // Defensive: skip if entity has no name (malformed data)
+    const entity: PlanEntity = typeof raw === 'string'
+      ? { name: raw, product_category: '', search_query: raw }
+      : raw
+    if (!entity.name) continue
+
     const aliases = generateAliases(entity.name)
     const entityType = inferEntityType(entity, articleType)
 
