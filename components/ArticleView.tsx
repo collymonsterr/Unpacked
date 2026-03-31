@@ -341,6 +341,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           history={article.thumbnail_history ?? []}
           isAdmin={isOwner}
           articleId={articleRow.id}
+          attribution={article.hero_attribution}
           onReplace={async (useAI?: boolean) => {
             try {
               const url = `/api/articles/${articleRow.id}/replace-thumbnail${useAI ? '?ai=true' : ''}`

@@ -1,4 +1,7 @@
-import type { PlanEntity, ArticleContent, ArticleType, ImageDensity, ProductCard, ImageSection } from '@/types/article'
+import type { PlanEntity, ArticleContent, ArticleType, ImageDensity, ProductCard, ImageSection, ImageAttribution } from '@/types/article'
+import { routeImageRequest, filterImageCandidates, type ImageCandidate, type ImageSource } from '@/lib/image-router'
+import { searchPexels } from '@/lib/pexels'
+import { searchUnsplash } from '@/lib/unsplash'
 
 interface BraveImageResult {
   properties: { url: string }
@@ -256,9 +259,88 @@ Search query:`,
 }
 
 /**
- * Shared hero image search helper.
- * Resolves the search query (from heroImageQuery or Haiku), calls Brave Images,
- * filters and ranks the results, and excludes already-seen URLs.
+ * Fetch candidates from a specific image source.
+ * Converts Brave results into ImageCandidate format for unified handling.
+ */
+async function fetchFromSource(
+  source: ImageSource,
+  query: string,
+  count: number,
+): Promise<ImageCandidate[]> {
+  switch (source) {
+    case 'pexels':
+      return searchPexels(query, { perPage: count, orientation: 'landscape' })
+    case 'unsplash':
+      return searchUnsplash(query, { perPage: count, orientation: 'landscape' })
+    case 'brave': {
+      const results = await searchBraveImages(query, 20)
+      const urls = filterAndRankImageUrls(results)
+      return urls.slice(0, count).map(url => ({
+        url,
+        source: 'brave' as const,
+        alt: query,
+        width: 0, // Brave doesn't reliably return dimensions
+        height: 0,
+      }))
+    }
+    default:
+      return []
+  }
+}
+
+/**
+ * Routed hero image search — tries sources in priority order based on article type.
+ * Returns ImageCandidates with attribution for Pexels/Unsplash.
+ */
+async function resolveHeroCandidates(
+  title: string,
+  articleType: ArticleType,
+  excludeUrls?: string[],
+  heroImageQuery?: string,
+  summary?: string,
+  articleId?: string,
+  style?: 'editorial_photo' | 'news_photo' | 'product_photo' | 'abstract',
+): Promise<ImageCandidate[]> {
+  const baseQuery = heroImageQuery || await generateHeroQuery(title, summary ?? '', articleId)
+  const isReplacing = excludeUrls && excludeUrls.length > 0
+
+  // For replace requests, add a suffix for variety
+  const suffixes = ['', 'photo', 'editorial', 'photography', 'image', 'press photo']
+  const angleIndex = isReplacing ? (excludeUrls?.length ?? 0) % suffixes.length : 0
+  const suffix = suffixes[angleIndex]
+  const query = suffix ? `${baseQuery} ${suffix}` : baseQuery
+
+  const excludeSet = new Set(excludeUrls ?? [])
+
+  // Get source priority from the router
+  const sources = routeImageRequest({
+    query,
+    purpose: 'hero',
+    articleType,
+    style,
+  })
+
+  let candidates: ImageCandidate[] = []
+
+  // Try sources in priority order until we have enough
+  for (const source of sources) {
+    if (candidates.length >= 6) break
+    const needed = 6 - candidates.length
+    const results = await fetchFromSource(source, query, needed + 2) // fetch extra to allow filtering
+    const filtered = filterImageCandidates(results, 'hero')
+      .filter(c => !excludeSet.has(c.url))
+    candidates.push(...filtered)
+    if (candidates.length > 0) {
+      console.log(`[hero-images] ${source}: found ${filtered.length} candidates for "${query.slice(0, 40)}"`)
+    }
+  }
+
+  return candidates
+}
+
+/**
+ * Legacy-compatible resolveHeroImageUrls — returns just URLs.
+ * Used by replace-thumbnail and other endpoints that don't need attribution.
  */
 async function resolveHeroImageUrls(
   title: string,
@@ -267,13 +349,13 @@ async function resolveHeroImageUrls(
   summary?: string,
   articleId?: string,
 ): Promise<string[]> {
+  // Fall back to Brave-only for legacy callers (replace-thumbnail etc.)
   const apiKey = process.env.BRAVE_SEARCH_API_KEY
   if (!apiKey) return []
 
   const baseQuery = heroImageQuery || await generateHeroQuery(title, summary ?? '', articleId)
   const isReplacing = excludeUrls && excludeUrls.length > 0
 
-  // Neutral suffixes for variety on repeat searches
   const suffixes = ['', 'photo', 'editorial', 'photography', 'image', 'press photo', 'high resolution', 'closeup']
   const angleIndex = isReplacing ? (excludeUrls?.length ?? 0) % suffixes.length : 0
   const suffix = suffixes[angleIndex]
@@ -303,6 +385,35 @@ async function resolveHeroImageUrls(
   }
 }
 
+export interface HeroImageResult {
+  url: string | null
+  attribution?: ImageAttribution | null
+}
+
+/**
+ * Fetch a single hero image using the routed pipeline.
+ * Returns the URL and attribution (if from Pexels/Unsplash).
+ */
+export async function fetchHeroImage(
+  title: string,
+  articleType: ArticleType,
+  excludeUrls?: string[],
+  heroImageQuery?: string,
+  summary?: string,
+  articleId?: string,
+  style?: 'editorial_photo' | 'news_photo' | 'product_photo' | 'abstract',
+): Promise<HeroImageResult> {
+  const candidates = await resolveHeroCandidates(
+    title, articleType, excludeUrls, heroImageQuery, summary, articleId, style,
+  )
+  const best = candidates[0]
+  if (!best) return { url: null }
+  return {
+    url: best.url,
+    attribution: best.attribution ?? null,
+  }
+}
+
 export async function fetchThumbnailImage(
   title: string,
   articleType: ArticleType,
@@ -311,14 +422,14 @@ export async function fetchThumbnailImage(
   summary?: string,
   articleId?: string
 ): Promise<string | null> {
-  const urls = await resolveHeroImageUrls(title, excludeUrls, heroImageQuery, summary, articleId)
-  const query = heroImageQuery || '(generated)'
-  console.log('[thumbnail] Search query:', query, `(angle ${excludeUrls?.length ?? 0}, AI query: ${!!heroImageQuery})`)
-  return urls[0] ?? null
+  // Use the routed pipeline
+  const result = await fetchHeroImage(title, articleType, excludeUrls, heroImageQuery, summary, articleId)
+  console.log('[thumbnail] Search result:', result.url ? `found (${result.attribution?.source_name ?? 'brave'})` : 'none')
+  return result.url
 }
 
 /**
- * Fetch multiple thumbnail image candidates in a single Brave search.
+ * Fetch multiple thumbnail image candidates using the routed pipeline.
  * Returns up to `count` URLs after filtering and excluding seen URLs.
  */
 export async function fetchMultipleThumbnailImages(
@@ -330,9 +441,11 @@ export async function fetchMultipleThumbnailImages(
   summary?: string,
   articleId?: string
 ): Promise<string[]> {
-  const urls = await resolveHeroImageUrls(title, excludeUrls, heroImageQuery, summary, articleId)
-  console.log('[thumbnail-multi] Search query:', heroImageQuery || '(generated)', `(count: ${count}, excluded: ${excludeUrls?.length ?? 0})`)
-  return urls.slice(0, count)
+  const candidates = await resolveHeroCandidates(
+    title, articleType, excludeUrls, heroImageQuery, summary, articleId,
+  )
+  console.log('[thumbnail-multi] Found', candidates.length, 'candidates, returning', Math.min(candidates.length, count))
+  return candidates.slice(0, count).map(c => c.url)
 }
 
 /**

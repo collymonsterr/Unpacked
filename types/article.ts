@@ -389,6 +389,14 @@ export interface ExecutiveSummary {
   watch_out_for: string[]
 }
 
+// ── Image Attribution (Session 1.7D) ────────────────────────────────────────
+
+export interface ImageAttribution {
+  photographer: string
+  photographer_url: string
+  source_name: string  // "Pexels" or "Unsplash"
+}
+
 export interface ArticleContent {
   title: string
   article_type: ArticleType
@@ -397,6 +405,7 @@ export interface ArticleContent {
   sections: ArticleSection[]
   thumbnail_url?: string | null
   thumbnail_history?: string[]
+  hero_attribution?: ImageAttribution | null
 }
 
 // ── Fact Check ──────────────────────────────────────────────────────────────

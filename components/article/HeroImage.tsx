@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import type { ArticleContent } from '@/types/article'
+import type { ArticleContent, ImageAttribution } from '@/types/article'
 
 interface HeroImageProps {
   url: string
@@ -10,6 +10,7 @@ interface HeroImageProps {
   history?: string[]
   isAdmin?: boolean
   articleId?: string
+  attribution?: ImageAttribution | null
   onReplace?: (useAI?: boolean) => Promise<void>
   onPick?: (index: number) => Promise<void>
   onKeep?: (article: ArticleContent) => void
@@ -21,6 +22,7 @@ export default function HeroImage({
   history,
   isAdmin,
   articleId,
+  attribution,
   onReplace,
   onPick,
   onKeep,
@@ -415,6 +417,26 @@ export default function HeroImage({
           )}
         </div>
       </figure>
+
+      {/* Attribution line for Pexels/Unsplash photos */}
+      {attribution && attribution.photographer && (
+        <p className="mt-1.5 text-right" style={{ fontSize: '11px', color: 'var(--text-tertiary, #999)' }}>
+          Photo by{' '}
+          <a
+            href={attribution.photographer_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+            style={{ color: 'var(--text-secondary, #777)' }}
+          >
+            {attribution.photographer}
+          </a>
+          {' '}on{' '}
+          <span style={{ color: 'var(--text-secondary, #777)' }}>
+            {attribution.source_name}
+          </span>
+        </p>
+      )}
 
       {/* History thumbnails — only shown in admin mode when there are previous images */}
       {isAdmin && historyItems.length > 0 && !pickerOpen && (

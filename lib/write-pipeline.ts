@@ -16,7 +16,7 @@ import { writeWithSonnet, buildOptionsPrompt } from '@/lib/claude'
 import { writeWithGemini } from '@/lib/gemini-writer'
 import { generateBlueprint } from '@/lib/blueprint'
 import { runEditorialPass, applyEditorRewrites } from '@/lib/editorial-pass'
-import { enrichArticleWithImages, fetchThumbnailImage } from '@/lib/images'
+import { enrichArticleWithImages, fetchHeroImage } from '@/lib/images'
 import { pickBestArticleImage } from '@/lib/imagen'
 import { runFactCheck, applyCorrections } from '@/lib/fact-check'
 import { getSupabaseAdmin } from '@/lib/supabase'
@@ -67,27 +67,48 @@ export async function runWritePipeline({
 
   console.log(`[write-pipeline] Blueprint generated: thesis="${blueprint.thesis.slice(0, 60)}", ${blueprint.sections.length} sections, ${blueprint.target_word_count} target words`)
 
-  // ── Phase 2: Write the article ──
-  let rawArticle: ArticleContent
-  if (isDeep) {
-    console.log('[write-pipeline] Writing with Sonnet (deep mode)')
-    rawArticle = await writeWithSonnet(query, plan, researchSummary, generationOptions, articleId, undefined, entityCards, synthesis, blueprint)
-  } else {
+  // ── Phase 2: Write prose + fetch hero image in parallel ──
+  // Hero image only needs the query + article type (from blueprint/plan) — doesn't need prose output.
+  // So we start it alongside writing to save 3-5 seconds.
+  const heroStyle = plan.research_manifest?.image_queries?.hero?.style as
+    'editorial_photo' | 'news_photo' | 'product_photo' | 'abstract' | undefined
+
+  const writeArticle = async (): Promise<ArticleContent> => {
+    if (isDeep) {
+      console.log('[write-pipeline] Writing with Sonnet (deep mode)')
+      return writeWithSonnet(query, plan, researchSummary, generationOptions, articleId, undefined, entityCards, synthesis, blueprint)
+    }
     try {
       console.log('[write-pipeline] Writing with Gemini Flash')
       const optsPrompt = buildOptionsPrompt(generationOptions)
-      rawArticle = await writeWithGemini(query, plan, researchSummary, optsPrompt, articleId, entityCards, synthesis, blueprint)
+      return await writeWithGemini(query, plan, researchSummary, optsPrompt, articleId, entityCards, synthesis, blueprint)
     } catch (geminiErr) {
       const geminiErrMsg = (geminiErr as Error).message
       console.log('[write-pipeline] Gemini failed — falling back to Sonnet:', geminiErrMsg)
-      rawArticle = await writeWithSonnet(query, plan, researchSummary, generationOptions, articleId, geminiErrMsg, entityCards, synthesis, blueprint)
+      return writeWithSonnet(query, plan, researchSummary, generationOptions, articleId, geminiErrMsg, entityCards, synthesis, blueprint)
     }
   }
 
-  // ── Phase 3: Editorial pass + images (parallel) ──
+  const [rawArticle, heroResult] = await Promise.all([
+    writeArticle(),
+    fetchHeroImage(
+      plan.title,
+      plan.article_type,
+      undefined,
+      plan.hero_image_query,
+      plan.quick_verdict_preview,
+      articleId,
+      heroStyle,
+    ).catch(err => {
+      console.warn('[write-pipeline] Hero image fetch failed:', (err as Error).message)
+      return { url: null, attribution: null }
+    }),
+  ])
+
+  // ── Phase 3: Editorial pass + product images (parallel) ──
   const isBreakingNews = plan.article_type === 'breaking_news'
 
-  const [editorialResult, enrichedArticle, heroUrl] = await Promise.all([
+  const [editorialResult, enrichedArticle] = await Promise.all([
     // Editorial pass — skip for breaking_news
     isBreakingNews
       ? Promise.resolve(null)
@@ -95,20 +116,11 @@ export async function runWritePipeline({
           console.warn('[write-pipeline] Editorial pass failed:', (err as Error).message)
           return null
         }),
-    // Image enrichment
+    // Product + section image enrichment (needs article content to know which products)
     enrichArticleWithImages(
       rawArticle,
       plan.entities,
-      plan.visual_strategy?.image_density
-    ),
-    // Hero thumbnail
-    fetchThumbnailImage(
-      rawArticle.title,
-      rawArticle.article_type,
-      undefined,
-      plan.hero_image_query,
-      rawArticle.quick_verdict?.one_liner ?? rawArticle.executive_summary?.short_answer ?? '',
-      articleId
+      plan.visual_strategy?.image_density,
     ),
   ])
 
@@ -120,7 +132,11 @@ export async function runWritePipeline({
     console.log(`[write-pipeline] Editorial score ${editorialResult.score}/100 — no rewrites needed`)
   }
 
-  enrichedArticle.thumbnail_url = heroUrl ?? pickBestArticleImage(enrichedArticle)
+  // Apply hero image (fetched in parallel with writing)
+  enrichedArticle.thumbnail_url = heroResult.url ?? pickBestArticleImage(enrichedArticle)
+  if (heroResult.attribution) {
+    enrichedArticle.hero_attribution = heroResult.attribution
+  }
 
   // Store hero_image_query on article for future thumbnail replacements
   if (plan.hero_image_query) {
