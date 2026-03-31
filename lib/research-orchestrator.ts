@@ -13,7 +13,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
-import type { ArticlePlan, ResearchManifest, EntityCard, ResearchSynthesis } from '@/types/article'
+import type { ArticlePlan, ResearchManifest, EntityCard, ResearchSynthesis, PlanEntity } from '@/types/article'
 import {
   executeBraveQueries,
   compileResearch,
@@ -98,8 +98,16 @@ export async function executeResearch(
   // ── Step 3: Extract entity cards (sync, pure) ──
   let entityCards: EntityCard[] = []
   try {
-    const planEntities = plan.entities ?? []
+    let planEntities = plan.entities ?? []
     console.log(`[research-orchestrator] PRE-EXTRACT: plan.entities length=${planEntities.length}, types=${planEntities.map(e => typeof e).join(',')}, sample=${JSON.stringify(planEntities.slice(0, 2))}, findings count=${compiled.findings.length}`)
+
+    // Fallback: if plan has no entities, extract them from research findings
+    if (planEntities.length === 0 && compiled.findings.length > 0) {
+      console.log('[research-orchestrator] plan.entities is empty — extracting from findings')
+      planEntities = extractEntitiesFromFindings(compiled.findings)
+      console.log(`[research-orchestrator] Fallback extracted ${planEntities.length} entities: ${planEntities.map(e => e.name).join(', ')}`)
+    }
+
     entityCards = extractEntityCards(planEntities, compiled.findings, plan.article_type)
     console.log(`[research-orchestrator] POST-EXTRACT: ${entityCards.length} entity cards returned`)
   } catch (err) {
@@ -244,6 +252,52 @@ function buildDefaultSynthesis(entityCards: EntityCard[], plan: ArticlePlan): Re
     source_quality: `${entityCards.length} entities identified`,
     gaps: [],
   }
+}
+
+// ── Fallback entity extraction from findings ─────────────────────────────────
+
+/**
+ * Extract entity names from research findings when the plan has no entities.
+ * Scans for frequently mentioned capitalised multi-word phrases (proper nouns,
+ * product names, brand names, organisation names).
+ */
+function extractEntitiesFromFindings(findings: ResearchFinding[]): PlanEntity[] {
+  // Combine all finding content
+  const allText = findings.map(f => f.content).join(' ')
+
+  // Match capitalised multi-word phrases (2-5 words, each starting with uppercase)
+  // This catches product names like "Ninja Air Fryer", org names like "Bureau of Labor Statistics"
+  const phraseRegex = /\b([A-Z][a-z]+(?:\s+(?:of|the|and|for|in|on|by|at|de|la|le|el|van|von|der|den|das|di|du|des)?\s*)?(?:[A-Z][a-z]+(?:\s+(?:of|the|and|for|in|on|by|at)?\s*)?){1,4})\b/g
+  const mentions = new Map<string, number>()
+
+  let match
+  while ((match = phraseRegex.exec(allText)) !== null) {
+    const phrase = match[1].trim()
+    // Skip very short or very common phrases
+    if (phrase.length < 4) continue
+    if (['The', 'This', 'That', 'These', 'Those', 'Here', 'There', 'What', 'When', 'Where', 'Which', 'About', 'After', 'Before', 'Between', 'During', 'Under', 'According'].includes(phrase)) continue
+    mentions.set(phrase, (mentions.get(phrase) ?? 0) + 1)
+  }
+
+  // Also match single capitalised words that appear very frequently (brand names like "Apple", "Google")
+  const singleRegex = /\b([A-Z][a-z]{3,})\b/g
+  while ((match = singleRegex.exec(allText)) !== null) {
+    const word = match[1]
+    if (['This', 'That', 'These', 'Those', 'Here', 'There', 'What', 'When', 'Where', 'Which', 'About', 'After', 'Before', 'Between', 'During', 'Under', 'However', 'According', 'Also', 'Many', 'Most', 'Some', 'Other', 'More', 'Best', 'First', 'Last', 'Just', 'Like', 'Very', 'Even', 'Still', 'While', 'From', 'Into', 'With', 'Over'].includes(word)) continue
+    mentions.set(word, (mentions.get(word) ?? 0) + 1)
+  }
+
+  // Sort by frequency, take top entities (minimum 2 mentions to filter noise)
+  const sorted = [...mentions.entries()]
+    .filter(([, count]) => count >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+
+  return sorted.map(([name]) => ({
+    name,
+    product_category: '',
+    search_query: name,
+  }))
 }
 
 // ── Reddit query helper ───────────────────────────────────────────────────────

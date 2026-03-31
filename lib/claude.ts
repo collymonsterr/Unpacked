@@ -162,9 +162,16 @@ Visual strategy rules:
 
 If no visual type is REQUIRED or ALLOWED for a section, no visual should be generated for that section. Visuals must earn their place — they are not decoration.
 
-For the entities array: identify every specific product, brand, or item that will be featured AND needs an image.
-- For buyer_guide/comparison/decision_guide/roundup: list products with image search queries
-- For explainer/how_to/trend_analysis/news_analysis/breaking_news/deep_dive: entities should be EMPTY or contain only items where a real photograph adds value (e.g., a specific place, a specific device). Do NOT add entities for abstract concepts.
+CRITICAL — entities array (MUST NEVER be empty, minimum 3 entities for EVERY article):
+The entities array is used for structured research, entity cards, fact-checking, and images. Every article type MUST have at least 3 entities. There is NO exception to this rule.
+
+How to choose entities by article type:
+- buyer_guide/comparison/decision_guide/roundup: list the specific products being compared or recommended (e.g., "Ninja Air Fryer AF101", "Philips Essential Air Fryer", "Cosori Pro II")
+- explainer/how_to: list the key concepts, tools, or subjects being explained (e.g., for "is an air fryer worth it": "Air Fryer", "Ninja Air Fryer", "Philips Air Fryer", "Conventional Oven")
+- news_analysis/breaking_news: list the key people, organisations, places, and events (e.g., for "OpenAI board crisis": "OpenAI", "Sam Altman", "Microsoft", "Ilya Sutskever")
+- trend_analysis/deep_dive: list the key players, technologies, or forces driving the trend (e.g., for "AI replacing jobs": "ChatGPT", "GitHub Copilot", "McKinsey", "Bureau of Labor Statistics")
+
+If you cannot identify 3 specific named entities, broaden your scope — include the general category, major brands in the space, or key organisations. NEVER return an empty entities array.
 
 For entities search_query: this is used to find product and subject images via Brave image search. Follow these rules precisely:
 

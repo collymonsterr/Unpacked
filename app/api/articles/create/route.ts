@@ -163,7 +163,8 @@ export async function POST(request: NextRequest) {
         console.log(`[create] SAVE CHECK: findings=${research.findings.length}, entityCards=${research.entityCards?.length ?? 'undefined'}, synthesis=${research.synthesis ? 'yes' : 'no'}`)
         const researchUpdate: Record<string, unknown> = {}
         if (research.findings.length > 0) researchUpdate.research_findings = research.findings
-        if (research.entityCards.length > 0) researchUpdate.entity_cards = research.entityCards
+        // Always save entity_cards — even empty array is meaningful (means extraction ran but found nothing)
+        researchUpdate.entity_cards = research.entityCards ?? []
         if (research.synthesis) researchUpdate.research_synthesis = research.synthesis
 
         console.log(`[create] SAVE KEYS: ${Object.keys(researchUpdate).join(', ')}`)
