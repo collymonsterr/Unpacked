@@ -51,10 +51,18 @@ export interface ImageQueries {
   products: Array<{ entity_name: string; query: string }>
 }
 
+export interface LiveDataQuery {
+  source: 'polymarket' | 'yahoo_finance' | 'google_trends'
+  query?: string
+  symbols?: string[]
+  purpose?: string
+}
+
 export interface ResearchManifest {
   brave_queries: BraveQuery[]
   reddit_queries: RedditQuery[]
   image_queries: ImageQueries
+  live_data?: LiveDataQuery[]
 }
 
 export interface PlanSection {
@@ -354,6 +362,14 @@ export interface ImageSection {
   layout: 'single' | 'gallery' | 'side-by-side'
 }
 
+// ── Live Data Cards (Session 1.7E) ──────────────────────────────────────────
+
+export interface LiveDataCardSection {
+  type: 'live_data_card'
+  data_source: 'polymarket' | 'yahoo_finance' | 'google_trends'
+  content: Record<string, unknown>
+}
+
 export type ArticleSection =
   | ProductCard
   | ComparisonTable
@@ -374,6 +390,7 @@ export type ArticleSection =
   | TimelineSection
   | ImageSection
   | InteractiveCalculatorSection
+  | LiveDataCardSection
 
 // ── Full Article ─────────────────────────────────────────────────────────────
 
@@ -479,6 +496,7 @@ export interface ArticleRow {
   entity_cards?: EntityCard[] | null
   research_synthesis?: ResearchSynthesis | null
   blueprint?: ArticleBlueprint | null
+  live_data?: Record<string, unknown>[] | null
   created_at: string
   updated_at: string
 }

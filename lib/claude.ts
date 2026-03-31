@@ -282,6 +282,20 @@ For image_queries: specify hero image search and product images.
 - hero: {query (5-8 words for a magazine-quality photo), style: editorial_photo | news_photo | product_photo | abstract}
 - products: array of {entity_name, query} for each product needing an image (buyer_guide/comparison/roundup only, empty for other types)
 
+For live_data (OPTIONAL — only include when genuinely relevant):
+Include live_data queries ONLY for article types where live market/prediction/trend data adds real value. Each entry specifies a data source and query.
+- source: "polymarket" — prediction market odds. Use for: news_analysis, breaking_news, trend_analysis, deep_dive involving elections, policy, geopolitical events, tech predictions, crypto. Query should be the topic (e.g., "US election", "Fed interest rate").
+- source: "yahoo_finance" — stock/market quotes. Use for: news_analysis, breaking_news, trend_analysis, deep_dive involving companies, markets, earnings, IPOs, economic data. Provide symbols if known (e.g., ["AAPL", "MSFT"]), or a query to search for symbols (e.g., "electric vehicle stocks").
+- source: "google_trends" — 12-month search interest. Use for: trend_analysis, deep_dive, news_analysis to show whether public interest is rising/falling. Query should be the core topic (e.g., "AI coding assistants", "electric vehicles").
+
+Rules:
+- buyer_guide, comparison, how_to, roundup: do NOT include live_data (these are product/task focused)
+- explainer: only include if the topic has a clear market/trend dimension
+- news_analysis, breaking_news: include 1-2 sources if the story involves markets, politics, or tech companies
+- trend_analysis, deep_dive: include 1-3 sources — these benefit most from live data
+- Never include more than 3 live_data entries total
+- If unsure whether live data is relevant, omit it — empty array or omit the field entirely
+
 For article_type_confidence: integer 0-100 representing how certain you are about the classification.
 - 90-100: clear match, no alternatives needed
 - 70-89: strong match but another type could work — provide alternative_types
@@ -347,7 +361,8 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
     "image_queries": {
       "hero": { "query": "string — 5-8 word magazine-quality photo search", "style": "editorial_photo | news_photo | product_photo | abstract" },
       "products": [{ "entity_name": "string", "query": "string" }]
-    }
+    },
+    "live_data": [{ "source": "polymarket | yahoo_finance | google_trends", "query": "string — search term", "symbols": ["string — ticker symbols for yahoo_finance only"], "purpose": "string — why this data is relevant" }]
   },
   "research_queries": ["string"],
   "hero_image_query": "string",
@@ -669,6 +684,30 @@ interface GenOptions {
   language?: string
 }
 
+/**
+ * Format live data results for inclusion in the Sonnet writing prompt.
+ */
+function formatLiveDataForSonnet(liveData?: Record<string, unknown>[]): string {
+  if (!liveData || liveData.length === 0) return ''
+
+  const lines: string[] = [
+    '',
+    'LIVE DATA (real-time data fetched from external APIs):',
+    'Include each data item below as a live_data_card section in the article. Copy the data into the "content" field.',
+    'Format: { "type": "live_data_card", "data_source": "<source>", "content": <data object> }',
+    'Place live_data_cards near the top, after "What You Need to Know" or executive summary.',
+    '',
+  ]
+
+  for (const item of liveData) {
+    const source = item.source as string
+    lines.push(`[${source.toUpperCase()}] ${JSON.stringify(item)}`)
+  }
+
+  lines.push('')
+  return lines.join('\n')
+}
+
 export function buildOptionsPrompt(options: GenOptions): string {
   const parts: string[] = []
 
@@ -930,6 +969,7 @@ export async function writeWithSonnet(
   entityCards?: EntityCard[],
   synthesis?: ResearchSynthesis,
   blueprint?: ArticleBlueprint,
+  liveData?: Record<string, unknown>[],
 ): Promise<ArticleContent> {
   if (articleId && isDuplicateCall(articleId, 'write')) {
     throw new Error('Duplicate writing call blocked')
@@ -942,6 +982,7 @@ export async function writeWithSonnet(
 
   const structuredResearch = buildStructuredResearchPrompt(entityCards, synthesis)
   const blueprintSection = blueprint ? formatBlueprintForPrompt(blueprint) : ''
+  const liveDataSection = formatLiveDataForSonnet(liveData)
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const message = await getAnthropic().messages.create({
@@ -960,6 +1001,7 @@ ${blueprintSection}
 RESEARCH (from live web search — use these facts and prices):
 ${research}
 ${structuredResearch}
+${liveDataSection}
 
 Plan:
 - Title: ${plan.title}

@@ -13,7 +13,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
-import type { ArticlePlan, ResearchManifest, EntityCard, ResearchSynthesis, PlanEntity } from '@/types/article'
+import type { ArticlePlan, ResearchManifest, EntityCard, ResearchSynthesis, PlanEntity, LiveDataQuery } from '@/types/article'
 import {
   executeBraveQueries,
   compileResearch,
@@ -23,6 +23,9 @@ import {
 import { extractEntityCards } from '@/lib/entity-extraction'
 import { logApiCall } from '@/lib/api-usage'
 import { extractJSON } from '@/lib/utils/extract-json'
+import { searchPolymarket, type PolymarketResult } from '@/lib/data-sources/polymarket'
+import { fetchQuotes, searchFinanceSymbols, type YahooFinanceResult } from '@/lib/data-sources/yahoo-finance'
+import { fetchGoogleTrends, type GoogleTrendsResult } from '@/lib/data-sources/google-trends'
 
 let _anthropic: Anthropic | null = null
 function getAnthropic(): Anthropic {
@@ -53,6 +56,8 @@ export interface OrchestratedResearchResult {
   entityCards: EntityCard[]
   /** High-level synthesis of research (from Haiku) */
   synthesis: ResearchSynthesis
+  /** Live data results from Polymarket, Yahoo Finance, Google Trends */
+  liveData: Record<string, unknown>[]
 }
 
 /**
@@ -66,16 +71,18 @@ export async function executeResearch(
 ): Promise<OrchestratedResearchResult> {
   const resultsPerQuery = length === 'deep' ? 8 : 6
 
+  const liveDataQueries = manifest.live_data ?? []
   console.log(
-    `[research-orchestrator] Starting parallel research: ${manifest.brave_queries.length} brave, ${manifest.reddit_queries.length} reddit queries`
+    `[research-orchestrator] Starting parallel research: ${manifest.brave_queries.length} brave, ${manifest.reddit_queries.length} reddit, ${liveDataQueries.length} live data queries`
   )
 
   const startTime = Date.now()
 
   // ── Step 1: Fire all research tasks in parallel ──
-  const [braveResults, redditResults] = await Promise.all([
+  const [braveResults, redditResults, liveData] = await Promise.all([
     executeBraveQueries(manifest.brave_queries, resultsPerQuery),
     executeRedditQueries(manifest.reddit_queries, resultsPerQuery),
+    executeLiveDataQueries(liveDataQueries),
   ])
 
   // Merge all results into a single map for compilation
@@ -135,6 +142,7 @@ export async function executeResearch(
     findings: compiled.findings,
     entityCards,
     synthesis,
+    liveData,
   }
 }
 
@@ -295,6 +303,63 @@ function extractEntitiesFromFindings(findings: ResearchFinding[]): PlanEntity[] 
     product_category: '',
     search_query: name,
   }))
+}
+
+// ── Live data query execution ─────────────────────────────────────────────────
+
+/**
+ * Execute live data queries (Polymarket, Yahoo Finance, Google Trends) in parallel.
+ * Returns an array of results as Record<string, unknown> for storage and writing prompt injection.
+ * Failures are caught per-source — never blocks the pipeline.
+ */
+async function executeLiveDataQueries(
+  queries: LiveDataQuery[],
+): Promise<Record<string, unknown>[]> {
+  if (!queries || queries.length === 0) return []
+
+  const results: Record<string, unknown>[] = []
+
+  const tasks = queries.map(async (q) => {
+    try {
+      switch (q.source) {
+        case 'polymarket': {
+          const markets = await searchPolymarket(q.query ?? '')
+          for (const m of markets) {
+            results.push(m as unknown as Record<string, unknown>)
+          }
+          break
+        }
+        case 'yahoo_finance': {
+          let symbols = q.symbols ?? []
+          // If no symbols provided, search for them using the query
+          if (symbols.length === 0 && q.query) {
+            symbols = await searchFinanceSymbols(q.query)
+          }
+          if (symbols.length > 0) {
+            const quotes = await fetchQuotes(symbols)
+            for (const quote of quotes) {
+              results.push(quote as unknown as Record<string, unknown>)
+            }
+          }
+          break
+        }
+        case 'google_trends': {
+          const trendsResult = await fetchGoogleTrends(q.query ?? '')
+          if (trendsResult) {
+            results.push(trendsResult as unknown as Record<string, unknown>)
+          }
+          break
+        }
+      }
+    } catch (err) {
+      console.warn(`[research-orchestrator] Live data query failed (${q.source}):`, (err as Error).message)
+    }
+  })
+
+  await Promise.all(tasks)
+
+  console.log(`[research-orchestrator] Live data: ${results.length} results from ${queries.length} queries`)
+  return results
 }
 
 // ── Reddit query helper ───────────────────────────────────────────────────────

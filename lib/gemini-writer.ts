@@ -57,6 +57,33 @@ async function logGeminiFallback(callType: string, errorMessage: string, rawResp
   }
 }
 
+/**
+ * Format live data results into a prompt section for the writing model.
+ * Instructs the model to include live_data_card sections when data is available.
+ */
+function formatLiveDataForPrompt(liveData?: Record<string, unknown>[]): string {
+  if (!liveData || liveData.length === 0) return ''
+
+  const sections: string[] = [
+    '',
+    'LIVE DATA (real-time data fetched from external APIs — include as live_data_card sections):',
+    'For each data item below, include a live_data_card section in the article. Copy the data object into the "content" field exactly as provided.',
+    '',
+  ]
+
+  for (const item of liveData) {
+    const source = item.source as string
+    sections.push(`[${source.toUpperCase()}] ${JSON.stringify(item)}`)
+  }
+
+  sections.push('')
+  sections.push('To include a live data card, add a section like: { "type": "live_data_card", "data_source": "<source>", "content": <the data object above> }')
+  sections.push('Place live_data_cards near the top of the article, after the executive summary or "What You Need to Know" section, where they provide immediate context.')
+  sections.push('')
+
+  return sections.join('\n')
+}
+
 function getWritingPrompt(currentDate: string, currentYear: number): string {
   return `You are a senior editorial writer for Unpacked. Write decisive, well-researched, visually rich articles.
 
@@ -158,7 +185,8 @@ OUTPUT: Return ONLY valid JSON matching this schema:
     { "type": "stat_cards", "heading": "string", "cards": [{"value":"string","label":"string"}], "source": "string" },
     { "type": "timeline", "heading": "string", "events": [{"year":"string","title":"string","description":"string"}] },
     { "type": "image_section", "heading": "string", "images": [{"search_query":"string","caption":"string"}], "layout": "single|gallery" },
-    { "type": "interactive_calculator", "heading": "string", "description": "string", "calculator_type": "string", "inputs": [{"id":"string","label":"string","type":"slider","min":"number","max":"number","default":"number","step":"number","unit":"string"}], "outputs": [{"id":"string","label":"string","format":"currency|percentage|number"}] }
+    { "type": "interactive_calculator", "heading": "string", "description": "string", "calculator_type": "string", "inputs": [{"id":"string","label":"string","type":"slider","min":"number","max":"number","default":"number","step":"number","unit":"string"}], "outputs": [{"id":"string","label":"string","format":"currency|percentage|number"}] },
+    { "type": "live_data_card", "data_source": "polymarket|yahoo_finance|google_trends", "content": {"...data object from LIVE DATA section below — copy the entire object as-is"} }
   ]
 }
 
@@ -197,6 +225,7 @@ function validateArticleSchema(article: Record<string, unknown>): ValidateResult
     'further_reading', 'sources', 'bar_chart', 'comparison_matrix',
     'pie_chart', 'line_chart', 'stat_cards', 'treemap', 'timeline',
     'image_section', 'interactive_calculator', 'head_to_head',
+    'live_data_card',
   ])
 
   if (Array.isArray(article.sections)) {
@@ -225,6 +254,7 @@ export async function writeWithGemini(
   entityCards?: EntityCard[],
   synthesis?: ResearchSynthesis,
   blueprint?: ArticleBlueprint,
+  liveData?: Record<string, unknown>[],
 ): Promise<ArticleContent> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY
   if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY not set')
@@ -235,6 +265,7 @@ export async function writeWithGemini(
 
   const structuredResearch = buildStructuredResearchPrompt(entityCards, synthesis)
   const blueprintSection = blueprint ? formatBlueprintForPrompt(blueprint) : ''
+  const liveDataSection = formatLiveDataForPrompt(liveData)
 
   const userMessage = `Write a complete article in valid JSON format.
 
@@ -251,6 +282,7 @@ PLAN:
 RESEARCH (from live web search — use these facts and prices):
 ${research}
 ${structuredResearch}
+${liveDataSection}
 ${optionsPrompt}`
 
   await acquireSlot()

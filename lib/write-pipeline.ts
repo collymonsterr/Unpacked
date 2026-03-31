@@ -30,6 +30,7 @@ interface WritePipelineParams {
   generationOptions: Record<string, unknown>
   entityCards?: EntityCard[]
   synthesis?: ResearchSynthesis
+  liveData?: Record<string, unknown>[]
 }
 
 export async function runWritePipeline({
@@ -40,6 +41,7 @@ export async function runWritePipeline({
   generationOptions,
   entityCards,
   synthesis,
+  liveData,
 }: WritePipelineParams): Promise<void> {
   const db = getSupabaseAdmin()
   const length = (generationOptions?.length as 'quick' | 'standard' | 'deep') ?? 'standard'
@@ -76,16 +78,16 @@ export async function runWritePipeline({
   const writeArticle = async (): Promise<ArticleContent> => {
     if (isDeep) {
       console.log('[write-pipeline] Writing with Sonnet (deep mode)')
-      return writeWithSonnet(query, plan, researchSummary, generationOptions, articleId, undefined, entityCards, synthesis, blueprint)
+      return writeWithSonnet(query, plan, researchSummary, generationOptions, articleId, undefined, entityCards, synthesis, blueprint, liveData)
     }
     try {
       console.log('[write-pipeline] Writing with Gemini Flash')
       const optsPrompt = buildOptionsPrompt(generationOptions)
-      return await writeWithGemini(query, plan, researchSummary, optsPrompt, articleId, entityCards, synthesis, blueprint)
+      return await writeWithGemini(query, plan, researchSummary, optsPrompt, articleId, entityCards, synthesis, blueprint, liveData)
     } catch (geminiErr) {
       const geminiErrMsg = (geminiErr as Error).message
       console.log('[write-pipeline] Gemini failed — falling back to Sonnet:', geminiErrMsg)
-      return writeWithSonnet(query, plan, researchSummary, generationOptions, articleId, geminiErrMsg, entityCards, synthesis, blueprint)
+      return writeWithSonnet(query, plan, researchSummary, generationOptions, articleId, geminiErrMsg, entityCards, synthesis, blueprint, liveData)
     }
   }
 

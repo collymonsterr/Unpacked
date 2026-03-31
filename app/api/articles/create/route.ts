@@ -159,11 +159,12 @@ export async function POST(request: NextRequest) {
           length,
         )
 
-        // Save research findings + entity cards + synthesis immediately — preserved even if writing fails
+        // Save research findings + entity cards + synthesis + live data immediately — preserved even if writing fails
         const researchUpdate: Record<string, unknown> = {}
         if (research.findings.length > 0) researchUpdate.research_findings = research.findings
         researchUpdate.entity_cards = research.entityCards ?? []
         if (research.synthesis) researchUpdate.research_synthesis = research.synthesis
+        if (research.liveData && research.liveData.length > 0) researchUpdate.live_data = research.liveData
         if (Object.keys(researchUpdate).length > 0) {
           const { error: saveErr } = await db
             .from('articles')
@@ -184,6 +185,7 @@ export async function POST(request: NextRequest) {
             generationOptions,
             entityCards: research.entityCards,
             synthesis: research.synthesis,
+            liveData: research.liveData,
           })
         } else {
           // Anonymous: build preview, save it, and pause at awaiting_auth

@@ -18,6 +18,7 @@ import TreemapSection from './TreemapSection'
 import TimelineSection from './TimelineSection'
 import ImageSection from './ImageSection'
 import InteractiveCalculator from './InteractiveCalculator'
+import LiveDataCard from './LiveDataCard'
 
 interface Props {
   sections: ArticleSection[]
@@ -129,6 +130,8 @@ export default function SectionRenderer({
               )
             case 'interactive_calculator':
               return <InteractiveCalculator section={section} />
+            case 'live_data_card':
+              return <LiveDataCard section={section} />
             default:
               return null
           }

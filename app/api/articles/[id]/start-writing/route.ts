@@ -24,7 +24,7 @@ export async function POST(
   // Fetch the article
   const { data: row, error: fetchErr } = await db
     .from('articles')
-    .select('id, query, status, plan, research_findings, entity_cards, research_synthesis, generation_options')
+    .select('id, query, status, plan, research_findings, entity_cards, research_synthesis, live_data, generation_options')
     .eq('id', id)
     .single()
 
@@ -98,9 +98,10 @@ export async function POST(
 
   const researchSummary = summaryParts.join('\n')
 
-  // Read stored entity cards + synthesis (saved during research phase)
+  // Read stored entity cards + synthesis + live data (saved during research phase)
   const entityCards = (row.entity_cards ?? undefined) as import('@/types/article').EntityCard[] | undefined
   const synthesis = (row.research_synthesis ?? undefined) as import('@/types/article').ResearchSynthesis | undefined
+  const liveData = (row.live_data ?? undefined) as Record<string, unknown>[] | undefined
 
   // Kick off writing pipeline in the background
   after(async () => {
@@ -113,6 +114,7 @@ export async function POST(
         generationOptions,
         entityCards,
         synthesis,
+        liveData,
       })
     } catch (err) {
       console.error('[start-writing] Pipeline failed:', err)
