@@ -21,12 +21,22 @@ interface RedditThread {
   subreddit: string
 }
 
+interface ResearchFinding {
+  id: string
+  source: string
+  source_type: 'web' | 'reddit' | 'twitter'
+  url: string
+  content: string
+  used_in_article: boolean
+}
+
 interface ResearchOutput {
   summary: string
   tokenEstimate: number
   searchCount: number
   sources: { title: string; url: string }[]
   redditThreads: RedditThread[]
+  findings: ResearchFinding[]
 }
 
 async function braveSearch(query: string, count = 8): Promise<SearchResult[]> {
@@ -112,12 +122,16 @@ function compileResearch(
 ): ResearchOutput {
   const sources: { title: string; url: string }[] = []
   const seenUrls = new Set<string>()
+  const allFindings: ResearchFinding[] = []
+  let findingCounter = 0
 
   // Extract prices per entity
   const priceMap = new Map<string, string[]>()
   const specMap = new Map<string, string[]>()
   const communityInsights: string[] = []
   const topicFacts: string[] = []
+  // Track which URLs end up in the summary (used_in_article)
+  const usedUrls = new Set<string>()
 
   for (const [searchQuery, results] of allResults) {
     const isReddit = searchQuery.includes('reddit')
@@ -130,6 +144,21 @@ function compileResearch(
         sources.push({ title: r.title, url: r.url })
       }
 
+      // Determine source info for findings
+      let sourceType: 'web' | 'reddit' | 'twitter' = 'web'
+      let sourceName = r.title
+      if (isReddit || r.url.includes('reddit.com')) {
+        sourceType = 'reddit'
+        const subMatch = r.url.match(/\/r\/([^/]+)/)
+        sourceName = subMatch ? `r/${subMatch[1]}` : 'Reddit'
+      } else if (isTwitter) {
+        sourceType = 'twitter'
+        sourceName = 'Twitter/X'
+      }
+
+      // Track whether this result contributes to the summary
+      let usedInSummary = false
+
       // Extract prices
       const prices = extractPrices(r.snippet)
       for (const entity of entities) {
@@ -139,12 +168,14 @@ function compileResearch(
             const existing = priceMap.get(entity.name) ?? []
             existing.push(...prices)
             priceMap.set(entity.name, existing)
+            usedInSummary = true
           }
           // Extract specs/features from snippet
           if (r.snippet.length > 50) {
             const specs = specMap.get(entity.name) ?? []
             specs.push(sanitizeSnippet(r.snippet.slice(0, 200)))
             specMap.set(entity.name, specs)
+            usedInSummary = true
           }
         }
       }
@@ -154,12 +185,29 @@ function compileResearch(
         if (r.snippet.length > 30) {
           const source = isReddit ? 'Reddit' : 'Twitter/X'
           communityInsights.push(`${source}: ${sanitizeSnippet(r.snippet.slice(0, 200))}`)
+          usedInSummary = true
         }
       } else {
         // General topic facts
         if (r.snippet.length > 40) {
           topicFacts.push(sanitizeSnippet(r.snippet.slice(0, 200)))
+          usedInSummary = true
         }
+      }
+
+      if (usedInSummary) usedUrls.add(r.url)
+
+      // Capture every result as a finding
+      if (r.snippet.length > 10) {
+        findingCounter++
+        allFindings.push({
+          id: `finding_${String(findingCounter).padStart(3, '0')}`,
+          source: sourceName,
+          source_type: sourceType,
+          url: r.url,
+          content: r.snippet,
+          used_in_article: false, // set correctly after summary is built
+        })
       }
     }
   }
@@ -259,6 +307,13 @@ function compileResearch(
   const summary = parts.join('\n')
   const tokenEstimate = Math.round(summary.length / 3.8)
 
+  // Mark findings that contributed to the summary
+  for (const f of allFindings) {
+    if (usedUrls.has(f.url)) {
+      f.used_in_article = true
+    }
+  }
+
   // Trim if over 4000 tokens
   if (tokenEstimate > 4000) {
     const trimmed = summary.slice(0, 15000) // ~3900 tokens
@@ -268,6 +323,7 @@ function compileResearch(
       searchCount: allResults.size,
       sources: sources.slice(0, 15),
       redditThreads,
+      findings: allFindings,
     }
   }
 
@@ -277,6 +333,7 @@ function compileResearch(
     searchCount: allResults.size,
     sources: sources.slice(0, 15),
     redditThreads,
+    findings: allFindings,
   }
 }
 

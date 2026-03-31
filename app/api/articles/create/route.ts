@@ -146,6 +146,14 @@ export async function POST(request: NextRequest) {
           length,
         )
 
+        // Save research findings immediately — preserved even if writing fails
+        if (research.findings.length > 0) {
+          await db
+            .from('articles')
+            .update({ research_findings: research.findings })
+            .eq('id', data.id)
+        }
+
         // Phase 2b: Write the article
         let rawArticle
         const isDeep = length === 'deep'

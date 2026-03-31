@@ -14,6 +14,8 @@ interface ProfileData {
   display_name: string
   bio: string
   website: string
+  twitter_url: string
+  linkedin_url: string
   location: string
   currency: string
   language: string
@@ -29,6 +31,8 @@ export default function ProfileSettingsPage() {
   const [displayName, setDisplayName] = useState('')
   const [bio, setBio] = useState('')
   const [website, setWebsite] = useState('')
+  const [twitterUrl, setTwitterUrl] = useState('')
+  const [linkedinUrl, setLinkedinUrl] = useState('')
   const [location, setLocation] = useState('')
   const [currency, setCurrency] = useState('USD')
   const [language, setLanguage] = useState('en')
@@ -47,6 +51,8 @@ export default function ProfileSettingsPage() {
         setDisplayName(data.display_name || data.full_name || '')
         setBio(data.bio || '')
         setWebsite(data.website || '')
+        setTwitterUrl(data.twitter_url || '')
+        setLinkedinUrl(data.linkedin_url || '')
         setLocation(data.location || '')
         setCurrency(data.currency || 'USD')
         setLanguage(data.language || 'en')
@@ -62,7 +68,7 @@ export default function ProfileSettingsPage() {
       const res = await fetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ display_name: displayName, bio, website, location, currency, language }),
+        body: JSON.stringify({ display_name: displayName, bio, website, twitter_url: twitterUrl, linkedin_url: linkedinUrl, location, currency, language }),
       })
       if (res.ok) {
         setSaved(true)
@@ -192,7 +198,7 @@ export default function ProfileSettingsPage() {
         </div>
 
         {/* Website */}
-        <div className="mb-8">
+        <div className="mb-5">
           <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
             Website
           </label>
@@ -208,6 +214,46 @@ export default function ProfileSettingsPage() {
               color: 'var(--text-primary)',
             }}
             placeholder="https://yourwebsite.com (optional)"
+          />
+        </div>
+
+        {/* X / Twitter */}
+        <div className="mb-5">
+          <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+            X / Twitter URL
+          </label>
+          <input
+            type="url"
+            value={twitterUrl}
+            onChange={(e) => setTwitterUrl(e.target.value)}
+            maxLength={200}
+            className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+            style={{
+              backgroundColor: 'var(--card)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-primary)',
+            }}
+            placeholder="https://x.com/yourusername"
+          />
+        </div>
+
+        {/* LinkedIn */}
+        <div className="mb-8">
+          <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+            LinkedIn URL
+          </label>
+          <input
+            type="url"
+            value={linkedinUrl}
+            onChange={(e) => setLinkedinUrl(e.target.value)}
+            maxLength={200}
+            className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+            style={{
+              backgroundColor: 'var(--card)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-primary)',
+            }}
+            placeholder="https://linkedin.com/in/yourusername"
           />
         </div>
 

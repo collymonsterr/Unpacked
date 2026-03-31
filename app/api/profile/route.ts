@@ -22,6 +22,8 @@ export async function GET() {
       display_name: profile?.display_name ?? '',
       bio: profile?.bio ?? '',
       website: profile?.website ?? '',
+      twitter_url: profile?.twitter_url ?? '',
+      linkedin_url: profile?.linkedin_url ?? '',
       location: profile?.location ?? '',
       currency: profile?.currency ?? 'USD',
       language: profile?.language ?? 'en',
@@ -45,6 +47,18 @@ export async function POST(request: NextRequest) {
     const currency = typeof body.currency === 'string' ? body.currency.trim().slice(0, 10) : undefined
     const language = typeof body.language === 'string' ? body.language.trim().slice(0, 10) : undefined
 
+    // Social links: validate https:// prefix, empty string → null
+    let twitterUrl: string | null = null
+    if (typeof body.twitter_url === 'string') {
+      const trimmed = body.twitter_url.trim().slice(0, 200)
+      if (trimmed && trimmed.startsWith('https://')) twitterUrl = trimmed
+    }
+    let linkedinUrl: string | null = null
+    if (typeof body.linkedin_url === 'string') {
+      const trimmed = body.linkedin_url.trim().slice(0, 200)
+      if (trimmed && trimmed.startsWith('https://')) linkedinUrl = trimmed
+    }
+
     const db = getSupabaseAdmin()
 
     // Upsert profile
@@ -55,6 +69,8 @@ export async function POST(request: NextRequest) {
         display_name: displayName ?? '',
         bio: bio ?? '',
         website: website ?? '',
+        twitter_url: twitterUrl,
+        linkedin_url: linkedinUrl,
         location: location ?? '',
         currency: currency ?? 'USD',
         language: language ?? 'en',

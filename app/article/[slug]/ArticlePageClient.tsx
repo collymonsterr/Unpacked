@@ -18,9 +18,12 @@ import SignInNudge from '@/components/ui/SignInNudge'
 interface Props {
   initialRow: ArticleRow
   linkableArticles?: Array<{ title: string; slug: string }>
+  creatorBio?: string
+  creatorTwitterUrl?: string
+  creatorLinkedinUrl?: string
 }
 
-export default function ArticlePageClient({ initialRow, linkableArticles }: Props) {
+export default function ArticlePageClient({ initialRow, linkableArticles, creatorBio, creatorTwitterUrl, creatorLinkedinUrl }: Props) {
   const [row, setRow] = useState(initialRow)
 
   // Determine if article is already complete on initial load
@@ -278,6 +281,9 @@ export default function ArticlePageClient({ initialRow, linkableArticles }: Prop
               isNew={wasEverGenerating.current}
               factCheckStatus={factCheckStatus}
               linkableArticles={linkableArticles}
+              creatorBio={creatorBio}
+              creatorTwitterUrl={creatorTwitterUrl}
+              creatorLinkedinUrl={creatorLinkedinUrl}
             />
           </div>
           {showSignInOverlay && (

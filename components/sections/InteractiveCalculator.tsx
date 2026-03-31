@@ -167,9 +167,43 @@ function calcMortgage(inputs: Record<string, number>): CalcResult {
 
 function calcRoiComparison(inputs: Record<string, number>): CalcResult {
   const investment = inputs.investment ?? inputs.initial_investment ?? 10000
-  const rateA = (inputs.return_a ?? inputs.rate_a ?? 5) / 100
-  const rateB = (inputs.return_b ?? inputs.rate_b ?? 8) / 100
+  const rawRateA = inputs.return_a ?? inputs.rate_a ?? 5
+  const rawRateB = inputs.return_b ?? inputs.rate_b ?? 8
   const years = inputs.years ?? inputs.time_horizon ?? 10
+
+  // If rate_a or rate_b is > 100 it's an annual dollar cost, not a percentage.
+  // e.g. "annual cost without upgrade = $1,200" — treat as a cost comparison.
+  if (rawRateA > 100 || rawRateB > 100) {
+    const costA = rawRateA       // annual cost without upgrade
+    const costB = rawRateB       // annual cost with upgrade
+    const setupCost = investment // initial outlay (e.g. smart thermostat)
+
+    const totalA = costA * years
+    const totalB = setupCost + costB * years
+    const savings = totalA - totalB
+
+    const chartData = []
+    for (let y = 0; y <= years; y++) {
+      chartData.push({
+        year: `Year ${y}`,
+        value: Math.round(costA * y),
+        optionB: Math.round(setupCost + costB * y),
+      })
+    }
+
+    return {
+      outputs: {
+        option_a_total: Math.round(totalA),
+        option_b_total: Math.round(totalB),
+        difference: Math.round(savings),
+      },
+      chartData,
+    }
+  }
+
+  // Original variant: rate_a / rate_b are percentage annual returns — compare investment growth.
+  const rateA = rawRateA / 100
+  const rateB = rawRateB / 100
 
   const chartData = []
   for (let y = 0; y <= years; y++) {

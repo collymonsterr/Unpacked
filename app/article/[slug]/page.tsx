@@ -126,6 +126,21 @@ export default async function ArticlePage({ params }: Props) {
   // Fetch linkable articles for inline internal links
   const linkableArticles = await getLinkableArticles(row.slug)
 
+  // Fetch creator profile (bio + social links) for the author block
+  let creatorBio: string | undefined
+  let creatorTwitterUrl: string | undefined
+  let creatorLinkedinUrl: string | undefined
+  if (row.user_id) {
+    const { data: profile } = await getSupabaseAdmin()
+      .from('profiles')
+      .select('bio, twitter_url, linkedin_url')
+      .eq('id', row.user_id)
+      .single()
+    creatorBio = profile?.bio || undefined
+    creatorTwitterUrl = profile?.twitter_url || undefined
+    creatorLinkedinUrl = profile?.linkedin_url || undefined
+  }
+
   // isOwner is determined client-side via localStorage (no auth for MVP)
   return (
     <>
@@ -136,7 +151,7 @@ export default async function ArticlePage({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
         />
       ))}
-      <ArticlePageClient initialRow={row} linkableArticles={linkableArticles} />
+      <ArticlePageClient initialRow={row} linkableArticles={linkableArticles} creatorBio={creatorBio} creatorTwitterUrl={creatorTwitterUrl} creatorLinkedinUrl={creatorLinkedinUrl} />
     </>
   )
 }
