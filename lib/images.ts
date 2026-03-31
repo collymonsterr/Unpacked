@@ -498,6 +498,7 @@ export async function enrichArticleWithImages(
   const imageMap = new Map(imageResults.map((r) => [r.entity_name, r.imageUrls]))
 
   // Find all image_section entries and fetch their images in parallel
+  // These are editorial/lifestyle images — route through Pexels/Unsplash first
   const imageSections = article.sections
     .map((s, idx) => ({ section: s, idx }))
     .filter((x): x is { section: ImageSection; idx: number } => x.section.type === 'image_section')
@@ -507,8 +508,22 @@ export async function enrichArticleWithImages(
       const enrichedImages = await Promise.all(
         section.images.map(async (img) => {
           if (!img.search_query) return img
-          const urls = await fetchProductImages(img.search_query, 1)
-          return { ...img, image_url: urls[0] ?? null }
+          // Route editorial section images through Pexels/Unsplash → Brave
+          const sources = routeImageRequest({
+            query: img.search_query,
+            purpose: 'editorial_section',
+            articleType: article.article_type as ArticleType,
+          })
+          let imageUrl: string | null = null
+          for (const source of sources) {
+            if (imageUrl) break
+            const candidates = await fetchFromSource(source, img.search_query, 3)
+            const filtered = filterImageCandidates(candidates, 'editorial_section')
+            if (filtered.length > 0) {
+              imageUrl = filtered[0].url
+            }
+          }
+          return { ...img, image_url: imageUrl }
         })
       )
       return { idx, enrichedImages }
@@ -574,13 +589,27 @@ export async function enrichArticleWithImages(
 
     await Promise.all(retryPromises)
 
-    // Inject editorial images if none exist
+    // Inject editorial images if none exist — route through Pexels/Unsplash first
     const hasEditorialImages = enrichedSections.some(s => s.type === 'image_section')
     if (!hasEditorialImages) {
       const titleTopic = article.title.split(/[:|—]/)[0].trim()
       const editorialQuery = `${titleTopic} editorial photography`
-      console.log(`[images] No editorial images — searching: "${editorialQuery}"`)
-      const editorialUrls = await fetchProductImages(editorialQuery, 2)
+      console.log(`[images] No editorial images — searching via router: "${editorialQuery}"`)
+
+      // Try Pexels/Unsplash first for editorial images
+      const sources = routeImageRequest({
+        query: editorialQuery,
+        purpose: 'editorial_section',
+        articleType: article.article_type as ArticleType,
+      })
+      let editorialUrls: string[] = []
+      for (const source of sources) {
+        if (editorialUrls.length >= 2) break
+        const candidates = await fetchFromSource(source, editorialQuery, 3)
+        const filtered = filterImageCandidates(candidates, 'editorial_section')
+        editorialUrls.push(...filtered.map(c => c.url))
+      }
+      editorialUrls = editorialUrls.slice(0, 2)
 
       if (editorialUrls.length > 0) {
         const imageSection = {
