@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, lazy, Suspense } from 'react'
 import Link from 'next/link'
 import type { ArticleRow } from '@/types/article'
 import ArticleGenerating from '@/components/ArticleGenerating'
@@ -16,6 +16,8 @@ import { useAdminMode } from '@/hooks/useAdminMode'
 import { useUser } from '@/hooks/useUser'
 import { addRecentArticle } from '@/lib/recent-articles'
 import { clearPendingArticle } from '@/lib/pending-article'
+
+const EditorCoPilot = lazy(() => import('@/components/EditorCoPilot'))
 
 interface Props {
   initialRow: ArticleRow
@@ -49,6 +51,9 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
   const isAdmin = useAdminMode()
   const { user, loading: userLoading } = useUser()
   const isOwner = isAdmin || (user != null && row.user_id === user.id)
+
+  // Tab state (Article vs Editor)
+  const [activeTab, setActiveTab] = useState<'article' | 'editor'>('article')
 
   // Sign-in gate state
   const [gateDismissed, setGateDismissed] = useState(false)
@@ -316,17 +321,69 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
             transition: 'opacity 0.4s ease',
           }}
         >
-          <ArticleView
-            articleRow={row}
-            isOwner={isOwner}
-            isAdmin={isAdmin}
-            isNew={wasEverGenerating.current}
-            factCheckStatus={factCheckStatus}
-            linkableArticles={linkableArticles}
-            creatorBio={creatorBio}
-            creatorTwitterUrl={creatorTwitterUrl}
-            creatorLinkedinUrl={creatorLinkedinUrl}
-          />
+          {/* Tab navigation — only show Editor tab to owner */}
+          {isOwner && (
+            <div
+              className="max-w-[900px] mx-auto px-4 md:px-6 flex gap-0"
+              style={{ borderBottom: '1px solid var(--border)' }}
+            >
+              {(['article', 'editor'] as const).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className="relative px-4 py-3 text-sm font-medium transition-colors"
+                  style={{
+                    color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    fontFamily: 'var(--font-sora)',
+                    cursor: 'pointer',
+                    background: 'none',
+                    border: 'none',
+                  }}
+                >
+                  {tab === 'article' ? 'Article' : 'Editor'}
+                  {activeTab === tab && (
+                    <span
+                      className="absolute bottom-0 left-0 right-0 h-0.5"
+                      style={{ backgroundColor: '#BA7517' }}
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Tab content */}
+          {activeTab === 'article' ? (
+            <ArticleView
+              articleRow={row}
+              isOwner={isOwner}
+              isAdmin={isAdmin}
+              isNew={wasEverGenerating.current}
+              factCheckStatus={factCheckStatus}
+              linkableArticles={linkableArticles}
+              creatorBio={creatorBio}
+              creatorTwitterUrl={creatorTwitterUrl}
+              creatorLinkedinUrl={creatorLinkedinUrl}
+            />
+          ) : (
+            <Suspense
+              fallback={
+                <div className="max-w-[900px] mx-auto px-4 md:px-6 py-10">
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="rounded-xl h-24 animate-pulse" style={{ backgroundColor: '#f0efed' }} />
+                    ))}
+                  </div>
+                </div>
+              }
+            >
+              <EditorCoPilot
+                articleId={row.id}
+                articleSlug={row.slug}
+                articleType={row.article?.article_type ?? ''}
+              />
+            </Suspense>
+          )}
         </div>
       ) : showGenerating ? (
         <div

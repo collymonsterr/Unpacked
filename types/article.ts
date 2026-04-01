@@ -443,6 +443,19 @@ export interface FactCheckResult {
   issues: FactCheckIssue[]
 }
 
+// ── Co-Pilot Refine Request ─────────────────────────────────────────────────
+
+export interface CoPilotRefineRequest {
+  /** Free-text instructions from the creator */
+  instructions?: string
+  /** Finding IDs to include in the rewrite */
+  add_findings?: string[]
+  /** Finding IDs to exclude from the rewrite */
+  remove_findings?: string[]
+  /** New article type — triggers full rewrite with different type rules */
+  switch_type?: string
+}
+
 // ── Database row ─────────────────────────────────────────────────────────────
 
 export interface ArticleRow {
