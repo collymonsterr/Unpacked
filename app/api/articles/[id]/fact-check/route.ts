@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
-import { runFactCheck, applyCorrections } from '@/lib/fact-check'
+import { runTripleFactCheck, applyCorrections } from '@/lib/fact-check'
 import { isValidUUID } from '@/lib/validate'
 
 export const maxDuration = 120
@@ -27,8 +27,16 @@ export async function POST(
       return NextResponse.json({ error: 'Article not found' }, { status: 404 })
     }
 
-    // Run fact-check via Gemini
-    const factCheckResult = await runFactCheck(row.article)
+    const articleType = row.article.article_type ?? row.plan?.article_type ?? ''
+    const category = row.plan?.category ?? ''
+
+    // Run triple fact-check
+    const { factCheck: factCheckResult, audit: factCheckAudit } = await runTripleFactCheck(
+      row.article,
+      articleType,
+      category,
+      id,
+    )
 
     // Apply corrections if issues found
     let updatedArticle = row.article
@@ -42,6 +50,7 @@ export async function POST(
       .update({
         article: updatedArticle,
         fact_check: factCheckResult,
+        fact_check_audit: factCheckAudit,
         verified_at: new Date().toISOString(),
         status: 'verified',
       })
@@ -52,10 +61,11 @@ export async function POST(
       return NextResponse.json({ error: 'Failed to save fact-check' }, { status: 500 })
     }
 
-    console.log('[fact-check route] Complete for', id.slice(0, 8), ':', factCheckResult.total_issues, 'issues')
+    console.log(`[fact-check route] Complete for ${id.slice(0, 8)}: ${factCheckAudit.stages_run} stages, ${factCheckResult.total_issues} issues`)
 
     return NextResponse.json({
       fact_check: factCheckResult,
+      audit: factCheckAudit,
       corrections_applied: factCheckResult.issues.filter(i => i.severity !== 'note').length,
     })
   } catch (err) {

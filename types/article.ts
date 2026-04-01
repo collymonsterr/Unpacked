@@ -443,6 +443,65 @@ export interface FactCheckResult {
   issues: FactCheckIssue[]
 }
 
+// ── Triple Fact-Check (Session 1.8B) ───────────────────────────────────────
+
+export type ClaimCategory = 'price' | 'statistic' | 'date' | 'factual' | 'medical' | 'financial' | 'technical'
+
+export interface VerifiedClaim {
+  id: string
+  text: string
+  category: ClaimCategory
+  verdict: 'verified' | 'flagged' | 'insufficient'
+  evidence: Array<{
+    source: string
+    url: string
+    snippet: string
+  }>
+  correction?: string
+}
+
+export interface HaikuReview {
+  claim_id: string
+  agrees_with_stage1: boolean
+  confidence: 'high' | 'medium' | 'low'
+  concerns?: string
+}
+
+export interface ArbitrationResult {
+  claim_id: string
+  verdict: 'verified' | 'flagged' | 'insufficient'
+  reasoning: string
+}
+
+export interface FactCheckAuditClaim {
+  id: string
+  text: string
+  category: string
+  stage1_verdict: string
+  stage1_evidence: Array<{ source: string; url: string; snippet: string }>
+  stage2_review?: { agrees: boolean; confidence: string; concerns?: string }
+  stage3_arbitration?: { verdict: string; reasoning: string }
+  final_verdict: 'verified' | 'corrected' | 'softened' | 'insufficient'
+  action_taken?: string
+}
+
+export interface FactCheckAuditSummary {
+  verified: number
+  corrected: number
+  softened: number
+  insufficient: number
+  disagreements: number
+  stages_run: number
+}
+
+export interface FactCheckAudit {
+  timestamp: string
+  total_claims: number
+  stages_run: number
+  claims: FactCheckAuditClaim[]
+  summary: FactCheckAuditSummary
+}
+
 // ── Co-Pilot Refine Request ─────────────────────────────────────────────────
 
 export interface CoPilotRefineRequest {
@@ -471,7 +530,9 @@ export interface ArticleRow {
   user_name?: string | null
   user_avatar?: string | null
   fact_check?: FactCheckResult | null
+  fact_check_audit?: FactCheckAudit | null
   verified_at?: string | null
+  total_cost?: number
   view_count?: number
   hidden_from_homepage?: boolean
   sort_order?: number | null

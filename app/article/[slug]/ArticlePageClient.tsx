@@ -422,6 +422,7 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
         <FactCheckBar
           status={factCheckStatus}
           factCheck={row.fact_check}
+          audit={row.fact_check_audit}
         />
       )}
     </div>

@@ -318,7 +318,13 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           {(articleRow.status === 'verified' || articleRow.fact_check) && (
             <>
               <span style={{ color: 'var(--border)' }}>·</span>
-              <FactCheckBadge factCheck={articleRow.fact_check} />
+              <FactCheckBadge factCheck={articleRow.fact_check} audit={articleRow.fact_check_audit} />
+            </>
+          )}
+          {isAdmin && articleRow.total_cost != null && articleRow.total_cost > 0 && (
+            <>
+              <span style={{ color: 'var(--border)' }}>·</span>
+              <ArticleCostDisplay articleId={articleRow.id} totalCost={articleRow.total_cost} />
             </>
           )}
         </div>
@@ -570,6 +576,97 @@ function LoadingSpinner() {
         style={{ borderColor: 'var(--border)', borderTopColor: 'var(--accent)' }}
       />
     </div>
+  )
+}
+
+/**
+ * Admin-only cost display with expandable breakdown by call type.
+ */
+function ArticleCostDisplay({ articleId, totalCost }: { articleId: string; totalCost: number }) {
+  const [expanded, setExpanded] = useState(false)
+  const [breakdown, setBreakdown] = useState<Array<{ call_type: string; total_cost: number; call_count: number }> | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function loadBreakdown() {
+    if (breakdown) {
+      setExpanded(!expanded)
+      return
+    }
+    setLoading(true)
+    setExpanded(true)
+    try {
+      const res = await fetch(`/api/articles/${articleId}/cost-breakdown`)
+      if (res.ok) {
+        const data = await res.json()
+        setBreakdown(data.breakdown ?? [])
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const CALL_TYPE_LABELS: Record<string, string> = {
+    plan: 'Planning',
+    synthesis: 'Research',
+    blueprint: 'Blueprint',
+    write: 'Writing',
+    editorial_pass: 'Editorial',
+    fact_check_stage1: 'Fact-check (S1)',
+    fact_check_claims: 'Fact-check (claims)',
+    fact_check_stage2: 'Fact-check (S2)',
+    fact_check_stage3: 'Fact-check (S3)',
+    refine: 'Refine',
+    hero_image: 'Images',
+  }
+
+  return (
+    <span className="relative">
+      <button
+        onClick={loadBreakdown}
+        className="text-xs"
+        style={{ color: 'var(--text-secondary)', cursor: 'pointer', opacity: 0.7 }}
+      >
+        Cost: ${totalCost.toFixed(3)}
+      </button>
+      {expanded && (
+        <div
+          className="absolute top-6 left-0 z-30 rounded-lg p-3 min-w-[200px]"
+          style={{
+            backgroundColor: 'var(--card)',
+            border: '1px solid var(--border)',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+          }}
+        >
+          <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-sora)' }}>
+            Cost Breakdown
+          </p>
+          {loading ? (
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Loading...</p>
+          ) : breakdown && breakdown.length > 0 ? (
+            <div className="space-y-1">
+              {breakdown.map((item, i) => (
+                <div key={i} className="flex justify-between text-xs">
+                  <span style={{ color: 'var(--text-secondary)' }}>
+                    {CALL_TYPE_LABELS[item.call_type] ?? item.call_type}
+                  </span>
+                  <span style={{ color: 'var(--text-primary)' }}>
+                    ${item.total_cost.toFixed(4)}
+                  </span>
+                </div>
+              ))}
+              <div className="flex justify-between text-xs font-semibold pt-1 mt-1" style={{ borderTop: '1px solid var(--border)' }}>
+                <span style={{ color: 'var(--text-primary)' }}>Total</span>
+                <span style={{ color: 'var(--text-primary)' }}>${totalCost.toFixed(3)}</span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>No breakdown available</p>
+          )}
+        </div>
+      )}
+    </span>
   )
 }
 

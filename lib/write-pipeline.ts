@@ -19,7 +19,7 @@ import { generateBlueprint } from '@/lib/blueprint'
 import { runEditorialPass, applyEditorRewrites } from '@/lib/editorial-pass'
 import { enrichArticleWithImages, fetchHeroImage } from '@/lib/images'
 import { pickBestArticleImage } from '@/lib/imagen'
-import { runFactCheck, applyCorrections } from '@/lib/fact-check'
+import { runTripleFactCheck, applyCorrections } from '@/lib/fact-check'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import type { ArticlePlan, EntityCard, ResearchSynthesis, ArticleContent } from '@/types/article'
 
@@ -203,10 +203,16 @@ export async function runWritePipeline({
   const fmtS = (ms: number | undefined) => ms != null ? `${(ms / 1000).toFixed(1)}s` : '-'
   console.log(`[pipeline] Complete in ${fmtS(timings.total_ms)}: plan=${fmtS(t.planning_ms)} research=${fmtS(t.research_ms)} blueprint=${fmtS(t.blueprint_ms)} write=${fmtS(t.writing_ms)} editor=${fmtS(t.editorial_ms)} save=${fmtS(t.save_ms)}`)
 
-  // ── Phase 4: Fact-check (non-blocking — article is already readable) ──
+  // ── Phase 4: Triple fact-check (non-blocking — article is already readable) ──
   try {
     const fcStart = Date.now()
-    const factCheckResult = await runFactCheck(enrichedArticle)
+    const articleCategory = (plan.category ?? '') as string
+    const { factCheck: factCheckResult, audit: factCheckAudit } = await runTripleFactCheck(
+      enrichedArticle,
+      plan.article_type,
+      articleCategory,
+      articleId,
+    )
     let finalArticle = enrichedArticle
     if (factCheckResult.issues_found && factCheckResult.issues.length > 0) {
       finalArticle = applyCorrections(enrichedArticle, factCheckResult)
@@ -214,12 +220,13 @@ export async function runWritePipeline({
     const fcMs = Date.now() - fcStart
     timings.factcheck_ms = fcMs
 
-    // Update article + timings with fact-check data
+    // Update article + timings with fact-check data + audit trail
     await db
       .from('articles')
       .update({
         article: finalArticle,
         fact_check: factCheckResult,
+        fact_check_audit: factCheckAudit,
         verified_at: new Date().toISOString(),
         status: 'verified',
         generation_options: {
@@ -228,7 +235,7 @@ export async function runWritePipeline({
         },
       })
       .eq('id', articleId)
-    console.log(`[pipeline] Fact-check in ${fmtS(fcMs)}: ${factCheckResult.total_issues} issues`)
+    console.log(`[pipeline] Fact-check in ${fmtS(fcMs)}: ${factCheckAudit.stages_run} stages, ${factCheckResult.total_issues} issues, ${factCheckAudit.summary.disagreements} disagreements`)
   } catch (fcErr) {
     console.error('[pipeline] Fact-check failed:', fcErr)
   }

@@ -457,6 +457,9 @@ function ArticleSubTabs({ articles: initialArticles }: { articles: ArticleRow[] 
                   </span>
                   <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{date}</span>
                   <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{row.view_count ?? 0} views</span>
+                  {(row.total_cost != null && row.total_cost > 0) && (
+                    <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>${Number(row.total_cost).toFixed(3)}</span>
+                  )}
                   {/* Pool badges */}
                   {row.is_featured && (
                     <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ backgroundColor: '#FEF3EC', color: '#BA7517' }}>

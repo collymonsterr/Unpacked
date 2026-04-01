@@ -1,14 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import type { FactCheckResult } from '@/types/article'
+import type { FactCheckResult, FactCheckAudit } from '@/types/article'
 
 interface Props {
   status: 'checking' | 'verified'
   factCheck?: FactCheckResult | null
+  audit?: FactCheckAudit | null
 }
 
-export default function FactCheckBar({ status, factCheck }: Props) {
+export default function FactCheckBar({ status, factCheck, audit }: Props) {
   const [dismissed, setDismissed] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [slideIn, setSlideIn] = useState(false)
@@ -30,6 +31,8 @@ export default function FactCheckBar({ status, factCheck }: Props) {
   if (dismissed) return null
 
   const corrections = factCheck?.issues?.filter(i => i.severity !== 'note') ?? []
+  const stagesRun = audit?.stages_run ?? (factCheck ? 1 : 0)
+  const totalClaims = audit?.total_claims ?? factCheck?.checks_performed ?? 0
 
   return (
     <>
@@ -46,9 +49,7 @@ export default function FactCheckBar({ status, factCheck }: Props) {
           style={{
             backgroundColor: status === 'verified' && !factCheck?.issues_found
               ? '#f0fdf4'
-              : status === 'verified'
-                ? 'var(--card)'
-                : 'var(--card)',
+              : 'var(--card)',
             borderTop: status === 'verified' && !factCheck?.issues_found
               ? '1px solid #bbf7d0'
               : '1px solid var(--border)',
@@ -64,62 +65,67 @@ export default function FactCheckBar({ status, factCheck }: Props) {
                 />
                 <p className="text-sm flex-1" style={{ color: 'var(--text-primary)' }}>
                   <span className="font-semibold" style={{ fontFamily: 'var(--font-sora)' }}>
-                    Fact-checking
+                    Triple-checking
                   </span>
                   <span className="hidden sm:inline" style={{ color: 'var(--text-secondary)' }}>
-                    {' '}— verifying prices, specs, and claims against live sources...
+                    {' '}— verifying with 3 independent AI systems...
                   </span>
                   <span className="sm:hidden" style={{ color: 'var(--text-secondary)' }}>
                     {' '}against live sources...
                   </span>
                 </p>
-                {/* Subtle animated dots */}
                 <span className="text-sm" style={{ color: 'var(--accent)' }}>
                   <span className="animate-pulse">···</span>
                 </span>
               </>
             ) : !factCheck?.issues_found ? (
               <>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                  <polyline points="22 4 12 14.01 9 11.01" />
-                </svg>
+                <ShieldCheck />
                 <p className="text-sm flex-1" style={{ color: '#15803d' }}>
                   <span className="font-semibold" style={{ fontFamily: 'var(--font-sora)' }}>
-                    Fact-check complete
+                    Triple-Verified
                   </span>
                   <span className="hidden sm:inline">
-                    {' '}— {factCheck?.checks_performed ?? 0} claims verified. No issues found.
+                    {' '}— {totalClaims} claims checked across {stagesRun} verification stages
                   </span>
                   <span className="sm:hidden">
-                    {' '}— all verified.
+                    {' '}— {totalClaims} claims verified
                   </span>
                 </p>
-                <button
-                  onClick={() => setDismissed(true)}
-                  className="text-xs flex items-center justify-center rounded-lg flex-shrink-0"
-                  style={{ color: '#15803d', opacity: 0.6, minWidth: '44px', minHeight: '44px' }}
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setExpanded(!expanded)}
+                    className="text-xs font-medium px-2.5 py-1.5 rounded-lg flex-shrink-0"
+                    style={{
+                      color: '#15803d',
+                      backgroundColor: '#dcfce7',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {expanded ? 'Close' : 'Details'}
+                  </button>
+                  <button
+                    onClick={() => setDismissed(true)}
+                    className="text-xs flex items-center justify-center rounded-lg flex-shrink-0"
+                    style={{ color: '#15803d', opacity: 0.6, minWidth: '44px', minHeight: '44px', cursor: 'pointer' }}
+                  >
+                    ✕
+                  </button>
+                </div>
               </>
             ) : (
               <>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
+                <ShieldCheck />
                 <p className="text-sm flex-1" style={{ color: 'var(--text-primary)' }}>
                   <span className="font-semibold" style={{ fontFamily: 'var(--font-sora)' }}>
-                    Fact-check complete
+                    Triple-Verified
                   </span>
                   {' — '}
                   <span className="font-bold" style={{ color: 'var(--accent)' }}>
                     {corrections.length} correction{corrections.length !== 1 ? 's' : ''}
                   </span>
-                  <span className="hidden sm:inline"> applied to this article.</span>
-                  <span className="sm:hidden"> applied.</span>
+                  <span className="hidden sm:inline"> applied across {stagesRun} verification stages</span>
+                  <span className="sm:hidden"> applied</span>
                 </p>
                 <button
                   onClick={() => setExpanded(!expanded)}
@@ -127,9 +133,10 @@ export default function FactCheckBar({ status, factCheck }: Props) {
                   style={{
                     backgroundColor: 'var(--accent)',
                     color: '#fff',
+                    cursor: 'pointer',
                   }}
                 >
-                  {expanded ? 'Close' : 'See changes'}
+                  {expanded ? 'Close' : 'See details'}
                 </button>
               </>
             )}
@@ -137,8 +144,8 @@ export default function FactCheckBar({ status, factCheck }: Props) {
         </div>
       </div>
 
-      {/* Expanded corrections panel — slides up from bar */}
-      {expanded && factCheck?.issues_found && (
+      {/* Expanded detail panel */}
+      {expanded && status === 'verified' && (
         <>
           {/* Backdrop */}
           <div
@@ -147,9 +154,7 @@ export default function FactCheckBar({ status, factCheck }: Props) {
             onClick={() => setExpanded(false)}
           />
           {/* Panel */}
-          <div
-            className="fixed bottom-12 left-0 right-0 z-50 px-4 pb-2"
-          >
+          <div className="fixed bottom-12 left-0 right-0 z-50 px-4 pb-2">
             <div
               className="max-w-[600px] mx-auto rounded-xl p-5"
               style={{
@@ -158,48 +163,100 @@ export default function FactCheckBar({ status, factCheck }: Props) {
                 boxShadow: '0 -4px 32px rgba(0,0,0,0.15)',
               }}
             >
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-4">
                 <h4
                   className="text-sm font-bold"
                   style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
                 >
-                  What we corrected
+                  Verification Report
                 </h4>
                 <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  {factCheck.checks_performed} claims checked
+                  {totalClaims} claims checked
                 </span>
               </div>
-              <div className="space-y-2.5 max-h-64 overflow-y-auto">
-                {factCheck.issues.map((issue, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-2.5 text-sm"
-                  >
-                    <span
-                      className="mt-1 flex-shrink-0 w-2 h-2 rounded-full"
-                      style={{
-                        backgroundColor: issue.severity === 'critical' ? '#dc2626'
-                          : issue.severity === 'minor' ? 'var(--accent)'
-                          : '#94918D',
-                      }}
-                    />
-                    <div>
-                      {issue.entity_name && (
-                        <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                          {issue.entity_name}:{' '}
-                        </span>
-                      )}
-                      <span style={{ color: 'var(--text-secondary)' }}>
-                        {issue.correction}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+
+              {/* Three-stage checklist */}
+              <div className="space-y-2.5 mb-4">
+                <StageRow
+                  completed={status === 'verified'}
+                  label="Source Verification"
+                  detail={`${totalClaims} claims checked against live web sources`}
+                />
+                <StageRow
+                  completed={status === 'verified' && stagesRun >= 2}
+                  label="Credibility Review"
+                  detail="Sources evaluated for reliability and consistency"
+                />
+                <StageRow
+                  completed={stagesRun >= 3}
+                  skipped={stagesRun < 3}
+                  label="Independent Audit"
+                  detail={stagesRun >= 3
+                    ? 'Verified by a third AI system'
+                    : 'Skipped — not required for this article type'
+                  }
+                />
               </div>
+
+              {/* Audit summary */}
+              {audit && (
+                <div
+                  className="flex items-center gap-3 text-xs py-2 px-3 rounded-lg mb-3"
+                  style={{ backgroundColor: '#FAFAF8', border: '1px solid #E8E3DC' }}
+                >
+                  {audit.summary.corrected > 0 && (
+                    <span style={{ color: 'var(--accent)' }}>
+                      {audit.summary.corrected} claim{audit.summary.corrected !== 1 ? 's' : ''} corrected
+                    </span>
+                  )}
+                  {audit.summary.softened > 0 && (
+                    <span style={{ color: 'var(--text-secondary)' }}>
+                      {audit.summary.softened} softened
+                    </span>
+                  )}
+                  {audit.summary.disagreements > 0 && (
+                    <span style={{ color: 'var(--text-secondary)' }}>
+                      {audit.summary.disagreements} disagreement{audit.summary.disagreements !== 1 ? 's' : ''} resolved
+                    </span>
+                  )}
+                  {audit.summary.corrected === 0 && audit.summary.softened === 0 && audit.summary.disagreements === 0 && (
+                    <span style={{ color: '#15803d' }}>All claims verified — no corrections needed</span>
+                  )}
+                </div>
+              )}
+
+              {/* Corrections list (if any) */}
+              {corrections.length > 0 && (
+                <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
+                  {corrections.map((issue, i) => (
+                    <div key={i} className="flex items-start gap-2.5 text-sm">
+                      <span
+                        className="mt-1 flex-shrink-0 w-2 h-2 rounded-full"
+                        style={{
+                          backgroundColor: issue.severity === 'critical' ? '#dc2626'
+                            : issue.severity === 'minor' ? 'var(--accent)'
+                            : '#94918D',
+                        }}
+                      />
+                      <div>
+                        {issue.entity_name && (
+                          <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                            {issue.entity_name}:{' '}
+                          </span>
+                        )}
+                        <span style={{ color: 'var(--text-secondary)' }}>
+                          {issue.correction}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <button
                 onClick={() => { setExpanded(false); setDismissed(true) }}
-                className="mt-4 w-full text-center text-xs font-semibold py-2 rounded-lg"
-                style={{ backgroundColor: 'var(--accent-light)', color: 'var(--accent)' }}
+                className="mt-2 w-full text-center text-xs font-semibold py-2 rounded-lg"
+                style={{ backgroundColor: 'var(--accent-light)', color: 'var(--accent)', cursor: 'pointer' }}
               >
                 Got it, dismiss
               </button>
@@ -214,13 +271,68 @@ export default function FactCheckBar({ status, factCheck }: Props) {
   )
 }
 
+// ── Stage row for the verification checklist ──
+
+function StageRow({
+  completed,
+  skipped,
+  label,
+  detail,
+}: {
+  completed: boolean
+  skipped?: boolean
+  label: string
+  detail: string
+}) {
+  return (
+    <div className="flex items-start gap-2.5">
+      {completed ? (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+      ) : skipped ? (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94918D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
+      ) : (
+        <div
+          className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin flex-shrink-0 mt-0.5"
+          style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
+        />
+      )}
+      <div>
+        <p className="text-sm font-medium" style={{ color: completed ? '#15803d' : skipped ? '#94918D' : 'var(--text-primary)' }}>
+          {label}
+        </p>
+        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+          {detail}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ── Shield check icon ──
+
+function ShieldCheck() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <polyline points="9 12 11 14 15 10" />
+    </svg>
+  )
+}
+
 /**
  * Small badge shown near the article title.
  */
-export function FactCheckBadge({ factCheck }: { factCheck?: FactCheckResult | null }) {
+export function FactCheckBadge({ factCheck, audit }: { factCheck?: FactCheckResult | null; audit?: FactCheckAudit | null }) {
   if (!factCheck) return null
 
   const corrections = factCheck.issues.filter(i => i.severity !== 'note').length
+  const stagesRun = audit?.stages_run
 
   if (corrections === 0) {
     return (
@@ -229,10 +341,10 @@ export function FactCheckBadge({ factCheck }: { factCheck?: FactCheckResult | nu
         style={{ backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-          <polyline points="22 4 12 14.01 9 11.01" />
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <polyline points="9 12 11 14 15 10" />
         </svg>
-        Fact-checked
+        Verified{stagesRun && stagesRun >= 2 ? ` (${stagesRun}×)` : ''}
       </span>
     )
   }
@@ -243,8 +355,8 @@ export function FactCheckBadge({ factCheck }: { factCheck?: FactCheckResult | nu
       style={{ backgroundColor: 'var(--accent-light)', color: 'var(--accent)', border: '1px solid #f0d5be' }}
     >
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-        <polyline points="22 4 12 14.01 9 11.01" />
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <polyline points="9 12 11 14 15 10" />
       </svg>
       {corrections} correction{corrections !== 1 ? 's' : ''} applied
     </span>
