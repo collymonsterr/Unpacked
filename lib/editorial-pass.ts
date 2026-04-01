@@ -101,6 +101,8 @@ CHECK FOR THESE ISSUES:
 3. WEAK VERDICT — does the verdict take a clear position? Does it match the blueprint's intended verdict?
 4. FILLER — sections that restate the same point without adding new information.
 5. MISSING ATTRIBUTION — claims about specific prices, stats, or performance that should cite a source but don't.
+6. REPETITION — the same claim, stat, or argument appearing in multiple sections. Each section should add new information. The verdict and executive summary should say different things.
+7. CREATIVE FILLER — scene-setting paragraphs ("Picture this...", "Imagine..."), rhetorical questions used as transitions, sentences without any specific fact, number, name, or instruction. Every sentence must earn its place.
 
 SCORING:
 - 90-100: Excellent. Decisive, well-sourced, no AI-tell phrases.
@@ -116,7 +118,7 @@ Return ONLY valid JSON:
   "issues": [
     {
       "section_id": "0",
-      "issue_type": "hedging|ai_phrase|weak_verdict|filler|missing_attribution",
+      "issue_type": "hedging|ai_phrase|weak_verdict|filler|missing_attribution|repetition|creative_filler",
       "description": "string — what the issue is",
       "severity": "low|medium|high"
     }

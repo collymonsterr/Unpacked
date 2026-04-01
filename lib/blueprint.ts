@@ -94,8 +94,10 @@ YOUR TASK:
 2. Write the exact VERDICT text that will appear in the verdict box. Must be specific and decisive.${typeConfig?.verdictRequired === false ? ' (Optional for this article type — include only if it adds value.)' : ''}
 3. For each section, specify: what it must cover, which entity card facts to reference, a word budget, and which visual components belong there.
 4. List things the article must NOT say — unsupported claims, tangential angles, hedging language.
-5. Word budgets must sum to approximately ${targetWords} words (±10%).
-6. VISUAL DENSITY RULE: ${targetWords >= 2500 ? `At ${targetWords}+ words, this article MUST include at least 2 data visualization components (bar_chart, comparison_matrix, pie_chart, line_chart, stat_cards, or timeline) to break up long text. Assign them to specific sections.` : 'Include visual components where they add value — stat_cards for key numbers, charts for trends or comparisons.'}
+5. Word budgets are HARD LIMITS, not aspirational targets. Each section must stay within ±10% of its budget. Total article must NOT exceed ${targetWords} words. Shorter is always better.
+6. ANTI-REPETITION: Each section must introduce NEW information. If a fact or argument appeared in an earlier section, do not repeat it. The verdict should not restate the executive summary — verdict = conclusion, summary = context.
+7. STRUCTURE: Any section containing 3+ comparable items (features, pros, cons, options, reasons) should specify bullet/list format in key_points. Never bury a list inside a paragraph.
+8. VISUAL DENSITY RULE: ${targetWords >= 2500 ? `At ${targetWords}+ words, this article MUST include at least 2 data visualization components (bar_chart, comparison_matrix, pie_chart, line_chart, stat_cards, or timeline) to break up long text. Assign them to specific sections.` : 'Include visual components where they add value — stat_cards for key numbers, charts for trends or comparisons.'}
 
 Return ONLY valid JSON:
 {

@@ -139,7 +139,7 @@ export interface ArticleBlueprint {
 
 export interface EditorIssue {
   section_id: string
-  issue_type: 'hedging' | 'ai_phrase' | 'weak_verdict' | 'filler' | 'missing_attribution'
+  issue_type: 'hedging' | 'ai_phrase' | 'weak_verdict' | 'filler' | 'missing_attribution' | 'repetition' | 'creative_filler'
   description: string
   severity: 'low' | 'medium' | 'high'
 }

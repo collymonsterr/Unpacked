@@ -59,6 +59,33 @@ export const FORBIDDEN_PHRASES = [
 ] as const
 
 /**
+ * Creative writing / filler patterns that add no information.
+ * Used by the editorial pass to flag fluff.
+ */
+export const FILLER_PATTERNS = [
+  'picture this',
+  'imagine a world',
+  "it's no secret that",
+  'the truth is',
+  "here's the thing",
+  "let's face it",
+  'the reality is',
+  'make no mistake',
+  "here's what you need to know",
+  'the good news is',
+  'the bad news is',
+  'love it or hate it',
+  'like it or not',
+  'ready or not',
+  'buckle up',
+  'spoiler alert',
+  'hot take',
+  'plot twist',
+  'long story short',
+  'fast forward to',
+] as const
+
+/**
  * Tone descriptors mapped from article type tone codes.
  */
 export const TONE_DESCRIPTIONS: Record<string, string> = {

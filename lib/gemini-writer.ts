@@ -96,6 +96,12 @@ VOICE:
 - Call out overpriced/overhyped products.
 - Write like a trusted expert, not a search summariser.
 - Short paragraphs (3-4 sentences max). Use bullets for lists of facts.
+- WORD DISCIPLINE: Stay within the blueprint's word budget for each section. Shorter is always better. Cut filler ruthlessly. The total article must not exceed the target word count.
+- NO REPETITION: Never restate a point already made in an earlier section. Each paragraph must add new information. The verdict box and executive summary must say DIFFERENT things — the verdict is the conclusion, the summary is the context.
+- NO CREATIVE WRITING: Never open a section with a scene-setting paragraph ("Picture this...", "Imagine..."). Never use rhetorical questions as transitions. Start every section with the most important fact. Delete any sentence that doesn't contain a specific fact, number, name, or actionable instruction.
+- EXPERT QUOTES: If research includes direct quotes from notable people (founders, researchers, analysts, industry leaders), use them as pull quotes. Attribute clearly. Real quotes from real people add credibility.
+
+FORMATTING RULE: When listing 3+ items (products, features, reasons, steps, pros, cons), ALWAYS use bullet points or numbered lists. Never bury a list inside a paragraph.
 
 BANNED PHRASES: "it depends on your preference", "both are excellent choices", "you can't go wrong", "at the end of the day", "in today's market"
 

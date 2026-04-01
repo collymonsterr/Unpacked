@@ -270,6 +270,7 @@ For brave_queries: generate 4-8 specific search queries. Each has a "purpose" ta
 - decision_guide: focus on core_facts, community, comparison, pricing queries
 - Include the current year in time-sensitive queries
 - Each query should target a different angle — no duplicates
+- EXPERT QUOTES: If the topic involves notable public figures, domain experts, or industry leaders, include at least one brave_query with purpose "expert_opinion" specifically to find direct quotes from relevant authorities (e.g., "Elon Musk on Tesla Robotaxi launch quotes", "Fed Chair Powell interest rate comments ${new Date().getFullYear()}")
 
 For reddit_queries: generate 1-3 Reddit search queries with targeted subreddits. Examples:
 - "best wireless earbuds" → subreddits: ["headphones", "audiophile", "BudgetAudiophile"]
