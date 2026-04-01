@@ -1,12 +1,15 @@
 /**
- * Polymarket Integration (Session 1.7E, updated 1.8C)
+ * Polymarket Integration (Session 1.7E, updated Session A)
  *
  * Fetches prediction market odds from Polymarket's public API.
  * No API key required.
  *
- * Returns structured results with question, outcome probabilities, and volume.
- * Filters out low-volume markets (<$10k) and irrelevant results.
+ * Stage A: Fetch broadly from Polymarket API
+ * Stage B: Hard reject obviously non-serious markets
+ * Stage C: Haiku LLM relevance selection (replaces keyword matching)
  */
+
+import { logApiCall } from '@/lib/api-usage'
 
 export interface PolymarketResult {
   question: string
@@ -18,183 +21,295 @@ export interface PolymarketResult {
 }
 
 const POLYMARKET_API = 'https://gamma-api.polymarket.com/markets'
-const MIN_VOLUME = 10_000 // Filter out markets with <$10k volume
+const MIN_VOLUME = 10_000
 
-// Common words that don't indicate topic relevance
-const STOP_WORDS = new Set([
-  'will', 'the', 'a', 'an', 'be', 'is', 'are', 'was', 'were', 'been',
-  'being', 'have', 'has', 'had', 'do', 'does', 'did', 'shall', 'should',
-  'may', 'might', 'must', 'can', 'could', 'would', 'of', 'in', 'to',
-  'for', 'with', 'on', 'at', 'from', 'by', 'about', 'as', 'into',
-  'through', 'during', 'before', 'after', 'above', 'below', 'between',
-  'under', 'and', 'but', 'or', 'nor', 'not', 'so', 'yet', 'both',
-  'either', 'neither', 'each', 'every', 'all', 'any', 'few', 'more',
-  'most', 'other', 'some', 'such', 'no', 'only', 'same', 'than',
-  'too', 'very', 'just', 'because', 'if', 'when', 'where', 'how',
-  'what', 'which', 'who', 'whom', 'this', 'that', 'these', 'those',
-  'it', 'its', 'he', 'she', 'they', 'them', 'we', 'us', 'i', 'me',
-  'my', 'your', 'his', 'her', 'our', 'their', 'up', 'out', 'off',
-  'over', 'get', 'go', 'going', 'make', 'take', 'come', 'know',
-  'think', 'see', 'look', 'want', 'give', 'use', 'find', 'tell',
-  'say', 'said', 'new', 'first', 'last', 'long', 'great', 'little',
-  'own', 'old', 'right', 'big', 'high', 'different', 'small', 'large',
-  'next', 'early', 'young', 'important', 'public', 'bad', 'good',
-  'happen', 'hit', 'before', 'win', 'return',
-])
+// Stage B: Hard reject obviously non-serious markets
+const BLOCKED_TERMS = [
+  'gta', 'jesus christ', 'meme coin', 'kanye', 'kardashian',
+  'flat earth', 'ufo', 'alien invasion', 'zombie', 'vampire',
+  'will god', 'second coming', 'rapture', 'hot dog', 'eating contest',
+  'bigfoot', 'loch ness', 'santa claus', 'tooth fairy',
+]
 
-/**
- * Extract meaningful keywords from a query string.
- * Removes stop words, short words, and numbers.
- */
-function extractKeywords(text: string): string[] {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter(w => w.length >= 3 && !STOP_WORDS.has(w))
+interface PolymarketCandidate {
+  id: string
+  question: string
+  outcomes: string[]
+  probabilities: number[]
+  volume: number
+  url: string
 }
 
 /**
- * Calculate relevance score: how many query keywords appear in the market question.
- * Returns a value between 0 and 1 (fraction of keywords matched).
+ * Stage A: Fetch candidate markets from Polymarket API.
+ * Returns up to 15 candidates with basic mechanical filters.
  */
-function relevanceScore(questionLower: string, keywords: string[]): number {
-  if (keywords.length === 0) return 0
-  let matched = 0
-  for (const kw of keywords) {
-    if (questionLower.includes(kw)) matched++
+async function fetchCandidates(query: string): Promise<PolymarketCandidate[]> {
+  const params = new URLSearchParams({
+    tag: 'all',
+    status: 'active',
+    active: 'true',
+    closed: 'false',
+    _limit: '15',
+    query,
+  })
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 8000)
+
+  const res = await fetch(`${POLYMARKET_API}?${params}`, {
+    headers: { Accept: 'application/json' },
+    signal: controller.signal,
+  })
+  clearTimeout(timeoutId)
+
+  if (!res.ok) {
+    console.warn(`[polymarket] API error ${res.status}`)
+    return []
   }
-  return matched / keywords.length
+
+  const markets = (await res.json()) as Record<string, unknown>[]
+  if (!Array.isArray(markets)) return []
+
+  const candidates: PolymarketCandidate[] = []
+
+  for (const market of markets) {
+    try {
+      const question = String(market.question ?? '')
+      if (!question) continue
+
+      let outcomes: string[] = []
+      let probabilities: number[] = []
+
+      try { outcomes = JSON.parse(String(market.outcomes ?? '[]')) } catch { outcomes = [] }
+      try {
+        const prices = JSON.parse(String(market.outcomePrices ?? '[]'))
+        probabilities = prices.map((p: string | number) => parseFloat(String(p)))
+      } catch { probabilities = [] }
+
+      if (outcomes.length === 0 || probabilities.length === 0) continue
+      if (outcomes.length !== probabilities.length) continue
+
+      // Filter resolved markets
+      const allResolved = probabilities.every(p => p <= 0.01 || p >= 0.99)
+      if (allResolved) continue
+
+      // Require meaningful probability spread (5%-95%)
+      const hasMeaningfulSpread = probabilities.some(p => p >= 0.05 && p <= 0.95)
+      if (!hasMeaningfulSpread) continue
+
+      const volume = parseFloat(String(market.volume ?? '0'))
+      if (volume < MIN_VOLUME) continue
+
+      const slug = String(market.slug ?? '')
+      const id = String(market.id ?? slug ?? candidates.length)
+
+      candidates.push({
+        id,
+        question,
+        outcomes,
+        probabilities,
+        volume,
+        url: slug ? `https://polymarket.com/event/${slug}` : 'https://polymarket.com',
+      })
+    } catch {
+      continue
+    }
+  }
+
+  return candidates
 }
 
 /**
- * Search Polymarket for prediction markets relevant to the query.
- * Returns top 3 most relevant active markets with >$10k volume.
- *
- * @param query - The search query (e.g., "China invades Taiwan by 2027")
- * @param entityKeywords - Optional additional keywords from article entities/title for relevance matching
+ * Stage B: Remove obviously non-serious markets.
  */
-export async function searchPolymarket(
-  query: string,
-  entityKeywords?: string[],
-): Promise<PolymarketResult[]> {
-  if (!query || query.length < 3) return []
+function filterBlocked(candidates: PolymarketCandidate[]): PolymarketCandidate[] {
+  return candidates.filter(c => {
+    const lower = c.question.toLowerCase()
+    return !BLOCKED_TERMS.some(term => lower.includes(term))
+  })
+}
+
+/**
+ * Stage C: Use Haiku to select genuinely relevant markets.
+ * Returns 0-2 markets that are directly relevant to the article topic.
+ */
+async function selectMarketsWithHaiku(
+  articleTitle: string,
+  articleThesis: string,
+  articleType: string,
+  candidates: PolymarketCandidate[],
+  articleId?: string,
+): Promise<PolymarketCandidate[]> {
+  if (candidates.length === 0) return []
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    console.warn('[polymarket] No ANTHROPIC_API_KEY — skipping Haiku filter')
+    return candidates.slice(0, 2)
+  }
+
+  const formatVolume = (v: number) => v >= 1_000_000
+    ? `${(v / 1_000_000).toFixed(1)}M`
+    : `${Math.round(v / 1000)}k`
+
+  const candidateList = candidates
+    .map((c, i) => `${i + 1}. [${c.id}] "${c.question}" (Volume: $${formatVolume(c.volume)})`)
+    .join('\n')
+
+  const prompt = `You are selecting prediction markets for an article published on Unpacked.
+
+ARTICLE TITLE: ${articleTitle}
+ARTICLE THESIS: ${articleThesis}
+ARTICLE TYPE: ${articleType}
+
+Below are candidate prediction markets from Polymarket. Select ONLY markets that are DIRECTLY relevant to this article's core topic.
+
+CANDIDATES:
+${candidateList}
+
+RULES:
+- Select 0 to 2 markets maximum
+- A market is relevant ONLY if it directly relates to the article's main thesis or core question
+- Sharing a keyword is NOT enough — the market must be about the SAME topic
+- If the article is about gold investing, a market about Bitcoin is NOT relevant
+- If the article is about Taiwan, a market about the NHL is NOT relevant
+- If the article is about robotics, a market about sports is NOT relevant
+- Prefer markets with higher volume (more credible)
+- If NO markets are genuinely relevant, return an empty array — this is correct in many cases
+- Be strict. Showing zero markets is always better than showing irrelevant ones.
+
+Return ONLY a JSON array of selected market IDs. Examples:
+["id1", "id2"] or [] if none relevant.`
 
   try {
-    const params = new URLSearchParams({
-      tag: 'all',
-      status: 'active',
-      active: 'true',
-      closed: 'false',
-      _limit: '10',
-      query,
-    })
-
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 8000)
+    const timeoutId = setTimeout(() => controller.abort(), 15000)
 
-    const res = await fetch(`${POLYMARKET_API}?${params}`, {
-      headers: { Accept: 'application/json' },
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
       signal: controller.signal,
+      body: JSON.stringify({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 200,
+        temperature: 0,
+        messages: [{ role: 'user', content: prompt }],
+      }),
     })
     clearTimeout(timeoutId)
 
     if (!res.ok) {
-      console.warn(`[polymarket] API error ${res.status}`)
+      console.warn(`[polymarket] Haiku API error ${res.status}`)
       return []
     }
 
-    const markets = (await res.json()) as Record<string, unknown>[]
-    if (!Array.isArray(markets)) return []
+    const data = await res.json()
+    const text = data.content?.[0]?.text ?? ''
 
-    // Build keyword list from query + optional entity keywords
-    const queryKeywords = extractKeywords(query)
-    const allKeywords = entityKeywords
-      ? [...new Set([...queryKeywords, ...entityKeywords.flatMap(e => extractKeywords(e))])]
-      : queryKeywords
-
-    const results: Array<PolymarketResult & { _relevance: number }> = []
-
-    for (const market of markets) {
-      try {
-        const question = String(market.question ?? '')
-        if (!question) continue
-
-        // Parse outcomes and probabilities from JSON strings
-        let outcomes: string[] = []
-        let probabilities: number[] = []
-
-        try {
-          outcomes = JSON.parse(String(market.outcomes ?? '[]'))
-        } catch { outcomes = [] }
-
-        try {
-          const prices = JSON.parse(String(market.outcomePrices ?? '[]'))
-          probabilities = prices.map((p: string | number) => parseFloat(String(p)))
-        } catch { probabilities = [] }
-
-        if (outcomes.length === 0 || probabilities.length === 0) continue
-        if (outcomes.length !== probabilities.length) continue
-
-        // Filter out resolved/settled markets — all probs at 0% or 100% means it's done
-        const allResolved = probabilities.every(p => p <= 0.01 || p >= 0.99)
-        if (allResolved) continue
-
-        // Require at least one outcome with meaningful probability spread (5%–95%)
-        const hasMeaningfulSpread = probabilities.some(p => p >= 0.05 && p <= 0.95)
-        if (!hasMeaningfulSpread) continue
-
-        const volume = parseFloat(String(market.volume ?? '0'))
-        if (volume < MIN_VOLUME) continue
-
-        // ── Relevance check ──
-        // Market question must contain at least one keyword from the query/entities
-        const questionLower = question.toLowerCase()
-        const score = relevanceScore(questionLower, allKeywords)
-
-        // Require at least 1 keyword match (score > 0)
-        if (score === 0) {
-          continue
-        }
-
-        const slug = String(market.slug ?? '')
-        const url = slug
-          ? `https://polymarket.com/event/${slug}`
-          : 'https://polymarket.com'
-
-        results.push({
-          question,
-          outcomes,
-          probabilities,
-          volume,
-          url,
-          source: 'polymarket',
-          _relevance: score,
-        })
-      } catch {
-        // Skip malformed market entries
-        continue
-      }
-    }
-
-    if (results.length === 0) {
-      console.log(`[polymarket] No relevant markets found for "${query}" (${allKeywords.join(', ')})`)
-      return []
-    }
-
-    // Sort by relevance first, then by volume within same relevance tier
-    const sorted = results.sort((a, b) => {
-      // Group into relevance tiers: high (>= 0.4), medium (>= 0.2), low (> 0)
-      const tierA = a._relevance >= 0.4 ? 2 : a._relevance >= 0.2 ? 1 : 0
-      const tierB = b._relevance >= 0.4 ? 2 : b._relevance >= 0.2 ? 1 : 0
-      if (tierA !== tierB) return tierB - tierA
-      return b.volume - a.volume
+    // Log usage
+    logApiCall({
+      callType: 'polymarket_filter',
+      model: 'claude-3-haiku-20240307',
+      inputTokens: data.usage?.input_tokens,
+      outputTokens: data.usage?.output_tokens,
+      articleId,
     })
 
-    console.log(`[polymarket] Found ${sorted.length} relevant market(s) for "${query}" — top: "${sorted[0].question}" (relevance: ${sorted[0]._relevance.toFixed(2)})`)
+    // Parse the JSON array of IDs
+    const jsonMatch = text.match(/\[[\s\S]*\]/)
+    if (!jsonMatch) {
+      console.log('[polymarket] Haiku returned no JSON array — treating as no relevant markets')
+      return []
+    }
 
-    // Strip internal _relevance field before returning
-    return sorted.slice(0, 3).map(({ _relevance, ...rest }) => rest)
+    const selectedIds: string[] = JSON.parse(jsonMatch[0])
+    if (!Array.isArray(selectedIds) || selectedIds.length === 0) {
+      console.log('[polymarket] Haiku selected 0 markets — none relevant')
+      return []
+    }
+
+    // Match IDs back to candidates
+    const selected = selectedIds
+      .map(id => candidates.find(c => c.id === id))
+      .filter((c): c is PolymarketCandidate => c != null)
+      .slice(0, 2)
+
+    console.log(`[polymarket] Haiku selected ${selected.length} of ${candidates.length} markets: ${selected.map(s => `"${s.question.slice(0, 50)}"`).join(', ')}`)
+    return selected
+  } catch (err) {
+    const isTimeout = (err as Error).name === 'AbortError'
+    console.warn(`[polymarket] Haiku filter failed${isTimeout ? ' (timeout)' : ''}: ${(err as Error).message}`)
+    return [] // Fail safe — show nothing rather than irrelevant markets
+  }
+}
+
+/**
+ * Search Polymarket for prediction markets relevant to the article.
+ *
+ * Pipeline:
+ *   A. Fetch up to 15 candidates from API
+ *   B. Hard reject non-serious markets (blocklist)
+ *   C. Haiku LLM selects 0-2 genuinely relevant markets
+ *
+ * @param query - Search query (e.g., "China invades Taiwan by 2027")
+ * @param articleContext - Article context for LLM relevance filtering
+ */
+export async function searchPolymarket(
+  query: string,
+  articleContext?: {
+    title: string
+    thesis: string
+    articleType: string
+    articleId?: string
+  },
+): Promise<PolymarketResult[]> {
+  if (!query || query.length < 3) return []
+
+  try {
+    // Stage A: Fetch broadly
+    const candidates = await fetchCandidates(query)
+    if (candidates.length === 0) {
+      console.log(`[polymarket] No candidates found for "${query}"`)
+      return []
+    }
+
+    console.log(`[polymarket] Stage A: ${candidates.length} candidates for "${query}"`)
+
+    // Stage B: Hard reject
+    const filtered = filterBlocked(candidates)
+    if (filtered.length === 0) {
+      console.log(`[polymarket] All candidates blocked for "${query}"`)
+      return []
+    }
+
+    console.log(`[polymarket] Stage B: ${filtered.length} after blocking (removed ${candidates.length - filtered.length})`)
+
+    // Stage C: Haiku relevance selection
+    let selected: PolymarketCandidate[]
+    if (articleContext) {
+      selected = await selectMarketsWithHaiku(
+        articleContext.title,
+        articleContext.thesis,
+        articleContext.articleType,
+        filtered,
+        articleContext.articleId,
+      )
+    } else {
+      // No article context — return top 2 by volume (legacy fallback)
+      selected = filtered
+        .sort((a, b) => b.volume - a.volume)
+        .slice(0, 2)
+    }
+
+    return selected.map(({ id: _id, ...rest }) => ({
+      ...rest,
+      source: 'polymarket' as const,
+    }))
   } catch (err) {
     const isTimeout = (err as Error).name === 'AbortError'
     console.warn(`[polymarket] Search failed${isTimeout ? ' (timeout)' : ''}: ${(err as Error).message}`)

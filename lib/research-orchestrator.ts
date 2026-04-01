@@ -68,6 +68,7 @@ export async function executeResearch(
   manifest: ResearchManifest,
   plan: ArticlePlan,
   length: 'quick' | 'standard' | 'deep' = 'standard',
+  articleId?: string,
 ): Promise<OrchestratedResearchResult> {
   const resultsPerQuery = length === 'deep' ? 8 : 6
 
@@ -78,7 +79,7 @@ export async function executeResearch(
   const [braveResults, redditResults, liveData] = await Promise.all([
     executeBraveQueries(manifest.brave_queries, resultsPerQuery),
     executeRedditQueries(manifest.reddit_queries, resultsPerQuery),
-    executeLiveDataQueries(liveDataQueries, plan),
+    executeLiveDataQueries(liveDataQueries, plan, articleId),
   ])
   const searchMs = Date.now() - startTime
 
@@ -308,19 +309,10 @@ function extractEntitiesFromFindings(findings: ResearchFinding[]): PlanEntity[] 
 async function executeLiveDataQueries(
   queries: LiveDataQuery[],
   plan?: ArticlePlan,
+  articleId?: string,
+  synthesis?: { thesis_direction?: string },
 ): Promise<Record<string, unknown>[]> {
   if (!queries || queries.length === 0) return []
-
-  // Build entity keywords from the plan for relevance filtering
-  const entityKeywords: string[] = []
-  if (plan) {
-    if (plan.title) entityKeywords.push(plan.title)
-    if (plan.entities) {
-      for (const e of plan.entities) {
-        if (e.name) entityKeywords.push(e.name)
-      }
-    }
-  }
 
   const results: Record<string, unknown>[] = []
 
@@ -328,7 +320,14 @@ async function executeLiveDataQueries(
     try {
       switch (q.source) {
         case 'polymarket': {
-          const markets = await searchPolymarket(q.query ?? '', entityKeywords.length > 0 ? entityKeywords : undefined)
+          // Pass article context for Haiku LLM relevance filtering
+          const articleContext = plan ? {
+            title: plan.title ?? '',
+            thesis: synthesis?.thesis_direction ?? plan.quick_verdict_preview ?? '',
+            articleType: plan.article_type ?? '',
+            articleId,
+          } : undefined
+          const markets = await searchPolymarket(q.query ?? '', articleContext)
           for (const m of markets) {
             results.push(m as unknown as Record<string, unknown>)
           }

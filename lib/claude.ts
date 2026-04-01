@@ -284,7 +284,7 @@ For image_queries: specify hero image search and product images.
 
 For live_data (OPTIONAL — only include when genuinely relevant):
 Include live_data queries ONLY for article types where live market/prediction/trend data adds real value. Each entry specifies a data source and query.
-- source: "polymarket" — prediction market odds. Use for: news_analysis, breaking_news, trend_analysis, deep_dive involving elections, policy, geopolitical events, tech predictions, crypto. Query should be the topic (e.g., "US election", "Fed interest rate").
+- source: "polymarket" — prediction market odds. Use for: news_analysis, breaking_news, trend_analysis, deep_dive involving FORWARD-LOOKING UNCERTAIN OUTCOMES: elections, wars, regulations, market events, rate cuts, policy changes, geopolitical conflicts. NEVER for: buyer guides, how-to, explainers, historical topics, tutorials, product comparisons, evergreen content. Generate 3-5 SPECIFIC queries phrased like prediction markets: "Will China invade Taiwan before 2028", "Fed rate cut 2026", "Israel Iran ceasefire". NOT generic keywords like "China Taiwan" or "interest rates".
 - source: "yahoo_finance" — stock/market quotes. Use for: news_analysis, breaking_news, trend_analysis, deep_dive involving companies, markets, earnings, IPOs, economic data. Provide symbols if known (e.g., ["AAPL", "MSFT"]), or a query to search for symbols (e.g., "electric vehicle stocks").
 - source: "google_trends" — 12-month search interest. Use for: trend_analysis, deep_dive, news_analysis to show whether public interest is rising/falling. Query should be the core topic (e.g., "AI coding assistants", "electric vehicles").
 

@@ -162,6 +162,7 @@ export async function POST(request: NextRequest) {
           manifest,
           plan,
           length,
+          data.id,
         )
         t.research_ms = Date.now() - t2
 

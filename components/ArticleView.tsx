@@ -673,6 +673,7 @@ function ArticleCostDisplay({ articleId, totalCost }: { articleId: string; total
     hero_image: 'Images',
     social_content: 'Social',
     brave_search: 'Research',
+    polymarket_filter: 'Polymarket',
   }
 
   return (

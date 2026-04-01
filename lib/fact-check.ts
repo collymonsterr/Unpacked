@@ -166,6 +166,7 @@ async function stage1GeminiVerification(
   }
 
   // Step 1b: Extract structured claims (small separate call, no search)
+  // Uses responseMimeType + thinkingBudget:0 to ensure clean JSON output
   let claims: VerifiedClaim[] = []
   try {
     const claimRes = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
@@ -181,6 +182,9 @@ async function stage1GeminiVerification(
           temperature: 0.1,
           maxOutputTokens: 4096,
           responseMimeType: 'application/json',
+          // Disable thinking for structured JSON extraction — thinking mode
+          // can interfere with responseMimeType, returning empty results
+          thinkingConfig: { thinkingBudget: 0 },
         },
       }),
     })
@@ -188,8 +192,14 @@ async function stage1GeminiVerification(
     if (claimRes.ok) {
       const claimData = await claimRes.json()
       const parts = claimData.candidates?.[0]?.content?.parts ?? []
+      // With thinking disabled, there should be a single text part with JSON
       const textParts = parts.filter((p: { thought?: boolean; text?: string }) => !p.thought && p.text)
       const claimText = textParts.length > 0 ? textParts[textParts.length - 1].text : null
+
+      if (!claimText) {
+        console.warn('[fact-check] Claim extraction returned no text. Parts:', JSON.stringify(parts).slice(0, 300))
+      }
+
       if (claimText) {
         const parsed = JSON.parse(extractJSON(claimText) || claimText)
         const rawClaims = parsed.claims ?? parsed
