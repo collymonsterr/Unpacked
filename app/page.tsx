@@ -1,5 +1,4 @@
-import Logo from '@/components/ui/Logo'
-import UserMenu from '@/components/ui/UserMenu'
+import Navbar from '@/components/ui/Navbar'
 import HomepageHero from '@/components/HomepageHero'
 import FeaturedSection from '@/components/homepage/FeaturedSection'
 import TrendingSection from '@/components/homepage/TrendingSection'
@@ -28,7 +27,7 @@ async function getHomepageData() {
     // Single query — get all visible articles with all flags
     const { data } = await db
       .from('articles')
-      .select('id, slug, query, status, plan, article, hidden_from_homepage, root_article_id, parent_article_id, is_featured, is_trending, trending_set_at, view_count, user_id, user_name, user_avatar, fact_check, verified_at, created_at, updated_at, suggestion_chips, card_summary')
+      .select('id, slug, query, status, plan, article, hidden_from_homepage, root_article_id, parent_article_id, is_featured, is_trending, trending_set_at, view_count, user_id, user_name, user_avatar, fact_check, verified_at, created_at, updated_at, suggestion_chips, card_summary, category')
       .in('status', ['complete', 'verified'])
       .eq('hidden_from_homepage', false)
       .eq('visibility', 'published')
@@ -89,27 +88,8 @@ export default async function HomePage() {
   return (
     <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
       <PendingArticleRecovery />
-      {/* Nav */}
-      <nav className="px-6 py-5 flex items-center justify-between max-w-6xl mx-auto">
-        <Logo size="md" />
-        <div className="flex items-center gap-3">
-          <a
-            href="/about"
-            className="text-sm font-medium no-underline hidden sm:block"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            About
-          </a>
-          <a
-            href="/creators"
-            className="text-sm font-medium no-underline hidden sm:block"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            Creators
-          </a>
-          <UserMenu />
-        </div>
-      </nav>
+      {/* Nav — no search bar on homepage (hero has the main search) */}
+      <Navbar showSearch={false} />
 
       {/* Hero + feature cards (auth-conditional) */}
       <HomepageHero existingQueries={all.map(a => a.query)} />

@@ -257,7 +257,7 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
                   border: '1px solid var(--border)',
                 }}
               >
-                <div className="relative flex-1 min-h-0">
+                <div className="relative flex-1" style={{ minHeight: '120px' }}>
                   {img ? (
                     <Image
                       src={img}
@@ -267,7 +267,9 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
                       unoptimized
                     />
                   ) : (
-                    <div className="w-full h-full" style={{ backgroundColor: 'var(--accent-light)' }} />
+                    <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: 'var(--accent-light)', minHeight: '120px' }}>
+                      <span className="text-2xl font-bold" style={{ color: 'var(--accent)', opacity: 0.3 }}>U</span>
+                    </div>
                   )}
                 </div>
                 <div className="p-2.5">

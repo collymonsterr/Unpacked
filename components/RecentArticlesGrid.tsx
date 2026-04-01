@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { ArticleRow, ProductCard } from '@/types/article'
@@ -81,35 +81,49 @@ function ArticleCard({ row }: { row: ArticleRow }) {
   )
 }
 
-// ── Type Filters ──
+// ── Category Filters ──
 
-const TYPE_FILTERS: Array<{ label: string; types: string[] | null }> = [
-  { label: 'All', types: null },
-  { label: 'Buying Guides', types: ['buyer_guide', 'comparison', 'roundup'] },
-  { label: 'Decisions', types: ['decision_guide', 'how_to'] },
-  { label: 'Analysis', types: ['trend_analysis', 'deep_dive'] },
-  { label: 'News', types: ['news_analysis', 'breaking_news'] },
-  { label: 'Explainers', types: ['explainer'] },
+const CATEGORY_FILTERS = [
+  'All',
+  'Tech',
+  'Finance',
+  'Health',
+  'Travel',
+  'Home',
+  'Entertainment',
+  'Science',
+  'Business',
+  'Automotive',
+  'Culture',
+  'Current Affairs',
+  'AI & Future',
 ]
+
+/** Get the category for an article — prefers top-level column, falls back to plan */
+function getArticleCategory(row: ArticleRow): string | null {
+  if (row.category) return row.category
+  if (row.plan?.category) return row.plan.category
+  return null
+}
 
 // ── Main Grid ──
 
 export default function RecentArticlesGrid({ articles }: Props) {
-  const [activeFilter, setActiveFilter] = useState<string[] | null>(null)
-  const [activeFilterLabel, setActiveFilterLabel] = useState<string>('All')
+  const [activeCategory, setActiveCategory] = useState<string>('All')
   const [visibleCount, setVisibleCount] = useState(24)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   // Always newest first
   const sorted = [...articles].sort((a, b) =>
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
 
-  const filtered = activeFilter && activeFilter.length > 0
-    ? sorted.filter((a) => {
-        const type = a.article?.article_type ?? a.plan?.article_type ?? ''
-        return activeFilter.includes(type)
+  const filtered = activeCategory === 'All'
+    ? sorted
+    : sorted.filter((a) => {
+        const cat = getArticleCategory(a)
+        return cat && cat.toLowerCase() === activeCategory.toLowerCase()
       })
-    : sorted
 
   if (articles.length === 0) return null
 
@@ -120,20 +134,25 @@ export default function RecentArticlesGrid({ articles }: Props) {
     <section className="w-full max-w-6xl mx-auto px-4 md:px-6 pb-16">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h2
-          className="text-lg font-bold"
+          className="text-lg font-bold flex-shrink-0"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-secondary)' }}
         >
           Recent Articles
         </h2>
 
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {TYPE_FILTERS.map(({ label, types }) => {
-            const isActive = activeFilterLabel === label
+        {/* Category pills — scrollable on mobile */}
+        <div
+          ref={scrollRef}
+          className="flex items-center gap-1.5 overflow-x-auto no-scrollbar"
+          style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}
+        >
+          {CATEGORY_FILTERS.map((cat) => {
+            const isActive = activeCategory === cat
             return (
               <button
-                key={label}
-                onClick={() => { setActiveFilter(types); setActiveFilterLabel(label) }}
-                className="px-3 py-1 rounded-full text-xs font-medium transition-all"
+                key={cat}
+                onClick={() => { setActiveCategory(cat); setVisibleCount(24) }}
+                className="px-3 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap flex-shrink-0"
                 style={{
                   backgroundColor: isActive ? 'var(--accent)' : 'transparent',
                   color: isActive ? '#fff' : 'var(--text-secondary)',
@@ -141,7 +160,7 @@ export default function RecentArticlesGrid({ articles }: Props) {
                   cursor: 'pointer',
                 }}
               >
-                {label}
+                {cat}
               </button>
             )
           })}
@@ -171,11 +190,17 @@ export default function RecentArticlesGrid({ articles }: Props) {
         </div>
       )}
 
-      {filtered.length === 0 && activeFilter && (
+      {filtered.length === 0 && activeCategory !== 'All' && (
         <p className="text-center py-12 text-sm" style={{ color: 'var(--text-secondary)' }}>
-          No {activeFilterLabel.toLowerCase()} articles yet.
+          No {activeCategory.toLowerCase()} articles yet.
         </p>
       )}
+
+      {/* Hide scrollbar across browsers */}
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
     </section>
   )
 }

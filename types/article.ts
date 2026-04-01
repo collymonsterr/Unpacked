@@ -572,6 +572,8 @@ export interface ArticleRow {
   blueprint?: ArticleBlueprint | null
   live_data?: Record<string, unknown>[] | null
   social_content?: Record<string, unknown> | null
+  category?: string | null
+  card_summary?: string | null
   created_at: string
   updated_at: string
 }

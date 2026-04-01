@@ -145,6 +145,7 @@ export async function POST(request: NextRequest) {
             slug: cleanSlug,
             suggestion_chips: plan.suggestion_chips,
             status: 'generating',
+            ...(plan.category ? { category: plan.category } : {}),
           })
           .eq('id', data.id)
         t.plan_save_ms = Date.now() - t1

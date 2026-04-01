@@ -9,7 +9,7 @@ export async function GET() {
   // Total views across all articles
   const { data: articles } = await db
     .from('articles')
-    .select('id, slug, article, view_count, status')
+    .select('id, slug, article, view_count, status, category, plan')
     .in('status', ['complete', 'verified'])
 
   const totalViews = (articles ?? []).reduce((sum, a) => sum + (a.view_count ?? 0), 0)
@@ -93,12 +93,28 @@ export async function GET() {
     articlesByType[type] = (articlesByType[type] ?? 0) + 1
   }
 
+  // Articles by category — uses top-level column or falls back to plan JSONB
+  const ALL_CATEGORIES = [
+    'Tech', 'Finance', 'Health', 'Travel', 'Home', 'Entertainment',
+    'Science', 'Business', 'Automotive', 'Culture', 'Current Affairs', 'AI & Future',
+  ]
+  const articlesByCategory: Record<string, number> = {}
+  for (const cat of ALL_CATEGORIES) articlesByCategory[cat] = 0
+  for (const a of articles ?? []) {
+    const cat = (a as Record<string, unknown>).category as string | undefined
+      ?? (a.plan as Record<string, unknown> | null)?.category as string | undefined
+    if (cat) {
+      articlesByCategory[cat] = (articlesByCategory[cat] ?? 0) + 1
+    }
+  }
+
   return NextResponse.json({
     totalViews,
     totalArticles,
     topArticles,
     viewsByType,
     articlesByType,
+    articlesByCategory,
     viewsTimeSeries,
   })
 }

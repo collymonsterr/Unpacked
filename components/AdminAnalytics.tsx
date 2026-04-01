@@ -12,6 +12,7 @@ interface AnalyticsData {
   topArticles: { title: string; slug: string; views: number }[]
   viewsByType: Record<string, number>
   articlesByType: Record<string, number>
+  articlesByCategory: Record<string, number>
   viewsTimeSeries: { date: string; views: number }[]
 }
 
@@ -134,13 +135,13 @@ export default function AdminAnalytics() {
           )}
         </div>
 
-        {/* Articles by category — bar chart */}
+        {/* Articles by type — bar chart */}
         <div
           className="rounded-xl p-5"
           style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
         >
           <h3 className="text-sm font-bold mb-4" style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}>
-            Articles by Category
+            Articles by Type
           </h3>
           <ResponsiveContainer width="100%" height={Math.max(200, pieData.length * 36 + 40)}>
             <BarChart data={pieData.sort((a, b) => b.value - a.value)} layout="vertical" margin={{ left: 10, right: 30 }} barSize={20}>
@@ -198,6 +199,50 @@ export default function AdminAnalytics() {
           </div>
         </div>
       </div>
+
+      {/* Category breakdown table */}
+      {data.articlesByCategory && (
+        <div
+          className="rounded-xl p-5 mt-6"
+          style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
+        >
+          <h3 className="text-sm font-bold mb-4" style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}>
+            Content by Category
+          </h3>
+          <div className="space-y-2.5">
+            {Object.entries(data.articlesByCategory)
+              .sort((a, b) => b[1] - a[1])
+              .map(([cat, count]) => {
+                const maxCount = Math.max(...Object.values(data.articlesByCategory), 1)
+                const isEmpty = count === 0
+                return (
+                  <div key={cat}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span style={{ color: isEmpty ? '#D97706' : 'var(--text-secondary)', fontWeight: isEmpty ? 600 : 400 }}>
+                        {cat}{isEmpty ? ' ⚠' : ''}
+                      </span>
+                      <span
+                        className="font-semibold"
+                        style={{ color: isEmpty ? '#D97706' : 'var(--text-primary)' }}
+                      >
+                        {count} {count === 1 ? 'article' : 'articles'}
+                      </span>
+                    </div>
+                    <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: count > 0 ? `${Math.max((count / maxCount) * 100, 2)}%` : '0%',
+                          backgroundColor: isEmpty ? 'transparent' : 'var(--accent)',
+                        }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

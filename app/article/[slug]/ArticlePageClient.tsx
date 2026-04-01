@@ -9,8 +9,7 @@ import ArticleSkeleton from '@/components/ArticleSkeleton'
 import ResearchPreview from '@/components/ResearchPreview'
 import SignInGate from '@/components/SignInGate'
 import SignInBar from '@/components/SignInBar'
-import Logo from '@/components/ui/Logo'
-import UserMenu from '@/components/ui/UserMenu'
+import Navbar from '@/components/ui/Navbar'
 import FactCheckBar from '@/components/ui/FactCheckBar'
 import { useAdminMode } from '@/hooks/useAdminMode'
 import { useUser } from '@/hooks/useUser'
@@ -242,20 +241,17 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
 
   return (
     <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
-      {/* Nav — sticky */}
-      <nav
-        className="px-6 py-4 flex items-center gap-3 sticky top-0 z-50"
+      {/* Nav — sticky with search */}
+      <div
+        className="sticky top-0 z-50"
         style={{
           borderBottom: '1px solid var(--border)',
           backgroundColor: 'var(--bg)',
           backdropFilter: 'blur(12px)',
         }}
       >
-        <Logo size="sm" />
-        <div className="ml-auto">
-          <UserMenu />
-        </div>
-      </nav>
+        <Navbar showSearch={true} />
+      </div>
 
       {/* Content */}
       {showError ? (
