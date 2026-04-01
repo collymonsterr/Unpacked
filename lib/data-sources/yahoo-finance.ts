@@ -90,6 +90,11 @@ async function fetchSingleQuote(symbol: string): Promise<YahooFinanceResult | nu
     if (!meta) return null
 
     const price = meta.regularMarketPrice ?? 0
+    // Skip symbols that returned no real price data (invalid ticker or no market data)
+    if (price <= 0) {
+      console.warn(`[yahoo-finance] Skipping ${symbol}: price is $${price}`)
+      return null
+    }
     const previousClose = meta.chartPreviousClose ?? meta.previousClose ?? price
     const change = price - previousClose
     const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0
