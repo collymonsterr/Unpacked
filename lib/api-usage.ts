@@ -46,6 +46,9 @@ const MODEL_PRICING: Record<string, { input: number; output: number }> = {
   // OpenAI
   'gpt-4o-mini': { input: 0.15, output: 0.60 },
   'gpt-image-1': { input: 5.00, output: 0 }, // image gen is per-image but log as token cost
+  // Brave Search — $5/1000 queries ≈ $0.005/query. We log ~50 nominal input tokens per query
+  // so pricing is set to make 50 tokens × $100/M = $0.005
+  'brave-search-api': { input: 100.00, output: 0 },
 }
 
 /**
@@ -67,6 +70,9 @@ function estimateCost(model: string, inputTokens?: number, outputTokens?: number
  * Log an API call to the api_usage_log table and increment article's total_cost.
  * Non-blocking — fires and forgets. Never throws.
  */
+// Re-export formatCost for backward compat
+export { formatCost } from './format-cost'
+
 export function logApiCall(params: {
   callType: string
   model: string

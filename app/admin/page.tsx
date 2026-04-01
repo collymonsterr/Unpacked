@@ -8,6 +8,7 @@ import UserMenu from '@/components/ui/UserMenu'
 import AdminAnalytics from '@/components/AdminAnalytics'
 import AdminUsers from '@/components/AdminUsers'
 import AdminCosts from '@/components/AdminCosts'
+import { formatCost } from '@/lib/format-cost'
 import { useAdminMode } from '@/hooks/useAdminMode'
 import type { ArticleRow } from '@/types/article'
 import { ARTICLE_TYPE_LABELS } from '@/lib/article-config'
@@ -458,7 +459,7 @@ function ArticleSubTabs({ articles: initialArticles }: { articles: ArticleRow[] 
                   <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{date}</span>
                   <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{row.view_count ?? 0} views</span>
                   {(row.total_cost != null && row.total_cost > 0) && (
-                    <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>${Number(row.total_cost).toFixed(3)}</span>
+                    <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{formatCost(Number(row.total_cost))}</span>
                   )}
                   {/* Pool badges */}
                   {row.is_featured && (

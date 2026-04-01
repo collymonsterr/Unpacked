@@ -377,16 +377,15 @@ ${optionsPrompt}`
           continue
         }
 
-        // Log usage
+        // Log usage via logApiCall (also increments article total_cost)
         try {
-          const { getSupabaseAdmin } = await import('@/lib/supabase')
-          const db = getSupabaseAdmin()
-          await db.from('api_usage_log').insert({
-            call_type: 'write',
+          const { logApiCall } = await import('@/lib/api-usage')
+          logApiCall({
+            callType: 'write',
             model: 'gemini-2.5-flash',
-            input_tokens: Math.round((systemPrompt.length + userMessage.length) / 3.8),
-            output_tokens: Math.round(text.length / 3.8),
-            article_id: articleId ?? null,
+            inputTokens: Math.round((systemPrompt.length + userMessage.length) / 3.8),
+            outputTokens: Math.round(text.length / 3.8),
+            articleId: articleId ?? undefined,
           })
         } catch {
           // Non-critical
@@ -547,16 +546,15 @@ Apply the refinement and return the full updated article JSON. Also include a "s
           continue
         }
 
-        // Log usage
+        // Log usage via logApiCall (also increments article total_cost)
         try {
-          const { getSupabaseAdmin } = await import('@/lib/supabase')
-          const db = getSupabaseAdmin()
-          await db.from('api_usage_log').insert({
-            call_type: 'refine',
+          const { logApiCall } = await import('@/lib/api-usage')
+          logApiCall({
+            callType: 'refine',
             model: 'gemini-2.5-flash',
-            input_tokens: Math.round(userMessage.length / 3.8),
-            output_tokens: Math.round(text.length / 3.8),
-            article_id: articleId ?? null,
+            inputTokens: Math.round(userMessage.length / 3.8),
+            outputTokens: Math.round(text.length / 3.8),
+            articleId: articleId ?? undefined,
           })
         } catch {
           // Non-critical

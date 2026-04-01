@@ -23,6 +23,7 @@ import HeroImage from './article/HeroImage'
 import AdminMenu from './article/AdminMenu'
 import { buildNavItems } from '@/lib/section-ids'
 import { getReadingTime } from '@/lib/reading-time'
+import { formatCost } from '@/lib/format-cost'
 import { ARTICLE_TYPE_LABELS } from '@/lib/article-config'
 import { useUser } from '@/hooks/useUser'
 import SignInNudge from './ui/SignInNudge'
@@ -671,6 +672,7 @@ function ArticleCostDisplay({ articleId, totalCost }: { articleId: string; total
     refine: 'Refine',
     hero_image: 'Images',
     social_content: 'Social',
+    brave_search: 'Research',
   }
 
   return (
@@ -680,7 +682,7 @@ function ArticleCostDisplay({ articleId, totalCost }: { articleId: string; total
         className="text-xs"
         style={{ color: 'var(--text-secondary)', cursor: 'pointer', opacity: 0.7 }}
       >
-        Cost: ${totalCost.toFixed(3)}
+        Cost: {formatCost(totalCost)}
       </button>
       {expanded && (
         <div
@@ -704,13 +706,13 @@ function ArticleCostDisplay({ articleId, totalCost }: { articleId: string; total
                     {CALL_TYPE_LABELS[item.call_type] ?? item.call_type}
                   </span>
                   <span style={{ color: 'var(--text-primary)' }}>
-                    ${item.total_cost.toFixed(4)}
+                    {formatCost(item.total_cost)}
                   </span>
                 </div>
               ))}
               <div className="flex justify-between text-xs font-semibold pt-1 mt-1" style={{ borderTop: '1px solid var(--border)' }}>
                 <span style={{ color: 'var(--text-primary)' }}>Total</span>
-                <span style={{ color: 'var(--text-primary)' }}>${totalCost.toFixed(3)}</span>
+                <span style={{ color: 'var(--text-primary)' }}>{formatCost(totalCost)}</span>
               </div>
             </div>
           ) : (

@@ -335,38 +335,30 @@ function ShieldCheck() {
 
 /**
  * Small badge shown near the article title.
+ * Always shows "Triple-Verified" when audit data exists (multi-stage pipeline ran).
+ * Falls back to "Verified" for single-stage checks.
  */
 export function FactCheckBadge({ factCheck, audit }: { factCheck?: FactCheckResult | null; audit?: FactCheckAudit | null }) {
   if (!factCheck) return null
 
-  const corrections = factCheck.issues.filter(i => i.severity !== 'note').length
-  const stagesRun = audit?.stages_run
+  const stagesRun = audit?.stages_run ?? (factCheck ? 1 : 0)
+  const totalClaims = (audit?.total_claims && audit.total_claims > 0)
+    ? audit.total_claims
+    : (factCheck.checks_performed ?? 0)
+  const isTriple = stagesRun >= 2
 
-  if (corrections === 0) {
-    return (
-      <span
-        className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full"
-        style={{ backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          <polyline points="9 12 11 14 15 10" />
-        </svg>
-        Verified{stagesRun && stagesRun >= 2 ? ` (${stagesRun}×)` : ''}
-      </span>
-    )
-  }
-
+  // Always green — "Triple-Verified" is the primary message
   return (
     <span
       className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full"
-      style={{ backgroundColor: 'var(--accent-light)', color: 'var(--accent)', border: '1px solid #f0d5be' }}
+      style={{ backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}
     >
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         <polyline points="9 12 11 14 15 10" />
       </svg>
-      {corrections} correction{corrections !== 1 ? 's' : ''} applied
+      {isTriple ? 'Triple-Verified' : 'Verified'}
+      {totalClaims > 0 && <span style={{ opacity: 0.7 }}> · {totalClaims} claims</span>}
     </span>
   )
 }

@@ -140,6 +140,18 @@ export async function POST(
         length as 'quick' | 'standard' | 'deep',
       )
 
+      // Log Brave Search cost (~$0.005 per query)
+      try {
+        const { logApiCall } = await import('@/lib/api-usage')
+        logApiCall({
+          callType: 'brave_search',
+          model: 'brave-search-api',
+          inputTokens: research.searchCount * 50, // nominal tokens for cost tracking
+          outputTokens: research.tokenEstimate,
+          articleId: id,
+        })
+      } catch {}
+
       // Step 1b: Extract per-entity links from research sources
       const entityLinks = extractEntityLinks(research.sources, row.plan.entities ?? [])
       const entityLinksPrompt = Object.keys(entityLinks).length > 0

@@ -294,6 +294,7 @@ Rules:
 - news_analysis, breaking_news: include 1-2 sources if the story involves markets, politics, or tech companies
 - trend_analysis, deep_dive: include 1-3 sources — these benefit most from live data
 - GEOPOLITICAL topics (war, conflict, sanctions, elections, trade disputes, territorial disputes, diplomacy): ALWAYS include polymarket + google_trends. These topics almost always have active prediction markets.
+- FINANCE CATEGORY RULE: Articles in the 'finance' category (regardless of article type) should ALWAYS include at least one Yahoo Finance quote for the most relevant ticker. Examples: gold → GC=F (Gold Futures), bitcoin/crypto → BTC-USD, stock market → ^GSPC (S&P 500), oil → CL=F (Crude Oil), interest rates → ^TNX (10-Year Treasury). Decision guides about financial topics should include Yahoo Finance data even though they're not news articles.
 - Never include more than 3 live_data entries total
 - If unsure whether live data is relevant, omit it — empty array or omit the field entirely
 

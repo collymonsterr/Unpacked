@@ -63,8 +63,8 @@ export default function FirstDraftBanner({
 }: Props) {
   const [visible, setVisible] = useState(false)
   const [dismissed, setDismissed] = useState(false)
+  const [expanded, setExpanded] = useState(false) // collapsed by default
   const [showPill, setShowPill] = useState(false)
-  const [showAllChips, setShowAllChips] = useState(false)
   const [copied, setCopied] = useState(false)
   const [visibility, setVisibility] = useState<ArticleVisibility>(initialVisibility)
   const [publishState, setPublishState] = useState<'idle' | 'loading' | 'done'>('idle')
@@ -91,6 +91,10 @@ export default function FirstDraftBanner({
   }
 
   function handleStartEditing() {
+    if (!expanded) {
+      setExpanded(true)
+      return
+    }
     onScrollToRefine()
     dismiss()
   }
@@ -138,7 +142,6 @@ export default function FirstDraftBanner({
     } catch {
       // best-effort
     }
-    const shareUrl = `${window.location.origin}/article/${window.location.pathname.split('/').pop()}`
     try { await navigator.clipboard.writeText(window.location.href) } catch {}
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
@@ -183,8 +186,8 @@ export default function FirstDraftBanner({
           boxShadow: '0 -8px 40px rgba(0,0,0,0.12)',
         }}
       >
-        <div className="max-w-[900px] mx-auto px-4 sm:px-5 md:px-10 py-4 sm:py-5 md:py-6 relative">
-          {/* Close button — 44px touch target */}
+        <div className="max-w-[900px] mx-auto px-4 sm:px-5 md:px-10 py-3 sm:py-4 relative">
+          {/* Close button */}
           <button
             onClick={dismiss}
             className="absolute top-2 right-2 w-11 h-11 flex items-center justify-center rounded-full transition-colors"
@@ -197,176 +200,173 @@ export default function FirstDraftBanner({
             </svg>
           </button>
 
-          {/* Header row */}
-          <div className="flex items-center gap-3 mb-2 flex-wrap">
-            <div className="flex items-center gap-2">
-              <div
-                className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: '#FEF3EC' }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 6L9 17l-5-5" />
-                </svg>
-              </div>
-              <h3
-                className="text-base font-bold"
-                style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
-              >
-                Your first draft is complete — now you&apos;re the editor
-              </h3>
+          {/* Collapsed state: single line */}
+          <div className="flex items-center gap-3 pr-10">
+            <div
+              className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: '#FEF3EC' }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
             </div>
+            <p
+              className="text-sm font-medium flex-1"
+              style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+            >
+              First draft complete — you&apos;re the editor now
+            </p>
             {fcCorrections > 0 && (
               <span
-                className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full"
+                className="hidden sm:flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full"
                 style={{ backgroundColor: '#ecfdf5', color: '#059669' }}
               >
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
-                {fcCorrections} correction{fcCorrections !== 1 ? 's' : ''} applied
+                {fcCorrections} correction{fcCorrections !== 1 ? 's' : ''}
               </span>
             )}
-          </div>
-
-          {/* Body text */}
-          <p className="text-sm mb-4 pr-8" style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-            We did the research, built the structure, and fact-checked the claims. Refine it, tweak it, and make it your own before sharing or publishing.
-          </p>
-
-          {/* Action chips — 2 visible on mobile, 4 on desktop */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
-            {ACTION_CHIPS.map((chip, idx) => (
-              <button
-                key={chip.label}
-                onClick={() => handleChipClick(chip.prefill)}
-                className={`text-left p-3 rounded-xl transition-all hover:shadow-sm ${
-                  idx >= 2 && !showAllChips ? 'hidden sm:block' : ''
-                }`}
-                style={{
-                  backgroundColor: '#FAFAF8',
-                  border: '1px solid #E8E3DC',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#BA7517'
-                  e.currentTarget.style.backgroundColor = '#FFF8EE'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#E8E3DC'
-                  e.currentTarget.style.backgroundColor = '#FAFAF8'
-                }}
-              >
-                <span className="text-base">{chip.emoji}</span>
-                <p className="text-xs font-semibold mt-1" style={{ color: 'var(--text-primary)' }}>
-                  {chip.label}
-                </p>
-                <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                  {chip.description}
-                </p>
-              </button>
-            ))}
-          </div>
-          {/* "More options" toggle — mobile only */}
-          {!showAllChips && (
-            <button
-              onClick={() => setShowAllChips(true)}
-              className="text-xs mb-3 sm:hidden"
-              style={{ color: 'var(--text-secondary)', cursor: 'pointer' }}
-            >
-              More options...
-            </button>
-          )}
-
-          {/* Action buttons */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 sm:justify-end">
-            {/* Share link only — always shown */}
-            <button
-              onClick={visibility === 'published' ? handleShare : handleShareLinkOnly}
-              className="w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-medium transition-colors text-center"
-              style={{
-                backgroundColor: '#fff',
-                color: copied ? '#059669' : 'var(--text-secondary)',
-                border: '1px solid #E8E3DC',
-                cursor: 'pointer',
-              }}
-            >
-              {copied ? 'Link copied ✓' : 'Share link'}
-            </button>
-
-            {/* Publish — only shown when not yet published */}
-            {visibility !== 'published' && (
-              <button
-                onClick={handlePublish}
-                disabled={publishState === 'loading'}
-                className="w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-semibold transition-colors text-center"
-                style={{
-                  backgroundColor: publishState === 'done' ? '#059669' : '#1A1714',
-                  color: '#fff',
-                  cursor: publishState === 'loading' ? 'wait' : 'pointer',
-                  opacity: publishState === 'loading' ? 0.7 : 1,
-                }}
-              >
-                {publishState === 'loading' ? 'Publishing…' : publishState === 'done' ? 'Published ✓' : 'Publish →'}
-              </button>
-            )}
-            {visibility === 'published' && (
-              <span
-                className="w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-semibold text-center"
-                style={{ backgroundColor: '#ecfdf5', color: '#059669', border: '1px solid #bbf7d0' }}
-              >
-                Published ✓
-              </span>
-            )}
-
             <button
               onClick={handleStartEditing}
-              className="w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-semibold transition-colors text-center"
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold flex-shrink-0"
               style={{
                 backgroundColor: '#BA7517',
                 color: '#fff',
                 cursor: 'pointer',
               }}
             >
-              Start editing →
+              {expanded ? 'Start editing' : 'Start editing'}
+            </button>
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="w-8 h-8 flex items-center justify-center flex-shrink-0 rounded-lg"
+              style={{ color: 'var(--text-secondary)', cursor: 'pointer' }}
+            >
+              <svg
+                width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms' }}
+              >
+                <polyline points="18 15 12 9 6 15" />
+              </svg>
             </button>
           </div>
 
-          {/* Muted status text below buttons */}
-          <p className="text-[10px] text-center sm:text-right mt-2" style={{ color: 'var(--text-secondary)' }}>
-            {visibility === 'published'
-              ? 'Published — visible on the homepage'
-              : visibility === 'unlisted'
-              ? 'Shared via link — not listed on the homepage'
-              : 'Not published yet — only you can see this article'}
-          </p>
+          {/* Expanded state: action chips + buttons */}
+          {expanded && (
+            <div className="mt-4" style={{ borderTop: '1px solid #E8E3DC', paddingTop: '12px' }}>
+              {/* Body text */}
+              <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                Refine it, tweak it, and make it your own before sharing or publishing.
+              </p>
 
-          {/* Fact-check bar — inside the banner, below buttons */}
-          {factCheckStatus !== 'none' && (
-            <>
-              <div className="mt-4 pt-3" style={{ borderTop: '1px solid #E8E3DC' }}>
-                {factCheckStatus === 'checking' ? (
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin flex-shrink-0"
-                      style={{ borderColor: '#BA7517', borderTopColor: 'transparent' }}
-                    />
-                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                      <span className="hidden sm:inline">Fact-checking — verifying prices, specs, and claims against live sources...</span>
-                      <span className="sm:hidden">Fact-checking your article...</span>
+              {/* Action chips */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                {ACTION_CHIPS.map((chip) => (
+                  <button
+                    key={chip.label}
+                    onClick={() => handleChipClick(chip.prefill)}
+                    className="text-left p-3 rounded-xl transition-all hover:shadow-sm"
+                    style={{
+                      backgroundColor: '#FAFAF8',
+                      border: '1px solid #E8E3DC',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#BA7517'
+                      e.currentTarget.style.backgroundColor = '#FFF8EE'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#E8E3DC'
+                      e.currentTarget.style.backgroundColor = '#FAFAF8'
+                    }}
+                  >
+                    <span className="text-base">{chip.emoji}</span>
+                    <p className="text-xs font-semibold mt-1" style={{ color: 'var(--text-primary)' }}>
+                      {chip.label}
                     </p>
-                  </div>
-                ) : factCheckStatus === 'verified' ? (
-                  <div className="flex items-center gap-2">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                    <p className="text-xs" style={{ color: '#059669' }}>
-                      Fact-check complete{fcCorrections > 0 ? ` — ${fcCorrections} correction${fcCorrections !== 1 ? 's' : ''} applied` : ' — all claims verified'}
+                    <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                      {chip.description}
                     </p>
-                  </div>
-                ) : null}
+                  </button>
+                ))}
               </div>
-            </>
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-2 justify-end">
+                <button
+                  onClick={visibility === 'published' ? handleShare : handleShareLinkOnly}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                  style={{
+                    backgroundColor: '#fff',
+                    color: copied ? '#059669' : 'var(--text-secondary)',
+                    border: '1px solid #E8E3DC',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {copied ? 'Link copied' : 'Share link'}
+                </button>
+
+                {visibility !== 'published' && (
+                  <button
+                    onClick={handlePublish}
+                    disabled={publishState === 'loading'}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+                    style={{
+                      backgroundColor: publishState === 'done' ? '#059669' : '#1A1714',
+                      color: '#fff',
+                      cursor: publishState === 'loading' ? 'wait' : 'pointer',
+                      opacity: publishState === 'loading' ? 0.7 : 1,
+                    }}
+                  >
+                    {publishState === 'loading' ? 'Publishing...' : publishState === 'done' ? 'Published' : 'Publish'}
+                  </button>
+                )}
+                {visibility === 'published' && (
+                  <span
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+                    style={{ backgroundColor: '#ecfdf5', color: '#059669', border: '1px solid #bbf7d0' }}
+                  >
+                    Published
+                  </span>
+                )}
+              </div>
+
+              {/* Muted status text */}
+              <p className="text-[10px] text-right mt-1.5" style={{ color: 'var(--text-secondary)' }}>
+                {visibility === 'published'
+                  ? 'Published — visible on the homepage'
+                  : visibility === 'unlisted'
+                  ? 'Shared via link — not listed on the homepage'
+                  : 'Not published yet — only you can see this article'}
+              </p>
+            </div>
+          )}
+
+          {/* Fact-check status — always visible, even when collapsed */}
+          {factCheckStatus !== 'none' && !expanded && (
+            <div className="mt-2 flex items-center gap-2">
+              {factCheckStatus === 'checking' ? (
+                <>
+                  <div
+                    className="w-3 h-3 rounded-full border-2 border-t-transparent animate-spin flex-shrink-0"
+                    style={{ borderColor: '#BA7517', borderTopColor: 'transparent' }}
+                  />
+                  <p className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+                    Fact-checking...
+                  </p>
+                </>
+              ) : factCheckStatus === 'verified' ? (
+                <>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  <p className="text-[11px]" style={{ color: '#059669' }}>
+                    Fact-check complete{fcCorrections > 0 ? ` — ${fcCorrections} correction${fcCorrections !== 1 ? 's' : ''}` : ''}
+                  </p>
+                </>
+              ) : null}
+            </div>
           )}
         </div>
       </div>

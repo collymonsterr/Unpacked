@@ -48,34 +48,61 @@ export default function CommunityInsights({ section }: { section: CommunityInsig
       {/* Pull quotes — between summary and platform cards */}
       {quotes.length > 0 && (
         <div className="mb-5 space-y-3">
-          {quotes.map((q, i) => (
-            <div
-              key={i}
-              className="pl-4 py-2"
-              style={{
-                borderLeft: '3px solid #BA7517',
-              }}
-            >
-              <p
-                className="text-sm leading-relaxed mb-1"
-                style={{ color: 'var(--text-primary)', fontStyle: 'italic' }}
+          {quotes.map((q, i) => {
+            // Try to find a matching thread URL for this quote's source
+            const sourceMatch = q.source?.match(/r\/(\w+)/i)
+            const threadUrl = sourceMatch
+              ? threads.find(t => {
+                  const tSub = t.subreddit.replace(/^r\//, '')
+                  return tSub.toLowerCase() === sourceMatch[1].toLowerCase()
+                })?.url
+              : undefined
+
+            return (
+              <div
+                key={i}
+                className="pl-4 py-2"
+                style={{
+                  borderLeft: '3px solid #BA7517',
+                }}
               >
-                &ldquo;{q.text}&rdquo;
-              </p>
-              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                {q.source}
-              </p>
-            </div>
-          ))}
+                <p
+                  className="text-sm leading-relaxed mb-1"
+                  style={{ color: 'var(--text-primary)', fontStyle: 'italic' }}
+                >
+                  &ldquo;{q.text}&rdquo;
+                </p>
+                {threadUrl ? (
+                  <a
+                    href={threadUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs no-underline hover:underline"
+                    style={{ color: '#BA7517' }}
+                  >
+                    {q.source}
+                  </a>
+                ) : (
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    {q.source}
+                  </p>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
       {/* Platform insight cards — grid on desktop */}
       <div className={`gap-3 ${section.insights.length >= 2 ? 'grid md:grid-cols-2' : 'space-y-3'}`}>
-        {section.insights.map((insight, i) => (
+        {section.insights.map((insight, i) => {
+          const isLastOdd = section.insights.length >= 2
+            && section.insights.length % 2 === 1
+            && i === section.insights.length - 1
+          return (
           <div
             key={i}
-            className="rounded-xl p-4"
+            className={`rounded-xl p-4${isLastOdd ? ' md:col-span-2' : ''}`}
             style={{
               backgroundColor: 'var(--card)',
               border: '1px solid var(--border)',
@@ -123,7 +150,8 @@ export default function CommunityInsights({ section }: { section: CommunityInsig
               {insight.summary}
             </p>
           </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Reddit thread cards */}
@@ -158,7 +186,7 @@ export default function CommunityInsights({ section }: { section: CommunityInsig
               >
                 <div className="flex-1 min-w-0">
                   <p
-                    className="text-sm font-medium leading-snug line-clamp-1"
+                    className="text-sm font-medium leading-snug line-clamp-2"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     {thread.title}
