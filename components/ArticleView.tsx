@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useMemo, useCallback } from 'react'
+import { useState, useRef, useMemo, useCallback, lazy, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { ArticleRow, ArticleContent, ProductCard } from '@/types/article'
@@ -27,6 +27,8 @@ import { ARTICLE_TYPE_LABELS } from '@/lib/article-config'
 import { useUser } from '@/hooks/useUser'
 import SignInNudge from './ui/SignInNudge'
 
+const SharePanel = lazy(() => import('./SharePanel'))
+
 interface Props {
   articleRow: ArticleRow
   isOwner: boolean
@@ -51,6 +53,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
   const [isRegeneratingArticle, setIsRegeneratingArticle] = useState(false)
   const [toolbarBusy, setToolbarBusy] = useState<string | null>(null)
   const [refineValue, setRefineValue] = useState('')
+  const [showSharePanel, setShowSharePanel] = useState(false)
   const refineContainerRef = useRef<HTMLDivElement>(null)
   const hasMissingImages = useMemo(() => {
     const productCards = article.sections.filter(
@@ -312,7 +315,23 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
             {formattedDate} · {readingTime} min read
           </p>
           <span style={{ color: 'var(--border)' }}>·</span>
-          <ShareButton title={article.title} url={`https://unpacked.fyi/article/${articleRow.slug}`} />
+          {isOwner ? (
+            <button
+              onClick={() => setShowSharePanel(true)}
+              className="flex items-center gap-1.5 text-xs font-medium transition-colors relative py-2 px-1 -my-2 -mx-1"
+              style={{ color: 'var(--text-secondary)', minHeight: '44px', minWidth: '44px', cursor: 'pointer', background: 'none', border: 'none' }}
+              title="Share article"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                <polyline points="16 6 12 2 8 6" />
+                <line x1="12" y1="2" x2="12" y2="15" />
+              </svg>
+              <span>Share</span>
+            </button>
+          ) : (
+            <ShareButton title={article.title} url={`https://unpacked.fyi/article/${articleRow.slug}`} />
+          )}
           <span style={{ color: 'var(--border)' }}>·</span>
           <BookmarkButton articleId={articleRow.id} user={user} />
           {(articleRow.status === 'verified' || articleRow.fact_check) && (
@@ -477,11 +496,32 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
 
       {/* 4. Share + Export row — aligned to two-column grid */}
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3" data-no-print>
-        <ShareButton
-          title={article.title}
-          url={`https://unpacked.fyi/article/${articleRow.slug}`}
-          variant="bottom-row"
-        />
+        {isOwner ? (
+          <button
+            onClick={() => setShowSharePanel(true)}
+            className="flex-1 flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
+            style={{
+              backgroundColor: 'var(--accent)',
+              color: '#fff',
+              fontFamily: 'var(--font-sora)',
+              cursor: 'pointer',
+              border: 'none',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+              <polyline points="16 6 12 2 8 6" />
+              <line x1="12" y1="2" x2="12" y2="15" />
+            </svg>
+            Share this article
+          </button>
+        ) : (
+          <ShareButton
+            title={article.title}
+            url={`https://unpacked.fyi/article/${articleRow.slug}`}
+            variant="bottom-row"
+          />
+        )}
         <button
           onClick={() => window.print()}
           className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
@@ -564,6 +604,17 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
         }}
       />
     )}
+
+    {/* Share Panel — owner only, lazy loaded */}
+    {isOwner && showSharePanel && (
+      <Suspense fallback={null}>
+        <SharePanel
+          articleRow={articleRow}
+          isOpen={showSharePanel}
+          onClose={() => setShowSharePanel(false)}
+        />
+      </Suspense>
+    )}
     </div>
   )
 }
@@ -619,6 +670,7 @@ function ArticleCostDisplay({ articleId, totalCost }: { articleId: string; total
     fact_check_stage3: 'Fact-check (S3)',
     refine: 'Refine',
     hero_image: 'Images',
+    social_content: 'Social',
   }
 
   return (

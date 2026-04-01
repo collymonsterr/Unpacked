@@ -67,7 +67,8 @@ function formatLiveDataForPrompt(liveData?: Record<string, unknown>[]): string {
   const sections: string[] = [
     '',
     'LIVE DATA (real-time data fetched from external APIs — include as live_data_card sections):',
-    'For each data item below, include a live_data_card section in the article. Copy the data object into the "content" field exactly as provided.',
+    'IMPORTANT: Create ONE live_data_card section per data item below. Do NOT group multiple items into a single card.',
+    'Copy each data object into the "content" field exactly as provided — do not restructure, nest, or rename fields.',
     '',
   ]
 
@@ -78,6 +79,7 @@ function formatLiveDataForPrompt(liveData?: Record<string, unknown>[]): string {
 
   sections.push('')
   sections.push('To include a live data card, add a section like: { "type": "live_data_card", "data_source": "<source>", "content": <the data object above> }')
+  sections.push('CRITICAL: Each data item above becomes its own separate live_data_card section. Never combine multiple items into one card. The "content" field must be a flat object with keys like "symbol", "price", "change" — NOT nested objects.')
   sections.push('Place live_data_cards near the top of the article, after the executive summary or "What You Need to Know" section, where they provide immediate context.')
   sections.push('')
 
@@ -189,6 +191,13 @@ OUTPUT: Return ONLY valid JSON matching this schema:
     { "type": "live_data_card", "data_source": "polymarket|yahoo_finance|google_trends", "content": {"...data object from LIVE DATA section below — copy the entire object as-is"} }
   ]
 }
+
+WARNING BOX HEADINGS — use article-type-appropriate titles:
+- buyer_guide/comparison/roundup: "Products to Avoid" or "Skip These"
+- how_to/tutorial: "Common Pitfalls" or "Mistakes to Avoid"
+- news_analysis/breaking_news: "Red Flags" or "What Could Go Wrong"
+- Other types: "Watch Out For" or "Caveats"
+Never use a generic heading like "Warnings" — make it specific to the content.
 
 SPEC FIELDS BY CATEGORY (use product_category from plan):
 over-ear/on-ear headphones: ANC Performance, Sound Signature, Battery Life, Comfort/Weight, Microphone Quality, Connectivity, App Support, Codec Support

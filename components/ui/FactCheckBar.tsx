@@ -32,7 +32,11 @@ export default function FactCheckBar({ status, factCheck, audit }: Props) {
 
   const corrections = factCheck?.issues?.filter(i => i.severity !== 'note') ?? []
   const stagesRun = audit?.stages_run ?? (factCheck ? 1 : 0)
-  const totalClaims = audit?.total_claims ?? factCheck?.checks_performed ?? 0
+  // Prefer audit total, but fall back to checks_performed when audit reports 0
+  // (claim extraction sometimes returns empty — checks_performed has the real count)
+  const totalClaims = (audit?.total_claims && audit.total_claims > 0)
+    ? audit.total_claims
+    : (factCheck?.checks_performed ?? 0)
 
   return (
     <>
@@ -86,10 +90,14 @@ export default function FactCheckBar({ status, factCheck, audit }: Props) {
                     Triple-Verified
                   </span>
                   <span className="hidden sm:inline">
-                    {' '}— {totalClaims} claims checked across {stagesRun} verification stages
+                    {totalClaims > 0
+                      ? ` — ${totalClaims} claims checked across ${stagesRun} verification stages`
+                      : ` — checked across ${stagesRun} verification stages`}
                   </span>
                   <span className="sm:hidden">
-                    {' '}— {totalClaims} claims verified
+                    {totalClaims > 0
+                      ? ` — ${totalClaims} claims verified`
+                      : ' — all claims verified'}
                   </span>
                 </p>
                 <div className="flex items-center gap-2">
@@ -171,7 +179,7 @@ export default function FactCheckBar({ status, factCheck, audit }: Props) {
                   Verification Report
                 </h4>
                 <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  {totalClaims} claims checked
+                  {totalClaims > 0 ? `${totalClaims} claims checked` : 'Claims checked'}
                 </span>
               </div>
 
@@ -180,7 +188,7 @@ export default function FactCheckBar({ status, factCheck, audit }: Props) {
                 <StageRow
                   completed={status === 'verified'}
                   label="Source Verification"
-                  detail={`${totalClaims} claims checked against live web sources`}
+                  detail={totalClaims > 0 ? `${totalClaims} claims checked against live web sources` : 'Claims checked against live web sources'}
                 />
                 <StageRow
                   completed={status === 'verified' && stagesRun >= 2}

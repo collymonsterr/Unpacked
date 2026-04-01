@@ -20,6 +20,7 @@ import { runEditorialPass, applyEditorRewrites } from '@/lib/editorial-pass'
 import { enrichArticleWithImages, fetchHeroImage } from '@/lib/images'
 import { pickBestArticleImage } from '@/lib/imagen'
 import { runTripleFactCheck, applyCorrections } from '@/lib/fact-check'
+import { generateSocialContent, saveSocialContent } from '@/lib/social-content'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import type { ArticlePlan, EntityCard, ResearchSynthesis, ArticleContent } from '@/types/article'
 
@@ -202,6 +203,37 @@ export async function runWritePipeline({
   // Single summary log line
   const fmtS = (ms: number | undefined) => ms != null ? `${(ms / 1000).toFixed(1)}s` : '-'
   console.log(`[pipeline] Complete in ${fmtS(timings.total_ms)}: plan=${fmtS(t.planning_ms)} research=${fmtS(t.research_ms)} blueprint=${fmtS(t.blueprint_ms)} write=${fmtS(t.writing_ms)} editor=${fmtS(t.editorial_ms)} save=${fmtS(t.save_ms)}`)
+
+  // ── Phase 4b: Social content generation (fire-and-forget — never blocks) ──
+  // Runs in parallel with fact-check. Fetches creator name from DB.
+  ;(async () => {
+    try {
+      const { data: row } = await db
+        .from('articles')
+        .select('user_name, slug')
+        .eq('id', articleId)
+        .single()
+      const creatorName = row?.user_name || 'Unpacked'
+      const articleUrl = `https://unpacked.fyi/article/${row?.slug ?? articleId}`
+      const articleType = plan.article_type ?? ''
+      const category = (plan.category ?? '') as string
+
+      const content = await generateSocialContent(
+        enrichedArticle,
+        query,
+        creatorName,
+        articleUrl,
+        articleType,
+        category,
+        articleId,
+      )
+      if (content) {
+        await saveSocialContent(articleId, content)
+      }
+    } catch (err) {
+      console.error('[pipeline] Social content generation failed:', (err as Error).message)
+    }
+  })()
 
   // ── Phase 4: Triple fact-check (non-blocking — article is already readable) ──
   try {

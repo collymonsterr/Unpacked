@@ -70,8 +70,8 @@ export default function CommunityInsights({ section }: { section: CommunityInsig
         </div>
       )}
 
-      {/* Platform insight cards — existing design preserved */}
-      <div className="space-y-3">
+      {/* Platform insight cards — grid on desktop */}
+      <div className={`gap-3 ${section.insights.length >= 2 ? 'grid md:grid-cols-2' : 'space-y-3'}`}>
         {section.insights.map((insight, i) => (
           <div
             key={i}
@@ -135,7 +135,7 @@ export default function CommunityInsights({ section }: { section: CommunityInsig
           >
             Related discussions
           </p>
-          <div className="space-y-2">
+          <div className={`gap-2 ${threads.length >= 2 ? 'grid md:grid-cols-2' : 'space-y-2'}`}>
             {threads.map((thread, i) => (
               <a
                 key={i}

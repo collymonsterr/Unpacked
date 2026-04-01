@@ -95,6 +95,7 @@ YOUR TASK:
 3. For each section, specify: what it must cover, which entity card facts to reference, a word budget, and which visual components belong there.
 4. List things the article must NOT say — unsupported claims, tangential angles, hedging language.
 5. Word budgets must sum to approximately ${targetWords} words (±10%).
+6. VISUAL DENSITY RULE: ${targetWords >= 2500 ? `At ${targetWords}+ words, this article MUST include at least 2 data visualization components (bar_chart, comparison_matrix, pie_chart, line_chart, stat_cards, or timeline) to break up long text. Assign them to specific sections.` : 'Include visual components where they add value — stat_cards for key numbers, charts for trends or comparisons.'}
 
 Return ONLY valid JSON:
 {

@@ -78,7 +78,7 @@ export async function executeResearch(
   const [braveResults, redditResults, liveData] = await Promise.all([
     executeBraveQueries(manifest.brave_queries, resultsPerQuery),
     executeRedditQueries(manifest.reddit_queries, resultsPerQuery),
-    executeLiveDataQueries(liveDataQueries),
+    executeLiveDataQueries(liveDataQueries, plan),
   ])
   const searchMs = Date.now() - startTime
 
@@ -307,8 +307,20 @@ function extractEntitiesFromFindings(findings: ResearchFinding[]): PlanEntity[] 
  */
 async function executeLiveDataQueries(
   queries: LiveDataQuery[],
+  plan?: ArticlePlan,
 ): Promise<Record<string, unknown>[]> {
   if (!queries || queries.length === 0) return []
+
+  // Build entity keywords from the plan for relevance filtering
+  const entityKeywords: string[] = []
+  if (plan) {
+    if (plan.title) entityKeywords.push(plan.title)
+    if (plan.entities) {
+      for (const e of plan.entities) {
+        if (e.name) entityKeywords.push(e.name)
+      }
+    }
+  }
 
   const results: Record<string, unknown>[] = []
 
@@ -316,7 +328,7 @@ async function executeLiveDataQueries(
     try {
       switch (q.source) {
         case 'polymarket': {
-          const markets = await searchPolymarket(q.query ?? '')
+          const markets = await searchPolymarket(q.query ?? '', entityKeywords.length > 0 ? entityKeywords : undefined)
           for (const m of markets) {
             results.push(m as unknown as Record<string, unknown>)
           }
@@ -351,8 +363,19 @@ async function executeLiveDataQueries(
 
   await Promise.all(tasks)
 
-  console.log(`[research-orchestrator] Live data: ${results.length} results from ${queries.length} queries`)
-  return results
+  // Deduplicate Yahoo Finance results — same ticker can come from multiple queries
+  const seen = new Set<string>()
+  const deduped = results.filter(r => {
+    if (r.source === 'yahoo_finance' && typeof r.symbol === 'string') {
+      const key = r.symbol.toUpperCase()
+      if (seen.has(key)) return false
+      seen.add(key)
+    }
+    return true
+  })
+
+  console.log(`[research-orchestrator] Live data: ${deduped.length} results from ${queries.length} queries${deduped.length < results.length ? ` (${results.length - deduped.length} duplicates removed)` : ''}`)
+  return deduped
 }
 
 // ── Reddit query helper ───────────────────────────────────────────────────────

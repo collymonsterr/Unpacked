@@ -71,13 +71,13 @@ export default function ArticleVoting({ articleId, hasVerdict }: Props) {
   const [voted, setVoted] = useState<SavedVotes>({})
   const [submitting, setSubmitting] = useState(false)
 
-  // Helpfulness card state
+  // Helpfulness feedback state
   const [showHelpfulPanel, setShowHelpfulPanel] = useState(false)
   const [helpfulPanelDone, setHelpfulPanelDone] = useState(false)
   const [selectedReason, setSelectedReason] = useState<string | null>(null)
   const [helpfulComment, setHelpfulComment] = useState('')
 
-  // Verdict card state
+  // Verdict feedback state
   const [showVerdictPanel, setShowVerdictPanel] = useState(false)
   const [verdictPanelDone, setVerdictPanelDone] = useState(false)
   const [verdictComment, setVerdictComment] = useState('')
@@ -91,7 +91,6 @@ export default function ArticleVoting({ articleId, hasVerdict }: Props) {
     setVoted(loadSavedVotes(articleId))
   }, [articleId])
 
-  // Post a vote to the API — always fire-and-forget from callers
   const postVote = useCallback(async (
     category: 'helpful' | 'verdict',
     value: string,
@@ -118,7 +117,6 @@ export default function ArticleVoting({ articleId, hasVerdict }: Props) {
     setSubmitting(false)
   }, [articleId])
 
-  // Optimistically adjust local counts when a vote changes
   const adjustCounts = useCallback((
     category: 'helpful' | 'verdict',
     newVal: string,
@@ -151,10 +149,10 @@ export default function ArticleVoting({ articleId, hasVerdict }: Props) {
 
   const handleHelpfulClick = useCallback((value: 'helpful' | 'not_helpful') => {
     const prev = voted.helpful
-    if (prev === value) return // already selected
+    if (prev === value) return
     setVoted(v => ({ ...v, helpful: value }))
     adjustCounts('helpful', value, prev)
-    postVote('helpful', value) // immediate submit — panel adds enrichment via re-POST
+    postVote('helpful', value)
     if (value === 'not_helpful') {
       setShowHelpfulPanel(true)
       setHelpfulPanelDone(false)
@@ -196,244 +194,256 @@ export default function ArticleVoting({ articleId, hasVerdict }: Props) {
     setVerdictPanelDone(true)
   }, [postVote, verdictComment])
 
-  // Verdict stats line — only shown when ≥5 total votes
+  // Verdict stats line
   const totalVerdictVotes = counts.verdict.convinced + counts.verdict.not_convinced
   const convincedPct =
     totalVerdictVotes >= 5
       ? Math.round((counts.verdict.convinced / totalVerdictVotes) * 100)
       : null
 
+  // Determine if any feedback panel is open
+  const feedbackOpen = (showHelpfulPanel && !helpfulPanelDone) || (showVerdictPanel && !verdictPanelDone)
+
   return (
-    <div className="flex flex-col gap-3 mt-10 mb-8" data-no-print>
-
-      {/* ── Card 1: Helpfulness ──────────────────────────────────────────── */}
+    <div className="mt-10 mb-8" data-no-print>
       <div style={{ backgroundColor: '#F1EFE8', borderRadius: 12, padding: '1.25rem 1.5rem' }}>
-        <p style={{
-          fontSize: 13,
-          fontWeight: 500,
-          marginBottom: 12,
-          color: 'var(--text-primary)',
-          fontFamily: 'var(--font-sora)',
-        }}>
-          Was this article helpful? Your vote helps improve Unpacked.
-        </p>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <VoteButton
-            label="Helpful"
-            count={counts.helpful.helpful}
-            icon={<ThumbsUpIcon />}
-            selected={voted.helpful === 'helpful'}
-            selectedColor="amber"
-            disabled={submitting}
-            onClick={() => handleHelpfulClick('helpful')}
-          />
-          <VoteButton
-            label="Not helpful"
-            count={counts.helpful.not_helpful}
-            selected={voted.helpful === 'not_helpful'}
-            selectedColor="red"
-            disabled={submitting}
-            onClick={() => handleHelpfulClick('not_helpful')}
-          />
-        </div>
+        {/* Two-column layout on desktop: helpfulness left, verdict right */}
+        <div className={`${hasVerdict ? 'grid md:grid-cols-2 gap-6' : ''}`}>
 
-        {/* After-vote confirmation line */}
-        {voted.helpful && !showHelpfulPanel && !helpfulPanelDone && (
-          <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 8, fontFamily: 'var(--font-sora)' }}>
-            {voted.helpful === 'helpful' ? 'You found this helpful' : 'You marked this as not helpful'}
-          </p>
-        )}
-
-        {/* Feedback panel — expands when "Not helpful" is clicked */}
-        {showHelpfulPanel && !helpfulPanelDone && (
-          <div style={{ marginTop: 14 }}>
-            <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8, fontFamily: 'var(--font-sora)' }}>
-              What was wrong with it?
+          {/* ── Helpfulness ──────────────────────────────────────────────── */}
+          <div>
+            <p style={{
+              fontSize: 13,
+              fontWeight: 500,
+              marginBottom: 10,
+              color: 'var(--text-primary)',
+              fontFamily: 'var(--font-sora)',
+            }}>
+              Was this helpful?
             </p>
 
-            {/* Reason pills */}
-            <div className="flex flex-wrap gap-1.5" style={{ marginBottom: 12 }}>
-              {HELPFUL_REASONS.map(reason => (
-                <button
-                  key={reason}
-                  onClick={() => setSelectedReason(r => r === reason ? null : reason)}
-                  style={{
-                    padding: '5px 12px',
-                    borderRadius: 16,
-                    fontSize: 12,
-                    border: selectedReason === reason ? '1px solid #BA7517' : '1px solid var(--border)',
-                    backgroundColor: selectedReason === reason ? '#FAEEDA' : '#fff',
-                    color: selectedReason === reason ? '#7C4A00' : 'var(--text-secondary)',
-                    fontFamily: 'var(--font-sora)',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.1s, border-color 0.1s',
-                  }}
-                >
-                  {reason}
-                </button>
-              ))}
+            <div className="flex items-center gap-2 flex-wrap">
+              <VoteButton
+                label="Helpful"
+                count={counts.helpful.helpful}
+                icon={<ThumbsUpIcon />}
+                selected={voted.helpful === 'helpful'}
+                selectedColor="amber"
+                disabled={submitting}
+                onClick={() => handleHelpfulClick('helpful')}
+              />
+              <VoteButton
+                label="Not helpful"
+                count={counts.helpful.not_helpful}
+                selected={voted.helpful === 'not_helpful'}
+                selectedColor="red"
+                disabled={submitting}
+                onClick={() => handleHelpfulClick('not_helpful')}
+              />
             </div>
 
-            {/* Comment textarea */}
-            <textarea
-              value={helpfulComment}
-              onChange={e => setHelpfulComment(e.target.value.slice(0, 140))}
-              placeholder="Tell us more (optional) — what would have made this better?"
-              rows={2}
-              style={{
-                width: '100%',
-                resize: 'none',
+            {voted.helpful && !showHelpfulPanel && !helpfulPanelDone && (
+              <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 6, fontFamily: 'var(--font-sora)' }}>
+                {voted.helpful === 'helpful' ? 'You found this helpful' : 'You marked this as not helpful'}
+              </p>
+            )}
+            {helpfulPanelDone && (
+              <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 6, fontFamily: 'var(--font-sora)' }}>
+                Thanks for the feedback
+              </p>
+            )}
+          </div>
+
+          {/* ── Verdict (only if article has quick_verdict) ──────────────── */}
+          {hasVerdict && (
+            <div style={{ borderLeft: undefined }}>
+              {/* Vertical divider on desktop via border */}
+              <div className="hidden md:block" style={{ borderLeft: '1px solid #D9D4CC', position: 'absolute', top: 0, bottom: 0, left: 0 }} />
+              <p style={{
                 fontSize: 13,
-                padding: '8px 10px',
-                borderRadius: 8,
-                border: '1px solid var(--border)',
-                backgroundColor: '#fff',
+                fontWeight: 500,
+                marginBottom: 10,
                 color: 'var(--text-primary)',
                 fontFamily: 'var(--font-sora)',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-            <div className="flex items-center justify-end" style={{ marginTop: 4, marginBottom: 10 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: 'var(--font-sora)' }}>
-                {helpfulComment.length} / 140
-              </span>
-            </div>
+              }}>
+                Was the verdict convincing?
+              </p>
 
-            <button
-              onClick={handleHelpfulPanelSubmit}
-              disabled={submitting}
-              style={{
-                padding: '5px 14px',
-                borderRadius: 8,
-                fontSize: 12,
-                fontWeight: 500,
-                backgroundColor: '#BA7517',
-                color: '#fff',
-                border: 'none',
-                fontFamily: 'var(--font-sora)',
-                cursor: submitting ? 'default' : 'pointer',
-                opacity: submitting ? 0.7 : 1,
-              }}
-            >
-              Submit feedback
-            </button>
-          </div>
-        )}
-
-        {/* Post-panel confirmation */}
-        {helpfulPanelDone && (
-          <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 8, fontFamily: 'var(--font-sora)' }}>
-            Thanks for the feedback
-          </p>
-        )}
-      </div>
-
-      {/* ── Card 2: Verdict conviction (only if article has quick_verdict) ─ */}
-      {hasVerdict && (
-        <div style={{ backgroundColor: '#F1EFE8', borderRadius: 12, padding: '1.25rem 1.5rem' }}>
-          <p style={{
-            fontSize: 13,
-            fontWeight: 500,
-            marginBottom: 12,
-            color: 'var(--text-primary)',
-            fontFamily: 'var(--font-sora)',
-          }}>
-            Was the verdict convincing?
-          </p>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <VoteButton
-              label="Yes, convinced"
-              count={counts.verdict.convinced}
-              selected={voted.verdict === 'convinced'}
-              selectedColor="amber"
-              disabled={submitting}
-              onClick={() => handleVerdictClick('convinced')}
-            />
-            <VoteButton
-              label="Not convinced"
-              count={counts.verdict.not_convinced}
-              selected={voted.verdict === 'not_convinced'}
-              selectedColor="red"
-              disabled={submitting}
-              onClick={() => handleVerdictClick('not_convinced')}
-            />
-          </div>
-
-          {/* After-vote confirmation */}
-          {voted.verdict && !showVerdictPanel && !verdictPanelDone && (
-            <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 8, fontFamily: 'var(--font-sora)' }}>
-              {voted.verdict === 'convinced'
-                ? 'You found the verdict convincing'
-                : 'You marked the verdict as not convincing'}
-            </p>
-          )}
-
-          {/* Not convinced panel */}
-          {showVerdictPanel && !verdictPanelDone && (
-            <div style={{ marginTop: 14 }}>
-              <textarea
-                value={verdictComment}
-                onChange={e => setVerdictComment(e.target.value.slice(0, 140))}
-                placeholder="What would have changed your mind? (optional)"
-                rows={2}
-                style={{
-                  width: '100%',
-                  resize: 'none',
-                  fontSize: 13,
-                  padding: '8px 10px',
-                  borderRadius: 8,
-                  border: '1px solid var(--border)',
-                  backgroundColor: '#fff',
-                  color: 'var(--text-primary)',
-                  fontFamily: 'var(--font-sora)',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
-              />
-              <div className="flex items-center justify-end" style={{ marginTop: 4, marginBottom: 10 }}>
-                <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: 'var(--font-sora)' }}>
-                  {verdictComment.length} / 140
-                </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <VoteButton
+                  label="Convinced"
+                  count={counts.verdict.convinced}
+                  selected={voted.verdict === 'convinced'}
+                  selectedColor="amber"
+                  disabled={submitting}
+                  onClick={() => handleVerdictClick('convinced')}
+                />
+                <VoteButton
+                  label="Not convinced"
+                  count={counts.verdict.not_convinced}
+                  selected={voted.verdict === 'not_convinced'}
+                  selectedColor="red"
+                  disabled={submitting}
+                  onClick={() => handleVerdictClick('not_convinced')}
+                />
               </div>
-              <button
-                onClick={handleVerdictPanelSubmit}
-                disabled={submitting}
-                style={{
-                  padding: '5px 14px',
-                  borderRadius: 8,
-                  fontSize: 12,
-                  fontWeight: 500,
-                  backgroundColor: '#BA7517',
-                  color: '#fff',
-                  border: 'none',
-                  fontFamily: 'var(--font-sora)',
-                  cursor: submitting ? 'default' : 'pointer',
-                  opacity: submitting ? 0.7 : 1,
-                }}
-              >
-                Submit
-              </button>
+
+              {voted.verdict && !showVerdictPanel && !verdictPanelDone && (
+                <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 6, fontFamily: 'var(--font-sora)' }}>
+                  {voted.verdict === 'convinced'
+                    ? 'You found the verdict convincing'
+                    : 'You marked the verdict as not convincing'}
+                </p>
+              )}
+              {verdictPanelDone && (
+                <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 6, fontFamily: 'var(--font-sora)' }}>
+                  Thanks — noted
+                </p>
+              )}
+
+              {convincedPct !== null && (
+                <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 6, fontFamily: 'var(--font-sora)' }}>
+                  {convincedPct}% found the verdict convincing · {totalVerdictVotes} votes
+                </p>
+              )}
             </div>
-          )}
-
-          {/* Post-panel confirmation */}
-          {verdictPanelDone && (
-            <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 8, fontFamily: 'var(--font-sora)' }}>
-              Thanks — noted
-            </p>
-          )}
-
-          {/* Stats line — only shown when ≥5 total verdict votes */}
-          {convincedPct !== null && (
-            <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 10, fontFamily: 'var(--font-sora)' }}>
-              {convincedPct}% found the verdict convincing · {totalVerdictVotes} votes
-            </p>
           )}
         </div>
-      )}
+
+        {/* ── Feedback panels (full-width, below both columns) ────────── */}
+        {feedbackOpen && (
+          <div style={{ borderTop: '1px solid #D9D4CC', marginTop: 16, paddingTop: 14 }}>
+            {/* Helpfulness feedback */}
+            {showHelpfulPanel && !helpfulPanelDone && (
+              <div>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8, fontFamily: 'var(--font-sora)' }}>
+                  What was wrong with it?
+                </p>
+                <div className="flex flex-wrap gap-1.5" style={{ marginBottom: 12 }}>
+                  {HELPFUL_REASONS.map(reason => (
+                    <button
+                      key={reason}
+                      onClick={() => setSelectedReason(r => r === reason ? null : reason)}
+                      style={{
+                        padding: '5px 12px',
+                        borderRadius: 16,
+                        fontSize: 12,
+                        border: selectedReason === reason ? '1px solid #BA7517' : '1px solid var(--border)',
+                        backgroundColor: selectedReason === reason ? '#FAEEDA' : '#fff',
+                        color: selectedReason === reason ? '#7C4A00' : 'var(--text-secondary)',
+                        fontFamily: 'var(--font-sora)',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.1s, border-color 0.1s',
+                      }}
+                    >
+                      {reason}
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  value={helpfulComment}
+                  onChange={e => setHelpfulComment(e.target.value.slice(0, 140))}
+                  placeholder="Tell us more (optional)"
+                  rows={2}
+                  style={{
+                    width: '100%',
+                    resize: 'none',
+                    fontSize: 13,
+                    padding: '8px 10px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    backgroundColor: '#fff',
+                    color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-sora)',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                <div className="flex items-center justify-between" style={{ marginTop: 6 }}>
+                  <button
+                    onClick={handleHelpfulPanelSubmit}
+                    disabled={submitting}
+                    style={{
+                      padding: '5px 14px',
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      backgroundColor: '#BA7517',
+                      color: '#fff',
+                      border: 'none',
+                      fontFamily: 'var(--font-sora)',
+                      cursor: submitting ? 'default' : 'pointer',
+                      opacity: submitting ? 0.7 : 1,
+                    }}
+                  >
+                    Submit feedback
+                  </button>
+                  <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: 'var(--font-sora)' }}>
+                    {helpfulComment.length} / 140
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Verdict feedback */}
+            {showVerdictPanel && !verdictPanelDone && (
+              <div>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8, fontFamily: 'var(--font-sora)' }}>
+                  What would have changed your mind?
+                </p>
+                <textarea
+                  value={verdictComment}
+                  onChange={e => setVerdictComment(e.target.value.slice(0, 140))}
+                  placeholder="Optional — tell us what felt wrong"
+                  rows={2}
+                  style={{
+                    width: '100%',
+                    resize: 'none',
+                    fontSize: 13,
+                    padding: '8px 10px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    backgroundColor: '#fff',
+                    color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-sora)',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                <div className="flex items-center justify-between" style={{ marginTop: 6 }}>
+                  <button
+                    onClick={handleVerdictPanelSubmit}
+                    disabled={submitting}
+                    style={{
+                      padding: '5px 14px',
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      backgroundColor: '#BA7517',
+                      color: '#fff',
+                      border: 'none',
+                      fontFamily: 'var(--font-sora)',
+                      cursor: submitting ? 'default' : 'pointer',
+                      opacity: submitting ? 0.7 : 1,
+                    }}
+                  >
+                    Submit
+                  </button>
+                  <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: 'var(--font-sora)' }}>
+                    {verdictComment.length} / 140
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Footer line */}
+        <p style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 12, fontFamily: 'var(--font-sora)', opacity: 0.6 }}>
+          Your vote helps improve Unpacked for everyone
+        </p>
+      </div>
     </div>
   )
 }

@@ -50,6 +50,16 @@ function isPolymarketCard(section: ArticleSection): boolean {
   return section.type === 'live_data_card' && (section as { data_source?: string }).data_source === 'polymarket'
 }
 
+/**
+ * Check if a live_data_card is a chart-type card (Yahoo Finance or Google Trends).
+ * These are grouped side-by-side in a 2-column grid when consecutive.
+ */
+function isChartDataCard(section: ArticleSection): boolean {
+  if (section.type !== 'live_data_card') return false
+  const ds = (section as { data_source?: string }).data_source
+  return ds === 'yahoo_finance' || ds === 'google_trends'
+}
+
 export default function SectionRenderer({
   sections,
   animated = false,
@@ -101,6 +111,41 @@ export default function SectionRenderer({
         continue
       }
       // Single Polymarket card — fall through to normal rendering
+      i = groupStart
+    }
+
+    // Check for a run of consecutive chart-type live data cards (yahoo_finance, google_trends → side by side)
+    if (isChartDataCard(section)) {
+      const groupStart = i
+      const group: { section: ArticleSection; index: number }[] = []
+      while (i < sections.length && isChartDataCard(sections[i]) && group.length < 3) {
+        group.push({ section: sections[i], index: i })
+        i++
+      }
+
+      if (group.length >= 2) {
+        const gridStyle = animated
+          ? { animationDelay: `${groupStart * 60}ms`, opacity: 0 }
+          : undefined
+        const gridClass = animated ? 'fade-in-up' : ''
+
+        elements.push(
+          <div
+            key={`chart-grid-${groupStart}`}
+            id={`section-${groupStart}`}
+            className={`grid gap-4 mb-8 ${gridClass} ${group.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}
+            style={gridStyle}
+          >
+            {group.map(({ section: s, index: idx }) => (
+              <div key={idx} id={`section-${idx}`}>
+                <LiveDataCard section={s as { type: 'live_data_card'; data_source: 'polymarket' | 'yahoo_finance' | 'google_trends'; content: Record<string, unknown> }} />
+              </div>
+            ))}
+          </div>
+        )
+        continue
+      }
+      // Single chart card — fall through to normal rendering
       i = groupStart
     }
 
@@ -186,8 +231,10 @@ export default function SectionRenderer({
     })()
 
     if (inner) {
+      // Add extra bottom margin after live data cards so they don't crowd the next heading
+      const extraClass = section.type === 'live_data_card' ? ' mb-8' : ''
       elements.push(
-        <div key={i} id={`section-${i}`} className={className} style={style}>
+        <div key={i} id={`section-${i}`} className={`${className}${extraClass}`} style={style}>
           {inner}
         </div>
       )

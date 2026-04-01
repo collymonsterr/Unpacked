@@ -293,6 +293,7 @@ Rules:
 - explainer: only include if the topic has a clear market/trend dimension
 - news_analysis, breaking_news: include 1-2 sources if the story involves markets, politics, or tech companies
 - trend_analysis, deep_dive: include 1-3 sources — these benefit most from live data
+- GEOPOLITICAL topics (war, conflict, sanctions, elections, trade disputes, territorial disputes, diplomacy): ALWAYS include polymarket + google_trends. These topics almost always have active prediction markets.
 - Never include more than 3 live_data entries total
 - If unsure whether live data is relevant, omit it — empty array or omit the field entirely
 
@@ -309,7 +310,15 @@ For sections: an array of {heading, purpose} defining the article structure. Eac
 
 For suggestion_chips: generate 3 refinements (modify this article) and 3 related (generate a new article on a naturally connected topic). IMPORTANT: If any related topic includes a year, use ${new Date().getFullYear()} — never 2024 or 2025. Omit the year entirely if the topic is evergreen.
 
-For hero_image_query: generate a single search query (5-8 words) that would find a beautiful, magazine-quality hero photograph for this article. Think: what would a photo editor at a premium magazine search for? The image should be aspirational, high-resolution, and have NO text or infographics. Examples: "Rent vs Buy" → "beautiful modern house exterior golden hour", "Best Headphones" → "premium headphones lifestyle minimal desk", "Dubai Travel" → "Dubai marina skyline sunset aerial", "How to Budget" → "elegant notebook pen coffee flatlay". Do NOT include words like "article", "guide", "review", "infographic", or "chart".
+For hero_image_query: generate a single search query (5-8 words) that would find a beautiful, magazine-quality hero photograph for this article. Think: what would a photo editor at a premium magazine search for? The image should be aspirational, high-resolution, and have NO text or infographics.
+Rules:
+- Product articles: the ACTUAL product in a lifestyle setting (not generic category — "Sony WH-1000XM5 headphones on desk" not "headphones")
+- Geopolitical/news: a SPECIFIC location, landmark, or scene ("Taiwan Strait naval ships aerial", "US Capitol building at night")
+- Finance/economics: tangible objects that represent the concept ("Federal Reserve building Washington DC", "gold bars stacked in vault")
+- Tech/AI: real products or environments ("server room blue LED lights", "robot arm in a factory")
+- NEVER use generic stock concepts like "technology background", "business meeting", "person working"
+- Include location names, product names, or landmark names when possible — specificity gets better photos
+Do NOT include words like "article", "guide", "review", "infographic", or "chart".
 
 For hero_image_subject: generate a short description (8-15 words) of the CORE VISUAL SUBJECT that should be in the hero image. This is NOT the article title — it's what should actually be photographed. Rules:
 - Extract the primary physical object or subject, ignore the qualifiers and context
@@ -693,7 +702,8 @@ function formatLiveDataForSonnet(liveData?: Record<string, unknown>[]): string {
   const lines: string[] = [
     '',
     'LIVE DATA (real-time data fetched from external APIs):',
-    'Include each data item below as a live_data_card section in the article. Copy the data into the "content" field.',
+    'IMPORTANT: Create ONE live_data_card section per data item below. Do NOT group multiple items into a single card.',
+    'Copy each data object into the "content" field exactly as provided — do not restructure, nest, or rename fields.',
     'Format: { "type": "live_data_card", "data_source": "<source>", "content": <data object> }',
     'Place live_data_cards near the top, after "What You Need to Know" or executive summary.',
     '',

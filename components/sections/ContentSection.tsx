@@ -53,6 +53,48 @@ function breakLongParagraphs(text: string): string[] {
   return chunks
 }
 
+/**
+ * Extract a compelling pull quote from long content.
+ * Looks for sentences with strong opinion markers or data points.
+ * Returns null if content isn't long enough to warrant a pull quote.
+ */
+function extractPullQuote(content: string): string | null {
+  // Only for sections with substantial content (>800 chars, ~150+ words)
+  if (content.length < 800) return null
+
+  const sentences = content
+    .replace(/\n\n+/g, ' ')
+    .split(/(?<=\.)\s+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 40 && s.length < 200)
+
+  // Prefer sentences with opinion/data markers
+  const strongMarkers = /\b(the (real|biggest|key|most important)|what (most people|nobody)|the truth is|in (reality|practice)|surprisingly|remarkably|the winner|the clear|bottom line|the difference)\b/i
+  const dataMarkers = /\b(\d+%|\$[\d,.]+|[2-9]\d*x|\d+ (times|percent|out of))\b/
+
+  // Score each sentence
+  const scored = sentences.map(s => {
+    let score = 0
+    if (strongMarkers.test(s)) score += 3
+    if (dataMarkers.test(s)) score += 2
+    // Avoid sentences starting with "However," or other weak openers
+    if (/^(However|But|Although|That said|While)/i.test(s)) score -= 1
+    // Prefer sentences that make a clear statement
+    if (/\b(is|are|was|will)\b/i.test(s) && !s.includes('?')) score += 1
+    return { text: s, score }
+  })
+
+  scored.sort((a, b) => b.score - a.score)
+  const best = scored[0]
+  if (!best || best.score < 2) return null
+
+  // Clean up: remove bold markers and leading connectors
+  return best.text
+    .replace(/\*\*/g, '')
+    .replace(/^(And |So |But )/i, '')
+    .trim()
+}
+
 function renderContent(content: string, linkTransform?: (text: string) => string) {
   // Pipeline: text → injectLinks → boldify → HTML
   const transform = (text: string) => boldify(linkTransform ? linkTransform(text) : text)
@@ -137,6 +179,8 @@ export default function ContentSection({ section, currentSlug, relatedArticles }
     ? (text: string) => injectInternalLinks(text, currentSlug, relatedArticles, 3)
     : undefined
 
+  const pullQuote = extractPullQuote(section.content)
+
   return (
     <div className="mb-8">
       <h2
@@ -148,6 +192,20 @@ export default function ContentSection({ section, currentSlug, relatedArticles }
       <div className="prose-content" style={{ color: 'var(--text-primary)' }}>
         {renderContent(section.content, linkTransform)}
       </div>
+      {pullQuote && (
+        <blockquote
+          className="my-6 py-4 px-6 text-lg leading-relaxed"
+          style={{
+            fontFamily: 'var(--font-outfit)',
+            fontStyle: 'italic',
+            color: 'var(--text-primary)',
+            borderLeft: '3px solid var(--accent)',
+            backgroundColor: '#FAFAF8',
+          }}
+        >
+          &ldquo;{pullQuote}&rdquo;
+        </blockquote>
+      )}
     </div>
   )
 }

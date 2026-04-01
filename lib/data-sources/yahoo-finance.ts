@@ -17,6 +17,8 @@ export interface YahooFinanceResult {
   currency: string
   url: string
   source: 'yahoo_finance'
+  /** 1-month daily close prices for sparkline chart (most recent last) */
+  sparkline?: number[]
 }
 
 const YAHOO_CHART_API = 'https://query1.finance.yahoo.com/v8/finance/chart'
@@ -47,8 +49,17 @@ function setCache(symbol: string, data: YahooFinanceResult): void {
 export async function fetchQuotes(symbols: string[]): Promise<YahooFinanceResult[]> {
   if (!symbols || symbols.length === 0) return []
 
+  // Deduplicate symbols (case-insensitive) — same company can appear via multiple queries
+  const seen = new Set<string>()
+  const uniqueSymbols = symbols.filter(s => {
+    const upper = s.toUpperCase()
+    if (seen.has(upper)) return false
+    seen.add(upper)
+    return true
+  })
+
   const results = await Promise.all(
-    symbols.slice(0, 5).map(s => fetchSingleQuote(s))
+    uniqueSymbols.slice(0, 5).map(s => fetchSingleQuote(s))
   )
 
   return results.filter((r): r is YahooFinanceResult => r !== null)
@@ -66,7 +77,7 @@ async function fetchSingleQuote(symbol: string): Promise<YahooFinanceResult | nu
     const timeoutId = setTimeout(() => controller.abort(), 8000)
 
     const res = await fetch(
-      `${YAHOO_CHART_API}/${encodeURIComponent(symbol)}?range=1d&interval=1d`,
+      `${YAHOO_CHART_API}/${encodeURIComponent(symbol)}?range=1mo&interval=1d`,
       {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; Unpacked/1.0)',
@@ -101,6 +112,18 @@ async function fetchSingleQuote(symbol: string): Promise<YahooFinanceResult | nu
     const currency = meta.currency ?? 'USD'
     const name = meta.shortName ?? meta.longName ?? meta.symbol ?? symbol
 
+    // Extract sparkline from chart close prices
+    let sparkline: number[] | undefined
+    try {
+      const closes: (number | null)[] = result.indicators?.quote?.[0]?.close ?? []
+      const validCloses = closes.filter((c): c is number => c !== null && c > 0)
+      if (validCloses.length >= 3) {
+        sparkline = validCloses
+      }
+    } catch {
+      // Sparkline is optional — don't fail the whole quote
+    }
+
     const quote: YahooFinanceResult = {
       symbol: symbol.toUpperCase(),
       name,
@@ -110,6 +133,7 @@ async function fetchSingleQuote(symbol: string): Promise<YahooFinanceResult | nu
       currency,
       url: `https://finance.yahoo.com/quote/${encodeURIComponent(symbol)}`,
       source: 'yahoo_finance',
+      sparkline,
     }
 
     setCache(symbol, quote)
