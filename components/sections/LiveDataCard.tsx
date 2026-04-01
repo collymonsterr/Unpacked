@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
+import { forwardRef } from 'react'
 
 interface LiveDataCardProps {
   section: {
@@ -29,7 +30,7 @@ export default function LiveDataCard({ section }: LiveDataCardProps) {
     border: '1px solid var(--border)',
     boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)',
     opacity: visible ? 1 : 0,
-    transform: visible ? 'translateY(0)' : 'translateY(12px)',
+    transform: visible ? 'translateY(0)' : 'translateY(8px)',
     transition: 'opacity 0.4s ease, transform 0.4s ease',
   }
 
@@ -50,7 +51,7 @@ export default function LiveDataCard({ section }: LiveDataCardProps) {
 function SourceBadge({ label }: { label: string }) {
   return (
     <span
-      className="inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md"
+      className="inline-block text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
       style={{
         backgroundColor: 'var(--accent, #BA7517)',
         color: '#fff',
@@ -68,7 +69,7 @@ function ExternalLink({ href, children }: { href: string; children: React.ReactN
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-xs hover:underline"
+      className="text-[11px] hover:underline"
       style={{ color: 'var(--accent, #BA7517)' }}
     >
       {children} →
@@ -77,8 +78,6 @@ function ExternalLink({ href, children }: { href: string; children: React.ReactN
 }
 
 // ── Polymarket Card ──────────────────────────────────────────────────────────
-
-import { forwardRef } from 'react'
 
 const PolymarketCard = forwardRef<HTMLDivElement, {
   content: Record<string, unknown>
@@ -98,56 +97,95 @@ const PolymarketCard = forwardRef<HTMLDivElement, {
     return `$${v.toFixed(0)}`
   }
 
+  const isBinary = outcomes.length === 2
+
   return (
-    <div ref={ref} className="mb-6 rounded-xl p-5" style={cardStyle}>
-      <div className="flex items-center gap-2 mb-3">
+    <div ref={ref} className="rounded-xl px-4 py-3" style={cardStyle}>
+      <div className="flex items-center gap-2 mb-2">
         <SourceBadge label="Polymarket" />
       </div>
 
       <p
-        className="text-base font-semibold mb-4"
+        className="text-sm font-semibold mb-2 leading-snug"
         style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
       >
         {question}
       </p>
 
-      <div className="space-y-2 mb-4">
-        {outcomes.map((outcome, i) => {
-          const prob = probabilities[i] ?? 0
-          const pct = Math.round(prob * 100)
-          return (
-            <div key={i}>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                  {outcome}
-                </span>
-                <span
-                  className="text-sm font-bold"
-                  style={{ fontFamily: 'var(--font-sora)', color: 'var(--accent)' }}
-                >
-                  {pct}%
-                </span>
-              </div>
-              <div
-                className="h-2 rounded-full overflow-hidden"
-                style={{ backgroundColor: 'var(--border)' }}
-              >
+      {/* Outcomes — binary (Yes/No) shown side-by-side, multi stacked */}
+      {isBinary ? (
+        <div className="flex gap-3 mb-2">
+          {outcomes.map((outcome, i) => {
+            const prob = probabilities[i] ?? 0
+            const pct = Math.round(prob * 100)
+            return (
+              <div key={i} className="flex-1">
+                <div className="flex justify-between items-center mb-0.5">
+                  <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
+                    {outcome}
+                  </span>
+                  <span
+                    className="text-xs font-bold"
+                    style={{ fontFamily: 'var(--font-sora)', color: i === 0 ? 'var(--accent)' : 'var(--text-secondary)' }}
+                  >
+                    {pct}%
+                  </span>
+                </div>
                 <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{
-                    width: `${pct}%`,
-                    backgroundColor: i === 0 ? 'var(--accent, #BA7517)' : 'var(--text-secondary, #999)',
-                  }}
-                />
+                  className="h-1 rounded-full overflow-hidden"
+                  style={{ backgroundColor: 'var(--border)' }}
+                >
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{
+                      width: `${pct}%`,
+                      backgroundColor: i === 0 ? 'var(--accent, #BA7517)' : 'var(--text-secondary, #999)',
+                    }}
+                  />
+                </div>
               </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="space-y-1.5 mb-2">
+          {outcomes.map((outcome, i) => {
+            const prob = probabilities[i] ?? 0
+            const pct = Math.round(prob * 100)
+            return (
+              <div key={i}>
+                <div className="flex justify-between items-center mb-0.5">
+                  <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
+                    {outcome}
+                  </span>
+                  <span
+                    className="text-xs font-bold"
+                    style={{ fontFamily: 'var(--font-sora)', color: 'var(--accent)' }}
+                  >
+                    {pct}%
+                  </span>
+                </div>
+                <div
+                  className="h-1 rounded-full overflow-hidden"
+                  style={{ backgroundColor: 'var(--border)' }}
+                >
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{
+                      width: `${pct}%`,
+                      backgroundColor: i === 0 ? 'var(--accent, #BA7517)' : 'var(--text-secondary, #999)',
+                    }}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
-        <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-          Volume: {formatVolume(volume)} traded
+        <span className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+          {formatVolume(volume)} traded
         </span>
         <ExternalLink href={url}>polymarket.com</ExternalLink>
       </div>
@@ -182,33 +220,33 @@ const YahooFinanceCard = forwardRef<HTMLDivElement, {
   }
 
   return (
-    <div ref={ref} className="mb-6 rounded-xl p-5" style={cardStyle}>
-      <div className="flex items-center gap-2 mb-3">
+    <div ref={ref} className="rounded-xl px-4 py-3" style={cardStyle}>
+      <div className="flex items-center gap-2 mb-2">
         <SourceBadge label="Yahoo Finance" />
       </div>
 
-      <div className="flex items-baseline gap-2 mb-1">
+      <div className="flex items-baseline gap-2 mb-0.5">
         <span
-          className="text-sm font-bold"
+          className="text-xs font-bold"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--accent)' }}
         >
           {symbol}
         </span>
-        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+        <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
           {name}
         </span>
       </div>
 
-      <div className="flex items-baseline gap-3 mb-3">
+      <div className="flex items-baseline gap-2 mb-2">
         <span
-          className="text-2xl md:text-3xl font-extrabold"
+          className="text-xl md:text-2xl font-extrabold"
           style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
         >
           {formatPrice(price, currency)}
         </span>
-        <span className="text-base font-bold" style={{ color: changeColor }}>
+        <span className="text-sm font-bold" style={{ color: changeColor }}>
           {arrow} {changePercent >= 0 ? '+' : ''}{changePercent.toFixed(2)}%
-          <span className="text-sm font-normal ml-1">
+          <span className="text-xs font-normal ml-1">
             ({change >= 0 ? '+' : ''}{formatPrice(Math.abs(change), currency)})
           </span>
         </span>
@@ -249,28 +287,26 @@ const GoogleTrendsCard = forwardRef<HTMLDivElement, {
     peaking: 'var(--accent, #BA7517)',
   }
 
-  // Simple SVG sparkline (no Recharts dependency for this small chart)
   const sparkline = timelineData.length > 2 ? buildSparkline(timelineData) : null
 
   return (
-    <div ref={ref} className="mb-6 rounded-xl p-5" style={cardStyle}>
-      <div className="flex items-center gap-2 mb-3">
+    <div ref={ref} className="rounded-xl px-4 py-3" style={cardStyle}>
+      <div className="flex items-center gap-2 mb-2">
         <SourceBadge label="Google Trends" />
-        <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+        <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
           Last 12 months
         </span>
       </div>
 
       <p
-        className="text-base font-semibold mb-3"
+        className="text-sm font-semibold mb-2 leading-snug"
         style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
       >
         &ldquo;{query}&rdquo;
       </p>
 
-      {/* Sparkline */}
       {sparkline && (
-        <div className="mb-3" style={{ height: 48 }}>
+        <div className="mb-2" style={{ height: 36 }}>
           <svg viewBox={sparkline.viewBox} className="w-full h-full" preserveAspectRatio="none">
             <path
               d={sparkline.path}
@@ -288,18 +324,18 @@ const GoogleTrendsCard = forwardRef<HTMLDivElement, {
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-bold" style={{ color: trendColor[trend] }}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-bold" style={{ color: trendColor[trend] }}>
           {trendLabel[trend] ?? '→ Stable'}
           {changePercent !== 0 && (
             <span className="font-normal ml-1">
-              ({changePercent > 0 ? '+' : ''}{changePercent}% vs 3 months ago)
+              ({changePercent > 0 ? '+' : ''}{changePercent}%)
             </span>
           )}
         </span>
-        <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-          Current: {currentInterest}/100
-          {peakInterest && ` · Peak: ${peakInterest.value}/100`}
+        <span className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+          {currentInterest}/100
+          {peakInterest && ` · Peak ${peakInterest.value}`}
         </span>
       </div>
 

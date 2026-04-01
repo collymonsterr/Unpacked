@@ -338,7 +338,9 @@ ${optionsPrompt}`
         }
 
         const data = await res.json()
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+        const allParts = data.candidates?.[0]?.content?.parts ?? []
+        const nonThinkParts = allParts.filter((p: { thought?: boolean; text?: string }) => !p.thought && p.text)
+        const text = nonThinkParts.length > 0 ? nonThinkParts[nonThinkParts.length - 1].text : null
         if (!text) {
           lastError = 'Empty response — no text in candidates'
           lastRawResponse = JSON.stringify(data).slice(0, 500)
@@ -502,7 +504,9 @@ Apply the refinement and return the full updated article JSON. Also include a "s
         }
 
         const data = await res.json()
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+        const allParts = data.candidates?.[0]?.content?.parts ?? []
+        const nonThinkParts = allParts.filter((p: { thought?: boolean; text?: string }) => !p.thought && p.text)
+        const text = (nonThinkParts.length > 0 ? nonThinkParts[nonThinkParts.length - 1].text : null) ?? ''
 
         if (!text) {
           lastError = 'Empty response'

@@ -43,6 +43,13 @@ const RECHARTS_TYPES = new Set([
   'interactive_calculator',
 ])
 
+/**
+ * Check if a live_data_card section is specifically a Polymarket card.
+ */
+function isPolymarketCard(section: ArticleSection): boolean {
+  return section.type === 'live_data_card' && (section as { data_source?: string }).data_source === 'polymarket'
+}
+
 export default function SectionRenderer({
   sections,
   animated = false,
@@ -54,97 +61,140 @@ export default function SectionRenderer({
   onSetPrimaryImage,
   onArticleUpdated,
 }: Props) {
-  return (
-    <>
-      {sections.map((section, i) => {
-        const isRechartsSection = RECHARTS_TYPES.has(section.type)
+  // Pre-process: group consecutive Polymarket cards for grid layout
+  const elements: React.ReactNode[] = []
+  let i = 0
 
-        // For Recharts sections: use animation delay but start at full opacity
-        // so ResponsiveContainer can measure the container correctly.
-        // For all others: standard fade-in-up from opacity:0.
-        const style = animated
-          ? isRechartsSection
-            ? { animationDelay: `${i * 60}ms` }
-            : { animationDelay: `${i * 60}ms`, opacity: 0 }
+  while (i < sections.length) {
+    const section = sections[i]
+
+    // Check for a run of consecutive Polymarket cards (2-3 → grid)
+    if (isPolymarketCard(section)) {
+      const groupStart = i
+      const group: { section: ArticleSection; index: number }[] = []
+      while (i < sections.length && isPolymarketCard(sections[i]) && group.length < 3) {
+        group.push({ section: sections[i], index: i })
+        i++
+      }
+
+      if (group.length >= 2) {
+        // Render as a grid row
+        const gridStyle = animated
+          ? { animationDelay: `${groupStart * 60}ms`, opacity: 0 }
           : undefined
-        const className = animated
-          ? isRechartsSection
-            ? 'fade-in-up-chart'
-            : 'fade-in-up'
-          : ''
+        const gridClass = animated ? 'fade-in-up' : ''
 
-        const inner = (() => {
-          switch (section.type) {
-            case 'product_card':
-              return (
-                <ProductCard
-                  section={section}
-                  isAdmin={isAdmin}
-                  sectionIndex={i}
-                  articleId={articleId}
-                  onReplaceImage={onReplaceImage ? (imgIdx) => onReplaceImage(i, imgIdx) : undefined}
-                  onSetPrimaryImage={onSetPrimaryImage ? (imgIdx) => onSetPrimaryImage(i, imgIdx) : undefined}
-                  onArticleUpdated={onArticleUpdated}
-                />
-              )
-            case 'comparison_table':
-              return <ComparisonTable section={section} />
-            case 'warning_box':
-              return <WarningBox section={section} />
-            case 'content_section':
-              return <ContentSection section={section} currentSlug={currentSlug} relatedArticles={linkableArticles} />
-            case 'price_tier_breakdown':
-              return <PriceTierBreakdown section={section} />
-            case 'community_insights':
-              return <CommunityInsights section={section} />
-            case 'sources':
-              return <Sources section={section} />
-            case 'further_reading':
-              return <FurtherReading section={section} />
-            case 'head_to_head':
-              return <HeadToHead section={section} />
-            case 'who_this_is_for':
-              return <WhoThisIsFor section={section} />
-            case 'bar_chart':
-              return <BarChartSection section={section} />
-            case 'comparison_matrix':
-              return <ComparisonMatrix section={section} />
-            case 'pie_chart':
-              return <PieChartSection section={section} />
-            case 'line_chart':
-              return <LineChartSection section={section} />
-            case 'stat_cards':
-              return <StatCards section={section} />
-            case 'treemap':
-              return <TreemapSection section={section} />
-            case 'timeline':
-              return <TimelineSection section={section} />
-            case 'image_section':
-              return (
-                <ImageSection
-                  section={section}
-                  isAdmin={isAdmin}
-                  sectionIndex={i}
-                  onReplaceImage={onReplaceImage ? (imgIdx) => onReplaceImage(i, imgIdx) : undefined}
-                />
-              )
-            case 'interactive_calculator':
-              return <InteractiveCalculator section={section} />
-            case 'live_data_card':
-              return <LiveDataCard section={section} />
-            default:
-              return null
-          }
-        })()
-
-        if (!inner) return null
-
-        return (
-          <div key={i} id={`section-${i}`} className={className} style={style}>
-            {inner}
+        elements.push(
+          <div
+            key={`polymarket-grid-${groupStart}`}
+            id={`section-${groupStart}`}
+            className={`grid gap-3 mb-6 ${gridClass} ${group.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}
+            style={gridStyle}
+          >
+            {group.map(({ section: s, index: idx }) => (
+              <div key={idx} id={`section-${idx}`}>
+                <LiveDataCard section={s as { type: 'live_data_card'; data_source: 'polymarket' | 'yahoo_finance' | 'google_trends'; content: Record<string, unknown> }} />
+              </div>
+            ))}
           </div>
         )
-      })}
-    </>
-  )
+        continue
+      }
+      // Single Polymarket card — fall through to normal rendering
+      i = groupStart
+    }
+
+    // Normal section rendering
+    const isRechartsSection = RECHARTS_TYPES.has(section.type)
+
+    // For Recharts sections: use animation delay but start at full opacity
+    // so ResponsiveContainer can measure the container correctly.
+    // For all others: standard fade-in-up from opacity:0.
+    const style = animated
+      ? isRechartsSection
+        ? { animationDelay: `${i * 60}ms` }
+        : { animationDelay: `${i * 60}ms`, opacity: 0 }
+      : undefined
+    const className = animated
+      ? isRechartsSection
+        ? 'fade-in-up-chart'
+        : 'fade-in-up'
+      : ''
+
+    const inner = (() => {
+      switch (section.type) {
+        case 'product_card':
+          return (
+            <ProductCard
+              section={section}
+              isAdmin={isAdmin}
+              sectionIndex={i}
+              articleId={articleId}
+              onReplaceImage={onReplaceImage ? (imgIdx) => onReplaceImage(i, imgIdx) : undefined}
+              onSetPrimaryImage={onSetPrimaryImage ? (imgIdx) => onSetPrimaryImage(i, imgIdx) : undefined}
+              onArticleUpdated={onArticleUpdated}
+            />
+          )
+        case 'comparison_table':
+          return <ComparisonTable section={section} />
+        case 'warning_box':
+          return <WarningBox section={section} />
+        case 'content_section':
+          return <ContentSection section={section} currentSlug={currentSlug} relatedArticles={linkableArticles} />
+        case 'price_tier_breakdown':
+          return <PriceTierBreakdown section={section} />
+        case 'community_insights':
+          return <CommunityInsights section={section} />
+        case 'sources':
+          return <Sources section={section} />
+        case 'further_reading':
+          return <FurtherReading section={section} />
+        case 'head_to_head':
+          return <HeadToHead section={section} />
+        case 'who_this_is_for':
+          return <WhoThisIsFor section={section} />
+        case 'bar_chart':
+          return <BarChartSection section={section} />
+        case 'comparison_matrix':
+          return <ComparisonMatrix section={section} />
+        case 'pie_chart':
+          return <PieChartSection section={section} />
+        case 'line_chart':
+          return <LineChartSection section={section} />
+        case 'stat_cards':
+          return <StatCards section={section} />
+        case 'treemap':
+          return <TreemapSection section={section} />
+        case 'timeline':
+          return <TimelineSection section={section} />
+        case 'image_section':
+          return (
+            <ImageSection
+              section={section}
+              isAdmin={isAdmin}
+              sectionIndex={i}
+              onReplaceImage={onReplaceImage ? (imgIdx) => onReplaceImage(i, imgIdx) : undefined}
+            />
+          )
+        case 'interactive_calculator':
+          return <InteractiveCalculator section={section} />
+        case 'live_data_card':
+          return <LiveDataCard section={section} />
+        default:
+          return null
+      }
+    })()
+
+    if (inner) {
+      elements.push(
+        <div key={i} id={`section-${i}`} className={className} style={style}>
+          {inner}
+        </div>
+      )
+    }
+
+    i++
+  }
+
+  return <>{elements}</>
 }

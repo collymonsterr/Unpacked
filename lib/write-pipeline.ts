@@ -2,14 +2,15 @@
  * Shared writing pipeline — used by both create/route.ts (authenticated flow)
  * and start-writing/route.ts (post-sign-in gate flow).
  *
- * Flow (Session 1.7C):
+ * Flow (Session 1.7C + 1.7F):
  *   1. Generate blueprint (Gemini Flash, ~5-8s)
- *   2. Write prose (Gemini Flash or Sonnet, ~30-40s)
- *   3. Run editorial pass (Gemini Flash, ~3-15s, skip for breaking_news)
+ *   2. Write prose + fetch hero image in parallel (~30-40s)
+ *   3. Editorial pass + product images in parallel (~3-15s)
  *   4. Apply any rewrites
- *   5. Fetch images (parallel with step 3)
- *   6. Save article
- *   7. Start fact-check (async)
+ *   5. Save article
+ *   6. Start fact-check (async)
+ *
+ * Timing data is collected and persisted to generation_options.timings.
  */
 
 import { writeWithSonnet, buildOptionsPrompt } from '@/lib/claude'
@@ -22,6 +23,18 @@ import { runFactCheck, applyCorrections } from '@/lib/fact-check'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import type { ArticlePlan, EntityCard, ResearchSynthesis, ArticleContent } from '@/types/article'
 
+export interface PipelineTimings {
+  planning_ms?: number
+  research_ms?: number
+  blueprint_ms: number
+  writing_ms: number
+  editorial_ms: number
+  images_ms: number
+  save_ms: number
+  factcheck_ms?: number
+  total_ms: number
+}
+
 interface WritePipelineParams {
   articleId: string
   query: string
@@ -31,6 +44,8 @@ interface WritePipelineParams {
   entityCards?: EntityCard[]
   synthesis?: ResearchSynthesis
   liveData?: Record<string, unknown>[]
+  /** Timing data from the create route (planning + research phases) */
+  _timings?: Record<string, number>
 }
 
 export async function runWritePipeline({
@@ -42,12 +57,16 @@ export async function runWritePipeline({
   entityCards,
   synthesis,
   liveData,
+  _timings,
 }: WritePipelineParams): Promise<void> {
   const db = getSupabaseAdmin()
   const length = (generationOptions?.length as 'quick' | 'standard' | 'deep') ?? 'standard'
   const isDeep = length === 'deep'
+  const pipelineStart = Date.now()
+  const t: Record<string, number> = { ...(_timings ?? {}) }
 
   // ── Phase 1: Generate blueprint ──
+  const bpStart = Date.now()
   const blueprint = await generateBlueprint(
     query,
     plan,
@@ -60,28 +79,25 @@ export async function runWritePipeline({
     researchSummary,
     generationOptions,
   )
+  t.blueprint_ms = Date.now() - bpStart
 
-  // Save blueprint to DB immediately (useful for debugging and future co-pilot)
-  await db
-    .from('articles')
+  // Save blueprint to DB — fire-and-forget, don't block the pipeline
+  db.from('articles')
     .update({ blueprint })
     .eq('id', articleId)
+    .then(() => {})
 
-  console.log(`[write-pipeline] Blueprint generated: thesis="${blueprint.thesis.slice(0, 60)}", ${blueprint.sections.length} sections, ${blueprint.target_word_count} target words`)
+  console.log(`[write-pipeline] Blueprint in ${t.blueprint_ms}ms: thesis="${blueprint.thesis.slice(0, 60)}", ${blueprint.sections.length} sections`)
 
   // ── Phase 2: Write prose + fetch hero image in parallel ──
-  // Hero image only needs the query + article type (from blueprint/plan) — doesn't need prose output.
-  // So we start it alongside writing to save 3-5 seconds.
   const heroStyle = plan.research_manifest?.image_queries?.hero?.style as
     'editorial_photo' | 'news_photo' | 'product_photo' | 'abstract' | undefined
 
   const writeArticle = async (): Promise<ArticleContent> => {
     if (isDeep) {
-      console.log('[write-pipeline] Writing with Sonnet (deep mode)')
       return writeWithSonnet(query, plan, researchSummary, generationOptions, articleId, undefined, entityCards, synthesis, blueprint, liveData)
     }
     try {
-      console.log('[write-pipeline] Writing with Gemini Flash')
       const optsPrompt = buildOptionsPrompt(generationOptions)
       return await writeWithGemini(query, plan, researchSummary, optsPrompt, articleId, entityCards, synthesis, blueprint, liveData)
     } catch (geminiErr) {
@@ -91,6 +107,7 @@ export async function runWritePipeline({
     }
   }
 
+  const writeStart = Date.now()
   const [rawArticle, heroResult] = await Promise.all([
     writeArticle(),
     fetchHeroImage(
@@ -106,28 +123,29 @@ export async function runWritePipeline({
       return { url: null, attribution: null }
     }),
   ])
+  t.writing_ms = Date.now() - writeStart
 
   // ── Phase 3: Editorial pass + product images (parallel) ──
   const isBreakingNews = plan.article_type === 'breaking_news'
+  const editStart = Date.now()
 
   const [editorialResult, enrichedArticle] = await Promise.all([
-    // Editorial pass — skip for breaking_news
     isBreakingNews
       ? Promise.resolve(null)
       : runEditorialPass(rawArticle, blueprint, entityCards ?? []).catch(err => {
           console.warn('[write-pipeline] Editorial pass failed:', (err as Error).message)
           return null
         }),
-    // Product + section image enrichment (needs article content to know which products)
     enrichArticleWithImages(
       rawArticle,
       plan.entities,
       plan.visual_strategy?.image_density,
     ),
   ])
+  t.editorial_ms = Date.now() - editStart
 
   // Apply editorial rewrites if score is low enough
-  if (editorialResult && editorialResult.score <= 80 && Object.keys(editorialResult.rewrites).length > 0) {
+  if (editorialResult && editorialResult.score <= 75 && Object.keys(editorialResult.rewrites).length > 0) {
     console.log(`[write-pipeline] Editorial score ${editorialResult.score}/100 — applying ${Object.keys(editorialResult.rewrites).length} rewrites`)
     applyEditorRewrites(enrichedArticle, editorialResult)
   } else if (editorialResult) {
@@ -145,7 +163,9 @@ export async function runWritePipeline({
     (enrichedArticle as unknown as Record<string, unknown>).hero_image_query = plan.hero_image_query
   }
 
-  // Save complete article + editorial score
+  // Save complete article + editorial score + timings
+  const saveStart = Date.now()
+
   const updatePayload: Record<string, unknown> = {
     article: enrichedArticle,
     status: 'complete',
@@ -154,20 +174,47 @@ export async function runWritePipeline({
     updatePayload.editorial_score = editorialResult.score
   }
 
+  // Persist timing data into generation_options.timings
+  const totalMs = Date.now() - pipelineStart + (t.planning_ms ?? 0) + (t.research_ms ?? 0)
+  const timings: PipelineTimings = {
+    planning_ms: t.planning_ms,
+    research_ms: t.research_ms,
+    blueprint_ms: t.blueprint_ms,
+    writing_ms: t.writing_ms,
+    editorial_ms: t.editorial_ms,
+    images_ms: 0, // images run in parallel — no additional wall-clock time
+    save_ms: 0, // will be set after save
+    total_ms: totalMs,
+  }
+  updatePayload.generation_options = {
+    ...(generationOptions ?? {}),
+    timings,
+  }
+
   await db
     .from('articles')
     .update(updatePayload)
     .eq('id', articleId)
+  t.save_ms = Date.now() - saveStart
+  timings.save_ms = t.save_ms
+  timings.total_ms = totalMs + t.save_ms
 
-  console.log('[write-pipeline] Article complete, starting fact-check')
+  // Single summary log line
+  const fmtS = (ms: number | undefined) => ms != null ? `${(ms / 1000).toFixed(1)}s` : '-'
+  console.log(`[pipeline] Complete in ${fmtS(timings.total_ms)}: plan=${fmtS(t.planning_ms)} research=${fmtS(t.research_ms)} blueprint=${fmtS(t.blueprint_ms)} write=${fmtS(t.writing_ms)} editor=${fmtS(t.editorial_ms)} save=${fmtS(t.save_ms)}`)
 
   // ── Phase 4: Fact-check (non-blocking — article is already readable) ──
   try {
+    const fcStart = Date.now()
     const factCheckResult = await runFactCheck(enrichedArticle)
     let finalArticle = enrichedArticle
     if (factCheckResult.issues_found && factCheckResult.issues.length > 0) {
       finalArticle = applyCorrections(enrichedArticle, factCheckResult)
     }
+    const fcMs = Date.now() - fcStart
+    timings.factcheck_ms = fcMs
+
+    // Update article + timings with fact-check data
     await db
       .from('articles')
       .update({
@@ -175,10 +222,14 @@ export async function runWritePipeline({
         fact_check: factCheckResult,
         verified_at: new Date().toISOString(),
         status: 'verified',
+        generation_options: {
+          ...(generationOptions ?? {}),
+          timings,
+        },
       })
       .eq('id', articleId)
-    console.log('[write-pipeline] Fact-check done:', factCheckResult.total_issues, 'issues')
+    console.log(`[pipeline] Fact-check in ${fmtS(fcMs)}: ${factCheckResult.total_issues} issues`)
   } catch (fcErr) {
-    console.error('[write-pipeline] Fact-check failed:', fcErr)
+    console.error('[pipeline] Fact-check failed:', fcErr)
   }
 }

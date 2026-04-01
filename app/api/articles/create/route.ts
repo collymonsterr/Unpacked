@@ -124,15 +124,20 @@ export async function POST(request: NextRequest) {
     // Background work runs in after() — differs based on auth status
     after(async () => {
       const db = getSupabaseAdmin()
+      const t: Record<string, number> = {}
+      const pipelineStart = Date.now()
       try {
         // ── Phase 1: Plan the article ──
         console.log('[create] Planning article for:', trimmedQuery.slice(0, 50), 'options:', JSON.stringify(generationOptions))
+        const t0 = Date.now()
         const plan = await planArticle(trimmedQuery, generationOptions, data.id)
+        t.planning_ms = Date.now() - t0
 
         // Generate clean slug from AI title and update
         const cleanSlug = await generateUniqueSlug(plan.title, data.id)
 
         // Update with plan data + clean slug — client sees this via polling
+        const t1 = Date.now()
         await db
           .from('articles')
           .update({
@@ -142,8 +147,7 @@ export async function POST(request: NextRequest) {
             status: 'generating',
           })
           .eq('id', data.id)
-
-        console.log('[create] Plan complete, now researching:', plan.title.slice(0, 50), 'manifest_queries:', plan.research_manifest?.brave_queries?.length ?? 0)
+        t.plan_save_ms = Date.now() - t1
 
         // ── Phase 2: Parallel research via orchestrator ──
         // research_manifest is guaranteed by planArticle() (fallback built if AI didn't return one)
@@ -153,11 +157,13 @@ export async function POST(request: NextRequest) {
           reddit_queries: [{ query: trimmedQuery, subreddits: [] }],
           image_queries: { hero: { query: trimmedQuery, style: 'editorial_photo' as const }, products: [] },
         }
+        const t2 = Date.now()
         const research = await executeResearch(
           manifest,
           plan,
           length,
         )
+        t.research_ms = Date.now() - t2
 
         // Save research findings + entity cards + synthesis + live data immediately — preserved even if writing fails
         const researchUpdate: Record<string, unknown> = {}
@@ -166,17 +172,21 @@ export async function POST(request: NextRequest) {
         if (research.synthesis) researchUpdate.research_synthesis = research.synthesis
         if (research.liveData && research.liveData.length > 0) researchUpdate.live_data = research.liveData
         if (Object.keys(researchUpdate).length > 0) {
+          const t3 = Date.now()
           const { error: saveErr } = await db
             .from('articles')
             .update(researchUpdate)
             .eq('id', data.id)
+          t.research_save_ms = Date.now() - t3
           if (saveErr) console.error('[create] SAVE ERROR:', saveErr)
         }
+
+        const preWriteTotal = Date.now() - pipelineStart
+        console.log(`[timing] Pre-write: plan=${t.planning_ms}ms research=${t.research_ms}ms saves=${(t.plan_save_ms ?? 0) + (t.research_save_ms ?? 0)}ms total=${preWriteTotal}ms`)
 
         // ── Fork: authenticated users continue to writing; anonymous users pause ──
         if (isAuthenticated) {
           // Authenticated: run the full writing pipeline without pausing
-          console.log('[create] Authenticated user — continuing to write:', plan.title.slice(0, 50))
           await runWritePipeline({
             articleId: data.id,
             query: trimmedQuery,
@@ -186,6 +196,7 @@ export async function POST(request: NextRequest) {
             entityCards: research.entityCards,
             synthesis: research.synthesis,
             liveData: research.liveData,
+            _timings: t,
           })
         } else {
           // Anonymous: build preview, save it, and pause at awaiting_auth

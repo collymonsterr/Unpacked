@@ -72,10 +72,6 @@ export async function executeResearch(
   const resultsPerQuery = length === 'deep' ? 8 : 6
 
   const liveDataQueries = manifest.live_data ?? []
-  console.log(
-    `[research-orchestrator] Starting parallel research: ${manifest.brave_queries.length} brave, ${manifest.reddit_queries.length} reddit, ${liveDataQueries.length} live data queries`
-  )
-
   const startTime = Date.now()
 
   // ── Step 1: Fire all research tasks in parallel ──
@@ -84,6 +80,7 @@ export async function executeResearch(
     executeRedditQueries(manifest.reddit_queries, resultsPerQuery),
     executeLiveDataQueries(liveDataQueries),
   ])
+  const searchMs = Date.now() - startTime
 
   // Merge all results into a single map for compilation
   const allResults = new Map<string, SearchResult[]>()
@@ -97,12 +94,8 @@ export async function executeResearch(
   // ── Step 2: Compile into structured findings + summary ──
   const compiled = compileResearch(allResults, plan.entities ?? [])
 
-  const searchElapsed = Date.now() - startTime
-  console.log(
-    `[research-orchestrator] Search complete in ${searchElapsed}ms: ${compiled.searchCount} searches, ${compiled.findings.length} findings`
-  )
-
   // ── Step 3: Extract entity cards (sync, pure) ──
+  const entityStart = Date.now()
   let entityCards: EntityCard[] = []
   try {
     let planEntities = plan.entities ?? []
@@ -110,27 +103,27 @@ export async function executeResearch(
     // Fallback: if plan has no entities, extract them from research findings
     if (planEntities.length === 0 && compiled.findings.length > 0) {
       planEntities = extractEntitiesFromFindings(compiled.findings)
-      console.log(`[research-orchestrator] Fallback extracted ${planEntities.length} entities from findings`)
     }
 
     entityCards = extractEntityCards(planEntities, compiled.findings, plan.article_type)
   } catch (err) {
-    console.warn('[research-orchestrator] Entity extraction failed — continuing without cards:', (err as Error).message, (err as Error).stack)
+    console.warn('[research] Entity extraction failed:', (err as Error).message)
   }
+  const entityMs = Date.now() - entityStart
 
   // ── Step 4: Build synthesis via Haiku ──
+  const synthStart = Date.now()
   let synthesis: ResearchSynthesis = buildDefaultSynthesis(entityCards, plan)
   try {
     synthesis = await buildSynthesis(entityCards, compiled.findings, plan)
-    console.log(`[research-orchestrator] Synthesis complete: winner="${synthesis.likely_winner ?? 'none'}", axes=${synthesis.comparison_axes.length}`)
   } catch (err) {
-    console.warn('[research-orchestrator] Synthesis failed — using default:', (err as Error).message)
-    // synthesis already has the default
+    console.warn('[research] Synthesis failed — using default:', (err as Error).message)
   }
+  const synthMs = Date.now() - synthStart
 
   const totalElapsed = Date.now() - startTime
   console.log(
-    `[research-orchestrator] Complete in ${totalElapsed}ms: ${compiled.sources.length} sources, ${entityCards.length} entities, synthesis=${synthesis.thesis_direction ? 'yes' : 'no'}`
+    `[research] Complete in ${totalElapsed}ms: search=${searchMs}ms entity=${entityMs}ms synthesis=${synthMs}ms | ${compiled.searchCount} searches, ${entityCards.length} entities, ${liveData.length} live data`
   )
 
   return {

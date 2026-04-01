@@ -31,6 +31,8 @@ export async function searchPolymarket(query: string): Promise<PolymarketResult[
     const params = new URLSearchParams({
       tag: 'all',
       status: 'active',
+      active: 'true',
+      closed: 'false',
       _limit: '10',
       query,
     })
@@ -74,6 +76,14 @@ export async function searchPolymarket(query: string): Promise<PolymarketResult[
 
         if (outcomes.length === 0 || probabilities.length === 0) continue
         if (outcomes.length !== probabilities.length) continue
+
+        // Filter out resolved/settled markets — all probs at 0% or 100% means it's done
+        const allResolved = probabilities.every(p => p <= 0.01 || p >= 0.99)
+        if (allResolved) continue
+
+        // Require at least one outcome with meaningful probability spread (5%–95%)
+        const hasMeaningfulSpread = probabilities.some(p => p >= 0.05 && p <= 0.95)
+        if (!hasMeaningfulSpread) continue
 
         const volume = parseFloat(String(market.volume ?? '0'))
         if (volume < MIN_VOLUME) continue

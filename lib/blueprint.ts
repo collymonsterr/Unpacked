@@ -120,7 +120,7 @@ Return ONLY valid JSON:
 }`
 
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 30_000)
+  const timeoutId = setTimeout(() => controller.abort(), 45_000)
 
   try {
     const res = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
@@ -131,7 +131,9 @@ Return ONLY valid JSON:
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.2,
-          maxOutputTokens: 4096,
+          maxOutputTokens: 8192,
+          // Disable thinking mode — blueprint is structured output, not reasoning
+          thinkingConfig: { thinkingBudget: 0 },
         },
       }),
     })
@@ -143,7 +145,10 @@ Return ONLY valid JSON:
     }
 
     const data = await res.json()
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+    // Use last non-thinking part (Gemini 2.5 Flash thinking puts thoughts in earlier parts)
+    const parts = data.candidates?.[0]?.content?.parts ?? []
+    const textParts = parts.filter((p: { thought?: boolean; text?: string }) => !p.thought && p.text)
+    const text = textParts.length > 0 ? textParts[textParts.length - 1].text : null
     if (!text) throw new Error('Empty response from Gemini')
 
     // Log usage
