@@ -250,6 +250,10 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - `components/SignInGate.tsx` — modal overlay with Google OAuth
 - `components/ResearchPreview.tsx` — research findings during sign-in
 - `components/ui/ArticleVoting.tsx` — voting (helpful/not_helpful + convinced/not_convinced)
+- `components/ui/FactCheckBar.tsx` — fact-check bar + expandable claims panel + verified badge
+- `components/EditorCoPilot.tsx` — Editor tab: research findings, selection, rewrite controls
+- `components/editor/FindingCard.tsx` — individual research finding with source link + checkbox
+- `components/SharePanel.tsx` — 4-tab social content panel (Twitter, LinkedIn, Reddit, Image Cards)
 
 ### API Routes (37 total)
 - `app/api/articles/create/route.ts` — main generation flow

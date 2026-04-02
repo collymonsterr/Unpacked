@@ -142,13 +142,19 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 - Server-rendered with JSON-LD injection (Article, Person, ClaimReview, Review, BreadcrumbList)
 - Client-side polling for in-progress articles
 - Fact-check bar with corrections display
-- Verified badge (green shield, "Verified" label)
+- **Expandable fact-check panel** — click "Triple-Verified · N claims" badge to see per-claim breakdown with verdict icons (green/amber/red), agreement status (Unanimous/Majority/Disputed), corrections inline. Summary stats at top. No model names exposed. Non-expandable when no audit data.
+- Verified badge (green shield, "Verified" label) — now clickable with chevron when claims data exists
 - Internal linking (client-side injection, zero DB writes, cached 1 hour)
 - Product cards, comparison tables, calculators, charts (Recharts), verdict box
 - PDF export (jspdf)
 - Reddit community section (real threads from Brave)
 - Refine/fork system (child article, lineage via parent/root IDs)
 - Navbar with search autocomplete (top 5 by view_count, published articles only)
+- **Author block** — 40px avatar, 15px font-medium name, bio line. Social icons (X, LinkedIn, Medium) right-aligned at 18px with hover states. Flexbox justify-between layout.
+- **Cost + generation time** — admin-only display showing "4¢ · 47s" from `generation_options.timings` breakdowns
+- **Editor tab (EditorCoPilot)** — research findings, entity cards, synthesis, blueprint, live data. Finding selection with checkboxes, "Include selected" action bar (Add/Replace/Automatic modes), source links on findings. Animated badge showing unused findings count.
+- **SharePanel** — 4-tab slide-out (Twitter thread, LinkedIn, Reddit, Image Cards) with copy buttons, character counts, subreddit submit links. Owner-only, lazy-loaded.
+- **Social links** — `twitter_url`, `linkedin_url`, `medium_url` on profiles table. Settings page, API, creator profile, article author block all wired.
 
 ---
 
