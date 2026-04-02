@@ -70,8 +70,8 @@ SharePanel with 4 tabs (Twitter, LinkedIn, Reddit, Image Cards) already built an
 
 Priority order. Each is one build session.
 
-### 1A. Stripe Integration (HIGHEST PRIORITY for monetisation)
-Free (3/month), Standard $12/month (15 articles), Pro $29/month (60 articles). Article generation checks tier and allowance. Clear upgrade prompt when limit hit. Note: iOS requires StoreKit separately.
+### ~~1A. Tier Infrastructure~~ DONE (April 2026)
+Tier system (free/standard/pro), pricing page, tier enforcement in article creation, usage indicators, upgrade prompts, waitlist for paid tiers — all built. **Remaining: Stripe checkout + webhooks to activate paid tiers.** When Stripe credentials are added, wire checkout to upgrade_waitlist → profiles.tier update.
 
 ### 1B. Guided First-Article Onboarding
 After signup: example prompts → generation → forced review moment → one-click share with pre-written social assets. Track publish-and-share completion rate.

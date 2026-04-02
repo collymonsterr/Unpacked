@@ -211,6 +211,23 @@ Covering: articles CRUD, admin actions, search, saved articles, profile manageme
 
 ---
 
+## Tier System (built — waitlist mode, Stripe not yet connected)
+
+- Three tiers: Free ($0, 3 articles/month), Standard ($12, 15/month), Pro ($29, 60/month)
+- `profiles` table: `tier`, `monthly_article_limit`, `articles_used_this_month`, `month_reset_date`, `bonus_credits`, `is_founding_creator`, `tier_updated_at`
+- `upgrade_waitlist` table for paid tier interest tracking
+- Tier enforcement in `app/api/articles/create/route.ts` — checks allowance after rate limit, auto-resets monthly, admin bypasses all limits
+- Bonus credits consumed after tier allowance exhausted
+- Pricing page at `/pricing` — three-column layout, "Most popular" badge on Standard, waitlist CTA for paid tiers
+- Waitlist API at `app/api/waitlist/route.ts`
+- Usage API at `app/api/profile/usage/route.ts`
+- Usage indicator on homepage hero: "2 of 3 articles remaining" (amber at 0)
+- Limit reached modal with upgrade/share options
+- Usage section on dashboard with progress bar, tier display, reset date
+- Pricing link in navbar and footer
+
+---
+
 ## Known Bugs (verified)
 
 1. ~~**Big statements and pull quotes visually identical**~~ — **FIXED April 2026.** Pull quotes now use left-border italic style; big statements keep amber card + quote SVG.
@@ -224,7 +241,7 @@ Covering: articles CRUD, admin actions, search, saved articles, profile manageme
 
 Verified absent from codebase as of April 2026:
 
-- **Stripe / payment processing** — zero files
+- **Stripe / payment processing** — tier infrastructure built, but no Stripe checkout/webhooks/billing. Paid tiers are waitlist-only.
 - **Affiliate infrastructure** — no `affiliate_url` field, no link routing, no revenue tracking
 - **Category pages** — no `/category/[slug]` routes
 - **Creator analytics dashboard** — not built (basic dashboard exists but no per-article analytics)
