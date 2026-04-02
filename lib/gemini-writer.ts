@@ -241,6 +241,11 @@ IMAGES BY ARTICLE TYPE — follow these rules strictly:
 
 STAT CARDS — N/A RULE: Only include stat cards for data points with specific, concrete values from the research. NEVER generate a stat card with "N/A", "Not specified", "Unknown", "Varies", or "TBD" as the value. If the research doesn't have a number, omit that card entirely. Three strong cards are better than five cards where two say "N/A".
 
+POLITICAL & CURRENT AFFAIRS ARTICLES:
+- If the research includes fact-checker verdicts (PolitiFact, Snopes, FactCheck.org), cite them BY NAME: "PolitiFact rated this claim as Mostly False" or "Snopes found this to be unproven."
+- Reference official data sources by name (Bureau of Labor Statistics, World Bank, CBO, etc.) — not just "according to data."
+- Include opposing expert viewpoints: "Most economists agree X, but [Name] at [Institution] argues Y."
+
 NO CITATION MARKUP: No <cite> tags. Clean prose only.
 
 CRITICAL: Output ONLY the raw JSON object. No markdown code fences. No text before or after the JSON. No explanations. Start your response with { and end with }.

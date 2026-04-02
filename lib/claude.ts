@@ -272,6 +272,13 @@ For brave_queries: generate 4-8 specific search queries. Each has a "purpose" ta
 - Each query should target a different angle — no duplicates
 - EXPERT QUOTES: If the topic involves notable public figures, domain experts, or industry leaders, include at least one brave_query with purpose "expert_opinion" specifically to find direct quotes from relevant authorities (e.g., "Elon Musk on Tesla Robotaxi launch quotes", "Fed Chair Powell interest rate comments ${new Date().getFullYear()}")
 
+POLITICAL & CURRENT AFFAIRS RESEARCH RULE:
+For articles categorised as 'current_affairs' or with article types 'news_analysis', 'deep_dive', or 'trend_analysis' on political, policy, economic, or geopolitical topics, ALWAYS include these 3 additional brave_queries:
+1. FACT-CHECK query (purpose: 'fact_check_sources'): "[core topic] fact check politifact snopes" — finds existing fact-checker verdicts on claims. Reference these in the article as "PolitiFact rated this claim as [rating]" for credibility.
+2. OFFICIAL DATA query (purpose: 'official_data'): "[core topic] statistics data ${new Date().getFullYear()} official" — finds government reports, institutional data, verified statistics instead of opinion.
+3. EXPERT ANALYSIS query (purpose: 'expert_analysis'): "[core topic] analysis expert criticism" — finds think tank papers, economist commentary, opposing viewpoints for tension and depth.
+Do NOT add these for buyer guides, how-to, comparisons, or product-focused content.
+
 For reddit_queries: generate 1-3 Reddit search queries with targeted subreddits. Examples:
 - "best wireless earbuds" → subreddits: ["headphones", "audiophile", "BudgetAudiophile"]
 - "should I buy or lease a car" → subreddits: ["personalfinance", "askcarsales", "whatcarshouldIbuy"]
@@ -373,7 +380,7 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
   "sections_outline": ["string"],
   "sections": [{ "heading": "string", "purpose": "string — what this section covers" }],
   "research_manifest": {
-    "brave_queries": [{ "query": "string — specific search query", "purpose": "core_facts | product_review | pricing | specs | community | expert_opinion | comparison | how_to | alternatives | economic_impact | background | wider_context" }],
+    "brave_queries": [{ "query": "string — specific search query", "purpose": "core_facts | product_review | pricing | specs | community | expert_opinion | comparison | how_to | alternatives | economic_impact | background | wider_context | fact_check_sources | official_data | expert_analysis" }],
     "reddit_queries": [{ "query": "string", "subreddits": ["string — 2-4 relevant subreddits"] }],
     "image_queries": {
       "hero": { "query": "string — 5-8 word magazine-quality photo search", "style": "editorial_photo | news_photo | product_photo | abstract" },
@@ -452,6 +459,11 @@ YOUR EDITORIAL PRINCIPLES:
 - When community consensus exists, you state it plainly.
 - When opinions are divided, you say so and then take your own side.
 - You write like someone with genuine expertise, not someone summarising search results.
+
+FOR POLITICAL & CURRENT AFFAIRS ARTICLES:
+- If the research includes fact-checker verdicts (PolitiFact, Snopes, FactCheck.org), cite them BY NAME: "PolitiFact rated this claim as Mostly False" or "Snopes found this to be unproven." This builds enormous reader trust.
+- Reference official data sources by name (Bureau of Labor Statistics, World Bank, CBO, etc.) — not just "according to data."
+- Include opposing expert viewpoints to add tension — "Most economists agree X, but [Name] at [Institution] argues Y."
 
 FOR PRODUCT ARTICLES (buyer_guide, comparison, decision_guide):
 - Declare a winner. Every product article has a clear #1 recommendation.
