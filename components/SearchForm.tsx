@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import ArticleOptions, { DEFAULT_OPTIONS, type GenerationOptions } from './ArticleOptions'
 import { setPendingArticle } from '@/lib/pending-article'
+import LimitReachedModal from './LimitReachedModal'
 
 const PLACEHOLDERS = [
   'Best laptops for students under $800...',
@@ -36,6 +37,7 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
   const [cachedResult, setCachedResult] = useState<{ slug: string; title: string } | null>(null)
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [pendingSlug, setPendingSlug] = useState<string | null>(null)
+  const [limitModal, setLimitModal] = useState<{ limit: number; nextReset: string } | null>(null)
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const loadingStartRef = useRef(0)
@@ -146,6 +148,11 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
 
       if (!res.ok) {
         const data = await res.json()
+        if (res.status === 403 && data.error === 'limit_reached') {
+          setLimitModal({ limit: data.limit, nextReset: data.nextReset })
+          setIsLoading(false)
+          return
+        }
         throw new Error(data.error ?? 'Failed to generate article')
       }
 
@@ -188,6 +195,11 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
 
       if (!res.ok) {
         const data = await res.json()
+        if (res.status === 403 && data.error === 'limit_reached') {
+          setLimitModal({ limit: data.limit, nextReset: data.nextReset })
+          setIsLoading(false)
+          return
+        }
         throw new Error(data.error ?? 'Failed to generate article')
       }
 
@@ -428,6 +440,15 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
 
       {error && (
         <p className="mt-3 text-sm text-red-600 text-center">{error}</p>
+      )}
+
+      {limitModal && (
+        <LimitReachedModal
+          open={!!limitModal}
+          onClose={() => setLimitModal(null)}
+          limit={limitModal.limit}
+          nextReset={limitModal.nextReset}
+        />
       )}
     </div>
   )

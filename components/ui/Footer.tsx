@@ -25,6 +25,13 @@ export default function Footer() {
           How it works
         </Link>
         <Link
+          href="/pricing"
+          className="text-xs no-underline transition-opacity hover:opacity-70"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          Pricing
+        </Link>
+        <Link
           href="/creators"
           className="text-xs no-underline transition-opacity hover:opacity-70"
           style={{ color: 'var(--text-secondary)' }}

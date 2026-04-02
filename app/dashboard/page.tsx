@@ -3,6 +3,7 @@ import { createServerSupabase, getSupabaseAdmin } from '@/lib/supabase'
 import Logo from '@/components/ui/Logo'
 import UserMenu from '@/components/ui/UserMenu'
 import DashboardTabs from '@/components/DashboardTabs'
+import DashboardUsage from '@/components/DashboardUsage'
 import type { ArticleRow } from '@/types/article'
 
 export const dynamic = 'force-dynamic'
@@ -44,6 +45,7 @@ export default async function DashboardPage() {
 
       {/* Content */}
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-10">
+        <DashboardUsage />
         <DashboardTabs myArticles={rows} totalViews={totalViews} />
       </div>
     </div>

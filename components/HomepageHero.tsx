@@ -3,6 +3,7 @@
 import { useUser } from '@/hooks/useUser'
 import SearchForm from './SearchForm'
 import ExampleChips from './ExampleChips'
+import UsageIndicator from './UsageIndicator'
 
 interface Props {
   existingQueries: string[]
@@ -50,6 +51,7 @@ export default function HomepageHero({ existingQueries }: Props) {
         <div className="w-full max-w-2xl">
           <SearchForm />
           <ExampleChips existingQueries={existingQueries} />
+          {isLoggedIn && <UsageIndicator />}
           <p className="text-center mt-4" style={{ fontSize: '13px', color: '#999', fontFamily: 'var(--font-outfit)' }}>
             Want to publish under your name?{' '}
             <a href="/creators" className="no-underline hover:opacity-80" style={{ color: '#999', textDecoration: 'underline' }}>

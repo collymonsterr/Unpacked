@@ -76,6 +76,62 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Tier-based article allowance check (skip for admin and anonymous users)
+    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
+    const isAdmin = !!(adminEmail && userEmail && userEmail.toLowerCase() === adminEmail.toLowerCase())
+
+    if (userId && !isAdmin) {
+      const { data: tierProfile } = await getSupabaseAdmin()
+        .from('profiles')
+        .select('tier, articles_used_this_month, bonus_credits, month_reset_date, monthly_article_limit')
+        .eq('id', userId)
+        .single()
+
+      if (tierProfile) {
+        // Reset monthly counter if past reset date
+        const resetDate = new Date(tierProfile.month_reset_date)
+        const now = new Date()
+        if (now >= resetDate) {
+          const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+          await getSupabaseAdmin()
+            .from('profiles')
+            .update({
+              articles_used_this_month: 0,
+              month_reset_date: nextMonth.toISOString(),
+            })
+            .eq('id', userId)
+          tierProfile.articles_used_this_month = 0
+          tierProfile.month_reset_date = nextMonth.toISOString()
+        }
+
+        const remaining = (tierProfile.monthly_article_limit - tierProfile.articles_used_this_month) + (tierProfile.bonus_credits ?? 0)
+        if (remaining <= 0) {
+          return Response.json(
+            {
+              error: 'limit_reached',
+              tier: tierProfile.tier,
+              limit: tierProfile.monthly_article_limit,
+              nextReset: tierProfile.month_reset_date,
+            },
+            { status: 403 }
+          )
+        }
+
+        // Increment usage: use bonus credits only when tier limit is exceeded
+        if (tierProfile.articles_used_this_month >= tierProfile.monthly_article_limit) {
+          await getSupabaseAdmin()
+            .from('profiles')
+            .update({ bonus_credits: Math.max(0, (tierProfile.bonus_credits ?? 0) - 1) })
+            .eq('id', userId)
+        } else {
+          await getSupabaseAdmin()
+            .from('profiles')
+            .update({ articles_used_this_month: tierProfile.articles_used_this_month + 1 })
+            .eq('id', userId)
+        }
+      }
+    }
+
     // Cleanup: reset articles stuck in 'generating' for >10 minutes
     // Fire-and-forget — runs on every new generation request, no cron needed
     getSupabaseAdmin()

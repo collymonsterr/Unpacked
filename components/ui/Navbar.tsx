@@ -21,6 +21,13 @@ export default function Navbar({ showSearch = true }: NavbarProps) {
       <div className="flex items-center gap-3">
         {showSearch && <NavSearchBar />}
         <a
+          href="/pricing"
+          className="text-sm font-medium no-underline hidden sm:block"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          Pricing
+        </a>
+        <a
           href="/about"
           className="text-sm font-medium no-underline hidden sm:block"
           style={{ color: 'var(--text-secondary)' }}
