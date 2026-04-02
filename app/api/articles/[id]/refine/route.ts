@@ -156,7 +156,7 @@ export async function POST(
       )
 
       // Phase 3: Editorial pass
-      const editorialResult = await runEditorialPass(rawArticle, blueprint, entityCards).catch(err => {
+      const editorialResult = await runEditorialPass(rawArticle, blueprint, entityCards, id).catch(err => {
         console.warn('[copilot-refine] Editorial pass failed:', (err as Error).message)
         return null
       })

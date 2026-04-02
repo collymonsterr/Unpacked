@@ -133,7 +133,7 @@ export async function runWritePipeline({
   const [editorialResult, enrichedArticle] = await Promise.all([
     isBreakingNews
       ? Promise.resolve(null)
-      : runEditorialPass(rawArticle, blueprint, entityCards ?? []).catch(err => {
+      : runEditorialPass(rawArticle, blueprint, entityCards ?? [], articleId).catch(err => {
           console.warn('[write-pipeline] Editorial pass failed:', (err as Error).message)
           return null
         }),

@@ -147,7 +147,7 @@ export interface ArticleBlueprint {
 
 export interface EditorIssue {
   section_id: string
-  issue_type: 'hedging' | 'ai_phrase' | 'weak_verdict' | 'filler' | 'missing_attribution' | 'repetition' | 'creative_filler' | 'weak_big_statements' | 'unsourced_chart'
+  issue_type: 'hedging' | 'ai_phrase' | 'weak_verdict' | 'filler' | 'missing_attribution' | 'repetition' | 'creative_filler' | 'weak_big_statements' | 'unsourced_chart' | 'generic_title' | 'weak_opening' | 'weak_voice' | 'fabricated_chart'
   description: string
   severity: 'low' | 'medium' | 'high'
 }

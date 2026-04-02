@@ -1,38 +1,86 @@
 /**
- * Editorial Pass (Session 1.7C)
+ * Editorial Pass
  *
- * Lightweight quality check after the prose writing pass.
+ * Quality check after the prose writing pass.
  * Scores the article 0-100, flags issues, and optionally rewrites weak sections.
  *
- * Uses Gemini Flash — short prompt, ~3-15 seconds depending on whether rewrites are needed.
- * Skipped for breaking_news articles.
- * If the call fails entirely, returns a passing score — never blocks article delivery.
+ * Primary: Claude Sonnet — different model family from the writer (Gemini),
+ * so it catches blind spots the writer can't see in its own output.
+ *
+ * Fallback: Gemini Flash — if Sonnet fails for any reason.
+ * If both fail, returns a passing score — never blocks article delivery.
+ *
+ * Skipped for breaking_news articles (handled by caller).
  */
 
+import Anthropic from '@anthropic-ai/sdk'
 import type { ArticleContent, ArticleBlueprint, EntityCard, EditorResult, EditorIssue } from '@/types/article'
 import { FORBIDDEN_PHRASES } from '@/lib/editorial-rules'
 import { extractJSON } from '@/lib/utils/extract-json'
 import { logApiCall } from '@/lib/api-usage'
 
+// ── Anthropic client (lazy-init) ──
+
+let _anthropic: Anthropic | null = null
+function getAnthropic(): Anthropic {
+  if (!_anthropic) {
+    _anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      maxRetries: 2,
+      timeout: 60_000,
+    })
+  }
+  return _anthropic
+}
+
+const SONNET_MODEL = 'claude-sonnet-4-20250514'
+
+// ── Gemini fallback ──
+
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+
+// ── Public API ──
 
 /**
  * Run the editorial quality pass on a completed article.
  *
- * Returns a score and optional rewrites. If the call fails, returns
- * a passing score so the article is not blocked.
+ * Tries Claude Sonnet first, falls back to Gemini Flash, and if both
+ * fail returns a passing score so the article is not blocked.
  */
 export async function runEditorialPass(
   article: ArticleContent,
   blueprint: ArticleBlueprint,
   entityCards: EntityCard[],
+  articleId?: string,
 ): Promise<EditorResult> {
+  const { prompt, sectionTexts } = buildEditorialPrompt(article, blueprint)
+
+  // Try Sonnet first
   try {
-    return await callEditorModel(article, blueprint, entityCards)
+    const result = await callSonnetEditor(prompt, articleId)
+    const rewriteKeys = Object.keys(result.rewrites)
+    if (rewriteKeys.length > 0) {
+      console.log(`[editorial] Sonnet score: ${result.score} — ${rewriteKeys.length} rewrites (sections ${rewriteKeys.join(', ')})`)
+    } else {
+      console.log(`[editorial] Sonnet score: ${result.score} — passed clean`)
+    }
+    return result
   } catch (err) {
-    console.warn('[editorial-pass] Failed — returning pass score:', (err as Error).message)
-    return { score: 85, issues: [], rewrites: {} }
+    console.error('[editorial] Sonnet failed, falling back to Gemini:', (err as Error).message)
   }
+
+  // Fall back to Gemini
+  try {
+    const result = await callGeminiEditor(prompt, articleId)
+    const rewriteKeys = Object.keys(result.rewrites)
+    console.log(`[editorial] Gemini fallback score: ${result.score} — ${rewriteKeys.length} rewrites`)
+    return result
+  } catch (err) {
+    console.warn('[editorial] Gemini fallback also failed:', (err as Error).message)
+  }
+
+  // Both failed — return passing score
+  return { score: 85, issues: [], rewrites: {} }
 }
 
 /**
@@ -40,7 +88,6 @@ export async function runEditorialPass(
  * Modifies the article in place.
  */
 export function applyEditorRewrites(article: ArticleContent, result: EditorResult): void {
-  // Replace section content for flagged sections
   for (const [sectionIdx, newContent] of Object.entries(result.rewrites)) {
     const idx = parseInt(sectionIdx, 10)
     if (isNaN(idx) || idx < 0 || idx >= article.sections.length) continue
@@ -54,21 +101,17 @@ export function applyEditorRewrites(article: ArticleContent, result: EditorResul
     }
   }
 
-  // Replace verdict if rewritten
   if (result.verdict_rewrite && article.quick_verdict) {
     article.quick_verdict.one_liner = result.verdict_rewrite
   }
 }
 
-async function callEditorModel(
+// ── Prompt builder ──
+
+function buildEditorialPrompt(
   article: ArticleContent,
   blueprint: ArticleBlueprint,
-  entityCards: EntityCard[],
-): Promise<EditorResult> {
-  const apiKey = process.env.GOOGLE_GEMINI_API_KEY
-  if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY not set')
-
-  // Build a compact representation of the article text
+): { prompt: string; sectionTexts: string } {
   const sectionTexts = article.sections.map((s, i) => {
     const heading = 'heading' in s ? (s as { heading: string }).heading : `Section ${i}`
     let text = ''
@@ -80,8 +123,6 @@ async function callEditorModel(
 
   const verdictText = article.quick_verdict?.one_liner ?? ''
   const blueprintVerdict = blueprint.verdict_statement
-
-  // Sample forbidden phrases for the prompt
   const forbiddenSample = FORBIDDEN_PHRASES.slice(0, 25).join('", "')
 
   const prompt = `You are a senior editor reviewing an article before publication. Score it and flag issues.
@@ -96,23 +137,75 @@ ARTICLE SECTIONS:
 ${sectionTexts}
 
 CHECK FOR THESE ISSUES:
+
 1. HEDGING — "might", "could potentially", "it's possible that", "some people think" when a stronger claim is warranted. Acceptable when genuine uncertainty exists (future predictions, contested science).
+
 2. AI-TELL PHRASES — any of these: "${forbiddenSample}". Flag every instance.
+
 3. WEAK VERDICT — does the verdict take a clear position? Does it match the blueprint's intended verdict?
+
 4. FILLER — sections that restate the same point without adding new information.
+
 5. MISSING ATTRIBUTION — claims about specific prices, stats, or performance that should cite a source but don't.
+
 6. REPETITION — the same claim, stat, or argument appearing in multiple sections. Each section should add new information. The verdict and executive summary should say different things.
+
 7. CREATIVE FILLER — scene-setting paragraphs ("Picture this...", "Imagine..."), rhetorical questions used as transitions, sentences without any specific fact, number, name, or instruction. Every sentence must earn its place.
+
 8. WEAK BIG STATEMENTS — the article should have 3-5 big_statement sections. Flag if fewer than 3 exist. Also flag any big_statement that is neutral, vague, or fence-sitting (e.g. "This is a complex topic", "The future remains uncertain", "There are pros and cons"). Good big statements are bold, specific, and worth screenshotting.
-9. UNSOURCED CHART DATA — check every bar_chart, line_chart, and pie_chart section. Each must have a "source" field that cites where the data came from. If a chart has no source, or the data points look like round numbers that could be invented (e.g. exactly 10%, 20%, 30%, 40%), flag it as "unsourced_chart". Charts with invented data are a credibility risk.
+
+9. UNSOURCED CHART DATA — check every bar_chart, line_chart, and pie_chart section. Each must have a "source" field that cites where the data came from. If a chart has no source, or the data points look like round numbers that could be invented (e.g. exactly 10%, 20%, 30%, 40%), flag it as "unsourced_chart".
+
+10. GENERIC SECTION TITLES — Are the section headings insight-led or generic?
+   Bad: "The Economic Impact" (just describes the topic)
+   Bad: "Battery Life" (just a label)
+   Good: "The Economic Impact Is Already Worse Than 2008" (contains an insight)
+   Good: "Battery Life Is the Only Spec That Actually Matters" (carries a position)
+   Every section title should carry a position or surprising finding, not just label the content. Flag generic titles and suggest sharper alternatives.
+
+11. WEAK OPENING — Does the article open with a hook or a slow windup?
+   Bad: "In recent years, there has been growing interest in..." (throat-clearing)
+   Bad: "When it comes to choosing a..." (stalling)
+   Good: "Side hustles are dying — and most people haven't noticed yet." (immediate thesis)
+   Good: "The Sony XM6 made me sell my AirPods Max." (personal, specific, surprising)
+   The first sentence should make the reader want to read the second sentence. If it doesn't, rewrite it.
+
+12. BIG STATEMENT QUALITY — Are the big_statement sections genuinely sharp and quotable?
+   Bad: "This is a significant development." (says nothing)
+   Bad: "The implications are far-reaching." (vague)
+   Good: "Robots won't replace all jobs — but they'll wipe out entire categories." (specific, surprising, shareable)
+   Every big statement should pass the screenshot test: would someone share this single line on social media? If not, rewrite it.
+
+13. VERDICT STRENGTH — Is the verdict specific and decisive?
+   Bad: "There are many factors to consider and both options have merit." (fence-sitting)
+   Bad: "Both are excellent choices depending on your needs." (non-answer)
+   Good: "Buy the Sony XM6. The Bose is good but not $50 better." (specific, actionable)
+   The verdict should feel like advice from an expert who's done all the research, not a disclaimer from someone afraid to commit.
+
+14. VOICE CONSISTENCY — Does the article sound like it was written by a confident, knowledgeable person?
+   Flag any sentences that sound like:
+   - a Wikipedia entry ("X is a Y that was first Z in...")
+   - a customer service bot ("We hope you found this helpful")
+   - a student essay ("In conclusion, it is clear that...")
+   - corporate marketing ("leveraging synergies to drive innovation")
+   The voice should be: direct, slightly opinionated, informed, like a smart friend who's done the research.
+
+15. FABRICATED CHART DATA — Flag any chart or data visualisation section where the numbers do not come from a cited source in the research findings, entity cards, or live data integrations. Charts must ONLY visualise real data from real sources. If the writer invented numbers from training knowledge (e.g. made-up statistics about "side hustle income trends"), flag for removal or replacement with a text-based summary.
 
 SCORING:
-- 90-100: Excellent. Decisive, well-sourced, no AI-tell phrases.
+- 90-100: Excellent. Decisive, well-sourced, no AI-tell phrases, strong voice throughout.
 - 80-89: Good. Minor issues only. Publishable as-is.
-- 70-79: Needs work. Some hedging or weak sections.
+- 70-79: Needs work. Some hedging, weak sections, or generic titles.
 - Below 70: Significant issues. Multiple sections need rewriting.
 
-If the score is 80 or below, provide rewritten versions of the worst sections. Reference sections by their index number [0], [1], etc.
+REWRITE GUIDELINES:
+If the score is 80 or below, rewrite the worst sections. When rewriting:
+- Lead with the most surprising or important point
+- Use contrast ("You'd expect X. The data shows Y.")
+- Be specific (names, numbers, dates — never vague)
+- Keep paragraphs to 2-4 sentences maximum
+- Every sentence must earn its place — if it doesn't add a fact, insight, or evidence, cut it
+Reference sections by their index number [0], [1], etc.
 
 Return ONLY valid JSON:
 {
@@ -120,7 +213,7 @@ Return ONLY valid JSON:
   "issues": [
     {
       "section_id": "0",
-      "issue_type": "hedging|ai_phrase|weak_verdict|filler|missing_attribution|repetition|creative_filler|weak_big_statements|unsourced_chart",
+      "issue_type": "hedging|ai_phrase|weak_verdict|filler|missing_attribution|repetition|creative_filler|weak_big_statements|unsourced_chart|generic_title|weak_opening|weak_voice|fabricated_chart",
       "description": "string — what the issue is",
       "severity": "low|medium|high"
     }
@@ -128,6 +221,47 @@ Return ONLY valid JSON:
   "rewrites": {"0": "rewritten section text — only include if score <= 80"},
   "verdict_rewrite": "rewritten verdict text — only if verdict is weak, otherwise omit"
 }`
+
+  return { prompt, sectionTexts }
+}
+
+// ── Sonnet editor (primary) ──
+
+async function callSonnetEditor(
+  prompt: string,
+  articleId?: string,
+): Promise<EditorResult> {
+  const message = await getAnthropic().messages.create({
+    model: SONNET_MODEL,
+    max_tokens: 4096,
+    messages: [{ role: 'user', content: prompt }],
+  })
+
+  const text = message.content.find(b => b.type === 'text')?.text ?? ''
+  if (!text) throw new Error('Empty response from Sonnet')
+
+  try {
+    logApiCall({
+      callType: 'editorial_pass',
+      model: SONNET_MODEL,
+      inputTokens: message.usage?.input_tokens,
+      outputTokens: message.usage?.output_tokens,
+      articleId,
+    })
+  } catch { /* non-critical */ }
+
+  const parsed = JSON.parse(extractJSON(text))
+  return normaliseEditorResult(parsed)
+}
+
+// ── Gemini editor (fallback) ──
+
+async function callGeminiEditor(
+  prompt: string,
+  articleId?: string,
+): Promise<EditorResult> {
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY
+  if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY not set')
 
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 45_000)
@@ -142,7 +276,6 @@ Return ONLY valid JSON:
         generationConfig: {
           temperature: 0.1,
           maxOutputTokens: 2048,
-          // Disable thinking mode — editorial scoring is structured output, not reasoning
           thinkingConfig: { thinkingBudget: 0 },
         },
       }),
@@ -155,30 +288,30 @@ Return ONLY valid JSON:
     }
 
     const data = await res.json()
-    // Use last non-thinking part (Gemini 2.5 Flash thinking puts thoughts in earlier parts)
     const parts = data.candidates?.[0]?.content?.parts ?? []
     const textParts = parts.filter((p: { thought?: boolean; text?: string }) => !p.thought && p.text)
     const text = textParts.length > 0 ? textParts[textParts.length - 1].text : null
     if (!text) throw new Error('Empty response from Gemini')
 
-    // Log usage
     try {
       logApiCall({
         callType: 'editorial_pass',
         model: 'gemini-2.5-flash',
         inputTokens: Math.round(prompt.length / 3.8),
         outputTokens: Math.round(text.length / 3.8),
+        articleId,
       })
     } catch { /* non-critical */ }
 
     const parsed = JSON.parse(extractJSON(text))
-
     return normaliseEditorResult(parsed)
   } catch (err) {
     clearTimeout(timeoutId)
     throw err
   }
 }
+
+// ── Response normaliser ──
 
 function normaliseEditorResult(raw: Record<string, unknown>): EditorResult {
   const score = typeof raw.score === 'number' ? raw.score : 85
