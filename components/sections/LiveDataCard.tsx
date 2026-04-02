@@ -400,7 +400,7 @@ const YahooFinanceCard = forwardRef<HTMLDivElement, {
           <ChartWithGrid
             values={sparkline}
             color={isPositive ? '#16a34a' : '#dc2626'}
-            height={72}
+            height={120}
             formatLabel={formatYLabel}
           />
         </div>

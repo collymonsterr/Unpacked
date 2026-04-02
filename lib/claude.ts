@@ -320,6 +320,12 @@ Rules:
 - Tech/AI: real products or environments ("server room blue LED lights", "robot arm in a factory")
 - NEVER use generic stock concepts like "technology background", "business meeting", "person working"
 - Include location names, product names, or landmark names when possible — specificity gets better photos
+- CRITICAL: Search for the SUBJECT of the article, NOT a visual metaphor for the title. Dramatic/metaphorical title words must be ignored:
+  - "Collapse of Fast Fashion" → "Zara H&M clothing store fashion" (the subject is FASHION, not collapsed buildings)
+  - "Tesla vs Chinese EVs" → "Tesla Model Y electric car" (the subject is CARS, not factories)
+  - "Death of Side Hustles" → "freelancer working laptop coffee shop" (the subject is GIG WORK, not death)
+  - "The War on Sugar" → "sugar packets soft drinks grocery shelf" (the subject is SUGAR/FOOD, not war)
+  - NEVER interpret words like "collapse", "death", "war", "explosion", "crisis", "battle" literally — always identify what the article is ABOUT and search for THAT
 Do NOT include words like "article", "guide", "review", "infographic", or "chart".
 
 For hero_image_subject: generate a short description (8-15 words) of the CORE VISUAL SUBJECT that should be in the hero image. This is NOT the article title — it's what should actually be photographed. Rules:
@@ -428,6 +434,8 @@ NEVER generate chart data from your own knowledge or training data. Charts must 
 If no real data source exists for a visualisation, use stat_cards or bullet points instead. A chart with invented numbers is worse than no chart at all — it will be flagged by the fact-checker and damages credibility.
 
 Every chart section MUST include a "source" field citing where the data came from (e.g. "Source: Yahoo Finance", "Source: Statista via web search", "Source: manufacturer specs"). If you cannot cite a source, do not include the chart.
+
+STAT CARDS — N/A RULE: Only include stat cards for data points with specific, concrete values from the research. NEVER generate a stat card with "N/A", "Not specified", "Unknown", "Varies", or "TBD" as the value. If the research doesn't have a number, omit that card entirely. Three strong cards are better than five cards where two say "N/A".
 
 FORMATTING RULES — READABILITY IS CRITICAL:
 - NEVER write paragraphs longer than 3-4 sentences. Break up long blocks of text.
@@ -713,6 +721,8 @@ SECTION IMAGES: Only include image_section entries when you can describe a speci
 - Never use generic concepts: "technology background", "person thinking", "abstract finance"
 - Product cards already have their own images — sections BETWEEN product cards do NOT need additional images
 - Include 1-3 image_section entries maximum, only where they genuinely add value
+- For comparison articles: include an image_section after introducing each compared product (e.g. "Tesla Model Y 2026 official product photo" after the Tesla section). This helps readers visually identify each product being compared.
+- For product image queries: use "[Exact Product Name] official product photo" — avoid queries that return Amazon bundles, accessory kits, or package deals.
 - For travel/planning: destination photos, cityscapes, landmarks. Example: "Chiang Mai Thailand night market street food stalls"
 - For product articles: lifestyle context shots. Example: "mechanical keyboard on wooden desk with coffee cup morning light"
 - For explainer/finance: tangible representations. Example: "shopping cart in supermarket aisle with price tags visible"

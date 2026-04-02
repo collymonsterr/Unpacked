@@ -61,9 +61,20 @@ function AnimatedValue({ value, visible }: { value: string; visible: boolean }) 
   return <>{display}</>
 }
 
+const NA_VALUES = ['n/a', 'not available', 'not specified', 'unknown', 'tbd', 'varies', '-', '—', '–', '(not specified in research)', 'not specified in research']
+
 export default function StatCards({ section }: { section: StatCardsSection }) {
   const ref = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
+
+  // Filter out cards with N/A-like values
+  const validCards = section.cards.filter(card => {
+    if (!card.value) return false
+    const v = card.value.toLowerCase().trim()
+    return !NA_VALUES.some(na => v === na || v.includes(na))
+  })
+
+  if (validCards.length === 0) return null
 
   useEffect(() => {
     const el = ref.current
@@ -92,7 +103,7 @@ export default function StatCards({ section }: { section: StatCardsSection }) {
       </h3>
 
       <div className={`grid gap-3 ${(() => {
-        const count = section.cards.length
+        const count = validCards.length
         // Pick the best column layout to avoid orphan cards
         if (count <= 2) return 'grid-cols-2'
         if (count === 3) return 'grid-cols-2 md:grid-cols-3'
@@ -103,7 +114,7 @@ export default function StatCards({ section }: { section: StatCardsSection }) {
         if (count === 8) return 'grid-cols-2 md:grid-cols-4'
         return 'grid-cols-2 md:grid-cols-3'
       })()}`}>
-        {section.cards.map((card, i) => {
+        {validCards.map((card, i) => {
           // Scale font size down for long values to prevent overflow
           const valueLen = card.value.length
           const fontSize = valueLen > 10 ? 'text-lg md:text-xl' : valueLen > 7 ? 'text-xl md:text-2xl' : 'text-2xl md:text-3xl'

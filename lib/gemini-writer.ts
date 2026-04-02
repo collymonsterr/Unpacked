@@ -231,11 +231,15 @@ CRITICAL: Do NOT invent new input or output IDs. Use EXACTLY the IDs listed abov
 
 IMAGES BY ARTICLE TYPE — follow these rules strictly:
 - buyer_guide, comparison, decision_guide, roundup: MANDATORY 4-5 images per product card (set image_count: 5 in each product_card). Hero image always required. Include 1-2 image_section entries between major text sections for articles over 800 words.
+- comparison: ALSO include an image_section after introducing each compared product. For "Tesla vs BYD", add an image after the Tesla section (query: "Tesla Model Y 2026 product photo") and after the BYD section (query: "BYD Seal electric car product photo"). These help readers visually identify each product.
 - explainer: 1-3 contextual editorial images only if subject is concrete and photographable. No product images unless specific products discussed.
 - news_analysis, trend_analysis, deep_dive: Hero image required. 1-2 editorial image_section entries if relevant. No product images unless specific products discussed.
 - how_to: Step illustration images where they genuinely clarify a step. Not mandatory but encouraged.
 - breaking_news: Hero image only. No other images — speed over visuals.
 - For image_section entries: search_query must describe a specific photographable subject. Never "technology background" or "abstract concept". Only include if you're confident a search will return a relevant photo.
+- For product image queries: use "[Exact Product Name] official product photo" — never just the product name alone. Avoid queries that return Amazon bundles, accessory kits, or package deals.
+
+STAT CARDS — N/A RULE: Only include stat cards for data points with specific, concrete values from the research. NEVER generate a stat card with "N/A", "Not specified", "Unknown", "Varies", or "TBD" as the value. If the research doesn't have a number, omit that card entirely. Three strong cards are better than five cards where two say "N/A".
 
 NO CITATION MARKUP: No <cite> tags. Clean prose only.
 
