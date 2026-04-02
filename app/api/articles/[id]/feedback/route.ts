@@ -10,10 +10,10 @@ export async function POST(
   if (!isValidUUID(id)) return Response.json({ error: 'Invalid article ID' }, { status: 400 })
 
   const body = await request.json()
-  const { rating, reason } = body
+  const { vote, reasons, comment } = body
 
-  if (!rating || !['up', 'down'].includes(rating)) {
-    return Response.json({ error: 'Invalid rating' }, { status: 400 })
+  if (!vote || !['good', 'needs_work'].includes(vote)) {
+    return Response.json({ error: 'Invalid vote' }, { status: 400 })
   }
 
   // Get user if authenticated
@@ -26,7 +26,7 @@ export async function POST(
 
   const db = getSupabaseAdmin()
 
-  // Check if user already voted (by user_id)
+  // Prevent duplicate votes from authenticated users
   if (userId) {
     const { data: existing } = await db
       .from('article_feedback')
@@ -46,8 +46,9 @@ export async function POST(
     .insert({
       article_id: id,
       user_id: userId ?? null,
-      rating,
-      reason: rating === 'down' && reason ? reason : null,
+      vote,
+      reasons: vote === 'needs_work' && Array.isArray(reasons) ? reasons : null,
+      comment: vote === 'needs_work' && typeof comment === 'string' ? comment.slice(0, 500) : null,
     })
 
   if (error) {
@@ -64,16 +65,24 @@ export async function GET(
 ) {
   const { id } = await params
   if (!isValidUUID(id)) return Response.json({ error: 'Invalid article ID' }, { status: 400 })
-  const db = getSupabaseAdmin()
 
-  const { data } = await db
-    .from('article_feedback')
-    .select('rating, reason')
-    .eq('article_id', id)
+  // Check if current user already voted
+  let hasVoted = false
+  try {
+    const supabase = await createServerSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const db = getSupabaseAdmin()
+      const { data } = await db
+        .from('article_feedback')
+        .select('id')
+        .eq('article_id', id)
+        .eq('user_id', user.id)
+        .limit(1)
+        .single()
+      hasVoted = !!data
+    }
+  } catch {}
 
-  const up = data?.filter(f => f.rating === 'up').length ?? 0
-  const down = data?.filter(f => f.rating === 'down').length ?? 0
-  const reasons = data?.filter(f => f.reason).map(f => f.reason) ?? []
-
-  return Response.json({ up, down, reasons })
+  return Response.json({ hasVoted })
 }

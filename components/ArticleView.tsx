@@ -432,10 +432,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
       {/* ─── Bottom sections (hidden in print) ─── */}
 
       {/* Voting — helpfulness + verdict conviction */}
-      <ArticleVoting
-        articleId={articleRow.id}
-        hasVerdict={!!article.quick_verdict?.one_liner}
-      />
+      <ArticleVoting articleId={articleRow.id} />
 
       <div style={{ borderTop: '1px solid var(--border)' }} />
 
