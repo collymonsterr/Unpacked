@@ -103,6 +103,8 @@ CHECK FOR THESE ISSUES:
 5. MISSING ATTRIBUTION — claims about specific prices, stats, or performance that should cite a source but don't.
 6. REPETITION — the same claim, stat, or argument appearing in multiple sections. Each section should add new information. The verdict and executive summary should say different things.
 7. CREATIVE FILLER — scene-setting paragraphs ("Picture this...", "Imagine..."), rhetorical questions used as transitions, sentences without any specific fact, number, name, or instruction. Every sentence must earn its place.
+8. WEAK BIG STATEMENTS — the article should have 3-5 big_statement sections. Flag if fewer than 3 exist. Also flag any big_statement that is neutral, vague, or fence-sitting (e.g. "This is a complex topic", "The future remains uncertain", "There are pros and cons"). Good big statements are bold, specific, and worth screenshotting.
+9. UNSOURCED CHART DATA — check every bar_chart, line_chart, and pie_chart section. Each must have a "source" field that cites where the data came from. If a chart has no source, or the data points look like round numbers that could be invented (e.g. exactly 10%, 20%, 30%, 40%), flag it as "unsourced_chart". Charts with invented data are a credibility risk.
 
 SCORING:
 - 90-100: Excellent. Decisive, well-sourced, no AI-tell phrases.
@@ -118,7 +120,7 @@ Return ONLY valid JSON:
   "issues": [
     {
       "section_id": "0",
-      "issue_type": "hedging|ai_phrase|weak_verdict|filler|missing_attribution|repetition|creative_filler",
+      "issue_type": "hedging|ai_phrase|weak_verdict|filler|missing_attribution|repetition|creative_filler|weak_big_statements|unsourced_chart",
       "description": "string — what the issue is",
       "severity": "low|medium|high"
     }

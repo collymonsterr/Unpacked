@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useMemo, useCallback, lazy, Suspense } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback, lazy, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { ArticleRow, ArticleContent, ProductCard } from '@/types/article'
@@ -634,13 +634,69 @@ function LoadingSpinner() {
 /**
  * Admin-only cost display with expandable breakdown by call type.
  */
+interface CostBreakdownItem {
+  call_type: string
+  label: string
+  total_cost: number
+  call_count: number
+  models: string[]
+}
+
+interface CostBreakdownData {
+  total_cost: number
+  total_calls: number
+  breakdown: CostBreakdownItem[]
+  timings: Record<string, number> | null
+}
+
+function formatMs(ms: number | undefined): string {
+  if (ms == null) return '–'
+  if (ms < 1000) return `${ms}ms`
+  return `${(ms / 1000).toFixed(1)}s`
+}
+
+function formatModel(model: string): string {
+  // Shorten model names for display
+  if (model.includes('haiku-4-5')) return 'Haiku 4.5'
+  if (model.includes('haiku-4')) return 'Haiku 4'
+  if (model.includes('haiku-3')) return 'Haiku 3'
+  if (model.includes('sonnet-4')) return 'Sonnet 4'
+  if (model.includes('sonnet-3-5')) return 'Sonnet 3.5'
+  if (model.includes('gemini-2.5-flash')) return 'Gemini 2.5 Flash'
+  if (model.includes('gemini-2.0-flash')) return 'Gemini 2.0 Flash'
+  if (model.includes('gpt-4o-mini')) return 'GPT-4o Mini'
+  if (model.includes('brave')) return 'Brave Search'
+  return model
+}
+
+// Map timing keys to breakdown call_types for matching
+const TIMING_MAP: Record<string, string[]> = {
+  planning_ms: ['plan'],
+  research_ms: ['synthesis', 'polymarket_filter'],
+  blueprint_ms: ['blueprint'],
+  writing_ms: ['write'],
+  editorial_ms: ['editorial_pass'],
+  factcheck_ms: ['fact_check_stage1', 'fact_check_claims', 'fact_check_stage2', 'fact_check_stage3'],
+}
+
+const TIMING_LABELS: Record<string, string> = {
+  planning_ms: 'Planning',
+  research_ms: 'Research',
+  blueprint_ms: 'Blueprint',
+  writing_ms: 'Writing',
+  editorial_ms: 'Editorial',
+  save_ms: 'Save',
+  factcheck_ms: 'Fact-check',
+  total_ms: 'Total',
+}
+
 function ArticleCostDisplay({ articleId, totalCost }: { articleId: string; totalCost: number }) {
   const [expanded, setExpanded] = useState(false)
-  const [breakdown, setBreakdown] = useState<Array<{ call_type: string; total_cost: number; call_count: number }> | null>(null)
+  const [data, setData] = useState<CostBreakdownData | null>(null)
   const [loading, setLoading] = useState(false)
 
   async function loadBreakdown() {
-    if (breakdown) {
+    if (data) {
       setExpanded(!expanded)
       return
     }
@@ -649,8 +705,7 @@ function ArticleCostDisplay({ articleId, totalCost }: { articleId: string; total
     try {
       const res = await fetch(`/api/articles/${articleId}/cost-breakdown`)
       if (res.ok) {
-        const data = await res.json()
-        setBreakdown(data.breakdown ?? [])
+        setData(await res.json())
       }
     } catch {
       // silently fail
@@ -659,25 +714,21 @@ function ArticleCostDisplay({ articleId, totalCost }: { articleId: string; total
     }
   }
 
-  const CALL_TYPE_LABELS: Record<string, string> = {
-    plan: 'Planning',
-    synthesis: 'Research',
-    blueprint: 'Blueprint',
-    write: 'Writing',
-    editorial_pass: 'Editorial',
-    fact_check_stage1: 'Fact-check (S1)',
-    fact_check_claims: 'Fact-check (claims)',
-    fact_check_stage2: 'Fact-check (S2)',
-    fact_check_stage3: 'Fact-check (S3)',
-    refine: 'Refine',
-    hero_image: 'Images',
-    social_content: 'Social',
-    brave_search: 'Research',
-    polymarket_filter: 'Polymarket',
-  }
+  // Close on outside click
+  const panelRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!expanded) return
+    function handleClick(e: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setExpanded(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [expanded])
 
   return (
-    <span className="relative">
+    <span className="relative" ref={panelRef}>
       <button
         onClick={loadBreakdown}
         className="text-xs"
@@ -687,34 +738,106 @@ function ArticleCostDisplay({ articleId, totalCost }: { articleId: string; total
       </button>
       {expanded && (
         <div
-          className="absolute top-6 left-0 z-30 rounded-lg p-3 min-w-[200px]"
+          className="absolute top-6 right-0 z-30 rounded-xl p-4 min-w-[320px]"
           style={{
             backgroundColor: 'var(--card)',
             border: '1px solid var(--border)',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
           }}
         >
-          <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-sora)' }}>
-            Cost Breakdown
-          </p>
           {loading ? (
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Loading...</p>
-          ) : breakdown && breakdown.length > 0 ? (
-            <div className="space-y-1">
-              {breakdown.map((item, i) => (
-                <div key={i} className="flex justify-between text-xs">
-                  <span style={{ color: 'var(--text-secondary)' }}>
-                    {CALL_TYPE_LABELS[item.call_type] ?? item.call_type}
-                  </span>
-                  <span style={{ color: 'var(--text-primary)' }}>
-                    {formatCost(item.total_cost)}
-                  </span>
-                </div>
-              ))}
-              <div className="flex justify-between text-xs font-semibold pt-1 mt-1" style={{ borderTop: '1px solid var(--border)' }}>
-                <span style={{ color: 'var(--text-primary)' }}>Total</span>
-                <span style={{ color: 'var(--text-primary)' }}>{formatCost(totalCost)}</span>
+          ) : data ? (
+            <div>
+              {/* Header */}
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-sora)' }}>
+                  Generation Costs
+                </p>
+                <span className="text-xs font-semibold" style={{ color: 'var(--accent, #BA7517)' }}>
+                  {formatCost(data.total_cost)} · {data.total_calls} calls
+                </span>
               </div>
+
+              {/* Cost by stage */}
+              {data.breakdown.length > 0 && (
+                <div className="space-y-1.5 mb-3">
+                  {data.breakdown.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs gap-2">
+                      <div className="flex-1 min-w-0">
+                        <span style={{ color: 'var(--text-primary)' }}>{item.label}</span>
+                        <span className="ml-1.5" style={{ color: 'var(--text-secondary)', fontSize: '10px' }}>
+                          {item.models.map(formatModel).join(', ')}
+                        </span>
+                      </div>
+                      <span className="tabular-nums font-medium" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-sora)' }}>
+                        {formatCost(item.total_cost)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Timings */}
+              {data.timings && (
+                <>
+                  <div className="pt-2 mt-2" style={{ borderTop: '1px solid var(--border)' }}>
+                    <p className="text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-sora)' }}>
+                      Generation Time
+                    </p>
+
+                    {/* Visual bar for each phase */}
+                    <div className="space-y-1">
+                      {Object.entries(TIMING_MAP).map(([timingKey, callTypes]) => {
+                        const ms = data.timings?.[timingKey]
+                        if (ms == null || ms === 0) return null
+                        const totalMs = data.timings?.total_ms ?? 1
+                        const pct = Math.min(100, Math.max(2, (ms / totalMs) * 100))
+                        // Find matching breakdown items for cost
+                        const stageCost = data.breakdown
+                          .filter(b => callTypes.includes(b.call_type))
+                          .reduce((sum, b) => sum + b.total_cost, 0)
+
+                        return (
+                          <div key={timingKey}>
+                            <div className="flex items-center justify-between text-xs mb-0.5">
+                              <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
+                                {TIMING_LABELS[timingKey] ?? timingKey}
+                              </span>
+                              <span className="tabular-nums" style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
+                                {formatMs(ms)}{stageCost > 0 ? ` · ${formatCost(stageCost)}` : ''}
+                              </span>
+                            </div>
+                            <div
+                              className="rounded-full h-1.5"
+                              style={{ backgroundColor: 'var(--border)' }}
+                            >
+                              <div
+                                className="rounded-full h-1.5"
+                                style={{
+                                  width: `${pct}%`,
+                                  backgroundColor: 'var(--accent, #BA7517)',
+                                  opacity: 0.7,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {/* Total time */}
+                    {data.timings.total_ms != null && (
+                      <div className="flex items-center justify-between text-xs font-semibold mt-2 pt-1.5" style={{ borderTop: '1px solid var(--border)' }}>
+                        <span style={{ color: 'var(--text-primary)' }}>Total time</span>
+                        <span className="tabular-nums" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-sora)' }}>
+                          {formatMs(data.timings.total_ms)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>No breakdown available</p>

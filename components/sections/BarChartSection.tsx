@@ -19,6 +19,22 @@ const NEUTRAL_COLOR = '#C4C0B9'
 export default function BarChartSection({ section }: { section: BarChartSectionType }) {
   const isHorizontal = section.orientation === 'horizontal'
 
+  // Sort vertical bar chart data by label when labels are numeric or dates
+  // (horizontal bars use categorical labels where editorial order matters)
+  const sortedData = (() => {
+    if (isHorizontal) return section.data
+    const data = [...section.data]
+    const first = data[0]?.label ?? ''
+    const isNumeric = !isNaN(parseFloat(first))
+    const isDate = !isNumeric && !isNaN(Date.parse(first))
+    if (isNumeric) {
+      data.sort((a, b) => parseFloat(a.label) - parseFloat(b.label))
+    } else if (isDate) {
+      data.sort((a, b) => Date.parse(a.label) - Date.parse(b.label))
+    }
+    return data
+  })()
+
   return (
     <div className="mb-8">
       <div
@@ -41,10 +57,10 @@ export default function BarChartSection({ section }: { section: BarChartSectionT
           </p>
         )}
 
-        <div style={{ width: '100%', height: isHorizontal ? Math.max(250, section.data.length * 50) : 300 }}>
+        <div style={{ width: '100%', height: isHorizontal ? Math.max(250, sortedData.length * 50) : 300 }}>
             <ResponsiveContainer width="100%" height="100%">
               {isHorizontal ? (
-                <BarChart data={section.data} layout="vertical" margin={{ left: 10, right: 40, top: 5, bottom: 5 }}>
+                <BarChart data={sortedData} layout="vertical" margin={{ left: 10, right: 40, top: 5, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
                   <XAxis type="number" tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} label={section.y_label ? { value: section.y_label, position: 'insideBottom', offset: -2, fontSize: 11, fill: 'var(--text-secondary)' } : undefined} />
                   <YAxis type="category" dataKey="label" tick={{ fontSize: 12, fill: 'var(--text-primary)' }} width={120} />
@@ -52,14 +68,14 @@ export default function BarChartSection({ section }: { section: BarChartSectionT
                     contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
                   />
                   <Bar dataKey="value" radius={[0, 6, 6, 0]} isAnimationActive animationDuration={1000} animationBegin={200}>
-                    {section.data.map((entry, i) => (
+                    {sortedData.map((entry, i) => (
                       <Cell key={i} fill={entry.highlight ? HIGHLIGHT_COLOR : NEUTRAL_COLOR} />
                     ))}
                     <LabelList dataKey="value" position="right" style={{ fontSize: 12, fontWeight: 600, fill: 'var(--text-primary)' }} />
                   </Bar>
                 </BarChart>
               ) : (
-                <BarChart data={section.data} margin={{ left: 0, right: 10, top: 5, bottom: 20 }}>
+                <BarChart data={sortedData} margin={{ left: 0, right: 10, top: 5, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                   <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} interval={0} angle={-20} textAnchor="end" height={60} />
                   <YAxis tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} label={section.y_label ? { value: section.y_label, angle: -90, position: 'insideLeft', offset: 10, fontSize: 11, fill: 'var(--text-secondary)' } : undefined} />
@@ -67,7 +83,7 @@ export default function BarChartSection({ section }: { section: BarChartSectionT
                     contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
                   />
                   <Bar dataKey="value" radius={[6, 6, 0, 0]} isAnimationActive animationDuration={1000} animationBegin={200}>
-                    {section.data.map((entry, i) => (
+                    {sortedData.map((entry, i) => (
                       <Cell key={i} fill={entry.highlight ? HIGHLIGHT_COLOR : NEUTRAL_COLOR} />
                     ))}
                     <LabelList dataKey="value" position="top" style={{ fontSize: 12, fontWeight: 600, fill: 'var(--text-primary)' }} />

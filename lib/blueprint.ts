@@ -8,7 +8,7 @@
  * Uses Gemini Flash — small structured output, ~5-8 seconds, ~$0.002.
  */
 
-import type { ArticlePlan, EntityCard, ResearchSynthesis, ArticleBlueprint, BlueprintSection } from '@/types/article'
+import type { ArticlePlan, EntityCard, ResearchSynthesis, ArticleBlueprint, BlueprintSection, OpinionElements } from '@/types/article'
 import { ARTICLE_TYPES, type ArticleType } from '@/lib/article-types'
 import { FORBIDDEN_PHRASES, getToneDescription } from '@/lib/editorial-rules'
 import { extractJSON } from '@/lib/utils/extract-json'
@@ -90,6 +90,38 @@ VERDICT REQUIRED: ${typeConfig?.verdictRequired ? 'YES' : 'NO'}
 VERDICT STYLE: ${typeConfig?.verdictStyle ?? 'none'}
 
 YOUR TASK:
+
+OPINION ELEMENTS (generate these BEFORE the section plan):
+
+Before planning sections, produce these four elements. They will be used as mandatory inputs to the article:
+
+1. THE CONTROVERSIAL TAKE: One statement that at least 30% of readers would disagree with or find surprising. Not clickbait — a genuine editorial position supported by evidence. This drives engagement.
+
+2. THE MISUNDERSTANDING: One thing most people get wrong about this topic. This creates "I didn't know that" moments and makes the article feel like it's teaching something, not just summarising.
+
+3. THE PREDICTION: One specific, time-bound, falsifiable prediction about what happens next. Not vague ("things will change") but specific ("by 2028, X will Y"). This creates shareability.
+
+4. THE WINNER AND LOSER: Who benefits and who gets hurt. Not abstract ("consumers benefit") but specific ("Netflix wins, traditional cable loses" or "homeowners in Dubai benefit, first-time buyers get squeezed"). This creates narrative tension.
+
+These four elements must appear prominently in the article — in big statement blocks, in the opening paragraphs, or as the thesis of key sections. They must NOT be buried in the middle of body paragraphs.
+
+IMPORTANT: These must be grounded in the research evidence and entity cards. Strong opinions supported by data, not hot takes invented from nothing. If the research doesn't support a controversial position, the controversial_take should be the most surprising factual finding instead.
+
+BIG STATEMENT PLACEMENT:
+In the sections array, include 3-5 sections with type "big_statement". Each contains a single bold sentence. Place them:
+- After the executive summary section
+- Between major content sections (at natural argument transitions)
+- Before the verdict/conclusion section
+
+Each big_statement should be drawn from the opinion_elements. Map them:
+- controversial_take → big statement after the intro
+- misunderstanding → big statement before or after the section that corrects it
+- prediction → big statement in the "what happens next" area
+- winner_and_loser → big statement near the verdict
+
+Do NOT place two big_statement sections consecutively. Always have content between them.
+
+SECTION PLANNING:
 1. Write a specific THESIS — the article's central argument in one sentence. No hedging.
 2. Write the exact VERDICT text that will appear in the verdict box. Must be specific and decisive.${typeConfig?.verdictRequired === false ? ' (Optional for this article type — include only if it adds value.)' : ''}
 3. For each section, specify: what it must cover, which entity card facts to reference, a word budget, and which visual components belong there.
@@ -98,12 +130,19 @@ YOUR TASK:
 6. ANTI-REPETITION: Each section must introduce NEW information. If a fact or argument appeared in an earlier section, do not repeat it. The verdict should not restate the executive summary — verdict = conclusion, summary = context.
 7. STRUCTURE: Any section containing 3+ comparable items (features, pros, cons, options, reasons) should specify bullet/list format in key_points. Never bury a list inside a paragraph.
 8. VISUAL DENSITY RULE: ${targetWords >= 2500 ? `At ${targetWords}+ words, this article MUST include at least 2 data visualization components (bar_chart, comparison_matrix, pie_chart, line_chart, stat_cards, or timeline) to break up long text. Assign them to specific sections.` : 'Include visual components where they add value — stat_cards for key numbers, charts for trends or comparisons.'}
+9. CHART DATA RULE: Only assign chart components (bar_chart, line_chart, pie_chart) to sections where the entity cards or research provide SPECIFIC NUMBERS to plot. If a section has qualitative information but no hard data, use stat_cards or bullet points instead. Never plan a chart that would require the writer to invent data points.
 
 Return ONLY valid JSON:
 {
   "thesis": "string — the central argument",
   "verdict_statement": "string — exact text for the verdict box",
   "winner": "string or null — entity name for product articles",
+  "opinion_elements": {
+    "controversial_take": "string — surprising editorial position supported by evidence",
+    "misunderstanding": "string — what most people get wrong about this topic",
+    "prediction": "string — specific, time-bound, falsifiable prediction",
+    "winner_and_loser": "string — who benefits and who gets hurt, with specifics"
+  },
   "sections": [
     {
       "id": "section_01",
@@ -198,10 +237,22 @@ function normaliseBlueprint(
   const blueprintForbidden = Array.isArray(raw.forbidden_phrases) ? raw.forbidden_phrases : []
   const allForbidden = [...new Set([...FORBIDDEN_PHRASES, ...blueprintForbidden])]
 
+  // Normalise opinion elements
+  const rawOE = raw.opinion_elements as Partial<OpinionElements> | undefined
+  const opinion_elements: OpinionElements | undefined = rawOE && typeof rawOE === 'object'
+    ? {
+        controversial_take: rawOE.controversial_take || '',
+        misunderstanding: rawOE.misunderstanding || '',
+        prediction: rawOE.prediction || '',
+        winner_and_loser: rawOE.winner_and_loser || '',
+      }
+    : undefined
+
   return {
     thesis: raw.thesis || '',
     verdict_statement: raw.verdict_statement || '',
     winner: raw.winner ?? null,
+    opinion_elements,
     sections,
     evidence_map: raw.evidence_map && typeof raw.evidence_map === 'object' ? raw.evidence_map : {},
     what_not_to_say: Array.isArray(raw.what_not_to_say) ? raw.what_not_to_say : [],
@@ -281,6 +332,16 @@ export function formatBlueprintForPrompt(blueprint: ArticleBlueprint): string {
 
   if (blueprint.winner) {
     parts.push(`WINNER: ${blueprint.winner}`)
+  }
+
+  if (blueprint.opinion_elements) {
+    const oe = blueprint.opinion_elements
+    parts.push('')
+    parts.push('OPINION ELEMENTS (weave these prominently into the article and big statements):')
+    if (oe.controversial_take) parts.push(`- CONTROVERSIAL TAKE: ${oe.controversial_take}`)
+    if (oe.misunderstanding) parts.push(`- MISUNDERSTANDING: ${oe.misunderstanding}`)
+    if (oe.prediction) parts.push(`- PREDICTION: ${oe.prediction}`)
+    if (oe.winner_and_loser) parts.push(`- WINNER & LOSER: ${oe.winner_and_loser}`)
   }
 
   parts.push('')

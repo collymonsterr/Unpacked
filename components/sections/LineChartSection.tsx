@@ -17,7 +17,7 @@ import type { LineChartSection as LineChartSectionType } from '@/types/article'
 const COLORS = ['#E07A3A', '#2D7D9A', '#D4A843', '#6B8F71', '#8B6DB0']
 
 export default function LineChartSection({ section }: { section: LineChartSectionType }) {
-  // Merge all series into a single data array keyed by x
+  // Merge all series into a single data array keyed by x, sorted by x-axis value
   const mergedData = (() => {
     const map = new Map<string, Record<string, number | string>>()
     for (const s of section.series) {
@@ -27,7 +27,25 @@ export default function LineChartSection({ section }: { section: LineChartSectio
         map.set(point.x, existing)
       }
     }
-    return Array.from(map.values())
+    const entries = Array.from(map.values())
+
+    // Sort by x-axis: try numeric first, then date, then lexicographic
+    entries.sort((a, b) => {
+      const ax = String(a.x)
+      const bx = String(b.x)
+      // Numeric comparison (handles years like "2020", decimals, etc.)
+      const numA = parseFloat(ax)
+      const numB = parseFloat(bx)
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB
+      // Date comparison (handles "Jan 2025", "2025-01", "March 2024", etc.)
+      const dateA = Date.parse(ax)
+      const dateB = Date.parse(bx)
+      if (!isNaN(dateA) && !isNaN(dateB)) return dateA - dateB
+      // Lexicographic fallback
+      return ax.localeCompare(bx)
+    })
+
+    return entries
   })()
 
   return (

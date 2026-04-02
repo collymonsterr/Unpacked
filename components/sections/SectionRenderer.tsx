@@ -19,6 +19,7 @@ import TimelineSection from './TimelineSection'
 import ImageSection from './ImageSection'
 import InteractiveCalculator from './InteractiveCalculator'
 import LiveDataCard from './LiveDataCard'
+import BigStatement from './BigStatement'
 
 interface Props {
   sections: ArticleSection[]
@@ -225,6 +226,8 @@ export default function SectionRenderer({
           return <InteractiveCalculator section={section} />
         case 'live_data_card':
           return <LiveDataCard section={section} />
+        case 'big_statement':
+          return <BigStatement statement={(section as { content: { statement: string } }).content.statement} />
         default:
           return null
       }

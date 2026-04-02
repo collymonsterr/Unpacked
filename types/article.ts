@@ -125,10 +125,18 @@ export interface BlueprintSection {
   components: string[]
 }
 
+export interface OpinionElements {
+  controversial_take: string
+  misunderstanding: string
+  prediction: string
+  winner_and_loser: string
+}
+
 export interface ArticleBlueprint {
   thesis: string
   verdict_statement: string
   winner: string | null
+  opinion_elements?: OpinionElements
   sections: BlueprintSection[]
   evidence_map: Record<string, string[]>
   what_not_to_say: string[]
@@ -139,7 +147,7 @@ export interface ArticleBlueprint {
 
 export interface EditorIssue {
   section_id: string
-  issue_type: 'hedging' | 'ai_phrase' | 'weak_verdict' | 'filler' | 'missing_attribution' | 'repetition' | 'creative_filler'
+  issue_type: 'hedging' | 'ai_phrase' | 'weak_verdict' | 'filler' | 'missing_attribution' | 'repetition' | 'creative_filler' | 'weak_big_statements' | 'unsourced_chart'
   description: string
   severity: 'low' | 'medium' | 'high'
 }
@@ -370,6 +378,13 @@ export interface LiveDataCardSection {
   content: Record<string, unknown>
 }
 
+export interface BigStatementSection {
+  type: 'big_statement'
+  content: {
+    statement: string
+  }
+}
+
 export type ArticleSection =
   | ProductCard
   | ComparisonTable
@@ -391,6 +406,7 @@ export type ArticleSection =
   | ImageSection
   | InteractiveCalculatorSection
   | LiveDataCardSection
+  | BigStatementSection
 
 // ── Full Article ─────────────────────────────────────────────────────────────
 

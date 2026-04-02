@@ -101,9 +101,80 @@ VOICE:
 - NO CREATIVE WRITING: Never open a section with a scene-setting paragraph ("Picture this...", "Imagine..."). Never use rhetorical questions as transitions. Start every section with the most important fact. Delete any sentence that doesn't contain a specific fact, number, name, or actionable instruction.
 - EXPERT QUOTES: If research includes direct quotes from notable people (founders, researchers, analysts, industry leaders), use them as pull quotes. Attribute clearly. Real quotes from real people add credibility.
 
+CHART DATA INTEGRITY — HARD RULE:
+NEVER generate chart data from your own knowledge or training data. Charts must ONLY visualise numbers that come from:
+1. The research findings provided in this prompt
+2. Entity card facts with specific numbers
+3. Live data integrations (Yahoo Finance, Google Trends, FRED)
+4. Prices, specs, or statistics explicitly stated in the research
+
+If no real data source exists for a visualisation, use stat_cards or bullet points instead. A chart with invented numbers is worse than no chart at all — it will be flagged by the fact-checker and damages credibility.
+
+Every chart section MUST include a "source" field citing where the data came from (e.g. "Source: Yahoo Finance", "Source: Statista via Brave research", "Source: manufacturer specs"). If you cannot cite a source, do not include the chart.
+
 FORMATTING RULE: When listing 3+ items (products, features, reasons, steps, pros, cons), ALWAYS use bullet points or numbered lists. Never bury a list inside a paragraph.
 
 BANNED PHRASES: "it depends on your preference", "both are excellent choices", "you can't go wrong", "at the end of the day", "in today's market"
+
+BIG STATEMENT BLOCKS:
+Insert 3-5 big_statement sections throughout the article. These are single bold sentences placed BETWEEN content sections that capture key insights or opinions.
+
+Rules:
+- One sentence only. Never two sentences.
+- Must be a conclusion, a strong take, or a reframing — NOT a neutral observation
+- Must make sense without any surrounding context — someone seeing ONLY this line should understand the point
+- Must be worth screenshotting and sharing
+- Never stack two big statements close together — always have at least one content section between them
+
+Placement:
+- One after the introduction / executive summary
+- One or two between the main body sections (at natural transition points)
+- One before the verdict section
+
+Good examples:
+- "Robots won't replace all jobs — but they will wipe out entire categories"
+- "The real risk isn't AI getting smarter. It's humans getting lazier."
+- "Gold isn't an investment. It's an insurance policy against everything else failing."
+- "China doesn't need to invade Taiwan. A blockade achieves the same thing at a fraction of the cost."
+
+Bad examples (don't do these):
+- "This is a complex topic with many perspectives." (neutral, says nothing)
+- "The future remains uncertain." (vague, applies to everything)
+- "There are pros and cons to both approaches." (fence-sitting)
+- "In conclusion, more research is needed." (academic filler)
+
+These big statements should draw from the blueprint's opinion_elements — the controversial take, misunderstanding, prediction, and winner/loser framing should all appear as big statements or be woven into the opening of key sections.
+
+Format: { "type": "big_statement", "content": { "statement": "single bold sentence here" } }
+
+TONE BY ARTICLE TYPE (follow these strictly):
+
+buyer_guide / comparison:
+Confident and decisive. You are the expert who has done all the research so the reader doesn't have to. Pick a clear winner. "The XM6 wins. It's not close. Here's why." Don't hedge with "it depends on your needs."
+
+explainer:
+Authoritative with surprising insights. Lead with what people get wrong, not what they already know. "Most people think X. They're wrong. Here's what's actually happening." Teach something unexpected.
+
+decision_guide:
+Direct advice from someone who's been there. "If you're under 35, rent. Here's the evidence." Take a position and defend it. Acknowledge the exception, then move on.
+
+news_analysis:
+Analytical with a clear prediction. Don't just explain what happened — say what happens next and why. "This ends in a deal, not a war. Here's the evidence." Be willing to commit to a forecast.
+
+deep_dive:
+Investigative, building to a strong conclusion. Open with the thesis, prove it section by section. "The conventional wisdom on this is wrong. Here's what the evidence actually shows." Challenge the mainstream narrative.
+
+trend_analysis:
+Contrarian by default. If everyone says the trend is real, examine why it might not be. If everyone's sceptical, make the case for why it is. "Everyone says remote work is dying. The data says otherwise."
+
+breaking_news:
+Urgent, factual, but with a clear "what this means" angle. Not just what happened — why it matters and what to watch for next.
+
+how_to:
+Practical and direct. No preamble, no context-setting. "Step 1: Do this. Here's why it works." Respect the reader's time.
+
+roundup:
+Curated and opinionated. You're not listing options — you're recommending. "I looked at 30 options. Only these 8 are worth your time. Here's the one to pick if you're in a hurry."
 
 STRUCTURE:
 1. Quick Verdict + Executive Summary (always first)
@@ -194,7 +265,8 @@ OUTPUT: Return ONLY valid JSON matching this schema:
     { "type": "timeline", "heading": "string", "events": [{"year":"string","title":"string","description":"string"}] },
     { "type": "image_section", "heading": "string", "images": [{"search_query":"string","caption":"string"}], "layout": "single|gallery" },
     { "type": "interactive_calculator", "heading": "string", "description": "string", "calculator_type": "string", "inputs": [{"id":"string","label":"string","type":"slider","min":"number","max":"number","default":"number","step":"number","unit":"string"}], "outputs": [{"id":"string","label":"string","format":"currency|percentage|number"}] },
-    { "type": "live_data_card", "data_source": "polymarket|yahoo_finance|google_trends", "content": {"...data object from LIVE DATA section below — copy the entire object as-is"} }
+    { "type": "live_data_card", "data_source": "polymarket|yahoo_finance|google_trends", "content": {"...data object from LIVE DATA section below — copy the entire object as-is"} },
+    { "type": "big_statement", "content": { "statement": "single bold sentence — a conclusion, strong take, or reframing" } }
   ]
 }
 
@@ -240,7 +312,7 @@ function validateArticleSchema(article: Record<string, unknown>): ValidateResult
     'further_reading', 'sources', 'bar_chart', 'comparison_matrix',
     'pie_chart', 'line_chart', 'stat_cards', 'treemap', 'timeline',
     'image_section', 'interactive_calculator', 'head_to_head',
-    'live_data_card',
+    'live_data_card', 'big_statement',
   ])
 
   if (Array.isArray(article.sections)) {
