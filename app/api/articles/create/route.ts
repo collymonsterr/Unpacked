@@ -93,15 +93,29 @@ export async function POST(request: NextRequest) {
         const now = new Date()
         if (now >= resetDate) {
           const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+
+          // Check if founding creator — add 10 bonus credits on reset
+          const { data: fcProfile } = await getSupabaseAdmin()
+            .from('profiles')
+            .select('is_founding_creator, bonus_credits')
+            .eq('id', userId)
+            .single()
+
+          const foundingBonus = fcProfile?.is_founding_creator ? 10 : 0
+
           await getSupabaseAdmin()
             .from('profiles')
             .update({
               articles_used_this_month: 0,
               month_reset_date: nextMonth.toISOString(),
+              ...(foundingBonus > 0 ? { bonus_credits: (fcProfile?.bonus_credits ?? 0) + foundingBonus } : {}),
             })
             .eq('id', userId)
           tierProfile.articles_used_this_month = 0
           tierProfile.month_reset_date = nextMonth.toISOString()
+          if (foundingBonus > 0) {
+            tierProfile.bonus_credits = (fcProfile?.bonus_credits ?? 0) + foundingBonus
+          }
         }
 
         const remaining = (tierProfile.monthly_article_limit - tierProfile.articles_used_this_month) + (tierProfile.bonus_credits ?? 0)

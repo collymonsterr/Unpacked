@@ -9,6 +9,8 @@ interface UsageData {
   monthlyLimit: number
   bonusCredits: number
   nextReset: string
+  isFoundingCreator: boolean
+  shareCreditsEarned: number
 }
 
 const TIER_LABELS: Record<string, string> = {
@@ -59,6 +61,14 @@ export default function DashboardUsage() {
           >
             {TIER_LABELS[usage.tier] ?? usage.tier}
           </span>
+          {usage.isFoundingCreator && (
+            <span
+              className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+              style={{ backgroundColor: '#BA7517', color: '#fff', fontFamily: 'var(--font-sora)' }}
+            >
+              Founding Creator
+            </span>
+          )}
         </div>
         <Link
           href="/pricing"
@@ -102,6 +112,29 @@ export default function DashboardUsage() {
         <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
           Resets {resetLabel}
         </p>
+      </div>
+
+      {/* Founding Creator note */}
+      {usage.isFoundingCreator && (
+        <p className="text-xs mt-3" style={{ color: 'var(--text-secondary)' }}>
+          10 bonus credits added monthly as a Founding Creator
+        </p>
+      )}
+
+      {/* Share credits */}
+      <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
+        <div className="flex items-center justify-between">
+          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+            <span className="font-semibold" style={{ color: 'var(--accent)' }}>{usage.shareCreditsEarned}</span> share credit{usage.shareCreditsEarned !== 1 ? 's' : ''} earned
+          </p>
+          <Link
+            href="/"
+            className="text-[11px] font-medium no-underline transition-opacity hover:opacity-70"
+            style={{ color: 'var(--accent)' }}
+          >
+            Share more to earn credits &rarr;
+          </Link>
+        </div>
       </div>
     </div>
   )

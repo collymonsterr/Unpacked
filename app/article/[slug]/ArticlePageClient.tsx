@@ -25,9 +25,10 @@ interface Props {
   creatorTwitterUrl?: string
   creatorLinkedinUrl?: string
   creatorMediumUrl?: string
+  isFoundingCreator?: boolean
 }
 
-export default function ArticlePageClient({ initialRow, linkableArticles, creatorBio, creatorTwitterUrl, creatorLinkedinUrl, creatorMediumUrl }: Props) {
+export default function ArticlePageClient({ initialRow, linkableArticles, creatorBio, creatorTwitterUrl, creatorLinkedinUrl, creatorMediumUrl, isFoundingCreator }: Props) {
   const [row, setRow] = useState(initialRow)
 
   // Determine if article is already complete on initial load
@@ -418,6 +419,7 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
               creatorTwitterUrl={creatorTwitterUrl}
               creatorLinkedinUrl={creatorLinkedinUrl}
               creatorMediumUrl={creatorMediumUrl}
+              isFoundingCreator={isFoundingCreator}
             />
           ) : (
             <Suspense

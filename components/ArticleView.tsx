@@ -41,9 +41,10 @@ interface Props {
   creatorTwitterUrl?: string
   creatorLinkedinUrl?: string
   creatorMediumUrl?: string
+  isFoundingCreator?: boolean
 }
 
-export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNew, factCheckStatus = 'none', linkableArticles, creatorBio, creatorTwitterUrl, creatorLinkedinUrl, creatorMediumUrl }: Props) {
+export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNew, factCheckStatus = 'none', linkableArticles, creatorBio, creatorTwitterUrl, creatorLinkedinUrl, creatorMediumUrl, isFoundingCreator = false }: Props) {
   const router = useRouter()
   const { user } = useUser()
   const [article, setArticle] = useState(articleRow.article!)
@@ -273,8 +274,18 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
                 />
               )}
               <div className="flex flex-col min-w-0">
-                <span className="text-[15px] font-medium" style={{ color: 'var(--text-primary)' }}>
-                  {articleRow.user_name}
+                <span className="flex items-center gap-2">
+                  <span className="text-[15px] font-medium" style={{ color: 'var(--text-primary)' }}>
+                    {articleRow.user_name}
+                  </span>
+                  {isFoundingCreator && (
+                    <span
+                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: '#BA7517', color: '#fff', fontFamily: 'var(--font-sora)' }}
+                    >
+                      Founding Creator
+                    </span>
+                  )}
                 </span>
                 {creatorBio && (
                   <span className="text-sm line-clamp-1" style={{ color: 'var(--text-secondary)' }}>
@@ -576,6 +587,11 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           Export PDF
         </button>
       </div>
+      {isOwner && user && (
+        <p className="text-[11px] mt-2" style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-sora)' }} data-no-print>
+          Share to earn bonus articles
+        </p>
+      )}
 
       <div className="my-10" style={{ borderTop: '1px solid var(--border)' }} data-no-print />
 

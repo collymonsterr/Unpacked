@@ -9,6 +9,7 @@ import AdminAnalytics from '@/components/AdminAnalytics'
 import AdminUsers from '@/components/AdminUsers'
 import AdminCosts from '@/components/AdminCosts'
 import AdminFeedback from '@/components/AdminFeedback'
+import AdminFounders from '@/components/AdminFounders'
 import { formatCost } from '@/lib/format-cost'
 import { useAdminMode } from '@/hooks/useAdminMode'
 import type { ArticleRow } from '@/types/article'
@@ -18,7 +19,7 @@ export default function AdminDashboard() {
   const isAdmin = useAdminMode()
   const [articles, setArticles] = useState<ArticleRow[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'articles' | 'costs' | 'feedback'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'articles' | 'costs' | 'feedback' | 'founders'>('overview')
 
   const fetchArticles = useCallback(async () => {
     try {
@@ -123,7 +124,7 @@ export default function AdminDashboard() {
 
         {/* Tab navigation */}
         <div className="flex items-center gap-1 mb-6" style={{ borderBottom: '1px solid var(--border)' }}>
-          {(['overview', 'articles', 'costs', 'feedback'] as const).map((tab) => (
+          {(['overview', 'articles', 'costs', 'feedback', 'founders'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -136,7 +137,7 @@ export default function AdminDashboard() {
                 border: 'none',
               }}
             >
-              {tab === 'overview' ? 'Overview' : tab === 'articles' ? 'Articles' : tab === 'costs' ? 'Costs' : 'Feedback'}
+              {tab === 'overview' ? 'Overview' : tab === 'articles' ? 'Articles' : tab === 'costs' ? 'Costs' : tab === 'feedback' ? 'Feedback' : 'Founders'}
               {activeTab === tab && (
                 <div
                   className="absolute bottom-0 left-0 right-0 h-0.5"
@@ -184,6 +185,11 @@ export default function AdminDashboard() {
         {/* Tab: Feedback */}
         {activeTab === 'feedback' && (
           <AdminFeedback />
+        )}
+
+        {/* Tab: Founders */}
+        {activeTab === 'founders' && (
+          <AdminFounders />
         )}
 
         {/* Tab: Articles */}

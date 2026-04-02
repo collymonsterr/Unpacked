@@ -131,16 +131,18 @@ export default async function ArticlePage({ params }: Props) {
   let creatorTwitterUrl: string | undefined
   let creatorLinkedinUrl: string | undefined
   let creatorMediumUrl: string | undefined
+  let isFoundingCreator = false
   if (row.user_id) {
     const { data: profile } = await getSupabaseAdmin()
       .from('profiles')
-      .select('bio, twitter_url, linkedin_url, medium_url')
+      .select('bio, twitter_url, linkedin_url, medium_url, is_founding_creator')
       .eq('id', row.user_id)
       .single()
     creatorBio = profile?.bio || undefined
     creatorTwitterUrl = profile?.twitter_url || undefined
     creatorLinkedinUrl = profile?.linkedin_url || undefined
     creatorMediumUrl = profile?.medium_url || undefined
+    isFoundingCreator = profile?.is_founding_creator === true
   }
 
   // isOwner is determined client-side via localStorage (no auth for MVP)
@@ -153,7 +155,7 @@ export default async function ArticlePage({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
         />
       ))}
-      <ArticlePageClient initialRow={row} linkableArticles={linkableArticles} creatorBio={creatorBio} creatorTwitterUrl={creatorTwitterUrl} creatorLinkedinUrl={creatorLinkedinUrl} creatorMediumUrl={creatorMediumUrl} />
+      <ArticlePageClient initialRow={row} linkableArticles={linkableArticles} creatorBio={creatorBio} creatorTwitterUrl={creatorTwitterUrl} creatorLinkedinUrl={creatorLinkedinUrl} creatorMediumUrl={creatorMediumUrl} isFoundingCreator={isFoundingCreator} />
     </>
   )
 }

@@ -7,6 +7,7 @@ import VerdictCard from './share/VerdictCard'
 import StatCard from './share/StatCard'
 
 type Tab = 'twitter' | 'linkedin' | 'reddit' | 'cards'
+type SharePlatform = 'twitter' | 'linkedin' | 'reddit' | 'copy_link'
 
 interface Props {
   articleRow: ArticleRow
@@ -14,15 +15,77 @@ interface Props {
   onClose: () => void
 }
 
+// ── Share credit toast ──────────────────────────────────────────────────────
+
+function ShareCreditToast({ show }: { show: boolean }) {
+  if (!show) return null
+  return (
+    <div
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2"
+      style={{
+        backgroundColor: '#16a34a',
+        color: '#fff',
+        fontFamily: 'var(--font-sora)',
+        fontSize: '13px',
+        fontWeight: 600,
+        animation: 'toastSlideUp 0.3s ease-out',
+      }}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 6L9 17l-5-5" />
+      </svg>
+      +1 bonus article earned
+    </div>
+  )
+}
+
+// ── Share credit hook ───────────────────────────────────────────────────────
+
+function useShareCredits(articleId: string) {
+  const [earnedPlatforms, setEarnedPlatforms] = useState<string[]>([])
+  const [showToast, setShowToast] = useState(false)
+
+  useEffect(() => {
+    fetch(`/api/articles/${articleId}/share-credit`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.platforms) setEarnedPlatforms(data.platforms)
+      })
+      .catch(() => {})
+  }, [articleId])
+
+  const recordCredit = useCallback(async (platform: SharePlatform) => {
+    try {
+      const res = await fetch(`/api/articles/${articleId}/share-credit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform }),
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      if (data.credited) {
+        setEarnedPlatforms(prev => [...prev, platform])
+        setShowToast(true)
+        setTimeout(() => setShowToast(false), 3000)
+      }
+    } catch {
+      // silently fail
+    }
+  }, [articleId])
+
+  return { earnedPlatforms, recordCredit, showToast }
+}
+
 // ── Copy button with feedback ────────────────────────────────────────────────
 
-function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) {
+function CopyButton({ text, label = 'Copy', onCopy }: { text: string; label?: string; onCopy?: () => void }) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
+      onCopy?.()
       setTimeout(() => setCopied(false), 2000)
     } catch {
       // Fallback
@@ -33,9 +96,10 @@ function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) 
       document.execCommand('copy')
       document.body.removeChild(el)
       setCopied(true)
+      onCopy?.()
       setTimeout(() => setCopied(false), 2000)
     }
-  }, [text])
+  }, [text, onCopy])
 
   return (
     <button
@@ -89,7 +153,7 @@ function CountBadge({ count, max, unit = 'chars' }: { count: number; max?: numbe
 
 // ── Tab components ───────────────────────────────────────────────────────────
 
-function TwitterTab({ content }: { content: SocialContent }) {
+function TwitterTab({ content, onShare }: { content: SocialContent; onShare: () => void }) {
   const thread = content.twitter_thread
   const fullThread = thread.join('\n\n---\n\n')
 
@@ -100,8 +164,8 @@ function TwitterTab({ content }: { content: SocialContent }) {
           X / Twitter Thread
         </h3>
         <div className="flex gap-2">
-          <CopyButton text={thread[0] ?? ''} label="Copy tweet 1" />
-          <CopyButton text={fullThread} label="Copy thread" />
+          <CopyButton text={thread[0] ?? ''} label="Copy tweet 1" onCopy={onShare} />
+          <CopyButton text={fullThread} label="Copy thread" onCopy={onShare} />
         </div>
       </div>
 
@@ -133,7 +197,7 @@ function TwitterTab({ content }: { content: SocialContent }) {
   )
 }
 
-function LinkedInTab({ content }: { content: SocialContent }) {
+function LinkedInTab({ content, onShare }: { content: SocialContent; onShare: () => void }) {
   const wordCount = content.linkedin_post.split(/\s+/).filter(Boolean).length
 
   return (
@@ -145,7 +209,7 @@ function LinkedInTab({ content }: { content: SocialContent }) {
           </h3>
           <CountBadge count={wordCount} unit="words" />
         </div>
-        <CopyButton text={content.linkedin_post} label="Copy post" />
+        <CopyButton text={content.linkedin_post} label="Copy post" onCopy={onShare} />
       </div>
 
       <div
@@ -163,14 +227,14 @@ function LinkedInTab({ content }: { content: SocialContent }) {
   )
 }
 
-function RedditTab({ content }: { content: SocialContent }) {
+function RedditTab({ content, onShare }: { content: SocialContent; onShare: () => void }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold" style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}>
           Reddit Post
         </h3>
-        <CopyButton text={content.reddit_summary} label="Copy post" />
+        <CopyButton text={content.reddit_summary} label="Copy post" onCopy={onShare} />
       </div>
 
       <div
@@ -201,6 +265,7 @@ function RedditTab({ content }: { content: SocialContent }) {
                   href={submitUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={onShare}
                   className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors hover:opacity-80"
                   style={{
                     backgroundColor: 'var(--card)',
@@ -257,7 +322,7 @@ function ImageCardsTab({ content }: { content: SocialContent }) {
 
 // ── Loading state ────────────────────────────────────────────────────────────
 
-function LoadingState({ articleUrl }: { articleUrl: string }) {
+function LoadingState({ articleUrl, onCopyLink }: { articleUrl: string; onCopyLink: () => void }) {
   return (
     <div className="py-12 text-center">
       <div className="inline-flex items-center gap-2 mb-3">
@@ -269,8 +334,45 @@ function LoadingState({ articleUrl }: { articleUrl: string }) {
       <p className="text-xs mb-6" style={{ color: 'var(--text-secondary)' }}>
         This takes a few seconds. In the meantime:
       </p>
-      <CopyButton text={articleUrl} label="Copy article link" />
+      <CopyButton text={articleUrl} label="Copy article link" onCopy={onCopyLink} />
     </div>
+  )
+}
+
+// ── Share credit status ─────────────────────────────────────────────────────
+
+function ShareCreditStatus({ earnedPlatforms }: { earnedPlatforms: string[] }) {
+  const allPlatforms = ['twitter', 'linkedin', 'reddit', 'copy_link']
+  const earned = earnedPlatforms.length
+  const total = allPlatforms.length
+
+  if (earned === 0) return null
+
+  const platformLabels: Record<string, string> = {
+    twitter: 'X',
+    linkedin: 'LinkedIn',
+    reddit: 'Reddit',
+    copy_link: 'Link',
+  }
+
+  if (earned >= total) {
+    return (
+      <div className="flex items-center gap-1.5 text-[11px] px-3 py-1.5" style={{ color: '#16a34a' }}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
+        <span style={{ fontFamily: 'var(--font-sora)' }}>All share credits earned</span>
+      </div>
+    )
+  }
+
+  const earnedLabels = earnedPlatforms.map(p => platformLabels[p] ?? p).join(', ')
+  const remaining = total - earned
+
+  return (
+    <p className="text-[11px] px-3 py-1.5" style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-sora)' }}>
+      Shared on {earnedLabels} · {remaining} more platform{remaining !== 1 ? 's' : ''} available
+    </p>
   )
 }
 
@@ -284,6 +386,20 @@ export default function SharePanel({ articleRow, isOpen, onClose }: Props) {
   const [polling, setPolling] = useState(!socialContent)
 
   const articleUrl = `https://unpacked.fyi/article/${articleRow.slug}`
+
+  const { earnedPlatforms, recordCredit, showToast } = useShareCredits(articleRow.id)
+
+  // Map tab to platform for credit tracking
+  const tabToPlatform: Record<Tab, SharePlatform> = {
+    twitter: 'twitter',
+    linkedin: 'linkedin',
+    reddit: 'reddit',
+    cards: 'copy_link', // cards don't map to a specific platform
+  }
+
+  const handleShare = useCallback((tab: Tab) => {
+    recordCredit(tabToPlatform[tab])
+  }, [recordCredit, tabToPlatform])
 
   // Poll for social content if not yet available
   useEffect(() => {
@@ -369,6 +485,9 @@ export default function SharePanel({ articleRow, isOpen, onClose }: Props) {
           </button>
         </div>
 
+        {/* Share credit status */}
+        <ShareCreditStatus earnedPlatforms={earnedPlatforms} />
+
         {/* Tabs */}
         {socialContent && (
           <div
@@ -403,22 +522,28 @@ export default function SharePanel({ articleRow, isOpen, onClose }: Props) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {!socialContent ? (
-            <LoadingState articleUrl={articleUrl} />
+            <LoadingState articleUrl={articleUrl} onCopyLink={() => recordCredit('copy_link')} />
           ) : (
             <>
-              {activeTab === 'twitter' && <TwitterTab content={socialContent} />}
-              {activeTab === 'linkedin' && <LinkedInTab content={socialContent} />}
-              {activeTab === 'reddit' && <RedditTab content={socialContent} />}
+              {activeTab === 'twitter' && <TwitterTab content={socialContent} onShare={() => handleShare('twitter')} />}
+              {activeTab === 'linkedin' && <LinkedInTab content={socialContent} onShare={() => handleShare('linkedin')} />}
+              {activeTab === 'reddit' && <RedditTab content={socialContent} onShare={() => handleShare('reddit')} />}
               {activeTab === 'cards' && <ImageCardsTab content={socialContent} />}
             </>
           )}
         </div>
       </div>
 
+      <ShareCreditToast show={showToast} />
+
       <style jsx global>{`
         @keyframes slideInRight {
           from { transform: translateX(100%); }
           to { transform: translateX(0); }
+        }
+        @keyframes toastSlideUp {
+          from { transform: translate(-50%, 20px); opacity: 0; }
+          to { transform: translate(-50%, 0); opacity: 1; }
         }
       `}</style>
     </>

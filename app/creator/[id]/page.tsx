@@ -32,7 +32,7 @@ function getArticleTypeLabel(type: string) {
 
 async function getProfile(supabase: ReturnType<typeof getSupabaseAdmin>, userId: string) {
   const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
-  return data as { display_name?: string; bio?: string; website?: string; twitter_url?: string; linkedin_url?: string; medium_url?: string } | null
+  return data as { display_name?: string; bio?: string; website?: string; twitter_url?: string; linkedin_url?: string; medium_url?: string; is_founding_creator?: boolean } | null
 }
 
 export async function generateMetadata({ params }: Props) {
@@ -103,6 +103,7 @@ export default async function CreatorProfilePage({ params }: Props) {
             twitterUrl={emptyProfile?.twitter_url}
             linkedinUrl={emptyProfile?.linkedin_url}
             mediumUrl={emptyProfile?.medium_url}
+            isFoundingCreator={emptyProfile?.is_founding_creator}
           />
           <p className="mt-8 text-sm" style={{ color: 'var(--text-secondary)' }}>
             This creator hasn&apos;t published any articles yet.
@@ -136,6 +137,7 @@ export default async function CreatorProfilePage({ params }: Props) {
           twitterUrl={profile?.twitter_url}
           linkedinUrl={profile?.linkedin_url}
           mediumUrl={profile?.medium_url}
+          isFoundingCreator={profile?.is_founding_creator}
         />
       </div>
 
@@ -214,6 +216,7 @@ function ProfileHeader({
   twitterUrl,
   linkedinUrl,
   mediumUrl,
+  isFoundingCreator,
 }: {
   name: string
   avatar: string | null
@@ -223,6 +226,7 @@ function ProfileHeader({
   twitterUrl?: string
   linkedinUrl?: string
   mediumUrl?: string
+  isFoundingCreator?: boolean
 }) {
   return (
     <div className="flex items-start gap-4">
@@ -243,13 +247,21 @@ function ProfileHeader({
         </div>
       )}
       <div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <h1
             className="text-xl md:text-2xl font-bold"
             style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
           >
             {name}
           </h1>
+          {isFoundingCreator && (
+            <span
+              className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+              style={{ backgroundColor: '#BA7517', color: '#fff', fontFamily: 'var(--font-sora)' }}
+            >
+              Founding Creator
+            </span>
+          )}
           {twitterUrl && (
             <a
               href={twitterUrl}
