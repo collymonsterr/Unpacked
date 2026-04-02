@@ -42,6 +42,24 @@ export default function FindingCard({
   const snippet = contentLines.slice(0, 3).join(' ')
   const isLong = finding.content.length > 200
 
+  // Extract display domain from URL
+  const sourceDomain = (() => {
+    if (!finding.url) return null
+    try {
+      const url = new URL(finding.url)
+      const hostname = url.hostname.replace(/^www\./, '')
+      // For Reddit, try to show subreddit
+      if (finding.source_type === 'reddit' || hostname.includes('reddit.com')) {
+        const match = url.pathname.match(/\/r\/([^/]+)/)
+        if (match) return `reddit.com/r/${match[1]}`
+        return 'reddit.com'
+      }
+      return hostname
+    } catch {
+      return null
+    }
+  })()
+
   return (
     <div
       className="relative rounded-lg transition-all"
@@ -143,6 +161,24 @@ export default function FindingCard({
           <p className="text-[11px] mt-1.5" style={{ color: 'var(--text-secondary)' }}>
             Used in: <span className="font-medium">{sectionName}</span>
           </p>
+        )}
+
+        {/* Source link */}
+        {sourceDomain && finding.url && (
+          <a
+            href={finding.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-[11px] mt-1.5 hover:underline"
+            style={{ color: '#94918D' }}
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+            via {sourceDomain}
+          </a>
         )}
       </div>
     </div>

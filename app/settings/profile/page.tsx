@@ -16,6 +16,7 @@ interface ProfileData {
   website: string
   twitter_url: string
   linkedin_url: string
+  medium_url: string
   location: string
   currency: string
   language: string
@@ -33,6 +34,7 @@ export default function ProfileSettingsPage() {
   const [website, setWebsite] = useState('')
   const [twitterUrl, setTwitterUrl] = useState('')
   const [linkedinUrl, setLinkedinUrl] = useState('')
+  const [mediumUrl, setMediumUrl] = useState('')
   const [location, setLocation] = useState('')
   const [currency, setCurrency] = useState('USD')
   const [language, setLanguage] = useState('en')
@@ -53,6 +55,7 @@ export default function ProfileSettingsPage() {
         setWebsite(data.website || '')
         setTwitterUrl(data.twitter_url || '')
         setLinkedinUrl(data.linkedin_url || '')
+        setMediumUrl(data.medium_url || '')
         setLocation(data.location || '')
         setCurrency(data.currency || 'USD')
         setLanguage(data.language || 'en')
@@ -68,7 +71,7 @@ export default function ProfileSettingsPage() {
       const res = await fetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ display_name: displayName, bio, website, twitter_url: twitterUrl, linkedin_url: linkedinUrl, location, currency, language }),
+        body: JSON.stringify({ display_name: displayName, bio, website, twitter_url: twitterUrl, linkedin_url: linkedinUrl, medium_url: mediumUrl, location, currency, language }),
       })
       if (res.ok) {
         setSaved(true)
@@ -238,7 +241,7 @@ export default function ProfileSettingsPage() {
         </div>
 
         {/* LinkedIn */}
-        <div className="mb-8">
+        <div className="mb-5">
           <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
             LinkedIn URL
           </label>
@@ -254,6 +257,26 @@ export default function ProfileSettingsPage() {
               color: 'var(--text-primary)',
             }}
             placeholder="https://linkedin.com/in/yourusername"
+          />
+        </div>
+
+        {/* Medium */}
+        <div className="mb-8">
+          <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+            Medium URL
+          </label>
+          <input
+            type="url"
+            value={mediumUrl}
+            onChange={(e) => setMediumUrl(e.target.value)}
+            maxLength={200}
+            className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+            style={{
+              backgroundColor: 'var(--card)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-primary)',
+            }}
+            placeholder="https://medium.com/@yourusername"
           />
         </div>
 

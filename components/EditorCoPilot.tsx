@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type {
   EntityCard,
   ResearchSynthesis,
@@ -47,6 +47,10 @@ export default function EditorCoPilot({ articleId, articleSlug, articleType }: E
   const [isRewriting, setIsRewriting] = useState(false)
   const [rewriteResult, setRewriteResult] = useState<{ success: boolean; newSlug?: string; error?: string } | null>(null)
   const [isSwitching, setIsSwitching] = useState(false)
+
+  // Include selected findings flow
+  const [showIncludeOptions, setShowIncludeOptions] = useState(false)
+  const rewriteRef = useRef<HTMLDivElement>(null)
 
   // Collapsible sections
   const [usedExpanded, setUsedExpanded] = useState(false)
@@ -95,6 +99,41 @@ export default function EditorCoPilot({ articleId, articleSlug, articleType }: E
     })
     setRewriteResult(null)
   }, [])
+
+  const buildFindingSummaries = useCallback(() => {
+    if (!data) return ''
+    const selected = data.research_findings.filter(f => selectedToAdd.has(f.id))
+    return selected.map(f => {
+      const source = f.source || 'Unknown source'
+      const snippet = f.content.length > 200 ? f.content.slice(0, 200) + '...' : f.content
+      return `[${source}]: ${snippet}`
+    }).join('\n\n')
+  }, [data, selectedToAdd])
+
+  const handleIncludeAction = useCallback((action: 'add' | 'replace' | 'auto') => {
+    const summaries = buildFindingSummaries()
+    let prompt = ''
+    switch (action) {
+      case 'add':
+        prompt = `Add these research findings as new material, keeping all existing content:\n\n${summaries}`
+        break
+      case 'replace':
+        prompt = `Use these research findings to replace any outdated or weaker coverage of the same topics:\n\n${summaries}`
+        break
+      case 'auto':
+        prompt = `Incorporate these findings in whatever way produces the best article — add, replace, or restructure as needed:\n\n${summaries}`
+        break
+    }
+    setInstructions(prompt)
+    setShowIncludeOptions(false)
+    // Clear selections after pre-populating
+    setSelectedToAdd(new Set())
+    setRewriteResult(null)
+    // Scroll to rewrite controls
+    setTimeout(() => {
+      rewriteRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 100)
+  }, [buildFindingSummaries])
 
   const handleRewrite = useCallback(async () => {
     setIsRewriting(true)
@@ -408,7 +447,85 @@ export default function EditorCoPilot({ articleId, articleSlug, articleType }: E
         )}
       </div>
 
+      {/* ── Include Selected Bar ── */}
+      {selectedToAdd.size > 0 && (
+        <div
+          className="rounded-xl p-4 mb-4"
+          style={{ backgroundColor: '#FFFBF5', border: '1px solid #F5D5A0' }}
+        >
+          {!showIncludeOptions ? (
+            <button
+              onClick={() => setShowIncludeOptions(true)}
+              className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+              style={{
+                backgroundColor: '#BA7517',
+                color: '#fff',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-sora)',
+              }}
+            >
+              Include {selectedToAdd.size} finding{selectedToAdd.size !== 1 ? 's' : ''}
+            </button>
+          ) : (
+            <div>
+              <p
+                className="text-sm font-medium mb-3"
+                style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-sora)' }}
+              >
+                How should these be included?
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleIncludeAction('add')}
+                  className="px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={{
+                    border: '1px solid #E8E3DC',
+                    backgroundColor: '#fff',
+                    color: 'var(--text-primary)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Add to article
+                </button>
+                <button
+                  onClick={() => handleIncludeAction('replace')}
+                  className="px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={{
+                    border: '1px solid #E8E3DC',
+                    backgroundColor: '#fff',
+                    color: 'var(--text-primary)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Replace related content
+                </button>
+                <button
+                  onClick={() => handleIncludeAction('auto')}
+                  className="px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={{
+                    border: '1px solid #E8E3DC',
+                    backgroundColor: '#fff',
+                    color: 'var(--text-primary)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Do it automatically
+                </button>
+              </div>
+              <button
+                onClick={() => setShowIncludeOptions(false)}
+                className="mt-2 text-xs"
+                style={{ color: 'var(--text-secondary)', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Section C: Rewrite Controls ── */}
+      <div ref={rewriteRef}>
       <RewriteControls
         articleId={articleId}
         addCount={selectedToAdd.size}
@@ -424,6 +541,7 @@ export default function EditorCoPilot({ articleId, articleSlug, articleType }: E
         onSwitchType={handleSwitchType}
         isSwitching={isSwitching}
       />
+      </div>
 
       {/* Mobile sticky bar — shows when changes are selected */}
       {(selectedToAdd.size > 0 || selectedToRemove.size > 0) && !rewriteResult?.success && (

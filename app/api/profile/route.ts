@@ -24,6 +24,7 @@ export async function GET() {
       website: profile?.website ?? '',
       twitter_url: profile?.twitter_url ?? '',
       linkedin_url: profile?.linkedin_url ?? '',
+      medium_url: profile?.medium_url ?? '',
       location: profile?.location ?? '',
       currency: profile?.currency ?? 'USD',
       language: profile?.language ?? 'en',
@@ -58,6 +59,11 @@ export async function POST(request: NextRequest) {
       const trimmed = body.linkedin_url.trim().slice(0, 200)
       if (trimmed && trimmed.startsWith('https://')) linkedinUrl = trimmed
     }
+    let mediumUrl: string | null = null
+    if (typeof body.medium_url === 'string') {
+      const trimmed = body.medium_url.trim().slice(0, 200)
+      if (trimmed && trimmed.startsWith('https://')) mediumUrl = trimmed
+    }
 
     const db = getSupabaseAdmin()
 
@@ -71,6 +77,7 @@ export async function POST(request: NextRequest) {
         website: website ?? '',
         twitter_url: twitterUrl,
         linkedin_url: linkedinUrl,
+        medium_url: mediumUrl,
         location: location ?? '',
         currency: currency ?? 'USD',
         language: language ?? 'en',

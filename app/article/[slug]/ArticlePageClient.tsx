@@ -24,9 +24,10 @@ interface Props {
   creatorBio?: string
   creatorTwitterUrl?: string
   creatorLinkedinUrl?: string
+  creatorMediumUrl?: string
 }
 
-export default function ArticlePageClient({ initialRow, linkableArticles, creatorBio, creatorTwitterUrl, creatorLinkedinUrl }: Props) {
+export default function ArticlePageClient({ initialRow, linkableArticles, creatorBio, creatorTwitterUrl, creatorLinkedinUrl, creatorMediumUrl }: Props) {
   const [row, setRow] = useState(initialRow)
 
   // Determine if article is already complete on initial load
@@ -53,6 +54,10 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
 
   // Tab state (Article vs Editor)
   const [activeTab, setActiveTab] = useState<'article' | 'editor'>('article')
+
+  // Editor tab nudge: unused findings count + one-time animation
+  const [unusedFindingsCount, setUnusedFindingsCount] = useState(0)
+  const [showNudgeAnimation, setShowNudgeAnimation] = useState(false)
 
   // Sign-in gate state
   const [gateDismissed, setGateDismissed] = useState(false)
@@ -121,6 +126,38 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
       visitedAt: Date.now(),
     })
   }, [showArticle, row.article, initialRow.slug])
+
+  // Fetch unused findings count for Editor tab nudge (owner only)
+  useEffect(() => {
+    if (!isOwner || !showArticle || !row.article) return
+    const nudgeKey = `unpacked_editor_nudge_${initialRow.id}`
+    // If already dismissed, don't fetch
+    if (typeof window !== 'undefined' && localStorage.getItem(nudgeKey) === 'true') return
+
+    fetch(`/api/articles/${initialRow.id}/research`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (!data?.research_findings) return
+        const unused = data.research_findings.filter((f: { used_in_article: boolean }) => !f.used_in_article).length
+        if (unused > 0) {
+          setUnusedFindingsCount(unused)
+          setShowNudgeAnimation(true)
+          // Stop animation after one cycle
+          setTimeout(() => setShowNudgeAnimation(false), 2000)
+        }
+      })
+      .catch(() => {})
+  }, [isOwner, showArticle, row.article, initialRow.id])
+
+  // When user clicks Editor tab, mark nudge as dismissed
+  const handleTabClick = useCallback((tab: 'article' | 'editor') => {
+    setActiveTab(tab)
+    if (tab === 'editor' && unusedFindingsCount > 0) {
+      const nudgeKey = `unpacked_editor_nudge_${initialRow.id}`
+      localStorage.setItem(nudgeKey, 'true')
+      setShowNudgeAnimation(false)
+    }
+  }, [unusedFindingsCount, initialRow.id])
 
   const [timedOut, setTimedOut] = useState(false)
   // eslint-disable-next-line react-hooks/purity -- useRef initial value is set once on mount only
@@ -326,7 +363,7 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
               {(['article', 'editor'] as const).map(tab => (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => handleTabClick(tab)}
                   className="relative px-4 py-3 text-sm font-medium transition-colors"
                   style={{
                     color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-secondary)',
@@ -334,9 +371,29 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
                     cursor: 'pointer',
                     background: 'none',
                     border: 'none',
+                    animation: tab === 'editor' && showNudgeAnimation ? 'editorNudge 0.5s ease-in-out 2' : undefined,
                   }}
                 >
-                  {tab === 'article' ? 'Article' : 'Editor'}
+                  {tab === 'article' ? 'Article' : (
+                    <span className="flex items-center gap-1.5">
+                      Editor
+                      {unusedFindingsCount > 0 && activeTab !== 'editor' && (
+                        <span
+                          className="inline-flex items-center justify-center text-[10px] font-bold rounded-full"
+                          style={{
+                            backgroundColor: '#BA7517',
+                            color: '#fff',
+                            minWidth: '18px',
+                            height: '18px',
+                            padding: '0 5px',
+                            fontFamily: 'var(--font-sora)',
+                          }}
+                        >
+                          {unusedFindingsCount}
+                        </span>
+                      )}
+                    </span>
+                  )}
                   {activeTab === tab && (
                     <span
                       className="absolute bottom-0 left-0 right-0 h-0.5"
@@ -360,6 +417,7 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
               creatorBio={creatorBio}
               creatorTwitterUrl={creatorTwitterUrl}
               creatorLinkedinUrl={creatorLinkedinUrl}
+              creatorMediumUrl={creatorMediumUrl}
             />
           ) : (
             <Suspense
