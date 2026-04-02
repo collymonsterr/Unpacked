@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts'
+import { formatCost } from '@/lib/format-cost'
 
 interface FallbackStats {
   geminiWritesLast24h: number
@@ -24,6 +25,26 @@ interface CostsData {
   note: string
 }
 
+interface ArticleCostRow {
+  id: string
+  title: string
+  slug: string
+  article_type: string
+  status: string
+  total_cost: number | null
+  write_model: string | null
+  timings: {
+    planning_ms: number | null
+    research_ms: number | null
+    blueprint_ms: number | null
+    writing_ms: number | null
+    editorial_ms: number | null
+    factcheck_ms: number | null
+    total_ms: number | null
+  } | null
+  created_at: string
+}
+
 const TYPE_LABELS: Record<string, string> = {
   plan: 'Planning',
   write: 'Writing',
@@ -33,6 +54,8 @@ const TYPE_LABELS: Record<string, string> = {
 export default function AdminCosts() {
   const [data, setData] = useState<CostsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [articles, setArticles] = useState<ArticleCostRow[]>([])
+  const [articlesLoading, setArticlesLoading] = useState(true)
 
   useEffect(() => {
     fetch('/api/admin/costs')
@@ -40,6 +63,12 @@ export default function AdminCosts() {
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false))
+
+    fetch('/api/admin/costs/articles')
+      .then(r => r.json())
+      .then(d => setArticles(d.articles ?? []))
+      .catch(() => {})
+      .finally(() => setArticlesLoading(false))
   }, [])
 
   if (loading) {
@@ -257,6 +286,109 @@ export default function AdminCosts() {
       <p className="text-xs mt-3" style={{ color: 'var(--text-secondary)', opacity: 0.6 }}>
         {data.note}
       </p>
+
+      {/* Recent Articles table */}
+      <div className="mt-8">
+        <h3
+          className="text-base font-bold mb-3"
+          style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+        >
+          Recent Articles
+        </h3>
+
+        {articlesLoading ? (
+          <div className="animate-pulse h-48 rounded-xl" style={{ backgroundColor: 'var(--border)' }} />
+        ) : articles.length === 0 ? (
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>No articles found.</p>
+        ) : (
+          <div
+            className="rounded-xl overflow-hidden"
+            style={{ border: '1px solid var(--border)' }}
+          >
+            <div className="overflow-x-auto" style={{ maxHeight: 480 }}>
+              <table className="w-full text-sm" style={{ minWidth: 700 }}>
+                <thead>
+                  <tr style={{ backgroundColor: 'var(--card)' }}>
+                    <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Title</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-xs uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Type</th>
+                    <th className="text-right px-3 py-2.5 font-semibold text-xs uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Cost</th>
+                    <th className="text-right px-3 py-2.5 font-semibold text-xs uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Time</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-xs uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Model</th>
+                    <th className="text-right px-4 py-2.5 font-semibold text-xs uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {articles.map((a, i) => {
+                    const costColor = a.total_cost === null
+                      ? 'var(--text-secondary)'
+                      : a.total_cost < 0.05
+                        ? '#2D8A4E'
+                        : a.total_cost < 0.10
+                          ? '#BA7517'
+                          : '#C13A28'
+
+                    const totalSeconds = a.timings?.total_ms
+                      ? Math.round(a.timings.total_ms / 1000)
+                      : null
+
+                    const modelShort = a.write_model
+                      ? a.write_model
+                          .replace('gemini-2.5-flash', 'Gemini 2.5 Flash')
+                          .replace('gemini-2.0-flash', 'Gemini 2.0 Flash')
+                          .replace('claude-sonnet-4-20250514', 'Sonnet 4')
+                          .replace('claude-3-5-sonnet-20241022', 'Sonnet 3.5')
+                          .replace('claude-haiku-4-20250414', 'Haiku 4')
+                          .replace('claude-haiku-4-5-20251001', 'Haiku 4.5')
+                      : '–'
+
+                    const dateStr = new Date(a.created_at).toLocaleDateString('en-GB', {
+                      day: 'numeric', month: 'short',
+                    })
+
+                    return (
+                      <tr
+                        key={a.id}
+                        style={{
+                          backgroundColor: i % 2 === 0 ? 'transparent' : 'var(--card)',
+                          borderTop: '1px solid var(--border)',
+                        }}
+                      >
+                        <td className="px-4 py-2.5" style={{ color: 'var(--text-primary)' }}>
+                          <a
+                            href={`/article/${a.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline"
+                            style={{ color: 'var(--accent)' }}
+                            title={a.title}
+                          >
+                            {a.title.length > 50 ? a.title.slice(0, 50) + '…' : a.title}
+                          </a>
+                        </td>
+                        <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
+                          {a.article_type?.replace(/_/g, ' ') ?? '–'}
+                        </td>
+                        <td className="px-3 py-2.5 text-right tabular-nums font-medium whitespace-nowrap" style={{ color: costColor }}>
+                          {a.total_cost !== null ? `$${a.total_cost.toFixed(3)}` : '–'}
+                        </td>
+                        <td className="px-3 py-2.5 text-right tabular-nums whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
+                          {totalSeconds !== null ? `${totalSeconds}s` : '–'}
+                        </td>
+                        <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
+                          {modelShort}
+                        </td>
+                        <td className="px-4 py-2.5 text-right whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
+                          {dateStr}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
