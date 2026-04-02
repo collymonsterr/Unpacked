@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 type VoteState = 'default' | 'good' | 'needs_work' | 'submitted'
 
@@ -12,6 +12,8 @@ const REASONS = [
   { label: 'Missing key info', value: 'missing_info' },
 ] as const
 
+const GOOD_LOCK_DELAY = 5000
+
 function getStorageKey(articleId: string) {
   return `unpacked_feedback_${articleId}`
 }
@@ -21,28 +23,79 @@ export default function ArticleVoting({ articleId }: { articleId: string }) {
   const [selectedReasons, setSelectedReasons] = useState<string[]>([])
   const [comment, setComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [locked, setLocked] = useState(false)
   const feedbackRef = useRef<HTMLDivElement>(null)
+  const lockTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   // Check if already voted (localStorage)
   useEffect(() => {
     try {
       const stored = localStorage.getItem(getStorageKey(articleId))
-      if (stored) setState('submitted')
+      if (stored) {
+        setState('submitted')
+        setLocked(true)
+      }
     } catch {}
   }, [articleId])
 
+  // Lock positive vote on navigation away
+  const lockGoodVote = useCallback(() => {
+    if (lockTimerRef.current) clearTimeout(lockTimerRef.current)
+    setLocked(true)
+    localStorage.setItem(getStorageKey(articleId), 'good')
+  }, [articleId])
+
+  useEffect(() => {
+    if (state !== 'good' || locked) return
+
+    const handleVisibility = () => {
+      if (document.hidden) lockGoodVote()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('beforeunload', lockGoodVote)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('beforeunload', lockGoodVote)
+    }
+  }, [state, locked, lockGoodVote])
+
+  // Clean up lock timer on unmount
+  useEffect(() => {
+    return () => {
+      if (lockTimerRef.current) clearTimeout(lockTimerRef.current)
+    }
+  }, [])
+
   const handleVote = async (vote: 'good' | 'needs_work') => {
+    if (locked) return
+
     if (vote === 'good') {
+      // Cancel any pending lock timer (switching from needs_work back)
+      if (lockTimerRef.current) clearTimeout(lockTimerRef.current)
+
       setState('good')
+      setSelectedReasons([])
+      setComment('')
+
+      // Submit the positive vote
       try {
         await fetch(`/api/articles/${articleId}/feedback`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ vote: 'good' }),
         })
-        localStorage.setItem(getStorageKey(articleId), 'good')
       } catch {}
+
+      // Lock after 5 seconds
+      lockTimerRef.current = setTimeout(() => {
+        setLocked(true)
+        localStorage.setItem(getStorageKey(articleId), 'good')
+      }, GOOD_LOCK_DELAY)
     } else {
+      // Cancel any pending lock timer (switching from good)
+      if (lockTimerRef.current) clearTimeout(lockTimerRef.current)
+
       setState('needs_work')
       setTimeout(() => {
         feedbackRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
@@ -64,8 +117,10 @@ export default function ArticleVoting({ articleId }: { articleId: string }) {
       })
       localStorage.setItem(getStorageKey(articleId), 'needs_work')
       setState('submitted')
+      setLocked(true)
     } catch {
       setState('submitted')
+      setLocked(true)
     } finally {
       setSubmitting(false)
     }
@@ -91,6 +146,11 @@ export default function ArticleVoting({ articleId }: { articleId: string }) {
     )
   }
 
+  const goodActive = state === 'good'
+  const needsWorkActive = state === 'needs_work'
+  const canClickGood = !locked && state !== 'good'
+  const canClickNeedsWork = !locked && state !== 'needs_work'
+
   return (
     <div
       className="my-8 mx-auto rounded-xl"
@@ -114,51 +174,50 @@ export default function ArticleVoting({ articleId }: { articleId: string }) {
       <div className="flex items-center gap-3 flex-wrap">
         <button
           onClick={() => handleVote('good')}
-          disabled={state !== 'default'}
+          disabled={!canClickGood}
           className="transition-all"
           style={{
             padding: '8px 18px',
             borderRadius: 20,
             fontSize: 14,
             fontWeight: 500,
-            cursor: state === 'default' ? 'pointer' : 'default',
-            border: state === 'good' ? '1.5px solid #5DCAA5' : '1px solid var(--border)',
-            backgroundColor: state === 'good' ? '#E1F5EE' : '#fff',
-            color: state === 'good' ? '#085041' : 'var(--text-primary)',
-            opacity: state === 'needs_work' ? 0.3 : 1,
+            cursor: canClickGood ? 'pointer' : 'default',
+            border: goodActive ? '1.5px solid #5DCAA5' : '1px solid var(--border)',
+            backgroundColor: goodActive ? '#E1F5EE' : '#fff',
+            color: goodActive ? '#085041' : 'var(--text-primary)',
+            opacity: needsWorkActive && locked ? 0.3 : 1,
           }}
         >
           👍 Good article
         </button>
 
-        {state === 'good' && (
+        <button
+          onClick={() => handleVote('needs_work')}
+          disabled={!canClickNeedsWork}
+          className="transition-all"
+          style={{
+            padding: '8px 18px',
+            borderRadius: 20,
+            fontSize: 14,
+            fontWeight: 500,
+            cursor: canClickNeedsWork ? 'pointer' : 'default',
+            border: needsWorkActive ? '1.5px solid #F09595' : '1px solid var(--border)',
+            backgroundColor: needsWorkActive ? '#FCEBEB' : '#fff',
+            color: needsWorkActive ? '#791F1F' : 'var(--text-primary)',
+            opacity: goodActive && locked ? 0.3 : 1,
+          }}
+        >
+          👎 Needs work
+        </button>
+
+        {goodActive && (
           <span style={{ fontSize: 13, color: '#085041', fontWeight: 500 }}>
             Thanks for your feedback!
           </span>
         )}
-
-        {state !== 'good' && (
-          <button
-            onClick={() => handleVote('needs_work')}
-            disabled={state !== 'default'}
-            className="transition-all"
-            style={{
-              padding: '8px 18px',
-              borderRadius: 20,
-              fontSize: 14,
-              fontWeight: 500,
-              cursor: state === 'default' ? 'pointer' : 'default',
-              border: state === 'needs_work' ? '1.5px solid #F09595' : '1px solid var(--border)',
-              backgroundColor: state === 'needs_work' ? '#FCEBEB' : '#fff',
-              color: state === 'needs_work' ? '#791F1F' : 'var(--text-primary)',
-            }}
-          >
-            👎 Needs work
-          </button>
-        )}
       </div>
 
-      {state === 'needs_work' && (
+      {needsWorkActive && (
         <div
           ref={feedbackRef}
           className="mt-4 rounded-xl"
