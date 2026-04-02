@@ -195,7 +195,7 @@ Return ONLY a JSON array of selected market IDs. Examples:
       },
       signal: controller.signal,
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 200,
         temperature: 0,
         messages: [{ role: 'user', content: prompt }],
@@ -214,7 +214,7 @@ Return ONLY a JSON array of selected market IDs. Examples:
     // Log usage
     logApiCall({
       callType: 'polymarket_filter',
-      model: 'claude-3-haiku-20240307',
+      model: 'claude-haiku-4-5-20251001',
       inputTokens: data.usage?.input_tokens,
       outputTokens: data.usage?.output_tokens,
       articleId,

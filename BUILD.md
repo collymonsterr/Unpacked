@@ -205,11 +205,11 @@ Covering: articles CRUD, admin actions, search, saved articles, profile manageme
 
 ---
 
-## Known Bugs (verified, not yet fixed)
+## Known Bugs (verified)
 
-1. **Big statements and pull quotes visually identical** — both use amber `#FAEEDA` + quote SVG. Pull quotes are algorithmic extracts with quotation marks but no attribution — looks like a real quote. Must be differentiated.
-2. **Polymarket uses old Haiku model** — `claude-3-haiku-20240307` instead of `claude-haiku-4-5-20251001`.
-3. **Editorial pass score threshold mismatch** — prompt says ≤80, code applies at ≤75.
+1. ~~**Big statements and pull quotes visually identical**~~ — **FIXED April 2026.** Pull quotes now use left-border italic style; big statements keep amber card + quote SVG.
+2. ~~**Polymarket uses old Haiku model**~~ — **FIXED April 2026.** Updated to `claude-haiku-4-5-20251001`.
+3. ~~**Editorial pass score threshold mismatch**~~ — **FIXED April 2026.** Code threshold aligned to ≤80, matching the prompt.
 4. **In-memory state in serverless** — Gemini concurrency limiter, duplicate call guard, Yahoo Finance cache all in-memory. Work per-instance but don't coordinate across instances.
 
 ---
@@ -234,4 +234,4 @@ Verified absent from codebase as of April 2026:
 - **Screenshot-proof branding** — not built
 - **One-click social posting** — social content is generated but no one-click copy/post UI
 - **Onboarding flow** — not built
-- **Author block prominence** — avatar 20px, name muted. Too small.
+- ~~**Author block prominence**~~ — already done: 40px avatar, 15px font-medium name, bio line, Twitter link.

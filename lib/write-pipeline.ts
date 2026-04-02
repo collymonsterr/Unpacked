@@ -146,7 +146,7 @@ export async function runWritePipeline({
   t.editorial_ms = Date.now() - editStart
 
   // Apply editorial rewrites if score is low enough
-  if (editorialResult && editorialResult.score <= 75 && Object.keys(editorialResult.rewrites).length > 0) {
+  if (editorialResult && editorialResult.score <= 80 && Object.keys(editorialResult.rewrites).length > 0) {
     console.log(`[write-pipeline] Editorial score ${editorialResult.score}/100 — applying ${Object.keys(editorialResult.rewrites).length} rewrites`)
     applyEditorRewrites(enrichedArticle, editorialResult)
   } else if (editorialResult) {

@@ -171,22 +171,6 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 
 ## Known Bugs and Issues
 
-### VISUAL: Big Statements and Pull Quotes are identical
-- `components/sections/BigStatement.tsx` — amber `#FAEEDA`, quote SVG, `#633806` text
-- `components/sections/ContentSection.tsx` `extractPullQuote()` — **same amber, same SVG, same styling**
-- Pull quotes are algorithmically extracted sentences (NOT real quotes from people) but rendered with quotation marks (`&ldquo;`/`&rdquo;`) — misleading
-- Big statements have optional `attribution` prop but pull quotes never do
-- **These must look visually distinct.** Currently indistinguishable.
-
-### MODEL: Polymarket uses wrong Haiku model
-- `lib/data-sources/polymarket.ts` uses `claude-3-haiku-20240307` (old)
-- Rest of pipeline uses `claude-haiku-4-5-20251001`
-- Should be updated for consistency
-
-### THRESHOLD: Editorial pass score mismatch
-- Prompt says rewrite at score ≤80, code applies at ≤75
-- Sections scoring 76–80 skip rewrites despite prompt suggesting they shouldn't
-
 ### SERVERLESS: In-memory state won't persist across invocations
 - Gemini concurrency limiter in `lib/gemini-writer.ts` — in-memory
 - Duplicate call guard in `lib/api-usage.ts` — in-memory (5-min window)
@@ -317,7 +301,8 @@ Per-article controls: Featured toggle, Trending toggle, Hero pin (one at a time)
 - **Feel:** Wirecutter meets The Verge — editorial, warm, opinionated
 - **Verdict box:** trophy SVG in amber, grey background (#f0efed), italic serif text
 - **Verified badge:** green shield. Label: "Verified" — NOT "Fact-checked"
-- **Big statements:** amber `#FAEEDA`, quote SVG, `#633806` text (currently identical to pull quotes — bug)
+- **Big statements:** amber `#FAEEDA`, quote SVG, `#633806` text
+- **Pull quotes:** left-border italic style (visually distinct from big statements)
 
 ---
 
