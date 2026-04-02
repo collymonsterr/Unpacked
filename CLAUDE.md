@@ -1,20 +1,30 @@
 # CLAUDE.md — Unpacked (unpacked.fyi)
 
-Read this before doing anything. Technical facts only — for current feature state see BUILD.md, for roadmap see PLAN.md.
+Read this before doing anything. Technical facts only — verified against codebase April 2026.
+
+For current feature state see BUILD.md. For roadmap see PLAN.md.
 
 ---
 
 ## What This Project Is
 
-A web platform where users type any question and receive a complete, visual, opinionated article in 2–3 minutes. Every article picks a winner. After generation, a second AI independently fact-checks every price and claim. Users put their name on articles and will eventually earn affiliate revenue from product recommendations.
+A web platform where users type any question and receive a complete, visual, opinionated article in 2–3 minutes. Every article picks a winner. After generation, three AI models independently fact-check every claim. Users put their name on articles and will eventually earn affiliate revenue from product recommendations.
 
 **URL:** https://unpacked.fyi | **Repo:** GitHub → Vercel auto-deploy | **Name:** Unpacked (unpacked.fyi)
 
 ---
 
+## Editorial Voice
+
+Every article must have an opinion. Banned phrases: "it depends," "both are excellent," "ultimately," plus 50+ forbidden AI phrases defined in `lib/editorial-rules.ts`. The platform is Wirecutter meets The Verge — editorial, warm, opinionated. Frame as a publishing platform, not an AI tool.
+
+Two audiences: **Creators** (generate articles, share, eventually earn affiliate revenue) and **Organic readers** (arrive via shared links on Reddit, social, etc.).
+
+---
+
 ## The Founder
 
-Solo non-developer using Claude Code as primary dev tool. All prompts must be explicit: exact UI elements, exact behaviour, exact colours and sizes, fallback logic. Vague prompts lead to broken implementations.
+Colin — solo non-developer, Dubai-based, using Claude Code as primary dev tool. All prompts must be explicit: exact UI elements, exact behaviour, exact colours and sizes, fallback logic. Vague prompts lead to broken implementations.
 
 ---
 
@@ -33,64 +43,179 @@ Applies to: anything touching the generation flow, homepage layout, article page
 
 ---
 
-## Tech Stack
+## Tech Stack (verified)
 
-- **Framework:** Next.js (App Router), Vercel Pro
-- **Database:** Supabase (PostgreSQL) — https://obyywahmmkrpsimjbdua.supabase.co
+- **Framework:** Next.js 16.2.0, App Router, Turbopack, React 19.2.4, TypeScript 5.9
+- **Hosting:** Vercel Pro, auto-deploy from GitHub
+- **Database:** Supabase PostgreSQL — https://obyywahmmkrpsimjbdua.supabase.co
 - **Auth:** Google OAuth via Supabase Auth (no email/password)
 - **Storage:** Supabase Storage (bucket: article-images)
-- **CSS:** Tailwind CSS | **Charts:** Recharts
+- **CSS:** Tailwind CSS 4 | **Charts:** Recharts 3.8 | **PDF:** jspdf 4.2
+- **Drag-and-drop:** @dnd-kit (admin reorder)
+- **AI SDKs:** @anthropic-ai/sdk 0.80, @google/generative-ai, openai
 
 ---
 
-## AI Pipeline
+## AI Pipeline — 8 Stages
 
-### Default (most articles)
-1. **Planning:** Claude Haiku — classifies type, decides structure, produces `forbidden_components`
-2. **Research:** Brave Search API — 4–10 searches, condensed summary (~3,000–4,000 tokens) → `lib/brave-research.ts`
-3. **Writing:** Gemini 2.5 Flash — full article JSON → `lib/gemini-writer.ts`
-4. **Cost:** ~$0.02–0.03/article
+Every article flows through these stages in order. File paths and models verified against code.
 
-### Premium / deep dive
-- Same planning + Brave research; writing uses Claude Sonnet (~$0.08–0.12/article)
-- Sonnet does NOT use web search — research comes from Brave only
-- Automatic fallback if Gemini fails (JSON validation, 2 retries before fallback)
+### Stage 1: Planning → `lib/claude.ts` → `planArticle()`
+- **Model:** Claude Haiku 4.5 (`claude-haiku-4-5-20251001`)
+- Classifies article type (10 types), decides structure, produces `forbidden_components`
+- Generates research manifest: `brave_queries`, `reddit_queries`, `live_data_queries`
+- Generates `hero_image_subject` for image search
+- Opinion elements: controversial_take, misunderstanding, prediction, winner_and_loser
+- 400+ line system prompt with all type definitions and rules
 
-### Fact-checking (all articles, async)
-- Gemini 2.5 Flash with Google Search grounding
-- Runs asynchronously after article delivered; independently verifies prices, specs, claims
-- Deliberate different model from writer — prevents self-reinforcing errors
-- API key: GOOGLE_GEMINI_API_KEY
+### Stage 2: Research → `lib/research-orchestrator.ts` → `executeResearch()`
+- Runs in parallel: Brave web search + Reddit search + live data queries
+- **Brave:** `lib/brave-research.ts` — 4–10 searches, `sanitizeSnippet()` prevents JSON failures
+- **Reddit:** `executeRedditQueries()` — via Brave site:reddit.com searches
+- **Live data:** `executeLiveDataQueries()` — Polymarket + Yahoo Finance + Google Trends (all parallel)
+- Entity card extraction from research findings
+- **Synthesis:** Haiku call (`buildSynthesis()`) replacing flat research summaries
 
-### Hero images
-- Primary: Brave image search for real editorial photos (2×2 picker)
-- Owner can upload custom hero image
-- Haiku-powered query generation via `hero_image_subject` in plan
+### Stage 3: Blueprint → `lib/blueprint.ts` → `generateBlueprint()`
+- **Model:** Gemini 2.5 Flash (temp 0.2, thinkingBudget: 0)
+- Produces: thesis, winner, section skeleton, evidence requirements, word budgets
+- Big statement placement rules (3–5, never consecutive)
+- Visual density rules, chart data integrity rules
+- Fallback: `buildFallbackBlueprint()` if Gemini fails
+
+### Stage 4: Writing → `lib/gemini-writer.ts` → `writeWithGemini()`
+- **Default model:** Gemini 2.5 Flash (temp 0.3, maxOutputTokens: 65536)
+- **Premium/fallback:** Claude Sonnet (`claude-sonnet-4-20250514`) via `lib/claude.ts` → `writeWithSonnet()`
+- 3 retries with JSON validation before Sonnet fallback
+- `validateArticleSchema()` checks structure
+- `formatLiveDataForPrompt()` injects live data
+- Concurrency limiter: `GEMINI_MAX_CONCURRENT=3` (in-memory — serverless caveat)
+- **Cost:** ~$0.02–0.03 default, ~$0.08–0.12 Sonnet
+
+### Stage 5: Editorial Pass → `lib/editorial-pass.ts` → `runEditorialPass()`
+- **Primary:** Claude Sonnet (`claude-sonnet-4-20250514`)
+- **Fallback:** Gemini Flash
+- 15 editorial checks, rewrites weak sections via `applyEditorRewrites()`
+- Rewrite threshold: prompt says ≤80, code applies at ≤75
+- If both models fail, returns score 85 (never blocks pipeline)
+- Rules: `lib/editorial-rules.ts` — `FORBIDDEN_PHRASES` (50+), `FILLER_PATTERNS` (20), `TONE_DESCRIPTIONS` (10 codes)
+
+### Stage 6: Images → `lib/images.ts` + `lib/image-router.ts`
+- `routeImageRequest()` returns ordered source list per image type
+- Hero editorial: Pexels → Unsplash → Brave
+- News/products: Brave only
+- `generateHeroQuery()` — Haiku-powered smart query
+- `resolveHeroCandidates()` — tries sources in priority order
+- `enrichArticleWithImages()` — product images + editorial sections
+- Filtering: REJECTED_PATTERNS, SMALL_IMAGE_PATTERNS, TEXT_IMAGE_PATTERNS, PREFERRED_HOSTNAMES
+- Pexels integration: `lib/pexels.ts` (requires `PEXELS_API_KEY`, graceful fallback if missing)
+
+### Stage 7: Fact-Check → `lib/fact-check.ts` → `runTripleFactCheck()`
+- **Stage 1:** Gemini + Google Search grounding + claim extraction (`stage1GeminiVerification()`, thinkingBudget: 0)
+- **Stage 2:** Haiku credibility review (`stage2HaikuReview()` — uses `claude-haiku-4-20250414`)
+- **Stage 3:** GPT-4o-mini arbitration (`stage3Arbitration()` — conditional, only when stages disagree)
+- `applyCorrections()` modifies article, `buildAudit()` creates trail, `determineFinalVerdict()` for consensus
+- Runs async after article delivered
+
+### Stage 8: Social Content → `lib/social-content.ts` → `generateSocialContent()`
+- **Model:** Gemini Flash (~$0.001/article)
+- Generates: X thread, LinkedIn post, Reddit summary, image cards
+- `saveSocialContent()` saves to DB
+- Runs async after article delivered
+
+### Pipeline Orchestration → `lib/write-pipeline.ts` → `runWritePipeline()`
+- Phase 1: Blueprint
+- Phase 2: Write + hero image (parallel)
+- Phase 3: Editorial pass + product images (parallel)
+- Phase 4: Fact-check + social content (async, after delivery)
+- Timing data persisted to `generation_options.timings`
 
 ---
 
-## Article Classification (7 types)
+## Article Classification — 10 Types (verified)
 
-Comparison, Explainer, Buyer Guide, Decision Guide, Tutorial, News, Trend Analysis
+Defined in `lib/article-types.ts`:
 
-Each type has Required/Allowed/Forbidden component rules. The `forbidden_components` field in the plan JSON is passed to the writing prompt as a HARD CONSTRAINT. Visuals are conditional by type.
+buyer_guide, comparison, explainer, decision_guide, how_to, roundup, news_analysis, trend_analysis, breaking_news, deep_dive
+
+Each type has: requiredComponents, allowedComponents, forbiddenComponents, lengthRange, tone, verdictRequired, verdictStyle. Helpers: `getArticleTypeLabel()`, `isComponentAllowed()`, `getForbiddenComponents()`.
+
+---
+
+## 12 Categories (verified as top-level DB column)
+
+Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotive, Culture, News, AI
+
+---
+
+## Live Data Sources (all built)
+
+| Source | File | Requires | Notes |
+|--------|------|----------|-------|
+| Polymarket | `lib/data-sources/polymarket.ts` | Free API | 3-stage: fetch → blocklist → Haiku LLM selection. **BUG:** uses old `claude-3-haiku-20240307` model |
+| Yahoo Finance | `lib/data-sources/yahoo-finance.ts` | Free API | 5-symbol limit, sparklines from 1-month daily close. In-memory 5-min cache |
+| Google Trends | `lib/data-sources/google-trends.ts` | `SERPAPI_KEY` | 12-month timeline, trend direction: rising/declining/stable/peaking |
+
+---
+
+## Sign-In Gate (built)
+
+- Generation starts for all users, research runs immediately
+- Anonymous users see research preview (`components/ResearchPreview.tsx`) while waiting
+- Sign-in gate (`components/SignInGate.tsx`) overlays with Google OAuth (redirect-based, NOT popup)
+- Article pauses at `awaiting_auth` status until sign-in
+- Authenticated users: full pipeline runs
+- Generation state preserved via DB (not localStorage)
+
+---
+
+## Known Bugs and Issues
+
+### VISUAL: Big Statements and Pull Quotes are identical
+- `components/sections/BigStatement.tsx` — amber `#FAEEDA`, quote SVG, `#633806` text
+- `components/sections/ContentSection.tsx` `extractPullQuote()` — **same amber, same SVG, same styling**
+- Pull quotes are algorithmically extracted sentences (NOT real quotes from people) but rendered with quotation marks (`&ldquo;`/`&rdquo;`) — misleading
+- Big statements have optional `attribution` prop but pull quotes never do
+- **These must look visually distinct.** Currently indistinguishable.
+
+### MODEL: Polymarket uses wrong Haiku model
+- `lib/data-sources/polymarket.ts` uses `claude-3-haiku-20240307` (old)
+- Rest of pipeline uses `claude-haiku-4-5-20251001`
+- Should be updated for consistency
+
+### THRESHOLD: Editorial pass score mismatch
+- Prompt says rewrite at score ≤80, code applies at ≤75
+- Sections scoring 76–80 skip rewrites despite prompt suggesting they shouldn't
+
+### SERVERLESS: In-memory state won't persist across invocations
+- Gemini concurrency limiter in `lib/gemini-writer.ts` — in-memory
+- Duplicate call guard in `lib/api-usage.ts` — in-memory (5-min window)
+- Yahoo Finance cache in `lib/data-sources/yahoo-finance.ts` — in-memory (5-min)
+- These work within a single serverless instance but don't coordinate across instances
 
 ---
 
 ## Database — Key Columns on Articles Table
 
 - `visibility` — private / unlisted / published (default: unlisted for anon, private for logged-in, published for admin)
-- `is_featured`, `featured_position` — Featured section control (no separate is_hero column)
+- `status` — generating / awaiting_auth / complete / verified / error
+- `article_type` — one of 10 types
+- `category` — one of 12 categories (top-level column)
+- `is_featured`, `featured_position` — Featured section control
 - `card_summary` — punchy one-liner for hero card, editable in admin
 - `is_trending`, `trending_set_at` — Trending Today section (manual admin toggle)
 - `view_count` — Most Popular section
 - `hidden_from_homepage` — hides from homepage grid; article still accessible via URL
 - `sort_order` — manual admin reorder
-- `generation_options` JSONB — length, tone, visual density settings
+- `generation_options` JSONB — length, tone, visual density, timings
 - `forbidden_components` — in plan JSON, passed to writing prompt
 - `fact_check` JSONB, `verified_at` — fact-check results
 - `parent_article_id`, `root_article_id` — refine/fork lineage
 - `user_id`, `user_name`, `user_avatar` — creator attribution
+- `research_preview` JSONB — shown during sign-in gate
+- `entity_cards` JSONB — structured research entities
+- `blueprint` JSONB — section skeleton from blueprint phase
+- `social_content` JSONB — generated social posts
 
 ---
 
@@ -98,39 +223,82 @@ Each type has Required/Allowed/Forbidden component rules. The `forbidden_compone
 
 - `pendingArticleId` — article being generated; recovery on refresh/tab switch
 - `hasVisitedFeatured` — hero card rotation (first visit vs return)
-- `featuredHeroId` — last featured article shown as hero, excluded from next selection
+- `featuredHeroId` — last featured article shown as hero
 - `recentArticles` — up to 10 recently visited articles
 - `unpacked_votes_[articleId]` — vote state per article
 - `unpacked_session_id` — anonymous session for voting
 
 ---
 
-## Key Files and Components
+## Key Files (verified to exist)
 
-- `components/SearchForm.tsx` — homepage search/generate form
-- `app/article/[slug]/ArticlePageClient.tsx` — article page, rendering, polling, completion detection
-- `components/ArticleGenerating.tsx` — loading messages and progress display
-- `components/ArticleOptions.tsx` — generation options: length, tone (opinionated/balanced/casual), visual density
-- `components/ui/ArticleVoting.tsx` — voting (helpful/not_helpful + convinced/not_convinced)
-- `lib/brave-research.ts` — Brave Search pre-research pipeline
-- `lib/gemini-writer.ts` — Gemini Flash article generation + `refineWithGemini()`
+### Pipeline
 - `lib/claude.ts` — Haiku planning + Sonnet premium/fallback + `refineArticle()`
+- `lib/research-orchestrator.ts` — parallel research + entity cards + synthesis
+- `lib/brave-research.ts` — Brave Search queries + `sanitizeSnippet()`
+- `lib/blueprint.ts` — Gemini blueprint generation
+- `lib/gemini-writer.ts` — Gemini Flash writing + `refineWithGemini()`
+- `lib/editorial-pass.ts` — Sonnet/Gemini editorial scoring and rewriting
+- `lib/editorial-rules.ts` — forbidden phrases, filler patterns, tone descriptions
+- `lib/write-pipeline.ts` — orchestrates all phases with timing
+- `lib/fact-check.ts` — triple fact-check pipeline
+- `lib/social-content.ts` — social content generation
+- `lib/images.ts` — hero + product image fetching
+- `lib/image-router.ts` — source routing by image type
+- `lib/pexels.ts` — Pexels API integration
+- `lib/article-types.ts` — 10 type definitions with component rules
+
+### Live Data
+- `lib/data-sources/polymarket.ts` — prediction market odds
+- `lib/data-sources/yahoo-finance.ts` — stock quotes + sparklines
+- `lib/data-sources/google-trends.ts` — search interest trends
+
+### Pages
+- `app/page.tsx` — homepage (server component)
+- `app/article/[slug]/page.tsx` — article page (server, JSON-LD injection)
+- `app/article/[slug]/ArticlePageClient.tsx` — article rendering + polling
+- `app/admin/page.tsx` — admin dashboard (4 tabs: overview, articles, costs, feedback)
+
+### Components
+- `components/SearchForm.tsx` — homepage search/generate form
+- `components/ArticleGenerating.tsx` — loading messages and progress
+- `components/ArticleOptions.tsx` — generation options: length, tone, visual density
+- `components/SignInGate.tsx` — modal overlay with Google OAuth
+- `components/ResearchPreview.tsx` — research findings during sign-in
+- `components/ui/ArticleVoting.tsx` — voting (helpful/not_helpful + convinced/not_convinced)
+
+### API Routes (37 total)
+- `app/api/articles/create/route.ts` — main generation flow
+- `app/api/articles/search/route.ts` — navbar autocomplete
+
+### Other
+- `lib/api-usage.ts` — cost logging + duplicate guard
 - `lib/structured-data.ts` — JSON-LD: Article, Person, ClaimReview, Review, BreadcrumbList
+- `lib/internal-links.ts` — client-side internal link injection
 
 ---
 
 ## Homepage Structure
 
-1. **Featured** — 1 hero card left (2fr) + 2×2 small cards right (3fr), 540px height
-2. **Trending Today** — exactly 3 dark-style cards (manual admin toggle)
-3. **Most Popular** — top 4 by `view_count` with rank badges
-4. **Recent Articles** — 3 per row with category filter pills
+1. **PendingArticleRecovery** — recovers in-progress articles
+2. **Navbar** (no search on homepage)
+3. **HomepageHero** — main search/generate form
+4. **TrustStrip** — social proof
+5. **Featured** — 1 hero card left (2fr) + 2×2 small cards right (3fr), 540px height, pool-based rotation
+6. **Trending Today** — exactly 3 dark-style cards (manual admin toggle, pool-based)
+7. **Most Popular** — top 4 by `view_count` with rank badges
+8. **RecentArticlesGrid** — 3 per row with category filter pills
+9. **Footer**
+
+Deduplicates article chains via `root_article_id`.
 
 ---
 
 ## Admin System
 
 Admin = authenticated user email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
+
+4 tabs: Overview, Articles, Costs, Feedback.
 
 Per-article controls: Featured toggle, Trending toggle, Hero pin (one at a time), Hide, Delete, Drag-to-reorder, Category change, Regenerate, Hero image refresh, `card_summary` edit, Backfill.
 
@@ -139,6 +307,35 @@ Per-article controls: Featured toggle, Trending toggle, Hero pin (one at a time)
 - Owner or admin: replace-thumbnail, replace-image, set-primary-image, regenerate-images
 - Authenticated: refine (creates a fork)
 - Public: view, record view, feedback, fact-check, export
+
+---
+
+## Design System
+
+- **Background:** warm cream/off-white (#FAFAF8)
+- **Primary accent:** orange/amber (#BA7517 amber, #993C1D category text)
+- **Feel:** Wirecutter meets The Verge — editorial, warm, opinionated
+- **Verdict box:** trophy SVG in amber, grey background (#f0efed), italic serif text
+- **Verified badge:** green shield. Label: "Verified" — NOT "Fact-checked"
+- **Big statements:** amber `#FAEEDA`, quote SVG, `#633806` text (currently identical to pull quotes — bug)
+
+---
+
+## Environment Variables
+
+```
+ANTHROPIC_API_KEY              # Haiku planning + Sonnet premium/fallback + editorial
+GOOGLE_GEMINI_API_KEY          # Gemini Flash writing + blueprint + fact-check + social
+BRAVE_SEARCH_API_KEY           # Web research + image search (paid plan)
+OPENAI_API_KEY                 # GPT-4o-mini fact-check arbitration
+PEXELS_API_KEY                 # Pexels image search (hero editorial)
+SERPAPI_KEY                    # Google Trends data
+NEXT_PUBLIC_SUPABASE_URL       # https://obyywahmmkrpsimjbdua.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY  # Public key
+SUPABASE_SERVICE_ROLE_KEY      # Server-side only — never in client code
+NEXT_PUBLIC_ADMIN_EMAIL        # Admin user's email
+GEMINI_MAX_CONCURRENT=3        # Concurrent generation limit (in-memory)
+```
 
 ---
 
@@ -152,44 +349,48 @@ Per-article controls: Featured toggle, Trending toggle, Hero pin (one at a time)
 ## Cost Controls
 
 - `api_usage_log` table logs every API call with token counts
-- Duplicate call guard: same article ID + call type blocked within 5 minutes
+- `MODEL_PRICING` in `lib/api-usage.ts` for per-model cost rates
+- Duplicate call guard: same article ID + call type blocked within 5 minutes (in-memory)
 - Query caching: checks for similar existing articles before generating
-- Concurrency limiter: GEMINI_MAX_CONCURRENT=3
+- Concurrency limiter: GEMINI_MAX_CONCURRENT=3 (in-memory)
+- Fallback monitoring in admin Costs tab: Gemini vs Sonnet split, fallback rate %, amber alert when >5%
 
 ---
 
-## Design System
+## Article Creation Flow (verified in `app/api/articles/create/route.ts`)
 
-- **Background:** warm cream/off-white (#FAFAF8)
-- **Primary accent:** orange/amber (#BA7517 amber, #993C1D category text)
-- **Feel:** Wirecutter meets The Verge — editorial, warm, opinionated
-- **Verdict box:** trophy SVG in amber, grey background (#f0efed), italic serif text
-- **Verified badge:** green shield. Label: "Verified" — NOT "Fact-checked"
-
----
-
-## Environment Variables
-
-```
-ANTHROPIC_API_KEY              # Haiku planning + Sonnet premium/fallback
-GOOGLE_GEMINI_API_KEY          # Gemini Flash writing + fact-checking
-BRAVE_SEARCH_API_KEY           # Web research + image search (paid plan, $5/1000 queries)
-OPENAI_API_KEY                 # GPT Image hero (legacy, phasing out)
-NEXT_PUBLIC_SUPABASE_URL       # https://obyywahmmkrpsimjbdua.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY  # Public key
-SUPABASE_SERVICE_ROLE_KEY      # Server-side only — never in client code
-NEXT_PUBLIC_ADMIN_EMAIL        # Admin user's email
-GEMINI_MAX_CONCURRENT=3        # Concurrent generation limit
-```
+1. Rate limit check
+2. Query cache check (similar existing articles)
+3. Auth check (determines visibility default)
+4. Background work via `after()`:
+   - Plan article (Haiku)
+   - Run research (parallel: Brave + Reddit + live data)
+   - **If anonymous:** build research preview, pause at `awaiting_auth`
+   - **If authenticated:** run full `runWritePipeline()`
+5. Auto-cleanup: articles stuck in `generating` >10min → error, `awaiting_auth` >24h → expired
+6. Profile preferences merged into generation options (location, currency, language)
 
 ---
 
-## Two Audiences
+## Mandatory Process Rules
 
-1. **Creators** — generate articles, share them, earn affiliate revenue (eventually)
-2. **Organic readers** — arrive via shared links on Reddit, social, etc.
+### 1. Documentation Updates
+When any feature ships, update BUILD.md immediately. When the plan changes, update PLAN.md. CLAUDE.md only changes when the tech stack, pipeline, or architecture changes.
 
-Frame as a publishing platform, not an AI tool.
+### 2. Session Start
+At the start of every session, read CLAUDE.md, BUILD.md, and PLAN.md before doing anything. Verify your understanding of the current state matches what's documented.
+
+### 3. Autonomous Execution
+When the founder gives a clear, detailed brief: execute it fully without stopping to ask questions. When the brief is ambiguous or high-risk: use investigate-plan-approve-code.
+
+### 4. Proactive Engineering
+If you see a bug while working on something else, note it. Don't fix it silently (scope creep) but don't ignore it either. Flag it clearly: "Found while working on X: [bug description]. Want me to fix it?"
+
+### 5. Deployment
+Never push directly to main without confirmation. Always verify the build succeeds locally before committing. Test API routes with actual data when possible.
+
+### 6. Code Quality
+No placeholder implementations. No "TODO: implement later" unless explicitly agreed. No unused imports or dead code. Preserve existing patterns — don't refactor code you weren't asked to touch.
 
 ---
 

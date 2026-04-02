@@ -1,94 +1,237 @@
 # BUILD.md — Unpacked Current Feature State
 
-What exists right now, confirmed by codebase investigation. Update this file whenever a feature ships.
+What exists right now, confirmed by full codebase audit April 2026. Update this file whenever a feature ships.
 
 ---
 
-## Core Platform (stable since launch)
+## AI Pipeline (fully built, 8 stages)
 
-- Article generation pipeline: Haiku planning → Brave research → Gemini Flash writing → async fact-check
-- 7 article types with `forbidden_components` enforcement
-- Product cards, comparison tables, calculators, charts, verdict box
-- Fact-check bar with corrections display
-- Reddit community section (real threads sourced from Brave search)
-- Hero image system: 2×2 Brave image picker, owner upload, Haiku-powered query generation
-- Article refine/fork system (creates child article, lineage tracked via parent/root IDs)
-- SEO: JSON-LD structured data, sitemap, robots.txt, OG tags, canonical URLs
-- Internal linking: client-side injection, zero DB writes
-- Admin system: three tabs (Overview, Articles, Costs)
-- Pool-based homepage rotation: featured and trending use curated pools
-- Generation options UI: length (quick/standard/deep), tone (opinionated/balanced/casual), visual density — all wired through to Gemini prompt via `buildSimpleOptionsPrompt()`
+| Stage | What | Model | File |
+|-------|------|-------|------|
+| 1. Planning | Type classification, structure, research manifest, forbidden_components | Claude Haiku 4.5 | `lib/claude.ts` |
+| 2. Research | Brave + Reddit + live data (parallel), entity cards, Haiku synthesis | Brave API + Haiku | `lib/research-orchestrator.ts` |
+| 3. Blueprint | Thesis, winner, section skeleton, word budgets, big statement placement | Gemini 2.5 Flash | `lib/blueprint.ts` |
+| 4. Writing | Full article JSON with validation + retry + fallback | Gemini Flash (default), Sonnet (premium/fallback) | `lib/gemini-writer.ts`, `lib/claude.ts` |
+| 5. Editorial | 15-check scoring, section rewrites | Sonnet (primary), Gemini (fallback) | `lib/editorial-pass.ts` |
+| 6. Images | Routed multi-source: Pexels → Unsplash → Brave | Haiku (query gen) | `lib/images.ts`, `lib/image-router.ts`, `lib/pexels.ts` |
+| 7. Fact-check | Triple: Gemini+Google Search, Haiku credibility, GPT-4o-mini arbitration | 3 models | `lib/fact-check.ts` |
+| 8. Social | X thread, LinkedIn post, Reddit summary, image cards | Gemini Flash | `lib/social-content.ts` |
+
+Pipeline orchestrated by `lib/write-pipeline.ts` with parallel phases and timing data.
 
 ---
 
-## Completed in March 2026 Build Session
+## Article Types (10, verified in `lib/article-types.ts`)
 
-### Visibility system
-- Three-state `visibility` column on articles table: `private` / `unlisted` / `published`
-- Default assignment in `app/api/articles/create/route.ts`: anonymous → unlisted, logged-in → private, admin → published
+buyer_guide, comparison, explainer, decision_guide, how_to, roundup, news_analysis, trend_analysis, breaking_news, deep_dive
+
+Each has required/allowed/forbidden components, length range, tone, verdict rules.
+
+---
+
+## Categories (12, top-level DB column)
+
+Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotive, Culture, News, AI
+
+---
+
+## Live Data Integrations (3, all built and wired into research phase)
+
+- **Polymarket** — prediction odds, 3-stage pipeline (fetch → blocklist → Haiku LLM selection) → `lib/data-sources/polymarket.ts`
+- **Yahoo Finance** — stock quotes + sparklines, 5-symbol limit → `lib/data-sources/yahoo-finance.ts`
+- **Google Trends** — 12-month timeline via SerpAPI, trend direction → `lib/data-sources/google-trends.ts`
+
+All run in parallel during research phase via `executeLiveDataQueries()`.
+
+---
+
+## Sign-In Gate (built)
+
+- Generation starts for all users immediately
+- Anonymous users see research preview while waiting (`components/ResearchPreview.tsx`)
+- Sign-in overlay with Google OAuth — redirect-based (not popup)
+- Article pauses at `awaiting_auth` until sign-in
+- State preserved via DB, not localStorage
+- Auto-expires `awaiting_auth` articles after 24 hours
+
+---
+
+## Visibility System (built)
+
+- Three-state: `private` / `unlisted` / `published`
+- Defaults: anonymous → unlisted, logged-in → private, admin → published
 - FirstDraftBanner UI controls for visibility change
 - Existing articles migrated
 
-### Voting system
-- `ArticleVoting` component replaces `ArticleFeedback` (fully removed from `ArticleView.tsx`)
-- Card 1: "Was this article helpful?" — Helpful (amber) / Not helpful (red)
-  - Not helpful expands: 6 reason pills + 140-char textarea + Submit button
-- Card 2: "Was the verdict convincing?" — only shown when article has a verdict
-  - Not convinced expands textarea + Submit button
-  - Stats line shown when ≥5 total verdict votes: "X% found the verdict convincing · N votes"
-- Vote values: `helpful`/`not_helpful` and `convinced`/`not_convinced`
-- localStorage keys: `unpacked_votes_[articleId]` (state) + `unpacked_session_id` (anon session)
-- `article_votes` table has `reason` and `comment` columns; vote API saves both
+---
 
-### Generation improvements
-- Stuck-generation auto-expire: on each new create request, articles stuck in `generating` for >10 minutes are set to `error`
-- Error state copy: "Something went wrong generating this article" with "Ask a new question →" CTA
+## Voting System (built)
 
-### Gemini improvements
-- `sanitizeSnippet()` in `lib/brave-research.ts`: replaces `"` with `'` and `\` with `/` at 5 call sites — fixes JSON parse failure from unescaped research content
-- `maxOutputTokens: 65536` in `lib/gemini-writer.ts` (both `writeWithGemini` and `refineWithGemini`)
-- `refineWithGemini()` exported from `lib/gemini-writer.ts`; `refineArticle()` in `lib/claude.ts` tries Gemini first, falls back to Sonnet
-- Fallback monitoring in admin Costs tab: Gemini vs Sonnet split, fallback rate %, estimated extra cost, amber alert when rate >5%
-
-### Structured data
-- `lib/structured-data.ts`: Person schema on Article (author name), ClaimReview per fact-check correction, Review schema from verdict
-- `app/article/[slug]/page.tsx` conditionally injects ClaimReview and Review scripts
-
-### Pages confirmed built
-- `/updates` — `app/updates/page.tsx`
-- `/how-it-works` — `app/how-it-works/page.tsx`
-
-### Other
-- About page rebuilt: 8 sections, typewriter hero, AI language removed
-- Admin Articles tab: 5 filter tabs, star/flame/eye toggles
+- `ArticleVoting` component with two cards:
+  - Card 1: "Was this article helpful?" — Helpful (amber) / Not helpful (red)
+  - Not helpful expands: 6 reason pills + 140-char textarea + Submit
+  - Card 2: "Was the verdict convincing?" — only shown when article has verdict
+  - Stats line at ≥5 total verdict votes
+- localStorage: `unpacked_votes_[articleId]` (state) + `unpacked_session_id` (anon session)
+- `article_votes` table with `reason` and `comment` columns
 
 ---
 
-## Confirmed Gaps (Not Yet Built)
+## Editorial System (built)
 
-Verified absent from codebase:
-
-- **Author block prominence** — avatar is `w-5 h-5` (20px), name `text-sm` / `var(--text-secondary)`. Too small and muted. Needs: 40px avatar, prominent name, bio line below.
-- **Social links on profiles** — no `twitter_url` or `linkedin_url` in profiles table or API. Profile returns: display_name, bio, website, location, currency, language only.
-- **Sign-in gate** — no auth required before generation. Anonymous users get `visibility: 'unlisted'` and proceed unblocked.
-- **Stripe** — zero files. No subscription tiers, no payment processing.
-- **Affiliate infrastructure** — no `affiliate_url` field, no link routing, no revenue tracking.
-- **Category pages** — no `/category/[slug]` routes.
-- **One-click social repurposing** — not built.
-- **Research Companion tab** — not built; `research_findings` field does not exist on articles table (research is discarded after writing).
-- **Creator analytics dashboard** — not built.
-- **Referral system** — not built.
-- **Trending questions dashboard** — not built.
-- **Email capture / weekly digest** — not built.
-- **Profile photo upload** — Google avatar only; Supabase Storage upload not wired to profiles.
+- `lib/editorial-rules.ts`: 50+ forbidden AI phrases, 20 filler patterns, 10 tone codes
+- `lib/editorial-pass.ts`: Sonnet primary, Gemini fallback, 15 checks, section-level rewrites
+- Applied automatically in pipeline after writing phase
 
 ---
 
-## What Previous CLAUDE.md Got Wrong
+## Image Pipeline (built — routed multi-source)
 
-Items CLAUDE.md listed as "Stage 3 — not yet built" that are actually fully built:
-- **Visibility system** (private/unlisted/published) — BUILT and wired
-- **`refineWithGemini`** in `lib/gemini-writer.ts` — BUILT
-- **Fallback rate monitoring** in admin Costs tab — BUILT
-- **`sanitizeSnippet()` JSON fix** — BUILT
-- **`/updates` changelog page** — BUILT (CLAUDE.md listed as ⬜ pending)
+- `lib/image-router.ts` — routes by image type: hero editorial → pexels/unsplash/brave, news → brave only
+- `lib/pexels.ts` — Pexels API with attribution (graceful fallback if key missing)
+- `lib/images.ts` — hero + product images, Haiku query generation, candidate filtering
+- Owner can upload custom hero image via Supabase Storage
+
+---
+
+## Research System (built — entity cards + synthesis)
+
+- `lib/research-orchestrator.ts` orchestrates all research in parallel
+- Entity card extraction from findings (structured: name, type, facts, sources, confidence)
+- Haiku synthesis replaces flat research summaries
+- Brave web + Reddit + live data all parallel
+- `sanitizeSnippet()` in brave-research.ts prevents JSON failures from unescaped content
+
+---
+
+## Social Content Generation (built, async)
+
+- `lib/social-content.ts` — generates X thread, LinkedIn post, Reddit summary, image cards
+- Gemini Flash, ~$0.001/article
+- Runs asynchronously after article delivery
+- Saved to DB via `saveSocialContent()`
+
+---
+
+## Homepage (built)
+
+1. PendingArticleRecovery → Navbar (no search) → HomepageHero → TrustStrip
+2. Featured: 1 hero (2fr) + 2×2 small cards (3fr), 540px, pool-based rotation
+3. Trending Today: 3 dark-style cards, manual admin toggle, pool-based
+4. Most Popular: top 4 by view_count with rank badges
+5. Recent Articles: 3 per row with category filter pills
+6. Footer
+
+Deduplicates article chains via `root_article_id`.
+
+---
+
+## Admin Dashboard (built — 4 tabs)
+
+- **Overview:** stats summary
+- **Articles:** 5 filter tabs, star/flame/eye toggles, drag-to-reorder (@dnd-kit), per-article controls
+- **Costs:** API usage, Gemini vs Sonnet split, fallback rate %, amber alert >5%
+- **Feedback:** vote data and comments
+
+Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
+
+---
+
+## Article Page Features (built)
+
+- Server-rendered with JSON-LD injection (Article, Person, ClaimReview, Review, BreadcrumbList)
+- Client-side polling for in-progress articles
+- Fact-check bar with corrections display
+- Verified badge (green shield, "Verified" label)
+- Internal linking (client-side injection, zero DB writes, cached 1 hour)
+- Product cards, comparison tables, calculators, charts (Recharts), verdict box
+- PDF export (jspdf)
+- Reddit community section (real threads from Brave)
+- Refine/fork system (child article, lineage via parent/root IDs)
+- Navbar with search autocomplete (top 5 by view_count, published articles only)
+
+---
+
+## Generation Options (built, wired to prompts)
+
+- **Length:** quick / standard / deep
+- **Tone:** opinionated / balanced / casual (+ 7 more codes in editorial-rules.ts)
+- **Visual density:** configurable
+- Profile preferences: location, currency, language merged into generation options
+
+---
+
+## Pages Confirmed Built
+
+| Path | File | Notes |
+|------|------|-------|
+| `/` | `app/page.tsx` | Homepage, server component |
+| `/article/[slug]` | `app/article/[slug]/page.tsx` | Article page, UUID or slug lookup |
+| `/admin` | `app/admin/page.tsx` | Admin dashboard, 4 tabs |
+| `/about` | `app/about/page.tsx` | 8 sections, typewriter hero |
+| `/how-it-works` | `app/how-it-works/page.tsx` | Explanation page |
+| `/updates` | `app/updates/page.tsx` | Changelog |
+| `/dashboard` | `app/dashboard/page.tsx` | User dashboard |
+| `/creators` | `app/creators/page.tsx` | Creator listing |
+| `/creator/[id]` | `app/creator/[id]/page.tsx` | Creator profile |
+| `/settings` | `app/settings/page.tsx` | User settings |
+| `/recent` | `app/recent/page.tsx` | Recent articles |
+| `/build` | `app/build/page.tsx` | Build page |
+
+---
+
+## API Routes (37 confirmed)
+
+Covering: articles CRUD, admin actions, search, saved articles, profile management, voting, fact-check, images, social content, rate limiting.
+
+---
+
+## Cost Controls (built)
+
+- `api_usage_log` table with token counts and cost tracking
+- `MODEL_PRICING` in `lib/api-usage.ts` with per-model rates
+- Duplicate call guard (in-memory, 5-min window)
+- Query caching (similar article check before generation)
+- Concurrency limiter: `GEMINI_MAX_CONCURRENT=3` (in-memory)
+- Admin Costs tab: usage breakdown, fallback monitoring
+
+---
+
+## SEO (built)
+
+- JSON-LD structured data: Article, Person, ClaimReview, Review, BreadcrumbList
+- Sitemap, robots.txt, OG tags, canonical URLs
+- Security headers in next.config.ts (X-Content-Type-Options, X-Frame-Options, etc.)
+
+---
+
+## Known Bugs (verified, not yet fixed)
+
+1. **Big statements and pull quotes visually identical** — both use amber `#FAEEDA` + quote SVG. Pull quotes are algorithmic extracts with quotation marks but no attribution — looks like a real quote. Must be differentiated.
+2. **Polymarket uses old Haiku model** — `claude-3-haiku-20240307` instead of `claude-haiku-4-5-20251001`.
+3. **Editorial pass score threshold mismatch** — prompt says ≤80, code applies at ≤75.
+4. **In-memory state in serverless** — Gemini concurrency limiter, duplicate call guard, Yahoo Finance cache all in-memory. Work per-instance but don't coordinate across instances.
+
+---
+
+## Confirmed NOT Built
+
+Verified absent from codebase as of April 2026:
+
+- **Stripe / payment processing** — zero files
+- **Affiliate infrastructure** — no `affiliate_url` field, no link routing, no revenue tracking
+- **Category pages** — no `/category/[slug]` routes
+- **Creator analytics dashboard** — not built (basic dashboard exists but no per-article analytics)
+- **Referral system** — not built
+- **Email capture / weekly digest** — not built
+- **Trending questions dashboard** — not built (live data sources exist but no `/trending` page)
+- **Social links on profiles** — no `twitter_url` or `linkedin_url` in profiles table
+- **Vision-based image selection** — not built (filtering is rule-based, no GPT-4o-mini vision)
+- **Canonical topic system** — not built
+- **Creator status / badges** — not built
+- **Views-for-premium mechanic** — not built
+- **Research Companion tab** — not built (research preview exists for sign-in gate, but no persistent research tab on articles)
+- **Screenshot-proof branding** — not built
+- **One-click social posting** — social content is generated but no one-click copy/post UI
+- **Onboarding flow** — not built
+- **Author block prominence** — avatar 20px, name muted. Too small.
