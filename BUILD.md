@@ -225,12 +225,12 @@ Verified absent from codebase as of April 2026:
 - **Referral system** — not built
 - **Email capture / weekly digest** — not built
 - **Trending questions dashboard** — not built (live data sources exist but no `/trending` page)
-- **Social links on profiles** — no `twitter_url` or `linkedin_url` in profiles table
+- ~~**Social links on profiles**~~ — already built: `twitter_url` and `linkedin_url` in profiles table, settings page, API, creator profile page, and article author block.
 - **Vision-based image selection** — not built (filtering is rule-based, no GPT-4o-mini vision)
 - **Canonical topic system** — not built
 - **Creator status / badges** — not built
 - **Views-for-premium mechanic** — not built
-- **Research Companion tab** — not built (research preview exists for sign-in gate, but no persistent research tab on articles)
+- ~~**Research Companion tab**~~ — already built as "Editor" tab (`EditorCoPilot`). Shows research findings, entity cards, synthesis, blueprint, live data. Owner can select findings to add/remove and submit rewrite instructions.
 - **Screenshot-proof branding** — not built
 - ~~**One-click social posting**~~ — already built: SharePanel with 4 tabs (Twitter, LinkedIn, Reddit, Image Cards), copy buttons, character counts, subreddit links. Owner-only in ArticleView.
 - **Onboarding flow** — not built

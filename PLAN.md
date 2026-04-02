@@ -58,8 +58,8 @@ Code threshold aligned to ≤80, matching the prompt.
 ### ~~4. Author block prominence~~ ALREADY DONE
 Already 40px avatar, 15px font-medium name, bio line, Twitter link.
 
-### 5. Social links on creator profiles
-Add `twitter_url` and `linkedin_url` to profiles table. Add to settings page. Show as icon links on public profile.
+### ~~5. Social links on creator profiles~~ ALREADY DONE
+`twitter_url` and `linkedin_url` already in profiles table, settings page, API, creator profile page, and article author block.
 
 ### ~~6. One-click social copy UI~~ ALREADY DONE
 SharePanel with 4 tabs (Twitter, LinkedIn, Reddit, Image Cards) already built and wired into ArticleView. Owner-only, lazy-loaded.
@@ -88,8 +88,8 @@ Add to profiles table: tagline, avatar_url (upload, not just Google). Article pa
 ### 1F. Voting System Enhancement
 Admin view of downvote reasons and comments. Quality scoring per article. Composite ranking signals (votes + dwell time + shares + recency).
 
-### 1G. Research Companion Tab
-Second tab on article page (owner only). Shows all research gathered but not included. Each finding card: source type, content, why excluded, source link. Creator selects findings to incorporate → triggers refine pass. Technical dependency: persist `research_findings` as JSONB on article record (currently discarded after writing).
+### ~~1G. Research Companion Tab~~ ALREADY DONE
+Built as "Editor" tab (EditorCoPilot). `research_findings` persisted as JSONB. Owner sees findings, entity cards, synthesis, blueprint. Can select findings and submit rewrite instructions.
 
 ---
 
