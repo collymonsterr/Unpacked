@@ -232,6 +232,6 @@ Verified absent from codebase as of April 2026:
 - **Views-for-premium mechanic** — not built
 - **Research Companion tab** — not built (research preview exists for sign-in gate, but no persistent research tab on articles)
 - **Screenshot-proof branding** — not built
-- **One-click social posting** — social content is generated but no one-click copy/post UI
+- ~~**One-click social posting**~~ — already built: SharePanel with 4 tabs (Twitter, LinkedIn, Reddit, Image Cards), copy buttons, character counts, subreddit links. Owner-only in ArticleView.
 - **Onboarding flow** — not built
 - ~~**Author block prominence**~~ — already done: 40px avatar, 15px font-medium name, bio line, Twitter link.

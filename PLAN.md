@@ -46,23 +46,23 @@ The single metric that matters: number of articles shared externally and discove
 
 These require no architecture work and should be done first.
 
-### 1. Fix big statement vs pull quote visual clash
-`components/sections/BigStatement.tsx` and `ContentSection.tsx` pull quotes use identical styling. Pull quotes need a distinct visual treatment (different background, no quote SVG, or italic sidebar style). Big statements keep the amber `#FAEEDA` treatment.
+### ~~1. Fix big statement vs pull quote visual clash~~ DONE
+Pull quotes now use left-border italic style. Big statements keep amber card + quote SVG.
 
-### 2. Update Polymarket Haiku model
-`lib/data-sources/polymarket.ts` — change `claude-3-haiku-20240307` to `claude-haiku-4-5-20251001`.
+### ~~2. Update Polymarket Haiku model~~ DONE
+Updated to `claude-haiku-4-5-20251001`.
 
-### 3. Fix editorial pass score threshold
-`lib/editorial-pass.ts` — align code threshold (≤75) with prompt threshold (≤80). Pick one.
+### ~~3. Fix editorial pass score threshold~~ DONE
+Code threshold aligned to ≤80, matching the prompt.
 
-### 4. Author block prominence
-Avatar: 20px → 40px. Name: muted text-sm → font-weight 500, text-primary, 15px. Add bio first line below name.
+### ~~4. Author block prominence~~ ALREADY DONE
+Already 40px avatar, 15px font-medium name, bio line, Twitter link.
 
 ### 5. Social links on creator profiles
 Add `twitter_url` and `linkedin_url` to profiles table. Add to settings page. Show as icon links on public profile.
 
-### 6. One-click social copy UI
-Social content is already generated (`lib/social-content.ts`). Build a simple UI on the article page (owner only) to view and copy each format. No external posting API needed yet.
+### ~~6. One-click social copy UI~~ ALREADY DONE
+SharePanel with 4 tabs (Twitter, LinkedIn, Reddit, Image Cards) already built and wired into ArticleView. Owner-only, lazy-loaded.
 
 ---
 
