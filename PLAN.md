@@ -71,7 +71,7 @@ SharePanel with 4 tabs (Twitter, LinkedIn, Reddit, Image Cards) already built an
 Priority order. Each is one build session.
 
 ### ~~1A. Tier Infrastructure~~ DONE (April 2026)
-Tier system (free/standard/pro), pricing page, tier enforcement in article creation, usage indicators, upgrade prompts, waitlist for paid tiers — all built. **Remaining: Stripe checkout + webhooks to activate paid tiers.** When Stripe credentials are added, wire checkout to upgrade_waitlist → profiles.tier update.
+Tier system (free/standard/pro), pricing page, tier enforcement in article creation, usage indicators, upgrade prompts, waitlist for paid tiers — all built. Share credits system built (1 credit per platform per article, max 4). Founding Creators programme built (100 spots, manual admin approval, +10 bonus credits/month, amber badge). **Remaining: Stripe checkout + webhooks to activate paid tiers.** When Stripe credentials are added, wire checkout to upgrade_waitlist → profiles.tier update.
 
 ### 1B. Guided First-Article Onboarding
 After signup: example prompts → generation → forced review moment → one-click share with pre-written social assets. Track publish-and-share completion rate.
@@ -134,8 +134,8 @@ Fork any published article. Original creator gets attribution and 20% of future 
 ### 4D. Canonical Topic System
 Before generation: check for similar existing articles. Non-blocking warning with options to read, create different angle, or update existing. Admin designates canonical per topic.
 
-### 4E. Creator Status and Badges
-Topic ownership badges, Verified Creator tier, Founder badge for first 100 users (is_founder boolean, 10 credits/month forever).
+### ~~4E. Creator Status and Badges~~ PARTIALLY DONE (April 2026)
+~~Founder badge for first 100 users (is_founding_creator boolean, 10 credits/month, admin approval flow, `/founding-creators` page).~~ Remaining: Topic ownership badges, Verified Creator tier.
 
 ### 4F. Views-for-Premium Mechanic
 Monthly view aggregation per creator. 2,000 views = 1 month Standard free, 5,000 = 1 month Pro. Monthly calculation job. Dashboard shows progress.

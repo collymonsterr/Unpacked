@@ -183,6 +183,8 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 | `/settings` | `app/settings/page.tsx` | User settings |
 | `/recent` | `app/recent/page.tsx` | Recent articles |
 | `/build` | `app/build/page.tsx` | Build page |
+| `/pricing` | `app/pricing/page.tsx` | Pricing page, 3 tiers |
+| `/founding-creators` | `app/founding-creators/page.tsx` | Founding Creators application |
 
 ---
 
@@ -228,6 +230,34 @@ Covering: articles CRUD, admin actions, search, saved articles, profile manageme
 
 ---
 
+## Share Credits System (built)
+
+- Earn 1 bonus credit per platform per article when sharing (max 4 per article: Twitter, LinkedIn, Reddit, Facebook)
+- `share_credits_log` table with unique constraint on `(user_id, article_id, platform)`
+- API: `app/api/articles/[id]/share-credit/route.ts` — POST to earn credit, GET to check earned platforms
+- SharePanel updated with share credit tracking, toast notifications on credit earned
+- Credits added to `profiles.bonus_credits` on earn
+- Bonus credits consumed after tier allowance exhausted
+- Dashboard shows share credit count and explanation
+- Limit reached modal includes "Share to earn credits" option
+
+---
+
+## Founding Creators Programme (built)
+
+- 100 founding creator spots, manual admin approval
+- `founding_applications` table: user_id, status (pending/approved/rejected), application_text, reviewed_at, reviewed_by
+- Application page at `/founding-creators` — pitch page with live counter, application form, status display
+- API: `app/api/founding/route.ts` — GET status + approved count, POST application
+- Admin API: `app/api/founding/admin/route.ts` — GET all applications, POST approve/reject
+- Admin tab: `components/AdminFounders.tsx` — application table with filter tabs (pending/approved/rejected/all), approve/reject buttons
+- On approval: `profiles.is_founding_creator = true`, `profiles.bonus_credits += 10`
+- Monthly bonus reset: founding creators get +10 bonus credits on monthly reset (in `app/api/articles/create/route.ts`)
+- Founding badge: amber "Founding Creator" badge shown on article author block and dashboard
+- `is_founding_creator` boolean on profiles table
+
+---
+
 ## Known Bugs (verified)
 
 1. ~~**Big statements and pull quotes visually identical**~~ — **FIXED April 2026.** Pull quotes now use left-border italic style; big statements keep amber card + quote SVG.
@@ -242,19 +272,16 @@ Covering: articles CRUD, admin actions, search, saved articles, profile manageme
 Verified absent from codebase as of April 2026:
 
 - **Stripe / payment processing** — tier infrastructure built, but no Stripe checkout/webhooks/billing. Paid tiers are waitlist-only.
+- **Stripe / payment processing** — tier infrastructure built, but no Stripe checkout/webhooks/billing. Paid tiers are waitlist-only.
 - **Affiliate infrastructure** — no `affiliate_url` field, no link routing, no revenue tracking
 - **Category pages** — no `/category/[slug]` routes
 - **Creator analytics dashboard** — not built (basic dashboard exists but no per-article analytics)
 - **Referral system** — not built
 - **Email capture / weekly digest** — not built
 - **Trending questions dashboard** — not built (live data sources exist but no `/trending` page)
-- ~~**Social links on profiles**~~ — already built: `twitter_url` and `linkedin_url` in profiles table, settings page, API, creator profile page, and article author block.
 - **Vision-based image selection** — not built (filtering is rule-based, no GPT-4o-mini vision)
 - **Canonical topic system** — not built
-- **Creator status / badges** — not built
+- ~~**Creator status / badges**~~ — Founding Creator badge built (amber badge on author block + dashboard). Topic ownership badges not yet built.
 - **Views-for-premium mechanic** — not built
-- ~~**Research Companion tab**~~ — already built as "Editor" tab (`EditorCoPilot`). Shows research findings, entity cards, synthesis, blueprint, live data. Owner can select findings to add/remove and submit rewrite instructions.
 - **Screenshot-proof branding** — not built
-- ~~**One-click social posting**~~ — already built: SharePanel with 4 tabs (Twitter, LinkedIn, Reddit, Image Cards), copy buttons, character counts, subreddit links. Owner-only in ArticleView.
 - **Onboarding flow** — not built
-- ~~**Author block prominence**~~ — already done: 40px avatar, 15px font-medium name, bio line, Twitter link.
