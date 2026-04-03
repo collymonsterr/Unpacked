@@ -51,6 +51,16 @@ All run in parallel during research phase via `executeLiveDataQueries()`.
   - Yahoo Finance: at least one ticker must move ≥±0.5% today (all discarded if flat)
 - **Blueprint awareness**: Blueprint receives live data that survived filters, plans section placement only for available data. No space allocated for discarded sources.
 
+### Live Data Visualisation Components (built April 2026)
+Four distinct components in `components/sections/LiveDataCard.tsx`, auto-selected by data type:
+1. **Polymarket Multi-Outcome** — sorted outcome bars with colour coding (green/blue/amber/grey), volume display, source pill
+2. **Polymarket Binary** — large probability display (4xl), Yes/No split columns, combined colour bar. Chart placeholder ready for historical odds when available (Polymarket API doesn't provide time series)
+3. **Google Trends** — current interest score, % change vs prior 3 months, Recharts AreaChart with amber gradient fill, tooltip
+4. **Yahoo Finance Grid** — 2×2 responsive grid of ticker cards, each with symbol/name/price/change badge (green/red tinted), inline SVG sparkline from 1-month data
+- All components share: consistent card styling, source pills, `CardFooter`, IntersectionObserver fade-in
+- Uses Recharts (already in project) for Google Trends chart
+- SectionRenderer grouping logic unchanged (grid layout for consecutive cards)
+
 ---
 
 ## Sign-In Gate (built)

@@ -2,6 +2,16 @@
 
 import { useRef, useState, useEffect } from 'react'
 import { forwardRef } from 'react'
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Area,
+  AreaChart,
+} from 'recharts'
 
 interface LiveDataCardProps {
   section: {
@@ -25,18 +35,25 @@ export default function LiveDataCard({ section }: LiveDataCardProps) {
     return () => observer.disconnect()
   }, [])
 
-  const cardStyle = {
+  const cardStyle: React.CSSProperties = {
     backgroundColor: 'var(--card)',
     border: '1px solid var(--border)',
+    borderRadius: '12px',
     boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)',
     opacity: visible ? 1 : 0,
     transform: visible ? 'translateY(0)' : 'translateY(8px)',
     transition: 'opacity 0.4s ease, transform 0.4s ease',
+    padding: '16px 20px',
   }
 
   switch (section.data_source) {
-    case 'polymarket':
-      return <PolymarketCard content={section.content} cardStyle={cardStyle} ref={ref} />
+    case 'polymarket': {
+      const outcomes = Array.isArray(section.content.outcomes) ? section.content.outcomes.map(String) : []
+      const isBinary = outcomes.length === 2
+      return isBinary
+        ? <PolymarketBinaryCard content={section.content} cardStyle={cardStyle} ref={ref} />
+        : <PolymarketMultiCard content={section.content} cardStyle={cardStyle} ref={ref} />
+    }
     case 'yahoo_finance': {
       // Detect grouped format: content has nested objects instead of flat fields
       const isGrouped = !section.content.symbol && !section.content.price &&
@@ -46,14 +63,12 @@ export default function LiveDataCard({ section }: LiveDataCardProps) {
           (v): v is Record<string, unknown> => typeof v === 'object' && v !== null && 'price' in v
         )
         return (
-          <div ref={ref} className="flex flex-col gap-3">
-            {items.map((item, i) => (
-              <YahooFinanceCard key={i} content={item} cardStyle={cardStyle} />
-            ))}
+          <div ref={ref}>
+            <YahooFinanceGrid items={items} cardStyle={cardStyle} />
           </div>
         )
       }
-      return <YahooFinanceCard content={section.content} cardStyle={cardStyle} ref={ref} />
+      return <YahooFinanceGrid items={[section.content]} cardStyle={cardStyle} ref={ref} />
     }
     case 'google_trends':
       return <GoogleTrendsCard content={section.content} cardStyle={cardStyle} ref={ref} />
@@ -64,18 +79,29 @@ export default function LiveDataCard({ section }: LiveDataCardProps) {
 
 // ── Shared Components ───────────────────────────────────────────────────────
 
-function SourceBadge({ label }: { label: string }) {
+function SourcePill({ label, color }: { label: string; color: string }) {
   return (
     <span
-      className="inline-block text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
+      className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full"
       style={{
-        backgroundColor: 'var(--accent, #BA7517)',
+        backgroundColor: color,
         color: '#fff',
-        letterSpacing: '0.08em',
+        letterSpacing: '0.06em',
       }}
     >
       {label}
     </span>
+  )
+}
+
+function CardFooter({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="text-[11px] mt-3 pt-2"
+      style={{ borderTop: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+    >
+      {children}
+    </div>
   )
 }
 
@@ -93,127 +119,21 @@ function ExternalLink({ href, children }: { href: string; children: React.ReactN
   )
 }
 
-// ── Chart with Gridlines ────────────────────────────────────────────────────
-
-/**
- * Shared SVG chart component with horizontal gridlines and Y-axis labels.
- * Used by both Yahoo Finance and Google Trends cards.
- */
-function ChartWithGrid({
-  values,
-  labels,
-  color,
-  height = 80,
-  yMin: forcedMin,
-  yMax: forcedMax,
-  formatLabel,
-}: {
-  values: number[]
-  /** Y-axis tick labels (bottom to top). If not provided, auto-generates min/mid/max. */
-  labels?: string[]
-  color: string
-  height?: number
-  yMin?: number
-  yMax?: number
-  formatLabel?: (v: number) => string
-}) {
-  if (values.length < 2) return null
-
-  const dataMin = Math.min(...values)
-  const dataMax = Math.max(...values)
-
-  // Use forced bounds or auto with 5% padding
-  const range = dataMax - dataMin || 1
-  const yMin = forcedMin ?? dataMin - range * 0.05
-  const yMax = forcedMax ?? dataMax + range * 0.05
-  const yRange = yMax - yMin || 1
-
-  const chartWidth = 300
-  const chartHeight = height
-  const labelWidth = 44 // space for Y-axis labels
-  const totalWidth = chartWidth + labelWidth
-
-  // Generate gridlines (3 lines: bottom, middle, top)
-  const gridValues = [yMin, yMin + yRange / 2, yMax]
-  const defaultFormat = (v: number) => {
-    if (v >= 1000) return `${(v / 1000).toFixed(1)}k`
-    if (v >= 100) return v.toFixed(0)
-    if (v >= 1) return v.toFixed(1)
-    return v.toFixed(2)
-  }
-  const fmt = formatLabel ?? defaultFormat
-  const gridLabels = labels ?? gridValues.map(fmt)
-
-  // Build path
-  const points = values.map((v, i) => ({
-    x: labelWidth + (i / (values.length - 1)) * chartWidth,
-    y: chartHeight - ((v - yMin) / yRange) * chartHeight,
-  }))
-
-  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
-  const areaPath = `${linePath} L${points[points.length - 1].x.toFixed(1)},${chartHeight} L${labelWidth},${chartHeight} Z`
-
-  return (
-    <svg
-      viewBox={`0 0 ${totalWidth} ${chartHeight}`}
-      className="w-full"
-      style={{ height }}
-      preserveAspectRatio="none"
-    >
-      {/* Horizontal gridlines */}
-      {gridValues.map((gv, i) => {
-        const y = chartHeight - ((gv - yMin) / yRange) * chartHeight
-        return (
-          <g key={i}>
-            <line
-              x1={labelWidth}
-              y1={y}
-              x2={totalWidth}
-              y2={y}
-              stroke="var(--border, #e5e5e5)"
-              strokeWidth="1"
-              vectorEffect="non-scaling-stroke"
-            />
-            <text
-              x={labelWidth - 6}
-              y={y}
-              textAnchor="end"
-              dominantBaseline="middle"
-              fill="var(--text-secondary, #999)"
-              fontSize="9"
-              fontFamily="var(--font-sora), system-ui, sans-serif"
-            >
-              {gridLabels[i]}
-            </text>
-          </g>
-        )
-      })}
-      {/* Area fill */}
-      <path d={areaPath} fill={color} opacity="0.08" />
-      {/* Line */}
-      <path
-        d={linePath}
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        vectorEffect="non-scaling-stroke"
-        strokeLinejoin="round"
-      />
-      {/* End dot */}
-      <circle
-        cx={points[points.length - 1].x}
-        cy={points[points.length - 1].y}
-        r="3"
-        fill={color}
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  )
+const formatVolume = (v: number): string => {
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`
+  if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`
+  return `$${v.toFixed(0)}`
 }
 
-// ── Polymarket Card ──────────────────────────────────────────────────────────
+// ── Bar colours for multi-outcome ───────────────────────────────────────────
 
-const PolymarketCard = forwardRef<HTMLDivElement, {
+const OUTCOME_COLORS = ['#22C55E', '#3B82F6', '#F59E0B', '#9CA3AF', '#9CA3AF', '#9CA3AF']
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Component 1: Polymarket Multi-Outcome
+// ══════════════════════════════════════════════════════════════════════════════
+
+const PolymarketMultiCard = forwardRef<HTMLDivElement, {
   content: Record<string, unknown>
   cardStyle: React.CSSProperties
 }>(({ content, cardStyle }, ref) => {
@@ -225,196 +145,202 @@ const PolymarketCard = forwardRef<HTMLDivElement, {
   const volume = Number(content.volume ?? 0)
   const url = String(content.url ?? 'https://polymarket.com')
 
-  const formatVolume = (v: number): string => {
-    if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`
-    if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`
-    return `$${v.toFixed(0)}`
-  }
-
-  const isBinary = outcomes.length === 2
+  // Sort by probability descending for display
+  const indexed = outcomes.map((o, i) => ({ outcome: o, prob: probabilities[i] ?? 0, idx: i }))
+  indexed.sort((a, b) => b.prob - a.prob)
 
   return (
-    <div ref={ref} className="rounded-xl px-4 py-3" style={cardStyle}>
-      <div className="flex items-center gap-2 mb-2">
-        <SourceBadge label="Polymarket" />
-        <span className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>
-          {formatVolume(volume)} traded
+    <div ref={ref} style={cardStyle}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <SourcePill label="Polymarket" color="#4A2E8A" />
+        <span className="text-[11px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+          {formatVolume(volume)} volume
         </span>
       </div>
 
+      {/* Question title */}
       <p
-        className="text-sm font-semibold mb-3 leading-snug"
+        className="text-base font-bold mb-4 leading-snug"
         style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
       >
         {question}
       </p>
 
-      {isBinary ? (
-        <div className="mb-3">
-          <div className="flex justify-between items-center mb-1.5">
-            <span className="text-xs font-bold" style={{ color: 'var(--accent, #BA7517)' }}>
-              <span style={{ fontFamily: 'var(--font-sora)' }}>{Math.round((probabilities[0] ?? 0) * 100)}%</span>
-              <span className="font-medium ml-1" style={{ color: 'var(--text-secondary)' }}>{outcomes[0]}</span>
-            </span>
-            <span className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
-              <span className="font-medium mr-1">{outcomes[1]}</span>
-              <span style={{ fontFamily: 'var(--font-sora)' }}>{Math.round((probabilities[1] ?? 0) * 100)}%</span>
-            </span>
-          </div>
-          <div
-            className="h-2 rounded-full overflow-hidden flex"
-            style={{ backgroundColor: 'var(--border)' }}
-          >
-            <div
-              className="h-full rounded-l-full transition-all duration-700"
-              style={{
-                width: `${Math.round((probabilities[0] ?? 0) * 100)}%`,
-                backgroundColor: 'var(--accent, #BA7517)',
-              }}
-            />
-            <div
-              className="h-full rounded-r-full transition-all duration-700"
-              style={{
-                width: `${Math.round((probabilities[1] ?? 0) * 100)}%`,
-                backgroundColor: 'var(--text-secondary, #999)',
-                opacity: 0.4,
-              }}
-            />
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-1.5 mb-3">
-          {outcomes.map((outcome, i) => {
-            const prob = probabilities[i] ?? 0
-            const pct = Math.round(prob * 100)
-            return (
-              <div key={i}>
-                <div className="flex justify-between items-center mb-0.5">
-                  <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
-                    {outcome}
-                  </span>
-                  <span
-                    className="text-xs font-bold"
-                    style={{ fontFamily: 'var(--font-sora)', color: i === 0 ? 'var(--accent)' : 'var(--text-secondary)' }}
-                  >
-                    {pct}%
-                  </span>
-                </div>
-                <div
-                  className="h-1.5 rounded-full overflow-hidden"
-                  style={{ backgroundColor: 'var(--border)' }}
+      {/* Outcome bars */}
+      <div className="space-y-2.5 mb-3">
+        {indexed.map(({ outcome, prob, idx }) => {
+          const pct = Math.round(prob * 100)
+          const colorIdx = Math.min(idx, OUTCOME_COLORS.length - 1)
+          const barColor = OUTCOME_COLORS[colorIdx]
+          return (
+            <div key={idx}>
+              <div className="flex items-center justify-between mb-1">
+                <span
+                  className="text-xs font-medium truncate"
+                  style={{ color: 'var(--text-primary)', maxWidth: '200px' }}
                 >
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{
-                      width: `${pct}%`,
-                      backgroundColor: i === 0 ? 'var(--accent, #BA7517)' : 'var(--text-secondary, #999)',
-                    }}
-                  />
-                </div>
+                  {outcome}
+                </span>
+                <span
+                  className="text-xs font-bold ml-2 flex-shrink-0"
+                  style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+                >
+                  {pct}%
+                </span>
               </div>
-            )
-          })}
-        </div>
-      )}
+              <div
+                className="h-2 rounded-full overflow-hidden"
+                style={{ backgroundColor: 'var(--border)' }}
+              >
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${pct}%`, backgroundColor: barColor }}
+                />
+              </div>
+            </div>
+          )
+        })}
+      </div>
 
-      <ExternalLink href={url}>polymarket.com</ExternalLink>
+      <CardFooter>
+        <ExternalLink href={url}>polymarket.com</ExternalLink>
+      </CardFooter>
     </div>
   )
 })
-PolymarketCard.displayName = 'PolymarketCard'
+PolymarketMultiCard.displayName = 'PolymarketMultiCard'
 
-// ── Yahoo Finance Card ───────────────────────────────────────────────────────
 
-const YahooFinanceCard = forwardRef<HTMLDivElement, {
+// ══════════════════════════════════════════════════════════════════════════════
+// Component 2: Polymarket Binary with Trend Chart
+// ══════════════════════════════════════════════════════════════════════════════
+
+const PolymarketBinaryCard = forwardRef<HTMLDivElement, {
   content: Record<string, unknown>
   cardStyle: React.CSSProperties
 }>(({ content, cardStyle }, ref) => {
-  const symbol = String(content.symbol ?? '')
-  const name = String(content.name ?? '')
-  const price = Number(content.price ?? 0)
-  const change = Number(content.change ?? 0)
-  const changePercent = Number(content.changePercent ?? 0)
-  const currency = String(content.currency ?? 'USD')
-  const url = String(content.url ?? 'https://finance.yahoo.com')
-  const sparkline = Array.isArray(content.sparkline)
-    ? content.sparkline.filter((v): v is number => typeof v === 'number' && v > 0)
+  const question = String(content.question ?? '')
+  const outcomes = Array.isArray(content.outcomes) ? content.outcomes.map(String) : []
+  const probabilities = Array.isArray(content.probabilities)
+    ? content.probabilities.map(Number)
     : []
+  const volume = Number(content.volume ?? 0)
+  const url = String(content.url ?? 'https://polymarket.com')
 
-  const isPositive = change >= 0
-  const changeColor = isPositive ? '#16a34a' : '#dc2626'
-  const arrow = isPositive ? '▲' : '▼'
+  const yesProb = Math.round((probabilities[0] ?? 0) * 100)
+  const noProb = Math.round((probabilities[1] ?? 0) * 100)
+  const yesLabel = outcomes[0] ?? 'Yes'
+  const noLabel = outcomes[1] ?? 'No'
+  const isDominantYes = yesProb >= noProb
 
-  const formatPrice = (p: number, curr: string): string => {
-    if (curr === 'USD') return `$${p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-    if (curr === 'GBP') return `£${p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-    if (curr === 'EUR') return `€${p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-    return `${p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${curr}`
-  }
-
-  const formatYLabel = (v: number): string => {
-    const prefix = currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : ''
-    if (v >= 1000) return `${prefix}${(v / 1000).toFixed(1)}k`
-    if (v >= 100) return `${prefix}${v.toFixed(0)}`
-    return `${prefix}${v.toFixed(2)}`
-  }
+  // NOTE: Polymarket API does not provide historical odds time series.
+  // The binary card renders without a trend chart. When historical data
+  // becomes available (e.g. via a snapshot service), add chart here.
+  const hasHistoricalData = false
 
   return (
-    <div ref={ref} className="rounded-xl px-4 py-3" style={cardStyle}>
-      <div className="flex items-center gap-2 mb-1.5">
-        <SourceBadge label="Yahoo Finance" />
-        <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
-          1 month
+    <div ref={ref} style={cardStyle}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <SourcePill label="Polymarket" color="#4A2E8A" />
+        <span className="text-[11px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+          {formatVolume(volume)} volume
         </span>
       </div>
 
-      <div className="flex items-baseline gap-2 mb-0.5">
-        <span
-          className="text-xs font-bold"
-          style={{ fontFamily: 'var(--font-sora)', color: 'var(--accent)' }}
-        >
-          {symbol}
-        </span>
-        <span className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
-          {name}
-        </span>
-      </div>
+      {/* Question title */}
+      <p
+        className="text-base font-bold mb-4 leading-snug"
+        style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+      >
+        {question}
+      </p>
 
-      <div className="flex items-baseline gap-2 mb-2">
-        <span
-          className="text-lg font-extrabold"
-          style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
-        >
-          {formatPrice(price, currency)}
-        </span>
-        <span className="text-xs font-bold" style={{ color: changeColor }}>
-          {arrow} {changePercent >= 0 ? '+' : ''}{changePercent.toFixed(2)}%
-          <span className="text-[10px] font-normal ml-0.5">
-            ({change >= 0 ? '+' : ''}{formatPrice(Math.abs(change), currency)})
+      {/* Main probability display */}
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <span
+            className="text-4xl font-extrabold"
+            style={{
+              fontFamily: 'var(--font-sora)',
+              color: isDominantYes ? '#22C55E' : '#EF4444',
+            }}
+          >
+            {isDominantYes ? yesProb : noProb}%
           </span>
-        </span>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+            probability of {isDominantYes ? yesLabel.toLowerCase() : noLabel.toLowerCase()}
+          </p>
+        </div>
       </div>
 
-      {sparkline.length >= 3 ? (
-        <div className="mb-2">
-          <ChartWithGrid
-            values={sparkline}
-            color={isPositive ? '#16a34a' : '#dc2626'}
-            height={120}
-            formatLabel={formatYLabel}
-          />
+      {/* Placeholder for trend chart when historical data becomes available */}
+      {hasHistoricalData && (
+        <div className="mb-4" style={{ height: 120 }}>
+          {/* TODO: Recharts AreaChart with historical probability data */}
         </div>
-      ) : (
-        <div className="mb-2" />
       )}
 
-      <ExternalLink href={url}>finance.yahoo.com</ExternalLink>
+      {/* Two-column split: Yes / No */}
+      <div
+        className="grid grid-cols-2 gap-3 mb-3 pt-3"
+        style={{ borderTop: '1px solid var(--border)' }}
+      >
+        <div className="text-center">
+          <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'var(--text-secondary)' }}>
+            {yesLabel}
+          </span>
+          <p
+            className="text-xl font-extrabold mt-0.5"
+            style={{ fontFamily: 'var(--font-sora)', color: '#22C55E' }}
+          >
+            {yesProb}%
+          </p>
+        </div>
+        <div className="text-center">
+          <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'var(--text-secondary)' }}>
+            {noLabel}
+          </span>
+          <p
+            className="text-xl font-extrabold mt-0.5"
+            style={{ fontFamily: 'var(--font-sora)', color: '#EF4444' }}
+          >
+            {noProb}%
+          </p>
+        </div>
+      </div>
+
+      {/* Combined bar */}
+      <div
+        className="h-2.5 rounded-full overflow-hidden flex mb-3"
+        style={{ backgroundColor: 'var(--border)' }}
+      >
+        <div
+          className="h-full rounded-l-full transition-all duration-700"
+          style={{ width: `${yesProb}%`, backgroundColor: '#22C55E' }}
+        />
+        <div
+          className="h-full rounded-r-full transition-all duration-700"
+          style={{ width: `${noProb}%`, backgroundColor: '#EF4444', opacity: 0.6 }}
+        />
+      </div>
+
+      <CardFooter>
+        <div className="flex items-center justify-between">
+          <span>{formatVolume(volume)} total volume</span>
+          <ExternalLink href={url}>polymarket.com</ExternalLink>
+        </div>
+      </CardFooter>
     </div>
   )
 })
-YahooFinanceCard.displayName = 'YahooFinanceCard'
+PolymarketBinaryCard.displayName = 'PolymarketBinaryCard'
 
-// ── Google Trends Card ───────────────────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Component 3: Google Trends
+// ══════════════════════════════════════════════════════════════════════════════
 
 const GoogleTrendsCard = forwardRef<HTMLDivElement, {
   content: Record<string, unknown>
@@ -429,68 +355,246 @@ const GoogleTrendsCard = forwardRef<HTMLDivElement, {
     : []
   const url = String(content.url ?? 'https://trends.google.com')
 
-  const trendLabel: Record<string, string> = {
-    rising: '▲ Rising',
-    declining: '▼ Declining',
-    stable: '→ Stable',
-    peaking: '▲ Peaking',
-  }
-  const trendColor: Record<string, string> = {
-    rising: '#16a34a',
-    declining: '#dc2626',
-    stable: 'var(--text-secondary)',
-    peaking: 'var(--accent, #BA7517)',
-  }
+  // Build chart data for Recharts
+  const chartData = timelineData.map((d, i) => ({
+    index: i,
+    value: d.value,
+    date: d.date,
+  }))
 
-  const values = timelineData.map(d => d.value)
+  const changeArrow = changePercent > 10 ? '↑' : changePercent < -10 ? '↓' : '~'
+  const changeColor = changePercent > 10 ? '#16a34a' : changePercent < -10 ? '#dc2626' : 'var(--text-secondary)'
 
   return (
-    <div ref={ref} className="rounded-xl px-4 py-3" style={cardStyle}>
-      <div className="flex items-center gap-2 mb-1.5">
-        <SourceBadge label="Google Trends" />
-        <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
-          Last 12 months
+    <div ref={ref} style={cardStyle}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <SourcePill label="Google Trends" color="#4285F4" />
+        <span className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+          Updated daily
         </span>
       </div>
 
+      {/* Title */}
       <p
-        className="text-sm font-semibold mb-1 leading-snug"
+        className="text-base font-bold mb-3 leading-snug"
         style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
       >
-        &ldquo;{query}&rdquo;
+        Search interest: &ldquo;{query}&rdquo;
       </p>
 
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-xs font-bold" style={{ color: trendColor[trend] }}>
-          {trendLabel[trend] ?? '→ Stable'}
-          {changePercent !== 0 && (
-            <span className="font-normal ml-1">
-              ({changePercent > 0 ? '+' : ''}{changePercent}%)
-            </span>
-          )}
-        </span>
-        <span className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>
-          Current: {currentInterest}/100
-        </span>
+      {/* Stats row */}
+      <div className="flex items-center gap-4 mb-3">
+        <div>
+          <span className="text-2xl font-extrabold" style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}>
+            {currentInterest}
+          </span>
+          <span className="text-xs ml-1" style={{ color: 'var(--text-secondary)' }}>/100</span>
+        </div>
+        <div>
+          <span className="text-sm font-bold" style={{ color: changeColor }}>
+            {changeArrow} {changePercent > 0 ? '+' : ''}{changePercent}%
+          </span>
+          <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>vs prior 3 months</p>
+        </div>
       </div>
 
-      {values.length >= 3 ? (
-        <div className="mb-2">
-          <ChartWithGrid
-            values={values}
-            color="var(--accent, #BA7517)"
-            height={80}
-            yMin={0}
-            yMax={100}
-            labels={['0', '50', '100']}
-          />
+      {/* Area chart */}
+      {chartData.length >= 3 && (
+        <div className="mb-3" style={{ height: 100 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+              <defs>
+                <linearGradient id="trendsFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <YAxis domain={[0, 100]} hide />
+              <XAxis dataKey="index" hide />
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (!active || !payload?.[0]) return null
+                  const d = payload[0].payload
+                  return (
+                    <div className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}>
+                      <span className="font-semibold">{d.value}/100</span>
+                      {d.date && <span className="ml-1" style={{ color: 'var(--text-secondary)' }}>{d.date}</span>}
+                    </div>
+                  )
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="#F59E0B"
+                strokeWidth={2}
+                fill="url(#trendsFill)"
+                dot={false}
+                activeDot={{ r: 3, fill: '#F59E0B' }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
-      ) : (
-        <div className="mb-2" />
       )}
 
-      <ExternalLink href={url}>trends.google.com</ExternalLink>
+      <CardFooter>
+        <div className="flex items-center justify-between">
+          <span>100 = peak search interest in period</span>
+          <ExternalLink href={url}>trends.google.com</ExternalLink>
+        </div>
+      </CardFooter>
     </div>
   )
 })
 GoogleTrendsCard.displayName = 'GoogleTrendsCard'
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Component 4: Yahoo Finance Grid
+// ══════════════════════════════════════════════════════════════════════════════
+
+const YahooFinanceGrid = forwardRef<HTMLDivElement, {
+  items: Record<string, unknown>[]
+  cardStyle: React.CSSProperties
+}>(({ items, cardStyle }, ref) => {
+  const validItems = items.filter(item => Number(item.price ?? 0) > 0)
+  if (validItems.length === 0) return null
+
+  return (
+    <div ref={ref} style={cardStyle}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <SourcePill label="Yahoo Finance" color="#6001D2" />
+        <span className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+          15 min delay
+        </span>
+      </div>
+
+      {/* Grid of ticker cards */}
+      <div className={`grid gap-3 ${validItems.length >= 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
+        {validItems.map((item, i) => (
+          <TickerCard key={i} content={item} />
+        ))}
+      </div>
+
+      <CardFooter>
+        <ExternalLink href="https://finance.yahoo.com">finance.yahoo.com</ExternalLink>
+      </CardFooter>
+    </div>
+  )
+})
+YahooFinanceGrid.displayName = 'YahooFinanceGrid'
+
+
+// ── Individual Ticker Card (inside Yahoo Finance Grid) ──────────────────────
+
+function TickerCard({ content }: { content: Record<string, unknown> }) {
+  const symbol = String(content.symbol ?? '')
+  const name = String(content.name ?? '')
+  const price = Number(content.price ?? 0)
+  const change = Number(content.change ?? 0)
+  const changePercent = Number(content.changePercent ?? 0)
+  const currency = String(content.currency ?? 'USD')
+  const url = String(content.url ?? 'https://finance.yahoo.com')
+  const sparkline = Array.isArray(content.sparkline)
+    ? content.sparkline.filter((v): v is number => typeof v === 'number' && v > 0)
+    : []
+
+  const isPositive = change >= 0
+  const changeColor = isPositive ? '#16a34a' : '#dc2626'
+  const changeBg = isPositive ? 'rgba(22, 163, 74, 0.08)' : 'rgba(220, 38, 38, 0.08)'
+
+  const formatPrice = (p: number, curr: string): string => {
+    const prefix = curr === 'USD' ? '$' : curr === 'GBP' ? '£' : curr === 'EUR' ? '€' : ''
+    const suffix = !prefix ? ` ${curr}` : ''
+    return `${prefix}${p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${suffix}`
+  }
+
+  // Build mini sparkline SVG path
+  const sparklineSvg = sparkline.length >= 3 ? buildSparklinePath(sparkline, 100, 32) : null
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block rounded-lg p-3 transition-colors"
+      style={{
+        backgroundColor: 'var(--card)',
+        border: '1px solid var(--border)',
+      }}
+    >
+      {/* Symbol & name */}
+      <div className="mb-1.5">
+        <span
+          className="text-[10px] uppercase tracking-wider font-bold"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          {symbol}
+        </span>
+        <p
+          className="text-xs truncate"
+          style={{ color: 'var(--text-secondary)', maxWidth: '160px' }}
+        >
+          {name}
+        </p>
+      </div>
+
+      {/* Price */}
+      <p
+        className="text-lg font-extrabold mb-1"
+        style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+      >
+        {formatPrice(price, currency)}
+      </p>
+
+      {/* Change badge */}
+      <div
+        className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md mb-2"
+        style={{ backgroundColor: changeBg, color: changeColor }}
+      >
+        <span>{change >= 0 ? '+' : ''}{formatPrice(Math.abs(change), currency)}</span>
+        <span>({changePercent >= 0 ? '+' : ''}{changePercent.toFixed(2)}%)</span>
+      </div>
+
+      {/* Sparkline */}
+      {sparklineSvg && (
+        <div style={{ height: 32 }}>
+          <svg
+            viewBox={`0 0 100 32`}
+            className="w-full"
+            style={{ height: 32 }}
+            preserveAspectRatio="none"
+          >
+            <path
+              d={sparklineSvg}
+              fill="none"
+              stroke={isPositive ? '#16a34a' : '#dc2626'}
+              strokeWidth="1.5"
+              vectorEffect="non-scaling-stroke"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+      )}
+    </a>
+  )
+}
+
+/**
+ * Build a simple SVG path string for a sparkline.
+ */
+function buildSparklinePath(values: number[], width: number, height: number): string {
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const range = max - min || 1
+
+  return values
+    .map((v, i) => {
+      const x = (i / (values.length - 1)) * width
+      const y = height - ((v - min) / range) * (height * 0.85) - height * 0.075
+      return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
+    })
+    .join(' ')
+}

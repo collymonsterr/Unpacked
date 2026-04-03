@@ -147,6 +147,9 @@ Monthly view aggregation per creator. 2,000 views = 1 month Standard free, 5,000
 ### ~~5A. Smart Decision Logic~~ DONE (April 2026)
 Planning step now uses strict per-source criteria for when to request live data. Post-fetch quality filters discard low-volume Polymarket (<$500k), flat Google Trends (<50% change), and flat Yahoo Finance (<±0.5% move). Blueprint receives only filtered data. Max 2 sources per article (3 only when genuinely distinct). `live_data_rationale` field enforced.
 
+### ~~5B. Live Data Visualisation~~ DONE (April 2026)
+Four new components replacing flat rendering: Polymarket multi-outcome (sorted coloured bars), Polymarket binary (large probability + Yes/No split), Google Trends (Recharts AreaChart + stats), Yahoo Finance grid (2×2 ticker cards with sparklines). Polymarket binary chart placeholder ready for historical odds API. All use consistent card styling with source pills and fade-in transitions.
+
 Polymarket, Yahoo Finance, and Google Trends are already built. These add more sources:
 
 | Priority | Source | Use Case | Cost |
