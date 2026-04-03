@@ -99,6 +99,15 @@ Four distinct components in `components/sections/LiveDataCard.tsx`, auto-selecte
 
 ---
 
+## Planning Refusal Handling (built April 2026)
+
+- **Retry with anti-refusal prompt** — when Haiku refuses a topic, retries once with an explicit instruction that all topics are in scope for this editorial platform. Fixes false refusals on legitimate topics (e.g. EV transition, political analysis).
+- **JSON-first detection** — tries to parse valid JSON from Haiku's response before checking for refusal phrases. If the model wraps a disclaimer around valid JSON, uses the JSON instead of erroring.
+- **Refusal logging** — all refused queries logged to `api_usage_log` with `call_type: 'plan_refused'` and the refusal text in `error_message`. Visible in admin Costs tab.
+- **Softer error messaging** — user-facing error changed from "politically sensitive topics" to "hit a safety filter" with guidance to rephrase.
+
+---
+
 ## Sign-In Gate (built)
 
 - Generation starts for all users immediately
@@ -197,7 +206,11 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 - Server-rendered with JSON-LD injection (Article, Person, ClaimReview, Review, BreadcrumbList)
 - Client-side polling for in-progress articles
 - Fact-check bar with corrections display
-- **Expandable fact-check panel** — click "Triple-Verified · N claims" badge to see per-claim breakdown with verdict icons (green/amber/red), agreement status (Unanimous/Majority/Disputed), corrections inline. Summary stats at top. No model names exposed. Non-expandable when no audit data.
+- **Expandable fact-check panel** — click "Triple-Verified · N claims" badge to see per-claim breakdown with verdict icons (green/amber/red), agreement status (Unanimous/Majority/Disputed), corrections inline. Summary stats at top. No internal model names exposed. Non-expandable when no audit data.
+- **Per-model breakdown** — verification report shows progress bars for each model (branded as Gemini/Grok/Perplexity — consumer-facing names). Confirmed/flagged counts. Only shows models that actually ran.
+- **Disputed claims callout** — amber-highlighted section in both the bottom panel and claims panel. Shows claim text, plain-English explanation, and correction (if any). Only appears when claims were corrected or softened.
+- **Card badges** — "Triple checked" badge with 3 coloured dots on all article cards (Featured, Trending, Popular, Recent) when fact_check data exists. Semi-transparent dark green, bottom-right of image area.
+- **Trust strip upgrade** — homepage trust strip now shows green shield + "Triple fact-checked" with Gemini/Grok/Perplexity pills (green/blue/purple) instead of generic "Independent fact-checking" text.
 - Verified badge (green shield, "Verified" label) — now clickable with chevron when claims data exists
 - Internal linking (client-side injection, zero DB writes, cached 1 hour)
 - Product cards, comparison tables, calculators, charts (Recharts), verdict box

@@ -9,7 +9,7 @@ export default function TrustStrip() {
       }}
     >
       <div className="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
-        {/* Signal 1 */}
+        {/* Signal 1: Real sources */}
         <div className="flex items-center gap-2">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20 6L9 17l-5-5" />
@@ -21,19 +21,33 @@ export default function TrustStrip() {
 
         <span className="hidden sm:inline text-xs" style={{ color: '#ddd' }}>|</span>
 
-        {/* Signal 2 */}
+        {/* Signal 2: Triple fact-checked */}
         <div className="flex items-center gap-2">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            <polyline points="9 12 11 14 15 10" />
           </svg>
-          <span className="text-xs" style={{ color: '#888', fontFamily: 'var(--font-outfit)' }}>
-            Independent fact-checking on every article
-          </span>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <span className="text-xs font-medium" style={{ color: '#888', fontFamily: 'var(--font-outfit)' }}>
+              Triple fact-checked
+            </span>
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] px-1.5 py-0.5 rounded" style={{ backgroundColor: '#E1F5EE', color: '#085041', fontWeight: 500 }}>
+                Gemini
+              </span>
+              <span className="text-[11px] px-1.5 py-0.5 rounded" style={{ backgroundColor: '#E6F1FB', color: '#0C447C', fontWeight: 500 }}>
+                Grok
+              </span>
+              <span className="text-[11px] px-1.5 py-0.5 rounded" style={{ backgroundColor: '#EEEDFE', color: '#3C3489', fontWeight: 500 }}>
+                Perplexity
+              </span>
+            </div>
+          </div>
         </div>
 
         <span className="hidden sm:inline text-xs" style={{ color: '#ddd' }}>|</span>
 
-        {/* Signal 3 */}
+        {/* Signal 3: Community insights */}
         <div className="flex items-center gap-2">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />

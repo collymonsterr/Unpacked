@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { ArticleRow, ProductCard } from '@/types/article'
 import { getReadingTime } from '@/lib/reading-time'
-// Category config imported for slug mapping
+import TripleCheckBadge from '@/components/ui/TripleCheckBadge'
 
 interface Props {
   articles: ArticleRow[]
@@ -61,6 +61,7 @@ function ArticleCard({ row }: { row: ArticleRow }) {
             <span className="text-3xl font-bold" style={{ color: 'var(--accent)', opacity: 0.3 }}>U</span>
           </div>
         )}
+        {row.fact_check && <TripleCheckBadge />}
       </div>
       <div className="p-3 flex-1 flex flex-col">
         <h3

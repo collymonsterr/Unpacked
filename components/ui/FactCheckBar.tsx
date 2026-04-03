@@ -9,6 +9,72 @@ interface Props {
   audit?: FactCheckAudit | null
 }
 
+// ── Model display config ──
+const MODELS = [
+  { key: 'gemini', name: 'Gemini', bg: '#E1F5EE', color: '#085041', barColor: '#22C55E' },
+  { key: 'grok', name: 'Grok', bg: '#E6F1FB', color: '#0C447C', barColor: '#3B82F6' },
+  { key: 'perplexity', name: 'Perplexity', bg: '#EEEDFE', color: '#3C3489', barColor: '#8B5CF6' },
+] as const
+
+/** Compute per-model stats from audit claims */
+function computeModelStats(audit: FactCheckAudit) {
+  const claims = audit.claims ?? []
+  const total = claims.length
+  if (total === 0) return []
+
+  // Stage 1 (Gemini): verified = stage1_verdict is 'verified'
+  const s1Confirmed = claims.filter(c => c.stage1_verdict === 'verified').length
+  const s1Corrected = claims.filter(c => c.stage1_verdict === 'flagged' || c.stage1_verdict === 'insufficient').length
+
+  // Stage 2 (Grok): confirmed = stage2_review exists and agrees
+  const s2Claims = claims.filter(c => c.stage2_review)
+  const s2Confirmed = s2Claims.filter(c => c.stage2_review!.agrees).length
+  const s2Corrected = s2Claims.filter(c => !c.stage2_review!.agrees).length
+
+  // Stage 3 (Perplexity): only if arbitration ran
+  const s3Claims = claims.filter(c => c.stage3_arbitration)
+  const s3Confirmed = s3Claims.filter(c => c.stage3_arbitration!.verdict === 'verified').length
+  const s3Corrected = s3Claims.filter(c => c.stage3_arbitration!.verdict !== 'verified').length
+
+  const stats = [
+    { ...MODELS[0], confirmed: s1Confirmed, corrected: s1Corrected, total, active: true },
+    { ...MODELS[1], confirmed: s2Confirmed, corrected: s2Corrected, total: s2Claims.length, active: s2Claims.length > 0 },
+    { ...MODELS[2], confirmed: s3Confirmed, corrected: s3Corrected, total: s3Claims.length, active: s3Claims.length > 0 },
+  ]
+
+  // Only return active models (that actually ran)
+  return stats.filter(s => s.active)
+}
+
+/** Get disputed/corrected claims with human-readable explanations */
+function getDisputedClaims(audit: FactCheckAudit) {
+  const claims = audit.claims ?? []
+  return claims
+    .filter(c => c.final_verdict === 'corrected' || c.final_verdict === 'softened')
+    .map(c => {
+      let explanation = ''
+      if (c.final_verdict === 'corrected') {
+        if (c.stage2_review && !c.stage2_review.agrees && c.stage2_review.concerns) {
+          explanation = c.stage2_review.concerns
+        } else if (c.stage3_arbitration?.reasoning) {
+          explanation = c.stage3_arbitration.reasoning
+        } else if (c.action_taken) {
+          explanation = c.action_taken.replace(/^Corrected:\s*/, '')
+        } else {
+          explanation = 'One verification model flagged this claim as inaccurate. The article has been updated.'
+        }
+      } else {
+        // softened
+        if (c.stage2_review?.concerns) {
+          explanation = c.stage2_review.concerns
+        } else {
+          explanation = 'One verification model flagged this claim as potentially overstated. The language has been softened.'
+        }
+      }
+      return { text: c.text, explanation, verdict: c.final_verdict, action: c.action_taken }
+    })
+}
+
 export default function FactCheckBar({ status, factCheck, audit }: Props) {
   const [dismissed, setDismissed] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -32,8 +98,6 @@ export default function FactCheckBar({ status, factCheck, audit }: Props) {
 
   const corrections = factCheck?.issues?.filter(i => i.severity !== 'note') ?? []
   const stagesRun = audit?.stages_run ?? (factCheck ? 1 : 0)
-  // Prefer audit total, but fall back to checks_performed when audit reports 0
-  // (claim extraction sometimes returns empty — checks_performed has the real count)
   const totalClaims = (audit?.total_claims && audit.total_claims > 0)
     ? audit.total_claims
     : (factCheck?.checks_performed ?? 0)
@@ -72,7 +136,7 @@ export default function FactCheckBar({ status, factCheck, audit }: Props) {
                     Triple-checking
                   </span>
                   <span className="hidden sm:inline" style={{ color: 'var(--text-secondary)' }}>
-                    {' '}— verifying with 3 independent AI systems...
+                    {' '}— verifying with 3 independent models...
                   </span>
                   <span className="sm:hidden" style={{ color: 'var(--text-secondary)' }}>
                     {' '}against live sources...
@@ -164,7 +228,7 @@ export default function FactCheckBar({ status, factCheck, audit }: Props) {
           {/* Panel */}
           <div className="fixed bottom-12 left-0 right-0 z-50 px-4 pb-2">
             <div
-              className="max-w-[600px] mx-auto rounded-xl p-5"
+              className="max-w-[600px] mx-auto rounded-xl p-5 max-h-[70vh] overflow-y-auto"
               style={{
                 backgroundColor: 'var(--card)',
                 border: '1px solid var(--border)',
@@ -200,11 +264,16 @@ export default function FactCheckBar({ status, factCheck, audit }: Props) {
                   skipped={stagesRun < 3}
                   label="Independent Audit"
                   detail={stagesRun >= 3
-                    ? 'Verified by a third AI system'
+                    ? 'Verified by a third independent model'
                     : 'Skipped — not required for this article type'
                   }
                 />
               </div>
+
+              {/* Per-model breakdown */}
+              {audit && audit.claims && audit.claims.length > 0 && (
+                <ModelBreakdown audit={audit} />
+              )}
 
               {/* Audit summary */}
               {audit && (
@@ -233,8 +302,52 @@ export default function FactCheckBar({ status, factCheck, audit }: Props) {
                 </div>
               )}
 
-              {/* Corrections list (if any) */}
-              {corrections.length > 0 && (
+              {/* Disputed claims callout */}
+              {audit && audit.claims && audit.claims.length > 0 && (() => {
+                const disputed = getDisputedClaims(audit)
+                if (disputed.length === 0) return null
+                return (
+                  <div
+                    className="rounded-lg p-3 mb-3"
+                    style={{ backgroundColor: '#FFFBEB', border: '1px solid #FDE68A' }}
+                  >
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                        <line x1="12" y1="9" x2="12" y2="13" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                      </svg>
+                      <span className="text-xs font-semibold" style={{ color: '#92400E' }}>
+                        Disputed claims
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {disputed.map((d, i) => (
+                        <div
+                          key={i}
+                          className="rounded-lg px-3 py-2"
+                          style={{ backgroundColor: '#FEF3C7' }}
+                        >
+                          <p className="text-xs font-medium mb-1" style={{ color: '#78350F' }}>
+                            &ldquo;{d.text}&rdquo;
+                          </p>
+                          <p className="text-xs leading-relaxed" style={{ color: '#92400E' }}>
+                            {d.explanation}
+                          </p>
+                          {d.verdict === 'corrected' && d.action && (
+                            <p className="text-xs mt-1 font-medium" style={{ color: '#15803d' }}>
+                              Updated: {d.action.replace(/^Corrected:\s*/, '')}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* Corrections list (legacy single-stage, if any) */}
+              {corrections.length > 0 && !audit?.claims?.length && (
                 <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
                   {corrections.map((issue, i) => (
                     <div key={i} className="flex items-start gap-2.5 text-sm">
@@ -276,6 +389,49 @@ export default function FactCheckBar({ status, factCheck, audit }: Props) {
       {/* Spacer so content isn't hidden behind the fixed bar */}
       <div className="h-12" />
     </>
+  )
+}
+
+// ── Per-model breakdown ──
+
+function ModelBreakdown({ audit }: { audit: FactCheckAudit }) {
+  const stats = computeModelStats(audit)
+  if (stats.length === 0) return null
+
+  return (
+    <div className="mb-4 space-y-2">
+      <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>
+        Per-model breakdown
+      </p>
+      {stats.map((model) => {
+        const pct = model.total > 0 ? Math.round((model.confirmed / model.total) * 100) : 0
+        return (
+          <div key={model.key} className="flex items-center gap-2">
+            {/* Model pill */}
+            <span
+              className="text-[11px] font-medium px-1.5 py-0.5 rounded flex-shrink-0"
+              style={{ backgroundColor: model.bg, color: model.color, minWidth: '64px', textAlign: 'center' }}
+            >
+              {model.name}
+            </span>
+            {/* Progress bar */}
+            <div
+              className="flex-1 rounded-full overflow-hidden"
+              style={{ height: '6px', backgroundColor: '#F0EDE8', minWidth: '80px' }}
+            >
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${pct}%`, backgroundColor: model.barColor }}
+              />
+            </div>
+            {/* Count */}
+            <span className="text-[11px] flex-shrink-0" style={{ color: 'var(--text-secondary)', minWidth: '90px' }}>
+              {model.confirmed} confirmed{model.corrected > 0 ? ` · ${model.corrected} flagged` : ''}
+            </span>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
@@ -563,6 +719,54 @@ export function ClaimsPanel({ audit, onClose }: { audit: FactCheckAudit; onClose
           ))}
         </div>
       )}
+
+      {/* Per-model breakdown (inside claims panel too) */}
+      {audit.claims.length > 0 && (
+        <div className="px-4 py-3" style={{ borderBottom: '1px solid #E8E3DC' }}>
+          <ModelBreakdown audit={audit} />
+        </div>
+      )}
+
+      {/* Disputed claims callout */}
+      {(() => {
+        const disputed = getDisputedClaims(audit)
+        if (disputed.length === 0) return null
+        return (
+          <div className="px-4 py-3" style={{ borderBottom: '1px solid #E8E3DC' }}>
+            <div
+              className="rounded-lg p-3"
+              style={{ backgroundColor: '#FFFBEB', border: '1px solid #FDE68A' }}
+            >
+              <div className="flex items-center gap-1.5 mb-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                <span className="text-xs font-semibold" style={{ color: '#92400E' }}>
+                  Disputed claims
+                </span>
+              </div>
+              <div className="space-y-2">
+                {disputed.map((d, i) => (
+                  <div
+                    key={i}
+                    className="rounded-lg px-3 py-2"
+                    style={{ backgroundColor: '#FEF3C7' }}
+                  >
+                    <p className="text-xs font-medium mb-1" style={{ color: '#78350F' }}>
+                      &ldquo;{d.text}&rdquo;
+                    </p>
+                    <p className="text-xs leading-relaxed" style={{ color: '#92400E' }}>
+                      {d.explanation}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Claims list */}
       <div className="max-h-[320px] overflow-y-auto">

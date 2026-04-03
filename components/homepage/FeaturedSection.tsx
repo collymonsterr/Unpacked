@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import type { ArticleRow } from '@/types/article'
 import { getReadingTime } from '@/lib/reading-time'
+import TripleCheckBadge from '@/components/ui/TripleCheckBadge'
 import SectionHeader from './SectionHeader'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -137,7 +138,7 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
             ) : (
               <div className="w-full h-full" style={{ backgroundColor: 'var(--accent-light)' }} />
             )}
-            {/* No badge on image — verified status shown in bottom metadata */}
+            {heroArticle.fact_check && <TripleCheckBadge />}
           </div>
           <div className="p-4 flex-1 flex flex-col gap-0">
             {/* 1. Category badge */}
@@ -271,6 +272,7 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
                       <span className="text-2xl font-bold" style={{ color: 'var(--accent)', opacity: 0.3 }}>U</span>
                     </div>
                   )}
+                  {row.fact_check && <TripleCheckBadge />}
                 </div>
                 <div className="p-2.5">
                   <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: 'var(--accent)' }}>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { ArticleRow } from '@/types/article'
+import TripleCheckBadge from '@/components/ui/TripleCheckBadge'
 import SectionHeader from './SectionHeader'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -98,6 +99,7 @@ export default function TrendingSection({ pool }: Props) {
                 ) : (
                   <div className="w-full h-full" style={{ backgroundColor: '#2a2a2a' }} />
                 )}
+                {row.fact_check && <TripleCheckBadge />}
               </div>
               <div className="p-3">
                 <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--accent)' }}>

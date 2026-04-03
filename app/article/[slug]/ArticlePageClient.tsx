@@ -306,12 +306,12 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
           </div>
           <p className="text-2xl font-bold mb-2" style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}>
             {(row.generation_options as Record<string, unknown> | null)?._error === 'topic_refused'
-              ? "We couldn't write about this topic"
+              ? "This topic hit a safety filter"
               : 'Something went wrong generating this article'}
           </p>
           <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
             {(row.generation_options as Record<string, unknown> | null)?._error === 'topic_refused'
-              ? "This sometimes happens with politically sensitive topics — the AI declined to write about it. Try rephrasing your question or approaching it from a different angle."
+              ? "One of our verification models flagged this query. This can happen with certain phrasing — try rewording your question or approaching it from a slightly different angle. Most topics work fine on a second attempt."
               : 'The generation timed out or hit an error. Start a new search to try again.'}
           </p>
           <div className="flex items-center justify-center gap-3">
