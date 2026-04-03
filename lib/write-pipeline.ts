@@ -79,6 +79,7 @@ export async function runWritePipeline({
     },
     researchSummary,
     generationOptions,
+    liveData,
   )
   t.blueprint_ms = Date.now() - bpStart
 

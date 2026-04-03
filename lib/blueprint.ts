@@ -28,9 +28,10 @@ export async function generateBlueprint(
   synthesis: ResearchSynthesis,
   researchSummary: string,
   options: Record<string, unknown>,
+  liveData?: Record<string, unknown>[],
 ): Promise<ArticleBlueprint> {
   try {
-    return await callBlueprintModel(query, plan, entityCards, synthesis, researchSummary, options)
+    return await callBlueprintModel(query, plan, entityCards, synthesis, researchSummary, options, liveData)
   } catch (err) {
     console.warn('[blueprint] Generation failed — using fallback:', (err as Error).message)
     return buildFallbackBlueprint(query, plan, synthesis, options)
@@ -44,6 +45,7 @@ async function callBlueprintModel(
   synthesis: ResearchSynthesis,
   researchSummary: string,
   options: Record<string, unknown>,
+  liveData?: Record<string, unknown>[],
 ): Promise<ArticleBlueprint> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY
   if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY not set')
@@ -84,6 +86,7 @@ SYNTHESIS:
 - Community says: ${synthesis.community_sentiment_summary || 'no data'}
 - Research gaps: ${synthesis.gaps.join('; ') || 'none'}
 
+${buildLiveDataContext(liveData)}
 REQUIRED COMPONENTS: ${typeConfig?.requiredComponents.join(', ') ?? 'none'}
 FORBIDDEN COMPONENTS: ${JSON.stringify(plan.forbidden_components ?? typeConfig?.forbiddenComponents ?? [])}
 VERDICT REQUIRED: ${typeConfig?.verdictRequired ? 'YES' : 'NO'}
@@ -211,6 +214,38 @@ Return ONLY valid JSON:
     clearTimeout(timeoutId)
     throw err
   }
+}
+
+/**
+ * Build live data context section for the blueprint prompt.
+ * Tells the blueprint which live data sources survived quality filters.
+ */
+function buildLiveDataContext(liveData?: Record<string, unknown>[]): string {
+  if (!liveData || liveData.length === 0) {
+    return 'LIVE DATA: None available. Do not allocate space for live data components.\n'
+  }
+
+  const sources = new Map<string, string[]>()
+  for (const d of liveData) {
+    const source = String(d.source ?? 'unknown')
+    if (!sources.has(source)) sources.set(source, [])
+    if (source === 'polymarket') {
+      sources.get(source)!.push(`"${String(d.question ?? '').slice(0, 80)}"`)
+    } else if (source === 'yahoo_finance') {
+      sources.get(source)!.push(`${String(d.symbol ?? '')} ($${String(d.price ?? '')}, ${String(d.changePercent ?? '0')}%)`)
+    } else if (source === 'google_trends') {
+      sources.get(source)!.push(`"${String(d.query ?? '')}" (trend: ${String(d.trend ?? 'unknown')}, ${String(d.changePercent ?? '0')}% change)`)
+    }
+  }
+
+  const lines = ['LIVE DATA AVAILABLE (passed quality filters — plan section placement for these):']
+  for (const [source, items] of sources) {
+    lines.push(`- ${source}: ${items.join(', ')}`)
+  }
+  lines.push('Place live_data_card components near the top of the article, after the executive summary.')
+  lines.push('')
+
+  return lines.join('\n')
 }
 
 /**

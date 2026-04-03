@@ -56,6 +56,10 @@ export interface LiveDataQuery {
   query?: string
   symbols?: string[]
   purpose?: string
+  /** One sentence explaining why this data source is relevant to the article */
+  rationale?: string
+  /** For Polymarket: whether the expected market is binary or multi-outcome */
+  market_type?: 'binary' | 'multi_outcome'
 }
 
 export interface ResearchManifest {

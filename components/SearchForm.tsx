@@ -38,9 +38,12 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [pendingSlug, setPendingSlug] = useState<string | null>(null)
   const [limitModal, setLimitModal] = useState<{ limit: number; nextReset: string } | null>(null)
+  const [improveState, setImproveState] = useState<'idle' | 'chip' | 'loading' | 'showing'>('idle')
+  const [alternatives, setAlternatives] = useState<string[]>([])
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const loadingStartRef = useRef(0)
+  const improveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const router = useRouter()
 
   // Rotate placeholder text
@@ -52,6 +55,66 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
     }, 3000)
     return () => clearInterval(interval)
   }, [])
+
+  // Improve prompt — 2 second debounce after 20+ chars
+  useEffect(() => {
+    if (improveTimerRef.current) {
+      clearTimeout(improveTimerRef.current)
+      improveTimerRef.current = null
+    }
+
+    // Reset chip if user is typing or query is short
+    if (query.trim().length < 20 || isLoading) {
+      if (improveState === 'chip') setImproveState('idle')
+      return
+    }
+
+    // Don't show chip again if already showing alternatives or loading
+    if (improveState === 'loading' || improveState === 'showing') return
+
+    improveTimerRef.current = setTimeout(() => {
+      setImproveState('chip')
+    }, 2000)
+
+    return () => {
+      if (improveTimerRef.current) {
+        clearTimeout(improveTimerRef.current)
+        improveTimerRef.current = null
+      }
+    }
+  }, [query, isLoading])
+
+  async function handleImprovePrompt() {
+    setImproveState('loading')
+    try {
+      const res = await fetch('/api/improve-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: query.trim() }),
+      })
+      if (!res.ok) throw new Error('Failed')
+      const data = await res.json()
+      if (Array.isArray(data.alternatives) && data.alternatives.length === 3) {
+        setAlternatives(data.alternatives)
+        setImproveState('showing')
+      } else {
+        setImproveState('idle')
+      }
+    } catch {
+      setImproveState('idle')
+    }
+  }
+
+  function handleSelectAlternative(alt: string) {
+    setQuery(alt)
+    setAlternatives([])
+    setImproveState('idle')
+  }
+
+  function handleDismissAlternatives() {
+    setAlternatives([])
+    setImproveState('idle')
+  }
 
   // Phase 1 message ticking — starts when loading begins
   useEffect(() => {
@@ -348,6 +411,11 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
               setQuery(e.target.value)
               e.target.style.height = 'auto'
               e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px'
+              // Reset improve state on typing
+              if (improveState === 'chip' || improveState === 'showing') {
+                setImproveState('idle')
+                setAlternatives([])
+              }
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -367,6 +435,103 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
             autoFocus={autoFocus}
           />
         </div>
+
+        {/* Improve prompt chip */}
+        {improveState === 'chip' && (
+          <div className="flex justify-end mt-2 px-1" style={{ animation: 'fadeInChip 200ms ease' }}>
+            <button
+              type="button"
+              onClick={handleImprovePrompt}
+              className="text-xs font-medium transition-opacity hover:opacity-80"
+              style={{
+                backgroundColor: '#BA7517',
+                color: '#fff',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '11px',
+                cursor: 'pointer',
+                border: 'none',
+                fontFamily: 'var(--font-sora)',
+              }}
+            >
+              ✦ Improve this prompt
+            </button>
+          </div>
+        )}
+
+        {/* Improve prompt — skeleton loading */}
+        {improveState === 'loading' && (
+          <div className="mt-3 space-y-2 px-1" style={{ animation: 'fadeInCards 150ms ease' }}>
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="rounded-lg"
+                style={{
+                  backgroundColor: '#F0EFED',
+                  height: '52px',
+                  animation: 'skeletonPulse 1.5s ease-in-out infinite',
+                  animationDelay: `${i * 150}ms`,
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Improve prompt — alternative cards */}
+        {improveState === 'showing' && alternatives.length > 0 && (
+          <div className="mt-3 space-y-2 px-1" style={{ animation: 'fadeInCards 150ms ease' }}>
+            {alternatives.map((alt, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => handleSelectAlternative(alt)}
+                className="w-full text-left rounded-lg transition-all"
+                style={{
+                  backgroundColor: '#fff',
+                  border: '1px solid #E8E2D9',
+                  borderRadius: '8px',
+                  padding: '12px 14px',
+                  fontSize: '14px',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-outfit)',
+                  cursor: 'pointer',
+                  minHeight: '44px',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderLeft = '2px solid #BA7517'
+                  e.currentTarget.style.backgroundColor = '#FDF6E9'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderLeft = '1px solid #E8E2D9'
+                  e.currentTarget.style.backgroundColor = '#fff'
+                }}
+              >
+                {alt}
+              </button>
+            ))}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleDismissAlternatives}
+                className="text-xs hover:underline"
+                style={{
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  background: 'none',
+                  border: 'none',
+                  padding: '2px 4px',
+                  fontFamily: 'var(--font-outfit)',
+                }}
+              >
+                ✕ dismiss
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Buttons row — below the input */}
         <div className="flex items-center gap-3 mt-3 justify-center">
@@ -450,6 +615,21 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
           nextReset={limitModal.nextReset}
         />
       )}
+
+      <style>{`
+        @keyframes fadeInChip {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInCards {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes skeletonPulse {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
+        }
+      `}</style>
     </div>
   )
 }

@@ -43,6 +43,14 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 
 All run in parallel during research phase via `executeLiveDataQueries()`.
 
+### Smart Decision Logic (built April 2026)
+- **Planning step**: Haiku planner uses strict criteria per source (Polymarket only for forward-looking outcomes, Google Trends only for time-sensitive topics, Yahoo Finance only for direct financial connections). Max 2 sources per article (3 only when all tell different parts of the same story). `live_data_rationale` field required per query. `market_type` field (binary/multi_outcome) for Polymarket.
+- **Post-fetch quality filters** in `executeLiveDataQueries()`:
+  - Polymarket: volume must be ≥$500k (discarded if below — odds not liquid enough)
+  - Google Trends: change must be ≥50% or trend rising/peaking (discarded if flat)
+  - Yahoo Finance: at least one ticker must move ≥±0.5% today (all discarded if flat)
+- **Blueprint awareness**: Blueprint receives live data that survived filters, plans section placement only for available data. No space allocated for discarded sources.
+
 ---
 
 ## Sign-In Gate (built)

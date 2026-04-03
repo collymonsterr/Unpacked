@@ -290,21 +290,39 @@ For image_queries: specify hero image search and product images.
 - hero: {query (5-8 words for a magazine-quality photo), style: editorial_photo | news_photo | product_photo | abstract}
 - products: array of {entity_name, query} for each product needing an image (buyer_guide/comparison/roundup only, empty for other types)
 
-For live_data (OPTIONAL — only include when genuinely relevant):
-Include live_data queries ONLY for article types where live market/prediction/trend data adds real value. Each entry specifies a data source and query.
-- source: "polymarket" — prediction market odds. Use for: news_analysis, breaking_news, trend_analysis, deep_dive involving FORWARD-LOOKING UNCERTAIN OUTCOMES: elections, wars, regulations, market events, rate cuts, policy changes, geopolitical conflicts. NEVER for: buyer guides, how-to, explainers, historical topics, tutorials, product comparisons, evergreen content. Generate 3-5 SPECIFIC queries phrased like prediction markets: "Will China invade Taiwan before 2028", "Fed rate cut 2026", "Israel Iran ceasefire". NOT generic keywords like "China Taiwan" or "interest rates".
-- source: "yahoo_finance" — stock/market quotes. Use for: news_analysis, breaking_news, trend_analysis, deep_dive involving companies, markets, earnings, IPOs, economic data. Provide symbols if known (e.g., ["AAPL", "MSFT"]), or a query to search for symbols (e.g., "electric vehicle stocks").
-- source: "google_trends" — 12-month search interest. Use for: trend_analysis, deep_dive, news_analysis to show whether public interest is rising/falling. Query should be the core topic (e.g., "AI coding assistants", "electric vehicles").
+For live_data (OPTIONAL — strict quality gates):
+Include live_data queries ONLY when the data genuinely adds insight. Each source has specific criteria:
 
-Rules:
-- buyer_guide, comparison, how_to, roundup: do NOT include live_data (these are product/task focused)
-- explainer: only include if the topic has a clear market/trend dimension
-- news_analysis, breaking_news: include 1-2 sources if the story involves markets, politics, or tech companies
-- trend_analysis, deep_dive: include 1-3 sources — these benefit most from live data
-- GEOPOLITICAL topics (war, conflict, sanctions, elections, trade disputes, territorial disputes, diplomacy): ALWAYS include polymarket + google_trends. These topics almost always have active prediction markets.
-- FINANCE CATEGORY RULE: Articles in the 'finance' category (regardless of article type) should ALWAYS include at least one Yahoo Finance quote for the most relevant ticker. Examples: gold → GC=F (Gold Futures), bitcoin/crypto → BTC-USD, stock market → ^GSPC (S&P 500), oil → CL=F (Crude Oil), interest rates → ^TNX (10-Year Treasury). Decision guides about financial topics should include Yahoo Finance data even though they're not news articles.
-- Never include more than 3 live_data entries total
-- If unsure whether live data is relevant, omit it — empty array or omit the field entirely
+POLYMARKET (prediction market odds):
+- ONLY request if the topic has a forward-looking outcome a prediction market would cover: elections, policy decisions, geopolitical events, product launches with known dates, regulatory rulings
+- NEVER for: buyer_guide, how_to, roundup, explainer, or any evergreen topic. These don't have predictable outcomes.
+- Generate 3-5 SPECIFIC queries phrased like prediction markets: "Will China invade Taiwan before 2028", "Fed rate cut 2026", "Israel Iran ceasefire". NOT generic keywords.
+- Specify market_type: "binary" for yes/no outcomes, "multi_outcome" for 3+ options (elections, multi-candidate races)
+
+GOOGLE TRENDS (12-month search interest):
+- ONLY request if the topic is time-sensitive or relates to something that has recently spiked in public interest
+- Good: breaking_news, trend_analysis, news_analysis — anything where "is this actually trending?" is a relevant question
+- BAD: evergreen buyer_guide, how_to, deep_dive on established topics. Nobody needs the search trend for "best running shoes" — it's always searched.
+- Specify 3-5 search terms to compare: the article's core subject + 2-3 related terms that provide contrast
+
+YAHOO FINANCE (stock/market quotes):
+- ONLY request if the topic has a DIRECT financial market connection — specific companies, sectors, commodities, or economic indicators
+- Good: news about a company, industry analysis, economic policy, trade/tariff stories
+- BAD: health articles, travel guides, entertainment, how_to
+- Specify 1-5 SPECIFIC ticker symbols (AAPL, not "tech stocks"). Examples: gold → GC=F, bitcoin → BTC-USD, S&P 500 → ^GSPC, oil → CL=F, 10-Year Treasury → ^TNX
+
+DECISION RULES:
+- buyer_guide, comparison, how_to, roundup: ZERO live data sources. No exceptions (unless finance category — see below).
+- explainer: only if the topic has a clear market/trend dimension
+- news_analysis, breaking_news: 1-2 sources maximum
+- trend_analysis, deep_dive: 1-2 sources maximum
+- Maximum 2 data sources per article in most cases. Pick the 2 most relevant.
+- 3 sources allowed ONLY when all three tell genuinely different parts of the same story (e.g., breaking financial news where Polymarket shows outcome odds, Yahoo Finance shows market reaction, Google Trends shows public interest spike)
+- GEOPOLITICAL topics (war, conflict, sanctions, elections, trade disputes): ALWAYS include polymarket + google_trends
+- FINANCE CATEGORY RULE: Articles in 'finance' category (any type) should include Yahoo Finance for the most relevant ticker
+- If unsure whether live data is relevant, omit it — zero is always better than irrelevant data
+
+Each live_data entry MUST include a "rationale" field: one sentence explaining why this specific data source adds insight to THIS article. This is mandatory — no rationale means the query will be discarded.
 
 For article_type_confidence: integer 0-100 representing how certain you are about the classification.
 - 90-100: clear match, no alternatives needed
@@ -386,7 +404,7 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
       "hero": { "query": "string — 5-8 word magazine-quality photo search", "style": "editorial_photo | news_photo | product_photo | abstract" },
       "products": [{ "entity_name": "string", "query": "string" }]
     },
-    "live_data": [{ "source": "polymarket | yahoo_finance | google_trends", "query": "string — search term", "symbols": ["string — ticker symbols for yahoo_finance only"], "purpose": "string — why this data is relevant" }]
+    "live_data": [{ "source": "polymarket | yahoo_finance | google_trends", "query": "string — search term", "symbols": ["string — ticker symbols for yahoo_finance only"], "purpose": "string — why this data is relevant", "rationale": "string — one sentence explaining why this data source adds insight to THIS article (REQUIRED)", "market_type": "binary | multi_outcome — for polymarket only" }]
   },
   "research_queries": ["string"],
   "hero_image_query": "string",

@@ -301,10 +301,65 @@ function extractEntitiesFromFindings(findings: ResearchFinding[]): PlanEntity[] 
 
 // ── Live data query execution ─────────────────────────────────────────────────
 
+// ── Post-fetch quality filters ──────────────────────────────────────────────
+
+const POLYMARKET_MIN_VOLUME = 500_000 // $500k minimum for trustworthy odds
+const GOOGLE_TRENDS_MIN_SPIKE = 50 // 50% change minimum to be interesting
+const YAHOO_FINANCE_MIN_MOVE = 0.5 // ±0.5% minimum daily move
+
+/**
+ * Filter Polymarket results by volume threshold.
+ * Markets below $500k total volume aren't liquid enough to be trustworthy.
+ */
+function filterPolymarketByVolume(results: Record<string, unknown>[]): Record<string, unknown>[] {
+  return results.filter(r => {
+    const volume = typeof r.volume === 'number' ? r.volume : 0
+    if (volume < POLYMARKET_MIN_VOLUME) {
+      console.log(`[live-data-filter] Polymarket DISCARDED: "${String(r.question ?? '').slice(0, 60)}" — volume $${Math.round(volume).toLocaleString()} < $${POLYMARKET_MIN_VOLUME.toLocaleString()} threshold`)
+      return false
+    }
+    return true
+  })
+}
+
+/**
+ * Filter Google Trends results — discard if all terms are flat (no spike ≥50%).
+ */
+function filterGoogleTrendsBySpike(results: Record<string, unknown>[]): Record<string, unknown>[] {
+  return results.filter(r => {
+    const changePercent = typeof r.changePercent === 'number' ? r.changePercent : 0
+    const trend = typeof r.trend === 'string' ? r.trend : 'stable'
+    // Keep if there's a significant spike (positive or negative) or if trend is rising/peaking
+    if (Math.abs(changePercent) >= GOOGLE_TRENDS_MIN_SPIKE || trend === 'rising' || trend === 'peaking') {
+      return true
+    }
+    console.log(`[live-data-filter] Google Trends DISCARDED: "${String(r.query ?? '')}" — change ${changePercent}%, trend "${trend}" (flat/declining, no spike ≥${GOOGLE_TRENDS_MIN_SPIKE}%)`)
+    return false
+  })
+}
+
+/**
+ * Filter Yahoo Finance results — discard if ALL tickers moved less than ±0.5%.
+ */
+function filterYahooFinanceByMovement(results: Record<string, unknown>[]): Record<string, unknown>[] {
+  if (results.length === 0) return results
+  const hasSignificantMove = results.some(r => {
+    const pct = typeof r.changePercent === 'number' ? r.changePercent : 0
+    return Math.abs(pct) >= YAHOO_FINANCE_MIN_MOVE
+  })
+  if (!hasSignificantMove) {
+    const symbols = results.map(r => `${String(r.symbol ?? '?')} (${typeof r.changePercent === 'number' ? r.changePercent.toFixed(2) : '0'}%)`).join(', ')
+    console.log(`[live-data-filter] Yahoo Finance DISCARDED: all tickers flat — ${symbols} (threshold ±${YAHOO_FINANCE_MIN_MOVE}%)`)
+    return []
+  }
+  return results
+}
+
 /**
  * Execute live data queries (Polymarket, Yahoo Finance, Google Trends) in parallel.
  * Returns an array of results as Record<string, unknown> for storage and writing prompt injection.
  * Failures are caught per-source — never blocks the pipeline.
+ * Post-fetch filters discard low-quality data (low volume, flat trends, flat prices).
  */
 async function executeLiveDataQueries(
   queries: LiveDataQuery[],
@@ -314,7 +369,10 @@ async function executeLiveDataQueries(
 ): Promise<Record<string, unknown>[]> {
   if (!queries || queries.length === 0) return []
 
-  const results: Record<string, unknown>[] = []
+  // Collect results per source for filtering
+  const polymarketResults: Record<string, unknown>[] = []
+  const yahooResults: Record<string, unknown>[] = []
+  const trendsResults: Record<string, unknown>[] = []
 
   const tasks = queries.map(async (q) => {
     try {
@@ -329,7 +387,7 @@ async function executeLiveDataQueries(
           } : undefined
           const markets = await searchPolymarket(q.query ?? '', articleContext)
           for (const m of markets) {
-            results.push(m as unknown as Record<string, unknown>)
+            polymarketResults.push(m as unknown as Record<string, unknown>)
           }
           break
         }
@@ -342,7 +400,7 @@ async function executeLiveDataQueries(
           if (symbols.length > 0) {
             const quotes = await fetchQuotes(symbols)
             for (const quote of quotes) {
-              results.push(quote as unknown as Record<string, unknown>)
+              yahooResults.push(quote as unknown as Record<string, unknown>)
             }
           }
           break
@@ -350,7 +408,7 @@ async function executeLiveDataQueries(
         case 'google_trends': {
           const trendsResult = await fetchGoogleTrends(q.query ?? '')
           if (trendsResult) {
-            results.push(trendsResult as unknown as Record<string, unknown>)
+            trendsResults.push(trendsResult as unknown as Record<string, unknown>)
           }
           break
         }
@@ -361,6 +419,13 @@ async function executeLiveDataQueries(
   })
 
   await Promise.all(tasks)
+
+  // ── Post-fetch quality filters ──
+  const filteredPolymarket = filterPolymarketByVolume(polymarketResults)
+  const filteredYahoo = filterYahooFinanceByMovement(yahooResults)
+  const filteredTrends = filterGoogleTrendsBySpike(trendsResults)
+
+  const results = [...filteredPolymarket, ...filteredYahoo, ...filteredTrends]
 
   // Deduplicate Yahoo Finance results — same ticker can come from multiple queries
   const seen = new Set<string>()
@@ -373,7 +438,11 @@ async function executeLiveDataQueries(
     return true
   })
 
-  console.log(`[research-orchestrator] Live data: ${deduped.length} results from ${queries.length} queries${deduped.length < results.length ? ` (${results.length - deduped.length} duplicates removed)` : ''}`)
+  const discarded = (polymarketResults.length - filteredPolymarket.length) +
+    (yahooResults.length - filteredYahoo.length) +
+    (trendsResults.length - filteredTrends.length)
+
+  console.log(`[research-orchestrator] Live data: ${deduped.length} results from ${queries.length} queries${discarded > 0 ? ` (${discarded} discarded by quality filters)` : ''}${deduped.length < results.length ? `, ${results.length - deduped.length} duplicates removed` : ''}`)
   return deduped
 }
 
