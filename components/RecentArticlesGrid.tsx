@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { ArticleRow, ProductCard } from '@/types/article'
 import { getReadingTime } from '@/lib/reading-time'
-import { categoryToSlug } from '@/lib/category-config'
+// Category config imported for slug mapping
 
 interface Props {
   articles: ArticleRow[]
@@ -100,10 +100,36 @@ const CATEGORY_FILTERS = [
   'AI & Future',
 ]
 
-/** Map display filter names to DB category names for slug generation */
-const FILTER_TO_DB_CATEGORY: Record<string, string> = {
-  'Current Affairs': 'News',
-  'AI & Future': 'AI',
+/** Map display filter names to DB category values for filtering and slug generation */
+const FILTER_TO_DB: Record<string, string> = {
+  'Tech': 'tech',
+  'Finance': 'finance',
+  'Health': 'health_fitness',
+  'Travel': 'travel',
+  'Home': 'home_living',
+  'Entertainment': 'entertainment',
+  'Science': 'science',
+  'Business': 'business',
+  'Automotive': 'automotive',
+  'Culture': 'culture',
+  'Current Affairs': 'current_affairs',
+  'AI & Future': 'ai_future',
+}
+
+/** Map display filter names to URL slugs for "View all" link */
+const FILTER_TO_SLUG: Record<string, string> = {
+  'Tech': 'tech',
+  'Finance': 'finance',
+  'Health': 'health',
+  'Travel': 'travel',
+  'Home': 'home',
+  'Entertainment': 'entertainment',
+  'Science': 'science',
+  'Business': 'business',
+  'Automotive': 'automotive',
+  'Culture': 'culture',
+  'Current Affairs': 'news',
+  'AI & Future': 'ai',
 }
 
 /** Get the category for an article — prefers top-level column, falls back to plan */
@@ -125,11 +151,12 @@ export default function RecentArticlesGrid({ articles }: Props) {
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
 
+  const dbValue = FILTER_TO_DB[activeCategory] ?? null
   const filtered = activeCategory === 'All'
     ? sorted
     : sorted.filter((a) => {
         const cat = getArticleCategory(a)
-        return cat && cat.toLowerCase() === activeCategory.toLowerCase()
+        return cat && dbValue && cat === dbValue
       })
 
   if (articles.length === 0) return null
@@ -139,7 +166,7 @@ export default function RecentArticlesGrid({ articles }: Props) {
 
   // Get the slug for the "View all" link
   const categorySlug = activeCategory !== 'All'
-    ? categoryToSlug(FILTER_TO_DB_CATEGORY[activeCategory] ?? activeCategory)
+    ? FILTER_TO_SLUG[activeCategory] ?? null
     : null
 
   return (

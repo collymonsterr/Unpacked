@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { CATEGORIES, CATEGORY_BY_SLUG, slugToCategory } from '@/lib/category-config'
+import { CATEGORIES, CATEGORY_BY_SLUG, slugToDbCategory } from '@/lib/category-config'
 import Navbar from '@/components/ui/Navbar'
 import Footer from '@/components/ui/Footer'
 import CategoryPageClient from './CategoryPageClient'
@@ -87,13 +87,13 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const config = CATEGORY_BY_SLUG.get(slug)
   if (!config) notFound()
 
-  const categoryName = slugToCategory(slug)
-  if (!categoryName) notFound()
+  const dbCategory = slugToDbCategory(slug)
+  if (!dbCategory) notFound()
 
   const page = Math.max(1, parseInt(pageParam ?? '1', 10) || 1)
   const sort = ['recent', 'popular', 'verified'].includes(sortParam ?? '') ? sortParam! : 'recent'
 
-  const { articles, totalCount, totalPages } = await getCategoryArticles(categoryName, sort, page)
+  const { articles, totalCount, totalPages } = await getCategoryArticles(dbCategory, sort, page)
 
   return (
     <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
