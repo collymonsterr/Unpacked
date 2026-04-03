@@ -64,8 +64,9 @@ export async function POST(
   }
 
   const body = await request.json()
-  const { instruction, add_findings, remove_findings, switch_type } = body as {
+  const { instruction, imageUrl, add_findings, remove_findings, switch_type } = body as {
     instruction?: string
+    imageUrl?: string
     add_findings?: string[]
     remove_findings?: string[]
     switch_type?: string
@@ -215,11 +216,17 @@ export async function POST(
       })
     }
 
-    // ── Standard text-instruction refine path (unchanged) ──
+    // ── Standard text-instruction refine path ──
+    // If user attached an image, append placement instruction
+    let finalInstruction = instruction!
+    if (imageUrl && typeof imageUrl === 'string') {
+      finalInstruction += `\n\nThe user has uploaded an image. The image URL is: ${imageUrl}. Insert this image into the article at the location specified in their instruction. Use an image_section component in the article JSON with this URL, layout "single", and the source set to "user_upload". If the user didn't specify a location, place it in the most contextually appropriate section.`
+    }
+
     const { article: refined, suggestion_chips } = await refineArticle(
       row.query,
       row.article,
-      instruction!,
+      finalInstruction,
       storedOptions,
       id
     )

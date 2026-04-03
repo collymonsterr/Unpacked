@@ -167,8 +167,9 @@ Four distinct components in `components/sections/LiveDataCard.tsx`, auto-selecte
 2. Featured: 1 hero (2fr) + 2×2 small cards (3fr), 540px, pool-based rotation
 3. Trending Today: 3 dark-style cards, manual admin toggle, pool-based
 4. Most Popular: top 4 by view_count with rank badges
-5. Recent Articles: 3 per row with category filter pills
-6. Footer
+5. Explore by Topic: 12 category chips with warm grey fill (`#EDECEA`), 8px radius (not fully rounded), amber hover (`#BA7517`), links to `/category/[slug]`
+6. Recent Articles: 3 per row with category filter pills + "View all →" link
+7. Footer
 
 Deduplicates article chains via `root_article_id`.
 
@@ -196,7 +197,7 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 - Product cards, comparison tables, calculators, charts (Recharts), verdict box
 - PDF export (jspdf)
 - Reddit community section (real threads from Brave)
-- Refine/fork system (child article, lineage via parent/root IDs)
+- Refine/fork system (child article, lineage via parent/root IDs). **Image upload in refine**: paperclip icon in textarea footer, uploads to Supabase Storage (`refine-images/`), thumbnail preview with remove, 5MB limit, image URL passed to refine model for placement in article JSON.
 - Navbar with search autocomplete (top 5 by view_count, published articles only)
 - **Author block** — 40px avatar, 15px font-medium name, bio line. Social icons (X, LinkedIn, Medium) right-aligned at 18px with hover states. Flexbox justify-between layout.
 - **Cost + generation time** — admin-only display showing "4¢ · 47s" from `generation_options.timings` breakdowns
@@ -237,7 +238,7 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 
 ---
 
-## API Routes (38 confirmed)
+## API Routes (39 confirmed)
 
 Covering: articles CRUD, admin actions, search, saved articles, profile management, voting, fact-check, images, social content, rate limiting.
 

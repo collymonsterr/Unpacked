@@ -524,6 +524,14 @@ export default function EditorCoPilot({ articleId, articleSlug, articleType }: E
         </div>
       )}
 
+      {/* Image upload tip — editor tab is owner-only so no extra gate needed */}
+      <p
+        className="text-xs mb-4 px-1"
+        style={{ color: 'var(--text-secondary)', opacity: 0.7 }}
+      >
+        You can upload your own images — attach a photo in the editor below and tell us where to place it.
+      </p>
+
       {/* ── Section C: Rewrite Controls ── */}
       <div ref={rewriteRef}>
       <RewriteControls

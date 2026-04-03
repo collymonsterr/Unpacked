@@ -4,6 +4,7 @@ import FeaturedSection from '@/components/homepage/FeaturedSection'
 import TrendingSection from '@/components/homepage/TrendingSection'
 import PopularSection from '@/components/homepage/PopularSection'
 import RecentArticlesGrid from '@/components/RecentArticlesGrid'
+import ExploreByTopic from '@/components/homepage/ExploreByTopic'
 import PendingArticleRecovery from '@/components/PendingArticleRecovery'
 import Footer from '@/components/ui/Footer'
 import TrustStrip from '@/components/TrustStrip'
@@ -125,6 +126,10 @@ export default async function HomePage() {
           <div className="max-w-6xl mx-auto px-4 md:px-6 my-14" style={{ borderTop: '1px solid #e2e0d8' }} />
         </>
       )}
+
+      {/* Explore by Topic */}
+      <ExploreByTopic />
+      <div className="max-w-6xl mx-auto px-4 md:px-6 my-14" style={{ borderTop: '1px solid #e2e0d8' }} />
 
       {/* All Articles */}
       <RecentArticlesGrid articles={all} />

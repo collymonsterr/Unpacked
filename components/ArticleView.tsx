@@ -125,7 +125,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
     }
   }
 
-  async function handleRefine(instruction: string) {
+  async function handleRefine(instruction: string, imageUrl?: string) {
     setIsRefining(true)
     setRefineError(null)
 
@@ -133,7 +133,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
       const res = await fetch(`/api/articles/${articleRow.id}/refine`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ instruction }),
+        body: JSON.stringify({ instruction, imageUrl }),
       })
 
       if (!res.ok) throw new Error('Refinement failed')
@@ -511,6 +511,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
               isLoading={isRefining}
               externalValue={refineValue}
               onExternalValueChange={setRefineValue}
+              articleId={articleRow.id}
             />
           </>
         ) : (
