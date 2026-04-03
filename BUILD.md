@@ -55,11 +55,14 @@ All run in parallel during research phase via `executeLiveDataQueries()`.
 Four distinct components in `components/sections/LiveDataCard.tsx`, auto-selected by data type:
 1. **Polymarket Multi-Outcome** — sorted outcome bars with colour coding (green/blue/amber/grey), volume display, source pill
 2. **Polymarket Binary** — large probability display (4xl), Yes/No split columns, combined colour bar. Chart placeholder ready for historical odds when available (Polymarket API doesn't provide time series)
-3. **Google Trends** — current interest score, % change vs prior 3 months, Recharts AreaChart with amber gradient fill, tooltip
-4. **Yahoo Finance Grid** — 2×2 responsive grid of ticker cards, each with symbol/name/price/change badge (green/red tinted), inline SVG sparkline from 1-month data
-- All components share: consistent card styling, source pills, `CardFooter`, IntersectionObserver fade-in
+3. **Google Trends** — current interest score, % change vs prior 3 months, Recharts AreaChart with auto-scaled Y-axis (adapts to low data ranges), X/Y axis labels, unique gradient IDs per card, amber gradient fill, tooltip
+4. **Yahoo Finance Grid** — 2×2 responsive grid of ticker cards, each with symbol/name/price/change badge (green/red tinted), inline SVG sparkline with configurable timeframe (1d/1m/3m/6m), period change display for multi-month timeframes, timeframe label on sparkline
+- All components share: consistent card styling with `display: flex; flex-direction: column`, source pills, `CardFooter` (nowrap), IntersectionObserver fade-in
+- Grid layout uses `items-stretch` for equal-height cards side by side
 - Uses Recharts (already in project) for Google Trends chart
-- SectionRenderer grouping logic unchanged (grid layout for consecutive cards)
+- SectionRenderer grouping logic uses flex containers for height equalisation
+- Yahoo Finance `timeframe` field in planning schema → API range parameter → component display
+- Markdown heading syntax (`## Text`) in article body auto-converted to styled `<h4>` subheadings (safety net in ContentSection.tsx)
 
 ---
 

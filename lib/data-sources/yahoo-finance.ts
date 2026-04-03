@@ -17,8 +17,14 @@ export interface YahooFinanceResult {
   currency: string
   url: string
   source: 'yahoo_finance'
-  /** 1-month daily close prices for sparkline chart (most recent last) */
+  /** Daily close prices for sparkline chart (most recent last) */
   sparkline?: number[]
+  /** Timeframe of the sparkline data */
+  timeframe?: '1d' | '1m' | '3m' | '6m'
+  /** Change over the sparkline period (first to last data point) */
+  periodChange?: number
+  /** Percentage change over the sparkline period */
+  periodChangePercent?: number
 }
 
 const YAHOO_CHART_API = 'https://query1.finance.yahoo.com/v8/finance/chart'
@@ -42,11 +48,19 @@ function setCache(symbol: string, data: YahooFinanceResult): void {
   cache.set(symbol, { data, expires: Date.now() + CACHE_TTL })
 }
 
+/** Map planner timeframe to Yahoo Finance API range and interval */
+const TIMEFRAME_MAP: Record<string, { range: string; interval: string; label: string }> = {
+  '1d': { range: '1d', interval: '5m', label: 'Today' },
+  '1m': { range: '1mo', interval: '1d', label: '1 month' },
+  '3m': { range: '3mo', interval: '1d', label: '3 months' },
+  '6m': { range: '6mo', interval: '1d', label: '6 months' },
+}
+
 /**
  * Fetch quotes for the given symbols.
  * Fetches in parallel, skips failures per-symbol.
  */
-export async function fetchQuotes(symbols: string[]): Promise<YahooFinanceResult[]> {
+export async function fetchQuotes(symbols: string[], timeframe?: string): Promise<YahooFinanceResult[]> {
   if (!symbols || symbols.length === 0) return []
 
   // Deduplicate symbols (case-insensitive) — same company can appear via multiple queries
@@ -58,26 +72,31 @@ export async function fetchQuotes(symbols: string[]): Promise<YahooFinanceResult
     return true
   })
 
+  const tf = timeframe && TIMEFRAME_MAP[timeframe] ? timeframe : '1m'
+
   const results = await Promise.all(
-    uniqueSymbols.slice(0, 5).map(s => fetchSingleQuote(s))
+    uniqueSymbols.slice(0, 5).map(s => fetchSingleQuote(s, tf))
   )
 
   return results.filter((r): r is YahooFinanceResult => r !== null)
 }
 
-async function fetchSingleQuote(symbol: string): Promise<YahooFinanceResult | null> {
+async function fetchSingleQuote(symbol: string, timeframe: string = '1m'): Promise<YahooFinanceResult | null> {
   if (!symbol) return null
 
-  // Check cache first
-  const cached = getCached(symbol)
+  // Check cache first (cache key includes timeframe)
+  const cacheKey = `${symbol}:${timeframe}`
+  const cached = getCached(cacheKey)
   if (cached) return cached
+
+  const tf = TIMEFRAME_MAP[timeframe] ?? TIMEFRAME_MAP['1m']
 
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 8000)
 
     const res = await fetch(
-      `${YAHOO_CHART_API}/${encodeURIComponent(symbol)}?range=1mo&interval=1d`,
+      `${YAHOO_CHART_API}/${encodeURIComponent(symbol)}?range=${tf.range}&interval=${tf.interval}`,
       {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; Unpacked/1.0)',
@@ -114,11 +133,20 @@ async function fetchSingleQuote(symbol: string): Promise<YahooFinanceResult | nu
 
     // Extract sparkline from chart close prices
     let sparkline: number[] | undefined
+    let periodChange: number | undefined
+    let periodChangePercent: number | undefined
     try {
       const closes: (number | null)[] = result.indicators?.quote?.[0]?.close ?? []
       const validCloses = closes.filter((c): c is number => c !== null && c > 0)
       if (validCloses.length >= 3) {
         sparkline = validCloses
+        // Calculate period change from first to last sparkline data point
+        const firstClose = validCloses[0]
+        const lastClose = validCloses[validCloses.length - 1]
+        periodChange = Math.round((lastClose - firstClose) * 100) / 100
+        periodChangePercent = firstClose > 0
+          ? Math.round(((lastClose - firstClose) / firstClose) * 10000) / 100
+          : 0
       }
     } catch {
       // Sparkline is optional — don't fail the whole quote
@@ -134,9 +162,12 @@ async function fetchSingleQuote(symbol: string): Promise<YahooFinanceResult | nu
       url: `https://finance.yahoo.com/quote/${encodeURIComponent(symbol)}`,
       source: 'yahoo_finance',
       sparkline,
+      timeframe: timeframe as YahooFinanceResult['timeframe'],
+      periodChange,
+      periodChangePercent,
     }
 
-    setCache(symbol, quote)
+    setCache(cacheKey, quote)
     return quote
   } catch (err) {
     const isTimeout = (err as Error).name === 'AbortError'

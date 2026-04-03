@@ -310,6 +310,11 @@ YAHOO FINANCE (stock/market quotes):
 - Good: news about a company, industry analysis, economic policy, trade/tariff stories
 - BAD: health articles, travel guides, entertainment, how_to
 - Specify 1-5 SPECIFIC ticker symbols (AAPL, not "tech stocks"). Examples: gold → GC=F, bitcoin → BTC-USD, S&P 500 → ^GSPC, oil → CL=F, 10-Year Treasury → ^TNX
+- Specify a "timeframe" that matches the article's scope:
+  - "1d" — breaking news, same-day market reactions
+  - "1m" — default for most articles (last 30 days)
+  - "3m" — trend analysis, policy analysis, multi-month stories
+  - "6m" — deep dives on long-running economic trends
 
 DECISION RULES:
 - buyer_guide, comparison, how_to, roundup: ZERO live data sources. No exceptions (unless finance category — see below).
@@ -404,7 +409,7 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
       "hero": { "query": "string — 5-8 word magazine-quality photo search", "style": "editorial_photo | news_photo | product_photo | abstract" },
       "products": [{ "entity_name": "string", "query": "string" }]
     },
-    "live_data": [{ "source": "polymarket | yahoo_finance | google_trends", "query": "string — search term", "symbols": ["string — ticker symbols for yahoo_finance only"], "purpose": "string — why this data is relevant", "rationale": "string — one sentence explaining why this data source adds insight to THIS article (REQUIRED)", "market_type": "binary | multi_outcome — for polymarket only" }]
+    "live_data": [{ "source": "polymarket | yahoo_finance | google_trends", "query": "string — search term", "symbols": ["string — ticker symbols for yahoo_finance only"], "purpose": "string — why this data is relevant", "rationale": "string — one sentence explaining why this data source adds insight to THIS article (REQUIRED)", "market_type": "binary | multi_outcome — for polymarket only", "timeframe": "1d | 1m | 3m | 6m — for yahoo_finance only, matches article scope" }]
   },
   "research_queries": ["string"],
   "hero_image_query": "string",

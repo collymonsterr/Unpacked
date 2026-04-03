@@ -99,11 +99,11 @@ export default function SectionRenderer({
           <div
             key={`polymarket-grid-${groupStart}`}
             id={`section-${groupStart}`}
-            className={`grid gap-3 mb-6 ${gridClass} ${group.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}
+            className={`grid gap-3 mb-6 items-stretch ${gridClass} ${group.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}
             style={gridStyle}
           >
             {group.map(({ section: s, index: idx }) => (
-              <div key={idx} id={`section-${idx}`}>
+              <div key={idx} id={`section-${idx}`} className="flex">
                 <LiveDataCard section={s as { type: 'live_data_card'; data_source: 'polymarket' | 'yahoo_finance' | 'google_trends'; content: Record<string, unknown> }} />
               </div>
             ))}
@@ -134,11 +134,11 @@ export default function SectionRenderer({
           <div
             key={`chart-grid-${groupStart}`}
             id={`section-${groupStart}`}
-            className={`grid gap-4 mb-8 ${gridClass} ${group.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}
+            className={`grid gap-4 mb-8 items-stretch ${gridClass} ${group.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}
             style={gridStyle}
           >
             {group.map(({ section: s, index: idx }) => (
-              <div key={idx} id={`section-${idx}`}>
+              <div key={idx} id={`section-${idx}`} className="flex">
                 <LiveDataCard section={s as { type: 'live_data_card'; data_source: 'polymarket' | 'yahoo_finance' | 'google_trends'; content: Record<string, unknown> }} />
               </div>
             ))}

@@ -60,6 +60,8 @@ export interface LiveDataQuery {
   rationale?: string
   /** For Polymarket: whether the expected market is binary or multi-outcome */
   market_type?: 'binary' | 'multi_outcome'
+  /** For Yahoo Finance: sparkline timeframe matching the article's scope */
+  timeframe?: '1d' | '1m' | '3m' | '6m'
 }
 
 export interface ResearchManifest {

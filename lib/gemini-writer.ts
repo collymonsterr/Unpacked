@@ -248,6 +248,8 @@ POLITICAL & CURRENT AFFAIRS ARTICLES:
 
 NO CITATION MARKUP: No <cite> tags. Clean prose only.
 
+NO MARKDOWN HEADINGS IN CONTENT: Do NOT use markdown heading syntax (# or ## or ###) within section content. Each section already has a "heading" field in the JSON structure — use that for the section heading. Body content within sections should be plain prose paragraphs. If you need a subheading within a section, prefix the line with "**Subheading Text**" using bold markdown — do NOT use # syntax.
+
 CRITICAL: Output ONLY the raw JSON object. No markdown code fences. No text before or after the JSON. No explanations. Start your response with { and end with }.
 
 OUTPUT: Return ONLY valid JSON matching this schema:

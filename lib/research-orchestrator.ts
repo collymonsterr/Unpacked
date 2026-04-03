@@ -398,7 +398,7 @@ async function executeLiveDataQueries(
             symbols = await searchFinanceSymbols(q.query)
           }
           if (symbols.length > 0) {
-            const quotes = await fetchQuotes(symbols)
+            const quotes = await fetchQuotes(symbols, q.timeframe)
             for (const quote of quotes) {
               yahooResults.push(quote as unknown as Record<string, unknown>)
             }

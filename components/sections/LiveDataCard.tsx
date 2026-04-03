@@ -97,8 +97,8 @@ function SourcePill({ label, color }: { label: string; color: string }) {
 function CardFooter({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="text-[11px] mt-3 pt-2"
-      style={{ borderTop: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+      className="text-[11px] mt-3 pt-2 flex-shrink-0"
+      style={{ borderTop: '1px solid var(--border)', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
     >
       {children}
     </div>
@@ -150,7 +150,7 @@ const PolymarketMultiCard = forwardRef<HTMLDivElement, {
   indexed.sort((a, b) => b.prob - a.prob)
 
   return (
-    <div ref={ref} style={cardStyle}>
+    <div ref={ref} style={{ ...cardStyle, display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <SourcePill label="Polymarket" color="#4A2E8A" />
@@ -168,7 +168,7 @@ const PolymarketMultiCard = forwardRef<HTMLDivElement, {
       </p>
 
       {/* Outcome bars */}
-      <div className="space-y-2.5 mb-3">
+      <div className="space-y-2.5 mb-3 flex-grow">
         {indexed.map(({ outcome, prob, idx }) => {
           const pct = Math.round(prob * 100)
           const colorIdx = Math.min(idx, OUTCOME_COLORS.length - 1)
@@ -240,7 +240,7 @@ const PolymarketBinaryCard = forwardRef<HTMLDivElement, {
   const hasHistoricalData = false
 
   return (
-    <div ref={ref} style={cardStyle}>
+    <div ref={ref} style={{ ...cardStyle, display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <SourcePill label="Polymarket" color="#4A2E8A" />
@@ -347,7 +347,6 @@ const GoogleTrendsCard = forwardRef<HTMLDivElement, {
   cardStyle: React.CSSProperties
 }>(({ content, cardStyle }, ref) => {
   const query = String(content.query ?? '')
-  const trend = String(content.trend ?? 'stable') as 'rising' | 'declining' | 'stable' | 'peaking'
   const currentInterest = Number(content.currentInterest ?? 0)
   const changePercent = Number(content.changePercent ?? 0)
   const timelineData = Array.isArray(content.timelineData)
@@ -362,11 +361,33 @@ const GoogleTrendsCard = forwardRef<HTMLDivElement, {
     date: d.date,
   }))
 
+  // Auto-scale Y-axis to data range with headroom
+  const values = timelineData.map(d => d.value)
+  const dataMin = values.length > 0 ? Math.min(...values) : 0
+  const dataMax = values.length > 0 ? Math.max(...values) : 100
+  const yMin = 0 // Never go negative
+  const yMax = Math.min(100, Math.ceil(dataMax * 1.15)) // 15% headroom, capped at 100
+
+  // Generate 3 evenly spaced tick values for Y axis
+  const yTicks = [yMin, Math.round((yMin + yMax) / 2), yMax]
+
+  // Pick ~4 evenly spaced X-axis date labels
+  const xTickIndices: number[] = []
+  if (chartData.length >= 4) {
+    const step = Math.floor((chartData.length - 1) / 3)
+    for (let t = 0; t < 4; t++) {
+      xTickIndices.push(Math.min(t * step, chartData.length - 1))
+    }
+  }
+
   const changeArrow = changePercent > 10 ? '↑' : changePercent < -10 ? '↓' : '~'
   const changeColor = changePercent > 10 ? '#16a34a' : changePercent < -10 ? '#dc2626' : 'var(--text-secondary)'
 
+  // Use unique gradient ID to avoid collision when multiple cards render
+  const gradientId = `trendsFill-${query.replace(/\W/g, '').slice(0, 12)}`
+
   return (
-    <div ref={ref} style={cardStyle}>
+    <div ref={ref} style={{ ...cardStyle, display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <SourcePill label="Google Trends" color="#4285F4" />
@@ -399,19 +420,39 @@ const GoogleTrendsCard = forwardRef<HTMLDivElement, {
         </div>
       </div>
 
-      {/* Area chart */}
+      {/* Area chart with auto-scaled Y-axis */}
       {chartData.length >= 3 && (
-        <div className="mb-3" style={{ height: 100 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+        <div className="mb-3 flex-grow" style={{ minHeight: 110 }}>
+          <ResponsiveContainer width="100%" height={110}>
+            <AreaChart data={chartData} margin={{ top: 4, right: 8, bottom: 18, left: 32 }}>
               <defs>
-                <linearGradient id="trendsFill" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.2} />
                   <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <YAxis domain={[0, 100]} hide />
-              <XAxis dataKey="index" hide />
+              <YAxis
+                domain={[yMin, yMax]}
+                ticks={yTicks}
+                tick={{ fontSize: 9, fill: 'var(--text-secondary, #999)' }}
+                axisLine={false}
+                tickLine={false}
+                width={28}
+              />
+              <XAxis
+                dataKey="index"
+                ticks={xTickIndices}
+                tickFormatter={(idx: number) => {
+                  const d = chartData[idx]
+                  if (!d?.date) return ''
+                  // Try to parse and abbreviate the date
+                  const parts = d.date.split(/[,\s]+/).filter(Boolean)
+                  return parts.length >= 2 ? `${parts[0]} ${parts[1]}` : d.date.slice(0, 6)
+                }}
+                tick={{ fontSize: 9, fill: 'var(--text-secondary, #999)' }}
+                axisLine={false}
+                tickLine={false}
+              />
               <Tooltip
                 content={({ active, payload }) => {
                   if (!active || !payload?.[0]) return null
@@ -429,7 +470,7 @@ const GoogleTrendsCard = forwardRef<HTMLDivElement, {
                 dataKey="value"
                 stroke="#F59E0B"
                 strokeWidth={2}
-                fill="url(#trendsFill)"
+                fill={`url(#${gradientId})`}
                 dot={false}
                 activeDot={{ r: 3, fill: '#F59E0B' }}
               />
@@ -440,7 +481,7 @@ const GoogleTrendsCard = forwardRef<HTMLDivElement, {
 
       <CardFooter>
         <div className="flex items-center justify-between">
-          <span>100 = peak search interest in period</span>
+          <span>100 = peak interest</span>
           <ExternalLink href={url}>trends.google.com</ExternalLink>
         </div>
       </CardFooter>
@@ -462,7 +503,7 @@ const YahooFinanceGrid = forwardRef<HTMLDivElement, {
   if (validItems.length === 0) return null
 
   return (
-    <div ref={ref} style={cardStyle}>
+    <div ref={ref} style={{ ...cardStyle, display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <SourcePill label="Yahoo Finance" color="#6001D2" />
@@ -472,7 +513,7 @@ const YahooFinanceGrid = forwardRef<HTMLDivElement, {
       </div>
 
       {/* Grid of ticker cards */}
-      <div className={`grid gap-3 ${validItems.length >= 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
+      <div className={`grid gap-3 flex-grow ${validItems.length >= 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
         {validItems.map((item, i) => (
           <TickerCard key={i} content={item} />
         ))}
@@ -489,6 +530,13 @@ YahooFinanceGrid.displayName = 'YahooFinanceGrid'
 
 // ── Individual Ticker Card (inside Yahoo Finance Grid) ──────────────────────
 
+const TIMEFRAME_LABELS: Record<string, string> = {
+  '1d': 'Today',
+  '1m': '1 month',
+  '3m': '3 months',
+  '6m': '6 months',
+}
+
 function TickerCard({ content }: { content: Record<string, unknown> }) {
   const symbol = String(content.symbol ?? '')
   const name = String(content.name ?? '')
@@ -500,10 +548,17 @@ function TickerCard({ content }: { content: Record<string, unknown> }) {
   const sparkline = Array.isArray(content.sparkline)
     ? content.sparkline.filter((v): v is number => typeof v === 'number' && v > 0)
     : []
+  const timeframe = String(content.timeframe ?? '1m')
+  const periodChange = content.periodChange != null ? Number(content.periodChange) : null
+  const periodChangePercent = content.periodChangePercent != null ? Number(content.periodChangePercent) : null
 
-  const isPositive = change >= 0
+  // Use period change for non-1d timeframes when available, otherwise use today's change
+  const displayChange = (timeframe !== '1d' && timeframe !== '1m' && periodChange != null) ? periodChange : change
+  const displayChangePercent = (timeframe !== '1d' && timeframe !== '1m' && periodChangePercent != null) ? periodChangePercent : changePercent
+  const isPositive = displayChange >= 0
   const changeColor = isPositive ? '#16a34a' : '#dc2626'
   const changeBg = isPositive ? 'rgba(22, 163, 74, 0.08)' : 'rgba(220, 38, 38, 0.08)'
+  const timeframeLabel = TIMEFRAME_LABELS[timeframe] ?? '1 month'
 
   const formatPrice = (p: number, curr: string): string => {
     const prefix = curr === 'USD' ? '$' : curr === 'GBP' ? '£' : curr === 'EUR' ? '€' : ''
@@ -554,28 +609,42 @@ function TickerCard({ content }: { content: Record<string, unknown> }) {
         className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md mb-2"
         style={{ backgroundColor: changeBg, color: changeColor }}
       >
-        <span>{change >= 0 ? '+' : ''}{formatPrice(Math.abs(change), currency)}</span>
-        <span>({changePercent >= 0 ? '+' : ''}{changePercent.toFixed(2)}%)</span>
+        <span>{displayChange >= 0 ? '+' : ''}{formatPrice(Math.abs(displayChange), currency)}</span>
+        <span>({displayChangePercent >= 0 ? '+' : ''}{displayChangePercent.toFixed(2)}%)</span>
       </div>
 
-      {/* Sparkline */}
+      {/* Sparkline with timeframe label */}
       {sparklineSvg && (
-        <div style={{ height: 32 }}>
-          <svg
-            viewBox={`0 0 100 32`}
-            className="w-full"
-            style={{ height: 32 }}
-            preserveAspectRatio="none"
+        <div style={{ position: 'relative' }}>
+          <span
+            className="text-[9px]"
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              color: 'var(--text-secondary)',
+              opacity: 0.7,
+            }}
           >
-            <path
-              d={sparklineSvg}
-              fill="none"
-              stroke={isPositive ? '#16a34a' : '#dc2626'}
-              strokeWidth="1.5"
-              vectorEffect="non-scaling-stroke"
-              strokeLinejoin="round"
-            />
-          </svg>
+            {timeframeLabel}
+          </span>
+          <div style={{ height: 32 }}>
+            <svg
+              viewBox="0 0 100 32"
+              className="w-full"
+              style={{ height: 32 }}
+              preserveAspectRatio="none"
+            >
+              <path
+                d={sparklineSvg}
+                fill="none"
+                stroke={isPositive ? '#16a34a' : '#dc2626'}
+                strokeWidth="1.5"
+                vectorEffect="non-scaling-stroke"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
         </div>
       )}
     </a>

@@ -103,8 +103,26 @@ function renderContent(content: string, linkTransform?: (text: string) => string
   const elements: React.ReactElement[] = []
 
   for (let i = 0; i < paragraphs.length; i++) {
-    const para = paragraphs[i].trim()
+    let para = paragraphs[i].trim()
     if (!para) continue
+
+    // Safety net: convert markdown headings (## Heading) into styled subheadings
+    const headingMatch = para.match(/^#{1,3}\s+(.+)$/)
+    if (headingMatch) {
+      elements.push(
+        <h4
+          key={`heading-${i}`}
+          className="text-base font-bold mt-6 mb-3"
+          style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+        >
+          {headingMatch[1]}
+        </h4>
+      )
+      continue
+    }
+
+    // Strip markdown heading syntax from lines within a paragraph (multi-line content)
+    para = para.replace(/^#{1,3}\s+/gm, '')
 
     // List items
     if (para.startsWith('- ') || para.startsWith('* ')) {
