@@ -73,8 +73,8 @@ Priority order. Each is one build session.
 ### ~~1A. Tier Infrastructure~~ DONE (April 2026)
 Tier system (free/standard/pro), pricing page, tier enforcement in article creation, usage indicators, upgrade prompts, waitlist for paid tiers — all built. Share credits system built (1 credit per platform per article, max 4). Founding Creators programme built (100 spots, manual admin approval, +10 bonus credits/month, amber badge). **Remaining: Stripe checkout + webhooks to activate paid tiers.** When Stripe credentials are added, wire checkout to upgrade_waitlist → profiles.tier update.
 
-### 1B. Guided First-Article Onboarding
-After signup: example prompts → generation → forced review moment → one-click share with pre-written social assets. Track publish-and-share completion rate.
+### ~~1B. Guided First-Article Onboarding~~ DONE (April 2026)
+First-time users see onboarding hero with 6 example prompt cards (Tech, Finance, Health, Travel, Home, News). Clicking a card starts generation immediately. Disappears after first article. Simplified from original plan (no nudges, no forced review moment — just example cards).
 
 ### 1C. Creator Analytics Dashboard
 Add to My Articles: views per article (7/30/all time), shares, traffic sources, projected affiliate earnings placeholder.
@@ -122,8 +122,8 @@ Unpacked logo and creator attribution baked into verdict boxes, comparison cards
 
 ## Phase 4 — Growth Mechanics
 
-### 4A. Category Pages
-12 categories as `/category/[slug]` routes. SEO-optimised metadata per category. Filter and sort within category.
+### ~~4A. Category Pages~~ DONE (April 2026)
+12 category pages at `/category/[slug]` with SEO metadata, sort (recent/popular/verified), pagination (12/page), Explore dropdown in navbar, "View all →" links from homepage, article page category label links to category page. All in sitemap.
 
 ### 4B. Trending Questions Dashboard
 Surface at `/trending`: Google Trends (already have SerpAPI), Reddit hot posts, Polymarket volume spikes, internal most-searched. One-click generate from any trending question.
@@ -223,10 +223,10 @@ App Store and Google Play. Apple requires StoreKit for iOS subscriptions.
 1. Bug fixes (immediate section) → quality baseline
 2. Author block + social links → profiles look good for outreach
 3. Stripe → monetisation foundation
-4. Onboarding flow → conversion
+4. ~~Onboarding flow → conversion~~ DONE
 5. 20 curated showcase articles → content ready
 6. Pre-launch creator cohort → real feedback
-7. Category pages → SEO foundation
+7. ~~Category pages → SEO foundation~~ DONE
 8. Affiliate infrastructure → revenue
 
 The product is ready enough to start creator outreach now. The pipeline is sophisticated — the gaps are in monetisation, distribution, and polish.

@@ -25,6 +25,7 @@ import { buildNavItems } from '@/lib/section-ids'
 import { getReadingTime } from '@/lib/reading-time'
 import { formatCost } from '@/lib/format-cost'
 import { ARTICLE_TYPE_LABELS } from '@/lib/article-config'
+import { categoryToSlug } from '@/lib/category-config'
 import { useUser } from '@/hooks/useUser'
 import SignInNudge from './ui/SignInNudge'
 
@@ -257,7 +258,17 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           className="text-sm font-medium uppercase tracking-wide mb-3"
           style={{ color: '#E07A3A' }}
         >
-          {(ARTICLE_TYPE_LABELS as Record<string, string>)[article.article_type] ?? article.article_type.replace(/_/g, ' ')}
+          {articleRow.category ? (
+            <Link
+              href={`/category/${categoryToSlug(articleRow.category)}`}
+              className="no-underline hover:underline"
+              style={{ color: '#E07A3A' }}
+            >
+              {(ARTICLE_TYPE_LABELS as Record<string, string>)[article.article_type] ?? article.article_type.replace(/_/g, ' ')}
+            </Link>
+          ) : (
+            (ARTICLE_TYPE_LABELS as Record<string, string>)[article.article_type] ?? article.article_type.replace(/_/g, ' ')
+          )}
         </p>
         {articleRow.user_name && (
           <div className="flex items-center justify-between mb-3">

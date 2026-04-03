@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next'
+import { CATEGORIES } from '@/lib/category-config'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [
@@ -21,6 +22,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     },
   ]
+
+  // Category pages
+  for (const cat of CATEGORIES) {
+    entries.push({
+      url: `https://unpacked.fyi/category/${cat.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.8,
+    })
+  }
 
   try {
     const { getSupabaseAdmin } = await import('@/lib/supabase')

@@ -66,6 +66,33 @@ Four distinct components in `components/sections/LiveDataCard.tsx`, auto-selecte
 
 ---
 
+## Onboarding Flow (built)
+
+- First-time users (zero articles) see a modified hero on the homepage
+- Headline: "Welcome to Unpacked, [first name]" using Google OAuth display name
+- Normal search form + 6 hardcoded example prompt cards in a 2×2 grid (single column on mobile)
+- Example prompts span 6 categories: Tech, Finance, Health, Travel, Home, News
+- Clicking a card starts generation immediately and navigates to the article page
+- "You have 3 free articles this month" shown below the cards
+- Detection via `/api/profile/article-count` endpoint (checks user's total article count)
+- Once user generates their first article, standard homepage hero shows forever
+- Everything below the hero (Featured, Trending, Popular, Recent) is unchanged
+
+---
+
+## Category Pages (built — 12 categories)
+
+- Dynamic route: `app/category/[slug]/page.tsx` with server-rendered pages
+- 12 categories: tech, finance, health, travel, home, entertainment, science, business, automotive, culture, news, ai
+- Category config: `lib/category-config.ts` with unique editorial descriptions per category
+- Each page has: hero with name + description, article count, article grid (3 per row), sort dropdown (recent/popular/verified), pagination (12 per page)
+- Empty state with link to homepage when category has zero articles
+- SEO: `generateMetadata()` with title, description, OG tags, canonical URL
+- All 12 category URLs added to `app/sitemap.ts`
+- Navigation: "Explore" dropdown in Navbar shows all 12 categories, "View all →" link in homepage Recent Articles when a category filter is active, article page category label links to category page
+
+---
+
 ## Sign-In Gate (built)
 
 - Generation starts for all users immediately
@@ -206,10 +233,11 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 | `/build` | `app/build/page.tsx` | Build page |
 | `/pricing` | `app/pricing/page.tsx` | Pricing page, 3 tiers |
 | `/founding-creators` | `app/founding-creators/page.tsx` | Founding Creators application |
+| `/category/[slug]` | `app/category/[slug]/page.tsx` | Category pages, 12 categories |
 
 ---
 
-## API Routes (37 confirmed)
+## API Routes (38 confirmed)
 
 Covering: articles CRUD, admin actions, search, saved articles, profile management, voting, fact-check, images, social content, rate limiting.
 
@@ -295,7 +323,7 @@ Verified absent from codebase as of April 2026:
 - **Stripe / payment processing** — tier infrastructure built, but no Stripe checkout/webhooks/billing. Paid tiers are waitlist-only.
 - **Stripe / payment processing** — tier infrastructure built, but no Stripe checkout/webhooks/billing. Paid tiers are waitlist-only.
 - **Affiliate infrastructure** — no `affiliate_url` field, no link routing, no revenue tracking
-- **Category pages** — no `/category/[slug]` routes
+- ~~**Category pages**~~ — **BUILT April 2026.** 12 category pages at `/category/[slug]` with SEO, pagination, sort.
 - **Creator analytics dashboard** — not built (basic dashboard exists but no per-article analytics)
 - **Referral system** — not built
 - **Email capture / weekly digest** — not built
@@ -305,4 +333,4 @@ Verified absent from codebase as of April 2026:
 - ~~**Creator status / badges**~~ — Founding Creator badge built (amber badge on author block + dashboard). Topic ownership badges not yet built.
 - **Views-for-premium mechanic** — not built
 - **Screenshot-proof branding** — not built
-- **Onboarding flow** — not built
+- ~~**Onboarding flow**~~ — **BUILT April 2026.** First-time user hero with example prompt cards, disappears after first article.

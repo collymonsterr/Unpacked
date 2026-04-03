@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { ArticleRow, ProductCard } from '@/types/article'
 import { getReadingTime } from '@/lib/reading-time'
+import { categoryToSlug } from '@/lib/category-config'
 
 interface Props {
   articles: ArticleRow[]
@@ -99,6 +100,12 @@ const CATEGORY_FILTERS = [
   'AI & Future',
 ]
 
+/** Map display filter names to DB category names for slug generation */
+const FILTER_TO_DB_CATEGORY: Record<string, string> = {
+  'Current Affairs': 'News',
+  'AI & Future': 'AI',
+}
+
 /** Get the category for an article — prefers top-level column, falls back to plan */
 function getArticleCategory(row: ArticleRow): string | null {
   if (row.category) return row.category
@@ -130,6 +137,11 @@ export default function RecentArticlesGrid({ articles }: Props) {
   const visible = filtered.slice(0, visibleCount)
   const hasMore = filtered.length > visibleCount
 
+  // Get the slug for the "View all" link
+  const categorySlug = activeCategory !== 'All'
+    ? categoryToSlug(FILTER_TO_DB_CATEGORY[activeCategory] ?? activeCategory)
+    : null
+
   return (
     <section className="w-full max-w-6xl mx-auto px-4 md:px-6 pb-16">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
@@ -141,29 +153,42 @@ export default function RecentArticlesGrid({ articles }: Props) {
         </h2>
 
         {/* Category pills — scrollable on mobile */}
-        <div
-          ref={scrollRef}
-          className="flex items-center gap-1.5 overflow-x-auto no-scrollbar"
-          style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}
-        >
-          {CATEGORY_FILTERS.map((cat) => {
-            const isActive = activeCategory === cat
-            return (
-              <button
-                key={cat}
-                onClick={() => { setActiveCategory(cat); setVisibleCount(24) }}
-                className="px-3 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap flex-shrink-0"
-                style={{
-                  backgroundColor: isActive ? 'var(--accent)' : 'transparent',
-                  color: isActive ? '#fff' : 'var(--text-secondary)',
-                  border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
-                  cursor: 'pointer',
-                }}
-              >
-                {cat}
-              </button>
-            )
-          })}
+        <div className="flex items-center gap-1.5">
+          <div
+            ref={scrollRef}
+            className="flex items-center gap-1.5 overflow-x-auto no-scrollbar"
+            style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}
+          >
+            {CATEGORY_FILTERS.map((cat) => {
+              const isActive = activeCategory === cat
+              return (
+                <button
+                  key={cat}
+                  onClick={() => { setActiveCategory(cat); setVisibleCount(24) }}
+                  className="px-3 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap flex-shrink-0"
+                  style={{
+                    backgroundColor: isActive ? 'var(--accent)' : 'transparent',
+                    color: isActive ? '#fff' : 'var(--text-secondary)',
+                    border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {cat}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* View all link — shown when a category is active */}
+          {categorySlug && (
+            <Link
+              href={`/category/${categorySlug}`}
+              className="text-xs font-medium no-underline whitespace-nowrap flex-shrink-0 ml-1"
+              style={{ color: 'var(--accent)' }}
+            >
+              View all →
+            </Link>
+          )}
         </div>
       </div>
 
