@@ -11,12 +11,19 @@ interface NavbarProps {
   showSearch?: boolean
 }
 
+interface ActiveCategory {
+  slug: string
+  name: string
+  count: number
+}
+
 /**
  * Shared navbar used across all pages.
  * Includes logo, nav links, search bar (optional), and user menu.
  */
 export default function Navbar({ showSearch = true }: NavbarProps) {
   const [exploreOpen, setExploreOpen] = useState(false)
+  const [activeCategories, setActiveCategories] = useState<ActiveCategory[] | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Close dropdown on outside click
@@ -30,6 +37,23 @@ export default function Navbar({ showSearch = true }: NavbarProps) {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [exploreOpen])
+
+  // Fetch active categories (cached for 1 hour server-side)
+  useEffect(() => {
+    fetch('/api/categories/active')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.categories?.length > 0) {
+          setActiveCategories(data.categories)
+        }
+      })
+      .catch(() => {
+        // Fallback handled below
+      })
+  }, [])
+
+  // Use active categories if loaded, otherwise fall back to all categories
+  const displayCategories = activeCategories ?? CATEGORIES.map(c => ({ slug: c.slug, name: c.name, count: 0 }))
 
   return (
     <nav className="px-6 py-5 flex items-center justify-between max-w-6xl mx-auto gap-3">
@@ -79,7 +103,7 @@ export default function Navbar({ showSearch = true }: NavbarProps) {
                 minWidth: '180px',
               }}
             >
-              {CATEGORIES.map((cat) => (
+              {displayCategories.map((cat) => (
                 <a
                   key={cat.slug}
                   href={`/category/${cat.slug}`}

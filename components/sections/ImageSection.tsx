@@ -84,9 +84,12 @@ function SingleImage({
     setReplacing(true)
     try {
       await onReplace(imageIndex)
+      // Only reset loaded after a successful replace — the new src will trigger onLoad
+      setLoaded(false)
+    } catch {
+      // Replace failed — keep current image visible
     } finally {
       setReplacing(false)
-      setLoaded(false)
     }
   }
 
@@ -186,9 +189,12 @@ function GalleryItem({
     setReplacing(true)
     try {
       await onReplace(imageIndex)
+      // Only reset loaded after a successful replace — the new src will trigger onLoad
+      setLoaded(false)
+    } catch {
+      // Replace failed — keep current image visible
     } finally {
       setReplacing(false)
-      setLoaded(false)
     }
   }
 

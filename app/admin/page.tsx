@@ -172,6 +172,8 @@ export default function AdminDashboard() {
               </button>
             )}
 
+            <ReclassifyButton />
+
             <AdminAnalytics />
             <AdminUsers />
           </>
@@ -214,6 +216,143 @@ export default function AdminDashboard() {
           </>
         ))}
       </main>
+    </div>
+  )
+}
+
+function ReclassifyButton() {
+  const [status, setStatus] = useState<'idle' | 'confirming' | 'running' | 'done'>('idle')
+  const [progress, setProgress] = useState({ current: 0, total: 0, changed: 0 })
+  const [result, setResult] = useState<string | null>(null)
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number> | null>(null)
+
+  async function handleRun() {
+    setStatus('running')
+    setResult(null)
+    setCategoryCounts(null)
+    setProgress({ current: 0, total: 0, changed: 0 })
+
+    try {
+      const res = await fetch('/api/admin/reclassify-categories', { method: 'POST' })
+      if (!res.ok || !res.body) {
+        setResult('Failed to start reclassification')
+        setStatus('idle')
+        return
+      }
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+
+        const lines = buffer.split('\n\n')
+        buffer = lines.pop() ?? ''
+
+        for (const line of lines) {
+          const match = line.match(/^data: (.+)$/)
+          if (!match) continue
+          try {
+            const event = JSON.parse(match[1])
+            if (event.type === 'start') {
+              setProgress(p => ({ ...p, total: event.total }))
+            } else if (event.type === 'progress') {
+              setProgress(p => ({
+                current: event.index + 1,
+                total: p.total,
+                changed: p.changed + (event.changed ? 1 : 0),
+              }))
+            } else if (event.type === 'error') {
+              setProgress(p => ({ ...p, current: event.index + 1 }))
+            } else if (event.type === 'complete') {
+              setResult(`Done: ${event.classified} classified, ${event.changed} changed, ${event.errors} errors`)
+              setCategoryCounts(event.categoryCounts)
+              setStatus('done')
+            }
+          } catch { /* skip malformed events */ }
+        }
+      }
+    } catch {
+      setResult('Reclassification failed — check server logs')
+      setStatus('idle')
+    }
+  }
+
+  return (
+    <div className="mb-4 p-4 rounded-xl" style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}>
+      <div className="flex items-center gap-3 mb-1">
+        <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+          Reclassify Categories
+        </h3>
+        {status === 'idle' && (
+          <button
+            onClick={() => setStatus('confirming')}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+            style={{ backgroundColor: 'var(--accent)', color: '#fff', cursor: 'pointer' }}
+          >
+            Reclassify all articles
+          </button>
+        )}
+      </div>
+      <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
+        Uses Claude Haiku to reclassify every published article based on title + content. Safe to re-run.
+      </p>
+
+      {status === 'confirming' && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium" style={{ color: '#dc2626' }}>
+            This will reclassify all published articles. Continue?
+          </span>
+          <button
+            onClick={handleRun}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+            style={{ backgroundColor: '#dc2626', color: '#fff', cursor: 'pointer' }}
+          >
+            Yes, reclassify
+          </button>
+          <button
+            onClick={() => setStatus('idle')}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+            style={{ backgroundColor: 'var(--bg)', color: 'var(--text-secondary)', cursor: 'pointer', border: '1px solid var(--border)' }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {status === 'running' && (
+        <div className="flex items-center gap-3">
+          <span className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent animate-spin inline-block" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
+          <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
+            {progress.current} / {progress.total} articles processed ({progress.changed} changed)
+          </span>
+        </div>
+      )}
+
+      {result && (
+        <p className="text-xs font-medium mt-2" style={{ color: status === 'done' ? 'var(--accent)' : '#dc2626' }}>
+          {result}
+        </p>
+      )}
+
+      {categoryCounts && (
+        <div className="flex flex-wrap gap-2 mt-2">
+          {Object.entries(categoryCounts)
+            .sort(([, a], [, b]) => b - a)
+            .map(([cat, count]) => (
+              <span
+                key={cat}
+                className="text-xs px-2 py-0.5 rounded-full"
+                style={{ backgroundColor: 'var(--bg)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+              >
+                {cat}: {count}
+              </span>
+            ))}
+        </div>
+      )}
     </div>
   )
 }

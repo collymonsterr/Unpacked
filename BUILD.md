@@ -33,6 +33,12 @@ Each has required/allowed/forbidden components, length range, tone, verdict rule
 
 Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotive, Culture, News, AI
 
+### Category Classification (built April 2026)
+- **Reclassification tool**: Admin dashboard button triggers Haiku-based reclassification of all published articles (`/api/admin/reclassify-categories`). Uses title + first 200 words of content. Streams progress via SSE. Safe to re-run anytime.
+- **Active category threshold**: Homepage "Explore by Topic" pills and Navbar "Explore" dropdown only show categories with >= 5 published articles. Powered by `/api/categories/active` (1-hour cache). Falls back to all 12 categories if API fails.
+- **Category pages always work**: All 12 `/category/[slug]` pages remain accessible regardless of article count. Only navigation visibility is gated.
+- **Current distribution (April 2026)**: Finance 43, Tech 33, AI 25, Automotive 15, News 13, Business 12, Home 8, Travel 8, Health 7 (visible) | Entertainment 3, Science 1, Culture 1 (hidden from nav)
+
 ---
 
 ## Live Data Integrations (3, all built and wired into research phase)

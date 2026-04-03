@@ -160,18 +160,25 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
 
   const handleReplaceImage = useCallback(
     async (sectionIndex: number, imageIndex: number) => {
-      try {
-        const res = await fetch(`/api/articles/${articleRow.id}/replace-image`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sectionIndex, imageIndex }),
-        })
-        if (!res.ok) throw new Error('Failed')
-        const data = await res.json()
-        if (data.article) setArticle(data.article)
-      } catch {
-        // silently fail
-      }
+      // Step 1: Get candidate image URLs via preview search
+      const previewRes = await fetch(`/api/articles/${articleRow.id}/replace-image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sectionIndex, imageIndex, preview: true, count: 4 }),
+      })
+      if (!previewRes.ok) throw new Error('Preview search failed')
+      const { preview_urls } = await previewRes.json()
+      if (!preview_urls?.length) throw new Error('No replacement images found')
+
+      // Step 2: Select the first candidate and save it
+      const selectRes = await fetch(`/api/articles/${articleRow.id}/replace-image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sectionIndex, imageIndex, selected_url: preview_urls[0] }),
+      })
+      if (!selectRes.ok) throw new Error('Failed to save replacement')
+      const data = await selectRes.json()
+      if (data.article) setArticle(data.article)
     },
     [articleRow.id]
   )
