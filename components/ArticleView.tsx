@@ -16,7 +16,7 @@ import BookmarkButton from './ui/BookmarkButton'
 import RelatedArticles from './RelatedArticles'
 import ArticleVoting from './ui/ArticleVoting'
 import FactCheckBar, { FactCheckBadge, ClaimsPanel } from './ui/FactCheckBar'
-import FirstDraftBanner from './FirstDraftBanner'
+import EditorBar from './ui/EditorBar'
 import MenuItem from './article/MenuItem'
 import DebugPanel from './article/DebugPanel'
 import HeroImage from './article/HeroImage'
@@ -43,9 +43,11 @@ interface Props {
   creatorLinkedinUrl?: string
   creatorMediumUrl?: string
   isFoundingCreator?: boolean
+  unusedFindingsCount?: number
+  onSwitchToEditor?: () => void
 }
 
-export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNew, factCheckStatus = 'none', linkableArticles, creatorBio, creatorTwitterUrl, creatorLinkedinUrl, creatorMediumUrl, isFoundingCreator = false }: Props) {
+export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNew, factCheckStatus = 'none', linkableArticles, creatorBio, creatorTwitterUrl, creatorLinkedinUrl, creatorMediumUrl, isFoundingCreator = false, unusedFindingsCount = 0, onSwitchToEditor }: Props) {
   const router = useRouter()
   const { user } = useUser()
   const [article, setArticle] = useState(articleRow.article!)
@@ -384,12 +386,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           )}
           <span style={{ color: 'var(--border)' }}>·</span>
           <BookmarkButton articleId={articleRow.id} user={user} />
-          {isOwner && (
-            <>
-              <span style={{ color: 'var(--border)' }}>·</span>
-              <VisibilityPill articleId={articleRow.id} visibility={articleRow.visibility ?? 'published'} isNew={isNew} />
-            </>
-          )}
+          {/* Visibility moved to EditorBar */}
           {(articleRow.status === 'verified' || articleRow.fact_check) && (
             <>
               <span style={{ color: 'var(--border)' }}>·</span>
@@ -426,6 +423,19 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           articleType={article.article_type}
           visualStrategy={articleRow.plan.visual_strategy}
           sections={article.sections.map((s) => s.type)}
+        />
+      )}
+
+      {/* Editor Bar — owner-only persistent toolbar */}
+      {isOwner && (
+        <EditorBar
+          articleId={articleRow.id}
+          visibility={articleRow.visibility ?? 'published'}
+          unusedFindingsCount={unusedFindingsCount}
+          onOpenSharePanel={() => setShowSharePanel(true)}
+          onSwitchToEditor={onSwitchToEditor ?? (() => {})}
+          onExportPDF={() => window.print()}
+          isNew={isNew}
         />
       )}
 
@@ -634,50 +644,6 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
         />
       </div>
     </div>
-
-    {/* First Draft Banner — shown to owner on freshly generated articles */}
-    {isNew && isOwner && (
-      <FirstDraftBanner
-        articleId={articleRow.id}
-        initialVisibility={articleRow.visibility ?? 'private'}
-        correctionsCount={articleRow.fact_check?.total_issues ?? 0}
-        sourceCount={(() => {
-          const src = article.sections.find(s => s.type === 'sources')
-          if (!src) return 0
-          const sources = (src as unknown as { sources?: unknown[] }).sources
-          return Array.isArray(sources) ? sources.length : 0
-        })()}
-        firstSectionTitle={
-          article.sections.find(s => s.type === 'content_section')?.heading ?? 'introduction'
-        }
-        factCheckStatus={factCheckStatus}
-        factCheck={articleRow.fact_check}
-        onPrefillRefine={(text) => {
-          setRefineValue(text)
-          if (refineContainerRef.current) {
-            refineContainerRef.current.style.boxShadow = '0 0 0 3px rgba(186, 117, 23, 0.3)'
-            refineContainerRef.current.style.borderRadius = '12px'
-            refineContainerRef.current.style.transition = 'box-shadow 0.3s ease'
-            setTimeout(() => {
-              if (refineContainerRef.current) {
-                refineContainerRef.current.style.boxShadow = 'none'
-              }
-            }, 1000)
-          }
-        }}
-        onScrollToRefine={() => {
-          refineContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        }}
-        onShare={async () => {
-          const shareUrl = `https://unpacked.fyi/article/${articleRow.slug}`
-          if (typeof navigator !== 'undefined' && navigator.share) {
-            try { await navigator.share({ title: article.title, url: shareUrl }) } catch {}
-          } else {
-            try { await navigator.clipboard.writeText(shareUrl) } catch {}
-          }
-        }}
-      />
-    )}
 
     {/* Share Panel — owner only, lazy loaded */}
     {isOwner && showSharePanel && (
@@ -921,124 +887,5 @@ function ArticleCostDisplay({ articleId, totalCost, totalTimeMs }: { articleId: 
   )
 }
 
-// ── Visibility Pill (owner-only, inline in metadata row) ──
-
-const VISIBILITY_OPTIONS = [
-  { value: 'published', label: 'Published', color: '#059669', bg: '#ecfdf5', border: '#bbf7d0', desc: 'Visible on homepage' },
-  { value: 'unlisted', label: 'Unlisted', color: '#d97706', bg: '#fffbeb', border: '#fde68a', desc: 'Link only' },
-  { value: 'private', label: 'Private', color: '#6b7280', bg: '#f3f4f6', border: '#d1d5db', desc: 'Only you' },
-] as const
-
-function VisibilityPill({ articleId, visibility: initialVisibility, isNew }: { articleId: string; visibility: string; isNew?: boolean }) {
-  const [visibility, setVisibility] = useState(initialVisibility)
-  const [open, setOpen] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [shouldPulse, setShouldPulse] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  const current = VISIBILITY_OPTIONS.find(o => o.value === visibility) ?? VISIBILITY_OPTIONS[0]
-
-  // One-time pulse on return visits (not during generation)
-  useEffect(() => {
-    if (isNew) return // Don't pulse during generation
-    const key = `unpacked_visibility_nudge_${articleId}`
-    try {
-      if (!localStorage.getItem(key)) {
-        setShouldPulse(true)
-        localStorage.setItem(key, 'true')
-        const timer = setTimeout(() => setShouldPulse(false), 2500)
-        return () => clearTimeout(timer)
-      }
-    } catch {}
-  }, [articleId, isNew])
-
-  // Close on outside click
-  useEffect(() => {
-    if (!open) return
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [open])
-
-  async function handleChange(newVisibility: string) {
-    if (newVisibility === visibility || saving) return
-    setSaving(true)
-    setOpen(false)
-    try {
-      const res = await fetch(`/api/articles/${articleId}/visibility`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visibility: newVisibility }),
-      })
-      if (res.ok) setVisibility(newVisibility)
-    } catch {}
-    setSaving(false)
-  }
-
-  return (
-    <span className="relative" ref={ref}>
-      <button
-        onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full transition-all"
-        style={{
-          backgroundColor: current.bg,
-          color: current.color,
-          border: `1px solid ${current.border}`,
-          cursor: 'pointer',
-          outline: 'none',
-          animation: shouldPulse ? 'visibilityPulse 2s ease-out' : undefined,
-        }}
-      >
-        {current.label}
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </button>
-      {open && (
-        <div
-          className="absolute top-7 left-0 z-30 rounded-lg py-1 min-w-[160px]"
-          style={{
-            backgroundColor: 'var(--card)',
-            border: '1px solid var(--border)',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-          }}
-        >
-          {VISIBILITY_OPTIONS.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => handleChange(opt.value)}
-              className="w-full text-left px-3 py-2 flex items-center justify-between transition-colors"
-              style={{
-                cursor: 'pointer',
-                backgroundColor: visibility === opt.value ? opt.bg : 'transparent',
-                border: 'none',
-              }}
-              onMouseEnter={e => { if (visibility !== opt.value) e.currentTarget.style.backgroundColor = '#FAFAF8' }}
-              onMouseLeave={e => { if (visibility !== opt.value) e.currentTarget.style.backgroundColor = 'transparent' }}
-            >
-              <div>
-                <p className="text-xs font-medium" style={{ color: opt.color }}>{opt.label}</p>
-                <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{opt.desc}</p>
-              </div>
-              {visibility === opt.value && (
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={opt.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-      <style>{`
-        @keyframes visibilityPulse {
-          0% { box-shadow: 0 0 0 0 rgba(186, 117, 23, 0.4); }
-          40% { box-shadow: 0 0 0 6px rgba(186, 117, 23, 0.15); }
-          100% { box-shadow: 0 0 0 0 rgba(186, 117, 23, 0); }
-        }
-      `}</style>
-    </span>
-  )
-}
+// VisibilityPill removed — now part of EditorBar
 

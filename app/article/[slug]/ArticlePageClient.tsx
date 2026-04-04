@@ -56,9 +56,8 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
   // Tab state (Article vs Editor)
   const [activeTab, setActiveTab] = useState<'article' | 'editor'>('article')
 
-  // Editor tab nudge: unused findings count + one-time animation
+  // Unused findings count for EditorBar badge
   const [unusedFindingsCount, setUnusedFindingsCount] = useState(0)
-  const [showNudgeAnimation, setShowNudgeAnimation] = useState(false)
 
   // Sign-in gate state
   const [gateDismissed, setGateDismissed] = useState(false)
@@ -128,37 +127,23 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
     })
   }, [showArticle, row.article, initialRow.slug])
 
-  // Fetch unused findings count for Editor tab nudge (owner only)
+  // Fetch unused findings count for EditorBar badge (owner only)
   useEffect(() => {
     if (!isOwner || !showArticle || !row.article) return
-    const nudgeKey = `unpacked_editor_nudge_${initialRow.id}`
-    // If already dismissed, don't fetch
-    if (typeof window !== 'undefined' && localStorage.getItem(nudgeKey) === 'true') return
 
     fetch(`/api/articles/${initialRow.id}/research`)
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (!data?.research_findings) return
         const unused = data.research_findings.filter((f: { used_in_article: boolean }) => !f.used_in_article).length
-        if (unused > 0) {
-          setUnusedFindingsCount(unused)
-          setShowNudgeAnimation(true)
-          // Stop animation after one cycle
-          setTimeout(() => setShowNudgeAnimation(false), 2000)
-        }
+        if (unused > 0) setUnusedFindingsCount(unused)
       })
       .catch(() => {})
   }, [isOwner, showArticle, row.article, initialRow.id])
 
-  // When user clicks Editor tab, mark nudge as dismissed
   const handleTabClick = useCallback((tab: 'article' | 'editor') => {
     setActiveTab(tab)
-    if (tab === 'editor' && unusedFindingsCount > 0) {
-      const nudgeKey = `unpacked_editor_nudge_${initialRow.id}`
-      localStorage.setItem(nudgeKey, 'true')
-      setShowNudgeAnimation(false)
-    }
-  }, [unusedFindingsCount, initialRow.id])
+  }, [])
 
   const [timedOut, setTimedOut] = useState(false)
   // eslint-disable-next-line react-hooks/purity -- useRef initial value is set once on mount only
@@ -372,7 +357,6 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
                     cursor: 'pointer',
                     background: 'none',
                     border: 'none',
-                    animation: tab === 'editor' && showNudgeAnimation ? 'editorNudge 0.5s ease-in-out 2' : undefined,
                   }}
                 >
                   {tab === 'article' ? 'Article' : (
@@ -420,6 +404,8 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
               creatorLinkedinUrl={creatorLinkedinUrl}
               creatorMediumUrl={creatorMediumUrl}
               isFoundingCreator={isFoundingCreator}
+              unusedFindingsCount={unusedFindingsCount}
+              onSwitchToEditor={() => handleTabClick('editor')}
             />
           ) : (
             <Suspense
