@@ -70,6 +70,7 @@ TONE: ${toneDesc}
 ${toneOption === 'balanced' ? 'NOTE: The reader chose "balanced" tone — still take positions but acknowledge counter-arguments more.' : ''}
 ${toneOption === 'casual' ? 'NOTE: The reader chose "casual" tone — conversational, shorter sentences, more personality.' : ''}
 TARGET LENGTH: ~${targetWords} words total
+${(options as Record<string, unknown>)?._userFeedback ? `\nREADER FEEDBACK (incorporate this direction into your blueprint):\n"${(options as Record<string, unknown>)._userFeedback}"\n` : ''}
 
 PLANNED SECTIONS:
 ${(plan.sections ?? plan.sections_outline.map(h => ({ heading: h, purpose: '' }))).map((s, i) => `${i + 1}. ${typeof s === 'string' ? s : s.heading}${typeof s !== 'string' && s.purpose ? ` — ${s.purpose}` : ''}`).join('\n')}

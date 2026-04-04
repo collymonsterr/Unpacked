@@ -119,12 +119,13 @@ Four distinct components in `components/sections/LiveDataCard.tsx`, auto-selecte
 
 ---
 
-## Visibility System (built)
+## Visibility System (built, updated April 2026)
 
 - Three-state: `private` / `unlisted` / `published`
-- Defaults: anonymous → unlisted, logged-in → private, admin → published
-- FirstDraftBanner UI controls for visibility change
-- Existing articles migrated
+- **Defaults: anonymous → unlisted, logged-in → published** (changed from private April 2026)
+- FirstDraftBanner UI controls for visibility change during generation
+- **Inline visibility dropdown** on article metadata row (owner-only). Shows current state as a coloured pill (green Published / amber Unlisted / grey Private) with dropdown to change. Replaces the old Publish/Share flow as the primary visibility control.
+- **One-time pulse animation** on the visibility pill for return visits — amber glow that plays once per article to draw attention, tracked via `unpacked_visibility_nudge_[articleId]` in localStorage. Does not fire during initial generation.
 
 ---
 
@@ -324,6 +325,33 @@ Covering: articles CRUD, admin actions, search, saved articles, profile manageme
 - Monthly bonus reset: founding creators get +10 bonus credits on monthly reset (in `app/api/articles/create/route.ts`)
 - Founding badge: amber "Founding Creator" badge shown on article author block and dashboard
 - `is_founding_creator` boolean on profiles table
+
+---
+
+## Plan Mode — Two-Path Generation (built April 2026)
+
+Two buttons on homepage: **"Plan first"** (outline) and **"Unpack it"** (solid amber, replaces "Generate Article").
+
+**"Unpack it"** — existing flow unchanged. Runs the full 8-stage pipeline immediately.
+
+**"Plan first"** — navigates to `/plan?q=...`:
+1. Calls `POST /api/articles/plan-preview` — runs planning (Haiku) + research (Brave/Reddit/live data) and returns JSON
+2. `/plan` page shows loading messages while plan + research runs (~15-30s)
+3. Plan card displays: article type badge, AI-generated title, thesis/angle, winner preview, top 5 findings with sources, section structure pills, community sentiment, source counts
+4. User can add optional feedback in a textarea ("Focus more on budget options...")
+5. Article options (length/tone/visual) available via collapsed toggle
+6. "Write it" button sends `planData` (plan + research + userFeedback) to `POST /api/articles/create`
+7. Create route detects `planData`, skips planning + research, jumps directly to `runWritePipeline()` (blueprint → write → editorial → images → fact-check)
+8. User feedback is injected into the blueprint prompt via `generationOptions._userFeedback`
+
+**Rate limiting:** Plan previews are 20/hour per user or IP (separate key `plan:user:` / `plan:ip:`). Does NOT consume article allowance.
+
+**Files:**
+- `components/SearchForm.tsx` — two buttons, article options removed from homepage
+- `app/api/articles/plan-preview/route.ts` — plan + research endpoint
+- `app/plan/page.tsx` — plan page with loading, plan card, feedback, options, "Write it"
+- `app/api/articles/create/route.ts` — accepts `planData` field, skips plan+research when present
+- `lib/blueprint.ts` — injects `_userFeedback` into blueprint prompt
 
 ---
 

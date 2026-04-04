@@ -5,7 +5,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { ArticleRow, ProductCard } from '@/types/article'
 import { getReadingTime } from '@/lib/reading-time'
-import TripleCheckBadge from '@/components/ui/TripleCheckBadge'
 
 interface Props {
   articles: ArticleRow[]
@@ -61,15 +60,22 @@ function ArticleCard({ row }: { row: ArticleRow }) {
             <span className="text-3xl font-bold" style={{ color: 'var(--accent)', opacity: 0.3 }}>U</span>
           </div>
         )}
-        {row.fact_check && <TripleCheckBadge />}
       </div>
       <div className="p-3 flex-1 flex flex-col">
-        <h3
-          className="text-base font-bold leading-snug line-clamp-3 mb-1"
-          style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)', minHeight: '3.6em' }}
-        >
-          {art?.title}
-        </h3>
+        <div className="flex items-start gap-1.5 mb-1" style={{ minHeight: '3.6em' }}>
+          <h3
+            className="text-base font-bold leading-snug line-clamp-3"
+            style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+          >
+            {art?.title}
+          </h3>
+          {row.fact_check && (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <polyline points="9 12 11 14 15 10" />
+            </svg>
+          )}
+        </div>
         <p className="text-xs mt-auto" style={{ color: 'var(--accent)' }}>
           {TYPE_LABELS[type] ?? type.replace(/_/g, ' ')}
         </p>

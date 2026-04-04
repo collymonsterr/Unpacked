@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const query = body?.query
     const generationOptions = body?.options ?? { length: 'standard', tone: 'opinionated', visual: 'standard' }
+    const planData = body?.planData // From Plan Mode — contains plan + research + optional userFeedback
 
     if (!query || typeof query !== 'string' || query.trim().length < 3) {
       return Response.json({ error: 'Query must be at least 3 characters' }, { status: 400 })
@@ -49,14 +50,17 @@ export async function POST(request: NextRequest) {
         userName = user.user_metadata?.full_name ?? undefined
         userAvatar = user.user_metadata?.avatar_url ?? undefined
 
-        // Load profile preferences and merge into generation options
+        // Load profile preferences (including display name) and merge into generation options
         const { data: profile } = await getSupabaseAdmin()
           .from('profiles')
-          .select('location, currency, language')
+          .select('display_name, avatar_url, location, currency, language')
           .eq('id', user.id)
           .single()
 
         if (profile) {
+          // Prefer custom display name over Google OAuth name
+          if (profile.display_name) userName = profile.display_name
+          if (profile.avatar_url) userAvatar = profile.avatar_url
           if (profile.location) generationOptions.location = profile.location
           if (profile.currency && profile.currency !== 'USD') generationOptions.currency = profile.currency
           if (profile.language && profile.language !== 'en') generationOptions.language = profile.language
@@ -176,12 +180,10 @@ export async function POST(request: NextRequest) {
         query: trimmedQuery,
         status: 'planning',
         generation_options: generationOptions,
-        // Admin articles publish immediately; logged-in users start private; logged-out get unlisted
+        // Logged-in users default to published; anonymous get unlisted
         visibility: (() => {
           if (!userId) return 'unlisted'
-          const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
-          if (adminEmail && userEmail && userEmail.toLowerCase() === adminEmail.toLowerCase()) return 'published'
-          return 'private'
+          return 'published'
         })(),
         ...(userId ? { user_id: userId, user_name: userName, user_avatar: userAvatar } : {}),
       })
@@ -197,6 +199,66 @@ export async function POST(request: NextRequest) {
       const t: Record<string, number> = {}
       const pipelineStart = Date.now()
       try {
+        // ── PLAN MODE: skip planning + research if planData is provided ──
+        if (planData?.plan && planData?.research) {
+          console.log('[create] Plan Mode — skipping plan + research, jumping to write pipeline')
+          const plan = planData.plan
+          const research = planData.research
+
+          // Generate clean slug from AI title and update
+          const cleanSlug = await generateUniqueSlug(plan.title, data.id)
+
+          // Update with plan data + clean slug — transition to 'generating' immediately
+          await db
+            .from('articles')
+            .update({
+              plan,
+              slug: cleanSlug,
+              suggestion_chips: plan.suggestion_chips,
+              status: 'generating',
+              ...(plan.category ? { category: plan.category } : {}),
+            })
+            .eq('id', data.id)
+
+          // Save research data
+          const researchUpdate: Record<string, unknown> = {}
+          if (research.findings?.length > 0) researchUpdate.research_findings = research.findings
+          researchUpdate.entity_cards = research.entityCards ?? []
+          if (research.synthesis) researchUpdate.research_synthesis = research.synthesis
+          if (research.liveData?.length > 0) researchUpdate.live_data = research.liveData
+          if (Object.keys(researchUpdate).length > 0) {
+            await db.from('articles').update(researchUpdate).eq('id', data.id)
+          }
+
+          // Inject userFeedback into generationOptions so blueprint can use it
+          if (planData.userFeedback) {
+            generationOptions._userFeedback = planData.userFeedback
+          }
+
+          if (isAuthenticated) {
+            await runWritePipeline({
+              articleId: data.id,
+              query: trimmedQuery,
+              plan,
+              researchSummary: research.summary,
+              generationOptions,
+              entityCards: research.entityCards,
+              synthesis: research.synthesis,
+              liveData: research.liveData,
+              _timings: t,
+            })
+          } else {
+            // Anonymous with plan mode — build preview and pause
+            const preview = buildResearchPreview(plan, research.findings, research.entityCards, research.synthesis)
+            await db
+              .from('articles')
+              .update({ research_preview: preview, status: 'awaiting_auth' })
+              .eq('id', data.id)
+          }
+          return
+        }
+
+        // ── STANDARD FLOW: Plan + Research from scratch ──
         // ── Phase 1: Plan the article ──
         console.log('[create] Planning article for:', trimmedQuery.slice(0, 50), 'options:', JSON.stringify(generationOptions))
         const t0 = Date.now()

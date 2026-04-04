@@ -5,7 +5,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import type { ArticleRow } from '@/types/article'
 import { getReadingTime } from '@/lib/reading-time'
-import TripleCheckBadge from '@/components/ui/TripleCheckBadge'
 import SectionHeader from './SectionHeader'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -138,7 +137,6 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
             ) : (
               <div className="w-full h-full" style={{ backgroundColor: 'var(--accent-light)' }} />
             )}
-            {heroArticle.fact_check && <TripleCheckBadge />}
           </div>
           <div className="p-4 flex-1 flex flex-col gap-0">
             {/* 1. Category badge */}
@@ -146,13 +144,21 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
               {TYPE_LABELS[heroType] ?? heroType.replace(/_/g, ' ')}
             </p>
 
-            {/* 2. Title */}
-            <h3
-              className="text-lg font-bold leading-snug mb-1.5 line-clamp-2"
-              style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
-            >
-              {heroArt?.title}
-            </h3>
+            {/* 2. Title + verified shield */}
+            <div className="flex items-start gap-1.5 mb-1.5">
+              <h3
+                className="text-lg font-bold leading-snug line-clamp-2"
+                style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+              >
+                {heroArt?.title}
+              </h3>
+              {heroArticle.fact_check && (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-1">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <polyline points="9 12 11 14 15 10" />
+                </svg>
+              )}
+            </div>
 
             {/* 3. Description */}
             {heroDescription && (
@@ -272,18 +278,25 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
                       <span className="text-2xl font-bold" style={{ color: 'var(--accent)', opacity: 0.3 }}>U</span>
                     </div>
                   )}
-                  {row.fact_check && <TripleCheckBadge />}
                 </div>
                 <div className="p-2.5">
                   <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: 'var(--accent)' }}>
                     {TYPE_LABELS[type] ?? type.replace(/_/g, ' ')}
                   </p>
-                  <h4
-                    className="text-sm font-bold leading-snug line-clamp-2"
-                    style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
-                  >
-                    {art?.title}
-                  </h4>
+                  <div className="flex items-start gap-1">
+                    <h4
+                      className="text-sm font-bold leading-snug line-clamp-2"
+                      style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+                    >
+                      {art?.title}
+                    </h4>
+                    {row.fact_check && (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        <polyline points="9 12 11 14 15 10" />
+                      </svg>
+                    )}
+                  </div>
                 </div>
               </Link>
             )

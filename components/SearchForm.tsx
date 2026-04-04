@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import ArticleOptions, { DEFAULT_OPTIONS, type GenerationOptions } from './ArticleOptions'
+import { DEFAULT_OPTIONS, type GenerationOptions } from './ArticleOptions'
 import { setPendingArticle } from '@/lib/pending-article'
 import LimitReachedModal from './LimitReachedModal'
 
@@ -31,8 +31,7 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
   const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [options, setOptions] = useState<GenerationOptions>(DEFAULT_OPTIONS)
-  const [showOptions, setShowOptions] = useState(false)
+  const [options] = useState<GenerationOptions>(DEFAULT_OPTIONS)
   const [loadingMsgCount, setLoadingMsgCount] = useState(0)
   const [cachedResult, setCachedResult] = useState<{ slug: string; title: string } | null>(null)
   const [pendingId, setPendingId] = useState<string | null>(null)
@@ -536,6 +535,24 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
         {/* Buttons row — below the input */}
         <div className="flex items-center gap-3 mt-3 justify-center">
           <button
+            type="button"
+            disabled={isLoading || !query.trim()}
+            onClick={() => {
+              if (!query.trim() || isLoading) return
+              router.push(`/plan?q=${encodeURIComponent(query.trim())}`)
+            }}
+            className="px-5 py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-40"
+            style={{
+              backgroundColor: 'transparent',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border)',
+              fontFamily: 'var(--font-sora)',
+              cursor: isLoading || !query.trim() ? 'not-allowed' : 'pointer',
+            }}
+          >
+            Plan first
+          </button>
+          <button
             type="submit"
             disabled={isLoading || !query.trim()}
             className="px-6 py-2.5 rounded-xl font-semibold text-sm transition-opacity disabled:opacity-40"
@@ -546,31 +563,10 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
               cursor: isLoading || !query.trim() ? 'not-allowed' : 'pointer',
             }}
           >
-            Generate Article
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowOptions(!showOptions)}
-            className="px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-            style={{
-              backgroundColor: 'transparent',
-              color: 'var(--text-secondary)',
-              border: '1px solid var(--border)',
-              fontFamily: 'var(--font-sora)',
-              cursor: 'pointer',
-            }}
-          >
-            Article options {showOptions ? '▾' : '▸'}
+            Unpack it
           </button>
         </div>
       </form>
-
-      {/* Options panel — toggled by button */}
-      {showOptions && (
-        <div className="mt-3">
-          <ArticleOptions value={options} onChange={setOptions} />
-        </div>
-      )}
 
       {/* Cached article notification */}
       {cachedResult && (

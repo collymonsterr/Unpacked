@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import type { ArticleRow } from '@/types/article'
-import TripleCheckBadge from '@/components/ui/TripleCheckBadge'
 import SectionHeader from './SectionHeader'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -61,18 +60,25 @@ export default function PopularSection({ articles }: Props) {
                 ) : (
                   <div className="w-full h-full" style={{ backgroundColor: 'var(--accent-light)' }} />
                 )}
-                {row.fact_check && <TripleCheckBadge />}
               </div>
               <div className="p-3">
                 <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--accent)' }}>
                   {TYPE_LABELS[type] ?? type.replace(/_/g, ' ')}
                 </p>
-                <h4
-                  className="text-base font-bold leading-snug line-clamp-3 mb-1"
-                  style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
-                >
-                  {art?.title}
-                </h4>
+                <div className="flex items-start gap-1.5">
+                  <h4
+                    className="text-base font-bold leading-snug line-clamp-3 mb-1"
+                    style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+                  >
+                    {art?.title}
+                  </h4>
+                  {row.fact_check && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                      <polyline points="9 12 11 14 15 10" />
+                    </svg>
+                  )}
+                </div>
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                   {row.view_count ?? 0} views
                 </p>
@@ -127,12 +133,20 @@ export default function PopularSection({ articles }: Props) {
                 <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: 'var(--accent)' }}>
                   {TYPE_LABELS[type] ?? type.replace(/_/g, ' ')}
                 </p>
-                <h4
-                  className="text-sm font-bold leading-snug line-clamp-2 mb-0.5"
-                  style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
-                >
-                  {art?.title}
-                </h4>
+                <div className="flex items-start gap-1">
+                  <h4
+                    className="text-sm font-bold leading-snug line-clamp-2 mb-0.5"
+                    style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+                  >
+                    {art?.title}
+                  </h4>
+                  {row.fact_check && (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                      <polyline points="9 12 11 14 15 10" />
+                    </svg>
+                  )}
+                </div>
                 <p className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>
                   {row.view_count ?? 0} views
                 </p>

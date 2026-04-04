@@ -181,7 +181,7 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 
 ## Database — Key Columns on Articles Table
 
-- `visibility` — private / unlisted / published (default: unlisted for anon, private for logged-in, published for admin)
+- `visibility` — private / unlisted / published (default: unlisted for anon, published for logged-in)
 - `status` — generating / awaiting_auth / complete / verified / error
 - `article_type` — one of 10 types
 - `category` — one of 12 categories (top-level column)

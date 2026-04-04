@@ -235,7 +235,7 @@ export default function FactCheckBar({ status, factCheck, audit }: Props) {
                 boxShadow: '0 -4px 32px rgba(0,0,0,0.15)',
               }}
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3">
                 <h4
                   className="text-sm font-bold"
                   style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
@@ -245,6 +245,41 @@ export default function FactCheckBar({ status, factCheck, audit }: Props) {
                 <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                   {totalClaims > 0 ? `${totalClaims} claims checked` : 'Claims checked'}
                 </span>
+              </div>
+
+              {/* Explainer block */}
+              <div
+                className="rounded-lg p-3.5 mb-4 flex items-start gap-3"
+                style={{ backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0' }}
+              >
+                <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
+                  {/* Gemini logo dot */}
+                  <span
+                    className="flex items-center justify-center rounded-full"
+                    style={{ width: '22px', height: '22px', backgroundColor: '#E1F5EE' }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#085041" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </span>
+                  {/* Claude logo dot */}
+                  <span
+                    className="flex items-center justify-center rounded-full"
+                    style={{ width: '22px', height: '22px', backgroundColor: '#FEF3C7' }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#92400E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold leading-snug mb-1" style={{ color: '#15803d', fontFamily: 'var(--font-sora)' }}>
+                    Every claim independently verified
+                  </p>
+                  <p className="text-xs leading-relaxed" style={{ color: '#166534' }}>
+                    After writing, every factual claim in this article was extracted and checked by Google Gemini with live web search, then reviewed by Claude for credibility. When they disagree, a third model arbitrates. Corrections are applied automatically.
+                  </p>
+                </div>
               </div>
 
               {/* Three-stage checklist */}
@@ -703,6 +738,17 @@ export function ClaimsPanel({ audit, onClose }: { audit: FactCheckAudit; onClose
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
+      </div>
+
+      {/* Explainer */}
+      <div
+        className="px-4 py-3 flex items-start gap-2.5"
+        style={{ borderBottom: '1px solid #E8E3DC', backgroundColor: '#F0FDF4' }}
+      >
+        <ShieldCheck />
+        <p className="text-xs leading-relaxed" style={{ color: '#166534' }}>
+          Every factual claim was extracted and checked by Google Gemini with live web search, then reviewed by Claude for credibility. Corrections are applied automatically.
+        </p>
       </div>
 
       {/* Summary stats */}
