@@ -45,6 +45,28 @@ export default function Footer() {
         >
           Updates
         </Link>
+        <span className="text-xs" style={{ color: 'var(--text-secondary)', opacity: 0.4 }}>·</span>
+        <Link
+          href="/terms"
+          className="text-xs no-underline transition-opacity hover:opacity-70"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          Terms
+        </Link>
+        <Link
+          href="/privacy"
+          className="text-xs no-underline transition-opacity hover:opacity-70"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          Privacy
+        </Link>
+        <Link
+          href="/copyright"
+          className="text-xs no-underline transition-opacity hover:opacity-70"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          Copyright
+        </Link>
       </div>
     </footer>
   )

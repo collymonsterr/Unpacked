@@ -255,6 +255,9 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 | `/pricing` | `app/pricing/page.tsx` | Pricing page, 3 tiers |
 | `/founding-creators` | `app/founding-creators/page.tsx` | Founding Creators application |
 | `/category/[slug]` | `app/category/[slug]/page.tsx` | Category pages, 12 categories |
+| `/terms` | `app/terms/page.tsx` | Terms of Service, static |
+| `/privacy` | `app/privacy/page.tsx` | Privacy Policy (GDPR-compliant), static |
+| `/copyright` | `app/copyright/page.tsx` | Copyright Policy + takedown procedure, static |
 
 ---
 
