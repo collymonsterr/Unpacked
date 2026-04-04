@@ -210,6 +210,14 @@ For each angle, provide:
 - questions: exactly 5 specific questions that a READER would type into Google or ask a friend about this topic. These must be genuine information-seeking questions, NOT rephrased section headings. Never start a question with "What about". Never reference article sections, components, or formatting (no "comparison matrix", "executive summary", "quick verdict", "stat cards", etc.). A buyer guide asks "Which X has the best Y?", "Is X worth $Z?". An explainer asks "How does X actually work?", "Why is X happening now?". A trend analysis asks "Is X overhyped?", "What's driving the shift to X?".
 - scope_pills: 4-5 short phrases (2-5 words each) representing meaningful ways the user could narrow or redirect this specific angle. A buyer guide might offer "Under $150", "Best for meetings", "Wireless only". An explainer might offer "For beginners", "EU regulation focus", "Technical deep dive". A news analysis might offer "Last 7 days only", "US perspective", "Economic impact". Each pill should be relevant to this angle's article type.
 
+Headlines must NEVER reveal the verdict or winner. They should create curiosity, not satisfy it.
+Bad: "The 5 Best Cities for Digital Nomads: Chiang Mai Reigns Supreme"
+Good: "The 5 Best Cities for Digital Nomads, Ranked by Actual Cost of Living"
+Bad: "Best Laptop for Video Editing: The MacBook Pro M3 Wins"
+Good: "We Tested 8 Laptops for Video Editing — One Stood Out"
+Bad: "Myths About EVs: They're Actually Better Than You Think"
+Good: "Myths About EVs That Refuse to Die"
+
 CRITICAL: You MUST return exactly 3 angles. Not 1, not 2 — exactly 3. Each must use a different article_type.
 
 Return ONLY a JSON array of exactly 3 objects with fields: headline, article_type, pitch, questions (array of 5 strings), scope_pills (array of 4-5 strings).`

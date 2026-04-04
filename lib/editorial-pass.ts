@@ -192,6 +192,14 @@ CHECK FOR THESE ISSUES:
 
 15. FABRICATED CHART DATA — Flag any chart or data visualisation section where the numbers do not come from a cited source in the research findings, entity cards, or live data integrations. Charts must ONLY visualise real data from real sources. If the writer invented numbers from training knowledge (e.g. made-up statistics about "side hustle income trends"), flag for removal or replacement with a text-based summary.
 
+16. VERDICT IN TITLE — Check whether the article title or subtitle reveals the verdict, winner, or main conclusion. The title should promise what the reader will discover, NOT give them the answer.
+   Bad: "Best Laptop for 2026: MacBook Pro Wins" (names the winner)
+   Bad: "The 5 Best Cities for Digital Nomads: Chiang Mai Reigns Supreme" (reveals the #1)
+   Bad: "Myths About EVs: They're Actually Better Than You Think" (gives away the conclusion)
+   Good: "The 10 Best Laptops of 2026, Ranked" (promises a ranking without spoiling it)
+   Good: "We Tested 8 Laptops for Video Editing — One Stood Out" (creates curiosity)
+   If the title names a specific winner, flag this as a major issue (severity "high") and provide a rewritten title that removes the spoiler while keeping it engaging. The verdict belongs in the verdict section, not the title.
+
 SCORING:
 - 90-100: Excellent. Decisive, well-sourced, no AI-tell phrases, strong voice throughout.
 - 80-89: Good. Minor issues only. Publishable as-is.

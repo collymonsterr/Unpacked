@@ -188,6 +188,25 @@ Narrative and authoritative. Structure as chronological entries using the existi
 visual_list:
 Editorial and image-forward. Structure as a numbered list where each item leads with an image_section. Each item has: a headline, an image_section with a specific search query for that item, and 2-3 paragraphs of editorial narrative in a content_section. The writing should complement what the image shows, not describe it. Tell the story behind what's shown. Include 10-15 items for standard length.
 
+VISUAL LIST RULES:
+- The ONLY sections allowed are: one brief intro content_section, the numbered visual items (each as image_section + content_section pair), and one brief conclusion content_section (2-3 sentences max).
+- Do NOT include analytical sections like "Key Takeaways", "Things to Watch Out For", "Tips", "Practical Advice", or any summary/warning sections.
+- The executive_summary key_takeaways and watch_out_for arrays MUST be empty arrays [] — visual lists speak through their items, not through analytical summaries.
+- For each visual item's content_section, the section heading already contains the item name. Do NOT repeat the item name at the start of the body text. Start the body text with the narrative directly.
+
+CRITICAL RULE — NEVER REVEAL THE VERDICT EARLY:
+- The article title must NOT name the winner, #1 pick, or verdict. It should promise what the reader will learn, not give them the answer.
+- The subtitle must NOT reveal the conclusion.
+- The introduction must set up the question and establish stakes but NEVER answer it. Hint that the result is surprising if it is, but don't say what it is.
+- The verdict, winner, or main conclusion belongs ONLY in the verdict section at the end.
+
+This applies to ALL article types:
+- ranked_list: Do not name the #1 pick in the title. "The 10 Best Laptops of 2026, Ranked" is good. "The 10 Best Laptops of 2026: MacBook Pro Wins" is bad.
+- buyer_guide: Do not name the recommended product in the title or intro.
+- myth_buster: Do not debunk the main myth in the intro. Set up why people believe the myths, then debunk them one by one.
+- comparison: Do not declare the winner before the analysis.
+- All types: The reader should reach the verdict feeling like they earned the answer by reading the evidence. If they already know the answer from the title, the article has failed.
+
 STRUCTURE:
 1. Quick Verdict + Executive Summary (always first)
 2. "What You Need to Know" — mandatory context section. What separates good from bad? What mistakes do beginners make? Be specific.

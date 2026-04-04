@@ -31,7 +31,7 @@ Each has required/allowed/forbidden components, length range, tone, verdict rule
 - **ranked_list**: Numbered ranking from worst to best. Each item gets a rank number, name, and evidence. Picks a clear #1. Uses `ranked_item` section type with items array. Rendering: large amber rank number (36px) left, content right. Component: `RankedItemSection.tsx`.
 - **myth_buster**: Myth/reality pairs with evidence-based debunking. Uses `myth_reality` section type with pairs array. Rendering: red "MYTH" block + green "REALITY" block per pair. Component: `MythRealitySection.tsx`.
 - **timeline_article**: Chronological narrative with dates. Uses existing `timeline` section type. Narrative structure with cause-and-effect. Named `timeline_article` (not `timeline`) to avoid collision with the timeline component name.
-- **visual_list**: Image-first editorial list. Each item leads with an `image_section` followed by `content_section` narrative. High image density. Only used when stock photos are likely available.
+- **visual_list**: Image-first editorial list. Each item leads with an `image_section` followed by `content_section` narrative. High image density. Only used when stock photos are likely available. Analytical sections (Key Takeaways, Watch Out For) suppressed via empty executive_summary arrays in writing + blueprint prompts. Duplicate heading safety net in ContentSection.tsx strips first line of body text if it matches the section heading.
 
 ---
 
@@ -150,8 +150,9 @@ Four distinct components in `components/sections/LiveDataCard.tsx`, auto-selecte
 ## Editorial System (built)
 
 - `lib/editorial-rules.ts`: 50+ forbidden AI phrases, 20 filler patterns, 10 tone codes
-- `lib/editorial-pass.ts`: Sonnet primary, Gemini fallback, 15 checks, section-level rewrites
+- `lib/editorial-pass.ts`: Sonnet primary, Gemini fallback, 16 checks, section-level rewrites
 - Applied automatically in pipeline after writing phase
+- **No verdict in title rule (April 2026)**: Enforced at 4 layers — writing prompt (gemini-writer.ts), blueprint prompt (blueprint.ts), plan-mode headline generation (plan-preview route), and editorial pass check #16 (flags + rewrites titles that reveal the winner). Titles must create curiosity, not satisfy it.
 
 ---
 
@@ -447,7 +448,7 @@ Verified absent from codebase as of April 2026:
 - ~~**Onboarding flow**~~ — **BUILT April 2026.** First-time user hero with example prompt cards, disappears after first article.
 - ~~**Account deletion**~~ — **BUILT April 2026.** API route `POST /api/profile/delete` + settings page UI with inline confirmation. Sets articles to private, cleans up related tables, deletes profile, signs out.
 - ~~**Sign-in gate terms acceptance**~~ — **BUILT April 2026.** "By signing in, you agree to our Terms of Service and Privacy Policy" line added below Google sign-in button in SignInGate.
-- **New article types** — ranked_list, myth_buster, timeline, visual_list/photo_essay planned in Phase 1F (still 10 types in code)
+- ~~**New article types**~~ — **BUILT April 2026.** ranked_list, myth_buster, timeline_article, visual_list added (14 types total). Full pipeline support: planning, blueprint, writing, rendering components, admin UI.
 - **Inline text editing** — parked until after launch (click-to-edit paragraphs with "Edited — not verified" indicator)
 - **Plan Mode Reshape button** — planned in Phase 1E (lightweight plan card on article page with quick-action pills for structured refine)
 - **Scope pills re-research** — planned in Phase 1K (dashed-border pills with ↻ that trigger re-research pass, vs current filter-only pills)

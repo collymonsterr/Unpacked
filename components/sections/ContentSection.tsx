@@ -197,7 +197,27 @@ export default function ContentSection({ section, currentSlug, relatedArticles }
     ? (text: string) => injectInternalLinks(text, currentSlug, relatedArticles, 3)
     : undefined
 
-  const pullQuote = extractPullQuote(section.content)
+  // Safety net: strip duplicate heading from content body
+  // (visual_list items sometimes repeat the item name as the first line)
+  let content = section.content
+  if (section.heading && content) {
+    const headingNorm = section.heading.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim()
+    const firstLine = content.split(/\n\n/)[0]?.trim() ?? ''
+    const firstLineNorm = firstLine.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/^\*\*(.+?)\*\*$/, '$1').trim()
+    if (headingNorm && firstLineNorm && (
+      firstLineNorm === headingNorm ||
+      firstLineNorm.startsWith(headingNorm) ||
+      headingNorm.startsWith(firstLineNorm)
+    )) {
+      // Remove the duplicate first line
+      const rest = content.slice(content.indexOf('\n\n'))
+      if (rest.trim()) {
+        content = rest.trim()
+      }
+    }
+  }
+
+  const pullQuote = extractPullQuote(content)
 
   return (
     <div className="mb-8">
@@ -208,7 +228,7 @@ export default function ContentSection({ section, currentSlug, relatedArticles }
         {section.heading}
       </h2>
       <div className="prose-content" style={{ color: 'var(--text-primary)' }}>
-        {renderContent(section.content, linkTransform)}
+        {renderContent(content, linkTransform)}
       </div>
       {pullQuote && (
         <div
