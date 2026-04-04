@@ -91,6 +91,9 @@ Admin view of downvote reasons and comments. Quality scoring per article. Compos
 ### ~~1G. Research Companion Tab~~ ALREADY DONE
 Built as "Editor" tab (EditorCoPilot). `research_findings` persisted as JSONB. Owner sees findings, entity cards, synthesis, blueprint. Can select findings and submit rewrite instructions.
 
+### ~~1H. Plan Mode~~ DONE (April 2026)
+Two-path generation: "Plan first" runs planning + research then shows a plan card with angle, 3 key findings, length/tone options, and feedback textarea. "Write it" skips plan+research and goes straight to writing. Auth required. 20/hr rate limit, doesn't consume article allowance. Default visibility changed to published for logged-in users, with inline visibility dropdown on article page.
+
 ---
 
 ## Phase 2 — Image Pipeline Improvements

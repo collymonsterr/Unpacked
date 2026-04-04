@@ -541,11 +541,12 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
               if (!query.trim() || isLoading) return
               router.push(`/plan?q=${encodeURIComponent(query.trim())}`)
             }}
-            className="px-5 py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-40"
+            className="px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-40"
             style={{
               backgroundColor: 'transparent',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border)',
+              color: '#BA7517',
+              border: '1.5px solid #BA7517',
+              borderRadius: '8px',
               fontFamily: 'var(--font-sora)',
               cursor: isLoading || !query.trim() ? 'not-allowed' : 'pointer',
             }}
@@ -555,10 +556,11 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
           <button
             type="submit"
             disabled={isLoading || !query.trim()}
-            className="px-6 py-2.5 rounded-xl font-semibold text-sm transition-opacity disabled:opacity-40"
+            className="px-6 py-2.5 font-semibold text-sm transition-opacity disabled:opacity-40"
             style={{
-              backgroundColor: 'var(--accent)',
+              backgroundColor: '#BA7517',
               color: '#fff',
+              borderRadius: '8px',
               fontFamily: 'var(--font-sora)',
               cursor: isLoading || !query.trim() ? 'not-allowed' : 'pointer',
             }}

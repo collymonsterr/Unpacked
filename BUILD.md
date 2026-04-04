@@ -330,26 +330,36 @@ Covering: articles CRUD, admin actions, search, saved articles, profile manageme
 
 ## Plan Mode — Two-Path Generation (built April 2026)
 
-Two buttons on homepage: **"Plan first"** (outline) and **"Unpack it"** (solid amber, replaces "Generate Article").
+Two buttons on homepage: **"Plan first"** (outline amber border, `#BA7517` text, 8px radius) and **"Unpack it"** (solid `#BA7517`, white text, 8px radius).
 
-**"Unpack it"** — existing flow unchanged. Runs the full 8-stage pipeline immediately.
+**"Unpack it"** — existing flow unchanged. Runs the full 8-stage pipeline immediately with standard defaults.
 
-**"Plan first"** — navigates to `/plan?q=...`:
-1. Calls `POST /api/articles/plan-preview` — runs planning (Haiku) + research (Brave/Reddit/live data) and returns JSON
-2. `/plan` page shows loading messages while plan + research runs (~15-30s)
-3. Plan card displays: article type badge, AI-generated title, thesis/angle, winner preview, top 5 findings with sources, section structure pills, community sentiment, source counts
-4. User can add optional feedback in a textarea ("Focus more on budget options...")
-5. Article options (length/tone/visual) available via collapsed toggle
-6. "Write it" button sends `planData` (plan + research + userFeedback) to `POST /api/articles/create`
-7. Create route detects `planData`, skips planning + research, jumps directly to `runWritePipeline()` (blueprint → write → editorial → images → fact-check)
-8. User feedback is injected into the blueprint prompt via `generationOptions._userFeedback`
+**"Plan first"** — requires authentication. Redirects to Google OAuth if not signed in, then returns to `/plan?q=...`.
 
-**Rate limiting:** Plan previews are 20/hour per user or IP (separate key `plan:user:` / `plan:ip:`). Does NOT consume article allowance.
+### Plan card (3 sections)
+
+1. **The angle** — article type label (amber, uppercase), thesis/angle from research synthesis (15px), "Based on X sources" top-right
+2. **What the research turned up** — 3 diverse findings (different source domains preferred), each with amber check-circle icon, finding text (13px), and source attribution (11px muted)
+3. **Options + feedback** — inline length pills (Quick/Standard/Deep) and tone pills (Opinionated/Balanced/Casual) with selected = amber bg, unselected = `#EDECEA`. Feedback textarea ("Anything to add or change?"). Right-aligned "Start over" (ghost) and "Write it" (solid amber) buttons.
+
+### Flow
+
+1. `POST /api/articles/plan-preview` — runs planning (Haiku) + research (Brave/Reddit/live data), returns JSON. Auth required (401 if not signed in).
+2. `/plan` page shows loading with stacking messages: "Researching your question...", "Searching real sources...", "Checking Reddit discussions...", "Pulling live data...", "Synthesising findings..."
+3. Plan card displays with 3-section layout
+4. "Write it" sends `planData` (plan + research + userFeedback + length/tone) to `POST /api/articles/create`
+5. Create route detects `planData`, skips planning + research, jumps to `runWritePipeline()` (blueprint → write → editorial → images → fact-check)
+6. User feedback injected into blueprint prompt via `generationOptions._userFeedback`
+7. Redirects to `/article/[id]` for standard generation progress
+
+**Rate limiting:** 20/hour per user (key: `plan:user:{userId}`). Does NOT consume article allowance.
+
+**Error handling:** Generic errors show "We couldn't research this topic. Try rephrasing your question." with retry and back-to-home buttons.
 
 **Files:**
-- `components/SearchForm.tsx` — two buttons, article options removed from homepage
-- `app/api/articles/plan-preview/route.ts` — plan + research endpoint
-- `app/plan/page.tsx` — plan page with loading, plan card, feedback, options, "Write it"
+- `components/SearchForm.tsx` — two buttons with amber styling, article options removed from homepage
+- `app/api/articles/plan-preview/route.ts` — plan + research endpoint, auth required, 20/hr rate limit
+- `app/plan/page.tsx` — plan page with auth gate, loading, 3-section plan card, inline options, feedback, "Write it"
 - `app/api/articles/create/route.ts` — accepts `planData` field, skips plan+research when present
 - `lib/blueprint.ts` — injects `_userFeedback` into blueprint prompt
 

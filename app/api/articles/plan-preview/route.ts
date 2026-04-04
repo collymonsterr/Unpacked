@@ -24,20 +24,25 @@ export async function POST(request: NextRequest) {
 
     const trimmedQuery = query.trim()
 
-    // Auth check (optional — anonymous users can plan too)
+    // Auth check — plan mode requires authentication
     let userId: string | undefined
     try {
       const supabase = await createServerSupabase()
       const { data: { user } } = await supabase.auth.getUser()
       if (user) userId = user.id
     } catch {
-      // Not authenticated — continue
+      // Not authenticated
+    }
+
+    if (!userId) {
+      return Response.json(
+        { error: 'auth_required', message: 'Sign in to use Plan mode' },
+        { status: 401 }
+      )
     }
 
     // Rate limiting: 20/hour, separate key from article creation
-    const forwarded = request.headers.get('x-forwarded-for')
-    const ip = forwarded?.split(',')[0]?.trim() ?? 'unknown'
-    const rateLimitKey = userId ? `plan:user:${userId}` : `plan:ip:${ip}`
+    const rateLimitKey = `plan:user:${userId}`
     const rateResult = await checkRateLimit(rateLimitKey, 20)
     if (!rateResult.allowed) {
       return Response.json(
