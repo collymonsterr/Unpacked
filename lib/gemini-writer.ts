@@ -176,6 +176,18 @@ Practical and direct. No preamble, no context-setting. "Step 1: Do this. Here's 
 roundup:
 Curated and opinionated. You're not listing options — you're recommending. "I looked at 30 options. Only these 8 are worth your time. Here's the one to pick if you're in a hurry."
 
+ranked_list:
+Decisive and evidence-backed. Structure as a numbered countdown or count-up. Each item gets: a prominent rank number, the item name, and 1-2 paragraphs explaining why it's at this rank with specific evidence. Include brief comparisons to adjacent ranks ("X edges out Y because..."). The #1 pick gets 2-3 paragraphs with a definitive explanation. End with a verdict restating the winner. Output each ranked item as a section with type "ranked_item" containing an "items" array with rank, name, and content fields.
+
+myth_buster:
+Contrarian and evidence-driven. Structure as myth/reality pairs. Each pair starts with the myth stated boldly and confidently (as if you believed it), then "The reality:" with 1-2 paragraphs debunking it using specific evidence. The myth should be something people actually believe, not a strawman. The debunking should be surprising or counterintuitive. Output each pair group as a section with type "myth_reality" containing a "pairs" array with myth, reality, and evidence fields. End with a verdict on the single biggest misconception and why it persists.
+
+timeline_article:
+Narrative and authoritative. Structure as chronological entries using the existing timeline section type. Each entry has a date (or date range), a headline, and a narrative explaining what happened and why it mattered. Entries should build on each other — cause and effect, not just a list of dates. Include 8-15 entries for standard length. The intro sets up why this history matters now, the conclusion draws lessons or predictions.
+
+visual_list:
+Editorial and image-forward. Structure as a numbered list where each item leads with an image_section. Each item has: a headline, an image_section with a specific search query for that item, and 2-3 paragraphs of editorial narrative in a content_section. The writing should complement what the image shows, not describe it. Tell the story behind what's shown. Include 10-15 items for standard length.
+
 STRUCTURE:
 1. Quick Verdict + Executive Summary (always first)
 2. "What You Need to Know" — mandatory context section. What separates good from bad? What mistakes do beginners make? Be specific.
@@ -202,6 +214,10 @@ VISUAL REQUIREMENTS:
 - news_analysis: 1-3 charts (stat_cards, timeline)
 - breaking_news: stat_cards only — minimal visuals
 - deep_dive: 3-5 charts (mix of line_chart, bar_chart, stat_cards, timeline)
+- ranked_list: ranked_item sections + 1-2 charts (bar_chart for rankings, stat_cards)
+- myth_buster: myth_reality sections + 1-2 stat_cards for key data
+- timeline_article: timeline section as primary visual + stat_cards
+- visual_list: image_section per item as primary visual
 - All types: minimum 2 visualisations (except breaking_news)
 
 FORBIDDEN COMPONENTS: Check the plan's forbidden_components array. Do NOT generate any listed section type.
@@ -256,7 +272,7 @@ OUTPUT: Return ONLY valid JSON matching this schema:
 
 {
   "title": "string",
-  "article_type": "buyer_guide|comparison|decision_guide|explainer|how_to|roundup|trend_analysis|news_analysis|breaking_news|deep_dive",
+  "article_type": "buyer_guide|comparison|decision_guide|explainer|how_to|roundup|ranked_list|myth_buster|timeline_article|visual_list|trend_analysis|news_analysis|breaking_news|deep_dive",
   "quick_verdict": { "bullets": ["string (3-4 short punchy points, <15 words each)"], "one_liner": "string" },
   "executive_summary": { "short_answer": "string", "key_takeaways": ["string"], "watch_out_for": ["string"] },
   "sections": [
@@ -277,7 +293,9 @@ OUTPUT: Return ONLY valid JSON matching this schema:
     { "type": "image_section", "heading": "string", "images": [{"search_query":"string","caption":"string"}], "layout": "single|gallery" },
     { "type": "interactive_calculator", "heading": "string", "description": "string", "calculator_type": "string", "inputs": [{"id":"string","label":"string","type":"slider","min":"number","max":"number","default":"number","step":"number","unit":"string"}], "outputs": [{"id":"string","label":"string","format":"currency|percentage|number"}] },
     { "type": "live_data_card", "data_source": "polymarket|yahoo_finance|google_trends", "content": {"...data object from LIVE DATA section below — copy the entire object as-is"} },
-    { "type": "big_statement", "content": { "statement": "single bold sentence — a conclusion, strong take, or reframing" } }
+    { "type": "big_statement", "content": { "statement": "single bold sentence — a conclusion, strong take, or reframing" } },
+    { "type": "ranked_item", "heading": "string", "items": [{"rank": 1, "name": "string", "content": "string (1-2 paragraphs of evidence)"}] },
+    { "type": "myth_reality", "heading": "string", "pairs": [{"myth": "string (bold claim)", "reality": "string (evidence-backed debunking)", "evidence": "string (optional supporting data)"}] }
   ]
 }
 
@@ -323,7 +341,7 @@ function validateArticleSchema(article: Record<string, unknown>): ValidateResult
     'further_reading', 'sources', 'bar_chart', 'comparison_matrix',
     'pie_chart', 'line_chart', 'stat_cards', 'treemap', 'timeline',
     'image_section', 'interactive_calculator', 'head_to_head',
-    'live_data_card', 'big_statement',
+    'live_data_card', 'big_statement', 'ranked_item', 'myth_reality',
   ])
 
   if (Array.isArray(article.sections)) {

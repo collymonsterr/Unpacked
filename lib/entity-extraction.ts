@@ -52,7 +52,7 @@ function inferEntityType(entity: PlanEntity, articleType: ArticleType): EntityTy
   if (cat === 'event') return 'event'
 
   // Product-focused article types default entities to "product"
-  const productTypes: ArticleType[] = ['buyer_guide', 'comparison', 'decision_guide', 'roundup']
+  const productTypes: ArticleType[] = ['buyer_guide', 'comparison', 'decision_guide', 'roundup', 'ranked_list']
   if (productTypes.includes(articleType) && cat) return 'product'
 
   // If the entity has a product_category that looks physical, it's a product
@@ -61,7 +61,7 @@ function inferEntityType(entity: PlanEntity, articleType: ArticleType): EntityTy
   }
 
   // News/analysis types default to concept
-  const conceptTypes: ArticleType[] = ['news_analysis', 'breaking_news', 'trend_analysis', 'deep_dive', 'explainer']
+  const conceptTypes: ArticleType[] = ['news_analysis', 'breaking_news', 'trend_analysis', 'deep_dive', 'explainer', 'myth_buster', 'timeline_article', 'visual_list']
   if (conceptTypes.includes(articleType)) return 'concept'
 
   return 'concept'

@@ -93,6 +93,9 @@ FORBIDDEN COMPONENTS: ${JSON.stringify(plan.forbidden_components ?? typeConfig?.
 VERDICT REQUIRED: ${typeConfig?.verdictRequired ? 'YES' : 'NO'}
 VERDICT STYLE: ${typeConfig?.verdictStyle ?? 'none'}
 
+TYPE-SPECIFIC BLUEPRINT GUIDANCE:
+${plan.article_type === 'ranked_list' ? `RANKED LIST: Plan a numbered section skeleton with rank positions. Use research findings to determine which items to rank and in what order. Each section should cover one ranked item with evidence for its position. Include intro, rank sections, and verdict.` : ''}${plan.article_type === 'myth_buster' ? `MYTH BUSTER: Plan myth/reality pair sections. Use research and Reddit data to identify common beliefs that are wrong or misleading. Each section covers one myth and its evidence-based debunking. Include intro, myth sections, and verdict on the biggest misconception.` : ''}${plan.article_type === 'timeline_article' ? `TIMELINE ARTICLE: Plan chronological sections with key dates identified from research. Each section covers a period or event. The overall narrative should show cause and effect. Include intro (why this history matters now), timeline entries, and conclusion with lessons/predictions.` : ''}${plan.article_type === 'visual_list' ? `VISUAL LIST: Plan item sections where each item needs a specific image search query. Use research to identify visually rich items. Each section covers one item with image + narrative. Include intro, item sections, and conclusion.` : ''}
+
 YOUR TASK:
 
 OPINION ELEMENTS (generate these BEFORE the section plan):

@@ -92,6 +92,10 @@ const TYPE_DESCRIPTIONS: Record<string, { name: string; description: string; tag
   trend_analysis: { name: 'Trend Analysis', description: 'Is this trend real, overhyped, or misunderstood?', tags: ['Data-driven', 'Timeline', 'Evidence'] },
   breaking_news: { name: 'Breaking News', description: 'Essential picture on a breaking event.', tags: ['Fast', 'Live data', 'What to watch'] },
   deep_dive: { name: 'Deep Dive', description: 'Complete picture on a complex ongoing topic.', tags: ['Comprehensive', 'Bold thesis', 'Evidence-heavy'] },
+  ranked_list: { name: 'Ranked List', description: 'Numbered ranking from worst to best with a clear #1.', tags: ['Numbered ranks', 'Evidence-backed', 'Clear winner'] },
+  myth_buster: { name: 'Myth Buster', description: 'Debunks common beliefs with evidence.', tags: ['Myth vs reality', 'Contrarian', 'Evidence'] },
+  timeline_article: { name: 'Timeline', description: 'How something evolved over time, told chronologically.', tags: ['Dates', 'Narrative', 'Cause & effect'] },
+  visual_list: { name: 'Visual List', description: 'Image-first list with editorial narrative for each item.', tags: ['Image-heavy', 'Narrative', 'Editorial'] },
 }
 
 // ═══ Loading messages ═══

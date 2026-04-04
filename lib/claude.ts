@@ -38,6 +38,10 @@ CLASSIFICATION MAP:
 - "How does…" or "What is…" or "Why does…" or "…explained" → explainer (teach a concept)
 - "How to…" or "How do I…" or "Steps to…" or "Guide to doing…" → how_to (step-by-step task)
 - "Top 10…" or "Best… roundup" or curated list requests → roundup (editorial list with opinions)
+- "Top X ranked" or "best to worst" or explicit numbered ranking request → ranked_list (numbered ranking with clear #1)
+- "Myths about…" or "things people get wrong" or "is it true that…" or "misconceptions about…" → myth_buster (debunk common beliefs)
+- "History of…" or "how did X evolve" or "timeline of…" or "rise and fall of…" → timeline_article (chronological narrative)
+- "Most beautiful…" or "most iconic…" or visually-oriented topics (architecture, food, places, design) → visual_list (image-first editorial list)
 - "Trends in…" or "Most popular…" or "Fastest growing…" or "State of…" → trend_analysis (data-driven market analysis)
 - "Should I…" or "Is it worth…" or "Are X worth it?" → decision_guide (personal life/career decision)
 - "How much does…" or "Can I afford…" or "What will it cost…" → decision_guide (calculator-driven)
@@ -51,6 +55,10 @@ The valid types are:
 - explainer: Help the reader understand something clearly
 - how_to: Step-by-step task completion
 - roundup: Curated list with genuine editorial opinion — picks a best overall
+- ranked_list: A numbered ranking from worst to best (or best to worst), backed by evidence — picks a clear #1
+- myth_buster: Takes common beliefs and systematically debunks them with evidence
+- timeline_article: Chronological entries with dates and narrative — maps how something evolved over time
+- visual_list: Image-first, story-second — each item features a prominent image with editorial narrative
 - decision_guide: Help the reader make a personal life or career decision (often with a calculator)
 - trend_analysis: Is this trend real, overhyped, or misunderstood?
 - news_analysis: What a recent event means and what happens next
@@ -63,6 +71,10 @@ EXAMPLES:
 - "iPhone 17 vs Samsung S26" → comparison
 - "How to start investing with $1000" → how_to
 - "Should I buy or lease a car?" → decision_guide
+- "Top 10 laptops of 2026 ranked" → ranked_list
+- "5 myths about electric cars" → myth_buster
+- "History of the iPhone" → timeline_article
+- "Most iconic buildings in the world" → visual_list
 - "State of the EV market in ${new Date().getFullYear()}" → trend_analysis
 - "Top 10 budget travel destinations" → roundup
 - "What the new EU AI Act means for startups" → news_analysis
@@ -136,6 +148,34 @@ DEEP DIVE:
   FORBIDDEN: product_card, calculators, buy_links
   LENGTH: 2000-5000 words. TONE: authoritative and engaging.
 
+RANKED LIST:
+  REQUIRED: verdict_box (picks clear #1 with justification)
+  ALLOWED: product_cards, comparison_table, stat_cards, interactive_charts, big_statements, community_insights (Reddit section), key_takeaways
+  FORBIDDEN: calculators, how_to_steps, forecast_section
+  LENGTH: 1200-4000 words. TONE: opinionated — each rank must be justified with evidence.
+  STRUCTURE: Numbered countdown/count-up. Each item gets a rank number, name, and 1-2 paragraphs of evidence. Include brief comparisons to adjacent ranks. #1 pick gets the longest treatment.
+
+MYTH BUSTER:
+  REQUIRED: verdict_box (the biggest misconception and why it matters)
+  ALLOWED: stat_cards, big_statements, interactive_charts, quote_blocks, community_insights (Reddit section), key_takeaways
+  FORBIDDEN: product_cards, comparison_table, calculators, how_to_steps, forecast_section
+  LENGTH: 1000-3500 words. TONE: contrarian — debunk with evidence, not snark.
+  STRUCTURE: Series of myth/reality pairs. Each myth stated boldly as if you believed it, followed by evidence-backed debunking. The debunking should be surprising.
+
+TIMELINE ARTICLE:
+  REQUIRED: timeline (chronological entries with dates)
+  ALLOWED: stat_cards, big_statements, interactive_charts, quote_blocks, key_takeaways
+  FORBIDDEN: product_cards, comparison_table, calculators, how_to_steps
+  LENGTH: 800-4000 words. TONE: authoritative narrative.
+  STRUCTURE: Chronological entries. Each entry has a date/range, headline, and narrative paragraph. Entries should build on each other — cause and effect, not just a list of dates. Intro sets up why the history matters now, conclusion draws lessons or predictions.
+
+VISUAL LIST:
+  REQUIRED: image_section (one image per item)
+  ALLOWED: big_statements, stat_cards, key_takeaways, quote_blocks
+  FORBIDDEN: comparison_table, calculators, how_to_steps, product_cards, interactive_charts, forecast_section
+  LENGTH: 800-4000 words. TONE: opinionated editorial.
+  STRUCTURE: Numbered list where each item leads with an image. Each item has: headline, image (provide a specific image search query), and 2-3 paragraphs of editorial narrative. Writing should complement the image, not describe it. ONLY use when high-quality stock photos are likely available (architecture, food, landscapes, products, workspaces). Do NOT use for historical events, specific people, or abstract topics.
+
 ═══════════════════════════════════════════════════════════════
 STEP 3: SET VISUAL STRATEGY AND FORBIDDEN COMPONENTS
 ═══════════════════════════════════════════════════════════════
@@ -151,6 +191,10 @@ The forbidden_components array MUST list every component type that is FORBIDDEN 
 - news_analysis → forbidden_components: ["product_card", "comparison_table", "calculators", "buy_links"]
 - breaking_news → forbidden_components: ["product_card", "comparison_table", "calculators", "verdict_box", "lengthy_explainer"]
 - deep_dive → forbidden_components: ["product_card", "calculators", "buy_links"]
+- ranked_list → forbidden_components: ["calculators", "how_to_steps", "forecast_section"]
+- myth_buster → forbidden_components: ["product_cards", "comparison_table", "calculators", "how_to_steps", "forecast_section"]
+- timeline_article → forbidden_components: ["product_cards", "comparison_table", "calculators", "how_to_steps"]
+- visual_list → forbidden_components: ["comparison_table", "calculators", "how_to_steps", "product_cards", "interactive_charts", "forecast_section"]
 
 Visual strategy rules:
 - Product articles (buyer_guide, comparison) → product photography, image_density "high"
@@ -160,6 +204,10 @@ Visual strategy rules:
 - Data articles (trend_analysis, news_analysis) → charts as primary visual, image_density "low"
 - Breaking news → minimal, image_density "low"
 - Deep dives → mixed, image_density "medium"
+- Ranked lists (ranked_list) → product photography if ranking products, image_density "medium"
+- Myth busters (myth_buster) → minimal imagery, charts for data, image_density "low"
+- Timeline articles (timeline_article) → minimal, timeline is the primary visual, image_density "low"
+- Visual lists (visual_list) → images ARE the content, image_density "high"
 
 If no visual type is REQUIRED or ALLOWED for a section, no visual should be generated for that section. Visuals must earn their place — they are not decoration.
 
@@ -167,8 +215,11 @@ CRITICAL — entities array (MUST NEVER be empty, minimum 3 entities for EVERY a
 The entities array is used for structured research, entity cards, fact-checking, and images. Every article type MUST have at least 3 entities. There is NO exception to this rule.
 
 How to choose entities by article type:
-- buyer_guide/comparison/decision_guide/roundup: list the specific products being compared or recommended (e.g., "Ninja Air Fryer AF101", "Philips Essential Air Fryer", "Cosori Pro II")
+- buyer_guide/comparison/decision_guide/roundup/ranked_list: list the specific products being compared or recommended (e.g., "Ninja Air Fryer AF101", "Philips Essential Air Fryer", "Cosori Pro II")
 - explainer/how_to: list the key concepts, tools, or subjects being explained (e.g., for "is an air fryer worth it": "Air Fryer", "Ninja Air Fryer", "Philips Air Fryer", "Conventional Oven")
+- myth_buster: list the key beliefs being challenged and the sources that debunk them (e.g., for "myths about electric cars": "Battery Range", "Charging Infrastructure", "EV Maintenance Costs", "Lithium Mining")
+- timeline_article: list the key events, people, or organisations in the chronology (e.g., for "history of the iPhone": "Steve Jobs", "iPhone 2G", "iPhone X", "App Store")
+- visual_list: list the specific items that will be featured with images (e.g., for "most iconic skyscrapers": "Burj Khalifa", "Empire State Building", "Taipei 101")
 - news_analysis/breaking_news: list the key people, organisations, places, and events (e.g., for "OpenAI board crisis": "OpenAI", "Sam Altman", "Microsoft", "Ilya Sutskever")
 - trend_analysis/deep_dive: list the key players, technologies, or forces driving the trend (e.g., for "AI replacing jobs": "ChatGPT", "GitHub Copilot", "McKinsey", "Bureau of Labor Statistics")
 
@@ -382,7 +433,7 @@ TITLE RULES: Article titles must be 50-60 characters maximum. Never exceed 60 ch
 Respond ONLY with valid JSON matching this schema exactly. No preamble, no markdown fences:
 {
   "title": "string (50-60 characters max)",
-  "article_type": "buyer_guide | comparison | decision_guide | explainer | how_to | roundup | trend_analysis | news_analysis | breaking_news | deep_dive",
+  "article_type": "buyer_guide | comparison | decision_guide | explainer | how_to | roundup | ranked_list | myth_buster | timeline_article | visual_list | trend_analysis | news_analysis | breaking_news | deep_dive",
   "article_type_confidence": 85,
   "alternative_types": ["string — 0-2 alternative types, only when confidence < 90"],
   "category": "tech | finance | health_fitness | travel | home_living | entertainment | science | business | automotive | culture | current_affairs | ai_future",
@@ -715,7 +766,7 @@ Return a JSON object matching this structure. Return ONLY valid JSON. No preambl
 
 {
   "title": "string",
-  "article_type": "buyer_guide | comparison | decision_guide | explainer | how_to | roundup | trend_analysis | news_analysis | breaking_news | deep_dive",
+  "article_type": "buyer_guide | comparison | decision_guide | explainer | how_to | roundup | ranked_list | myth_buster | timeline_article | visual_list | trend_analysis | news_analysis | breaking_news | deep_dive",
   "quick_verdict": {
     "bullets": ["string (3-4 short, punchy bullet points — each one a standalone takeaway. NOT a sentence split up. Each bullet should be a distinct, actionable point like 'The Yamaha Pacifica 112V is the best value under $300' or 'Avoid anything without a humbucker pickup'. Keep each bullet under 15 words.)"],
     "one_liner": "string (a single-sentence summary of the verdict, used for metadata and sharing)"

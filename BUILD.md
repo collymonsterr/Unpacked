@@ -21,11 +21,17 @@ Pipeline orchestrated by `lib/write-pipeline.ts` with parallel phases and timing
 
 ---
 
-## Article Types (10, verified in `lib/article-types.ts`)
+## Article Types (14, verified in `lib/article-types.ts`)
 
-buyer_guide, comparison, explainer, decision_guide, how_to, roundup, news_analysis, trend_analysis, breaking_news, deep_dive
+buyer_guide, comparison, explainer, decision_guide, how_to, roundup, ranked_list, myth_buster, timeline_article, visual_list, news_analysis, trend_analysis, breaking_news, deep_dive
 
 Each has required/allowed/forbidden components, length range, tone, verdict rules.
+
+### New types (April 2026)
+- **ranked_list**: Numbered ranking from worst to best. Each item gets a rank number, name, and evidence. Picks a clear #1. Uses `ranked_item` section type with items array. Rendering: large amber rank number (36px) left, content right. Component: `RankedItemSection.tsx`.
+- **myth_buster**: Myth/reality pairs with evidence-based debunking. Uses `myth_reality` section type with pairs array. Rendering: red "MYTH" block + green "REALITY" block per pair. Component: `MythRealitySection.tsx`.
+- **timeline_article**: Chronological narrative with dates. Uses existing `timeline` section type. Narrative structure with cause-and-effect. Named `timeline_article` (not `timeline`) to avoid collision with the timeline component name.
+- **visual_list**: Image-first editorial list. Each item leads with an `image_section` followed by `content_section` narrative. High image density. Only used when stock photos are likely available.
 
 ---
 

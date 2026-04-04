@@ -391,6 +391,27 @@ export interface BigStatementSection {
   }
 }
 
+export interface RankedItemSection {
+  type: 'ranked_item'
+  heading: string
+  items: Array<{
+    rank: number
+    name: string
+    content: string
+    image_query?: string
+  }>
+}
+
+export interface MythRealitySection {
+  type: 'myth_reality'
+  heading: string
+  pairs: Array<{
+    myth: string
+    reality: string
+    evidence?: string
+  }>
+}
+
 export type ArticleSection =
   | ProductCard
   | ComparisonTable
@@ -413,6 +434,8 @@ export type ArticleSection =
   | InteractiveCalculatorSection
   | LiveDataCardSection
   | BigStatementSection
+  | RankedItemSection
+  | MythRealitySection
 
 // ── Full Article ─────────────────────────────────────────────────────────────
 

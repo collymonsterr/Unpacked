@@ -62,7 +62,7 @@ Every article flows through these stages in order. File paths and models verifie
 
 ### Stage 1: Planning → `lib/claude.ts` → `planArticle()`
 - **Model:** Claude Haiku 4.5 (`claude-haiku-4-5-20251001`)
-- Classifies article type (10 types), decides structure, produces `forbidden_components`
+- Classifies article type (14 types), decides structure, produces `forbidden_components`
 - Generates research manifest: `brave_queries`, `reddit_queries`, `live_data_queries`
 - Generates `hero_image_subject` for image search
 - Opinion elements: controversial_take, misunderstanding, prediction, winner_and_loser
@@ -132,11 +132,11 @@ Every article flows through these stages in order. File paths and models verifie
 
 ---
 
-## Article Classification — 10 Types (verified)
+## Article Classification — 14 Types (verified)
 
 Defined in `lib/article-types.ts`:
 
-buyer_guide, comparison, explainer, decision_guide, how_to, roundup, news_analysis, trend_analysis, breaking_news, deep_dive
+buyer_guide, comparison, explainer, decision_guide, how_to, roundup, ranked_list, myth_buster, timeline_article, visual_list, news_analysis, trend_analysis, breaking_news, deep_dive
 
 Each type has: requiredComponents, allowedComponents, forbiddenComponents, lengthRange, tone, verdictRequired, verdictStyle. Helpers: `getArticleTypeLabel()`, `isComponentAllowed()`, `getForbiddenComponents()`.
 
@@ -187,7 +187,7 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 
 - `visibility` — private / unlisted / published (default: published for logged-in, unlisted for anonymous)
 - `status` — generating / awaiting_auth / complete / verified / error
-- `article_type` — one of 10 types
+- `article_type` — one of 14 types
 - `category` — one of 12 categories (top-level column)
 - `is_featured`, `featured_position` — Featured section control
 - `card_summary` — punchy one-liner for hero card, editable in admin
@@ -235,7 +235,7 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - `lib/images.ts` — hero + product image fetching
 - `lib/image-router.ts` — source routing by image type
 - `lib/pexels.ts` — Pexels API integration
-- `lib/article-types.ts` — 10 type definitions with component rules
+- `lib/article-types.ts` — 14 type definitions with component rules
 
 ### Live Data
 - `lib/data-sources/polymarket.ts` — prediction market odds

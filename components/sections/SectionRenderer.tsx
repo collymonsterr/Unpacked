@@ -21,6 +21,8 @@ import ImageSection from './ImageSection'
 import InteractiveCalculator from './InteractiveCalculator'
 import LiveDataCard from './LiveDataCard'
 import BigStatement from './BigStatement'
+import RankedItemSection from './RankedItemSection'
+import MythRealitySection from './MythRealitySection'
 import SectionToolbar from './SectionToolbar'
 
 interface Props {
@@ -303,6 +305,10 @@ export default function SectionRenderer({
           return <LiveDataCard section={section} />
         case 'big_statement':
           return <BigStatement statement={(section as { content: { statement: string } }).content.statement} />
+        case 'ranked_item':
+          return <RankedItemSection section={section as any} />
+        case 'myth_reality':
+          return <MythRealitySection section={section as any} />
         default:
           return null
       }
