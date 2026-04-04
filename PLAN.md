@@ -77,6 +77,8 @@ Add 4 new types to `lib/article-types.ts` (currently 10, becomes 14):
 
 Each needs: requiredComponents, allowedComponents, forbiddenComponents, lengthRange, tone, verdictRequired, verdictStyle. Planning prompt and blueprint prompt need type-aware instructions.
 
+**Photo essay / visual list content guidelines:** Topics that work well: architecture, food, national parks, landscapes, products, workspaces, bridges, street markets, coastlines. Topics that don't work: specific historical events (need editorial photography), copyrighted artworks, movie/TV screenshots, specific people or news moments. Rule of thumb: if any good photo of the subject works, stock APIs can handle it. If it needs to be *that specific image*, it won't be available.
+
 ### 1G. Creator Profile Upgrade
 Add to profiles table: tagline, avatar_url (upload, not just Google). Article page author block: 40px avatar, prominent name, bio line, links to profile.
 
@@ -88,6 +90,9 @@ Built as "Editor" tab (EditorCoPilot). `research_findings` persisted as JSONB. O
 
 ### ~~1J. Plan Mode~~ DONE → UPGRADED to v7 (April 2026)
 Full interactive editorial brief. 3 angle options with per-angle questions and scope pills (client-side swapping). Removable/addable findings, products, questions, sentiment. Community sentiment with active/reserve promotion. 2-column length/tone radio cards. "Casual" tone renamed to "Technical" across codebase. Structured editorial brief sent to blueprint. Auth required. 20/hr rate limit, doesn't consume article allowance.
+
+### 1K. Plan Mode: Scope Pills Re-Research
+Upgrade certain scope pills from filter-only to re-research. Dashed-border pills with ↻ indicator trigger a new planning + research pass with the constraint baked in (~15 seconds). Filter pills remain instant. Visual distinction between the two types already designed. v7 has filter-only pills; this is the next evolution.
 
 ---
 
@@ -141,6 +146,15 @@ Before generation: check for similar existing articles. Non-blocking warning wit
 ### 4F. Views-for-Premium Mechanic
 Monthly view aggregation per creator. 2,000 views = 1 month Standard free, 5,000 = 1 month Pro. Monthly calculation job. Dashboard shows progress.
 
+### 4G. Reddit Opportunity Monitor
+Admin tab watching 40–60 curated subreddits. Detects rising threads by velocity not just score. Haiku classifies thread type and generates 2–3 suggested article prompts. Alert shows subreddit, thread title, upvote velocity, suggested prompt, one-click generate. Refreshes every 15–30 minutes. Reddit API free tier sufficient.
+
+### 4H. Twitter/X Account Monitoring
+Watch list of accounts in admin. Polls via third-party service (Twilert ~$10–20/month) firing webhook to Unpacked. Haiku extracts topic and generates suggested article prompts. Telegram bot alert with tweet text, prompt suggestions, pre-fill buttons. Manual reply only, no automated posting.
+
+### 4I. Entertainment/Trending Content Strategy
+Google Trends 200%+ spike as automatic trigger for suggested articles. Builds on existing Google Trends integration. Complements Reddit opportunity monitor — different signal source, same one-click generate UX.
+
 ---
 
 ## Phase 5 — Live Data Expansion
@@ -163,6 +177,9 @@ Polymarket, Yahoo Finance, and Google Trends are already built. These add more s
 | D9 | GDELT | News coverage spread for breaking news | Free |
 
 One session each. Test before adding next. All parallel during research phase.
+
+### 5C. Polymarket Historical Trend Chart
+The binary trend chart component is built as a placeholder in `LiveDataCard.tsx`. Needs a data source for historical odds time-series — the Polymarket API doesn't currently provide this. Options: investigate third-party aggregators, or implement daily snapshot caching to build the data over time. Low effort once a data source is identified.
 
 ---
 
@@ -218,7 +235,25 @@ App Store and Google Play. Apple requires StoreKit for iOS subscriptions.
 - Full tone matching from uploaded writing samples
 - ~~New article types (ranked_list, myth_buster, visual_list, timeline)~~ → moved to Phase 1F
 - Creator challenge / bounty — $500 prize pool for top creators in first 30 days. $250 for most external views, $150 for most signups driven, $100 wildcard editorial pick. Parked until creator cohort is active.
-- Reddit opportunity monitor
+- Reddit opportunity monitor — admin tab watching 40–60 curated subreddits. Detects rising threads by velocity not just score. Haiku classifies thread type and generates 2–3 suggested article prompts. Alert shows subreddit, thread title, upvote velocity, suggested prompt, one-click generate. Refreshes every 15–30 minutes. Reddit API free tier sufficient. Parked until admin tooling phase.
+- Twitter/X account monitoring — watch list of accounts in admin. Polls via third-party service (Twilert ~$10–20/month) firing webhook to Unpacked. Haiku extracts topic and generates suggested article prompts. Telegram bot alert with tweet text, prompt suggestions, pre-fill buttons. Manual reply only, no automated posting. Parked until distribution phase.
+- Entertainment/trending content strategy — Google Trends 200%+ spike as trigger for auto-suggested articles. Parked until Reddit opportunity monitor is built.
+- Pre-launch "one free article without signup" flow — allow one article generation without requiring Google OAuth. After the first article, require sign-in for subsequent articles. Parked — revisit for pre-launch marketing phase.
+
+---
+
+## Maintenance / Technical Debt
+
+Items identified in health check. Not blocking launch but should be addressed.
+
+### M1. API Error Handling Batch Fix
+20 routes identified missing try/catch. Priority: article delete route (destructive action), article fetch route (user-facing), search route (user-facing). Remaining are mostly admin routes. One session to sweep all 20.
+
+### M2. Database Index Verification
+Verify indexes exist on: `articles.category`, `articles.visibility`, `articles.status`, `articles.user_id`, `articles.is_featured`, `articles.is_trending`, `articles.view_count`, `profiles.tier`, `profiles.is_founding_creator`, `rate_limits.key`. Run `\d articles` and `\d profiles` in Supabase SQL editor. Add missing indexes.
+
+### M3. Admin Env Var Consolidation
+Four env vars doing the same job: `NEXT_PUBLIC_ADMIN_EMAIL`, `NEXT_PUBLIC_ADMIN_USER_ID`, `ADMIN_EMAIL`, `ADMIN_USER_ID`. Consolidate to one source of truth. Server-side routes should use server-only vars; client-side hook uses public var. Eliminate redundancy.
 
 ---
 
@@ -246,12 +281,13 @@ The product is feature-rich. The gaps are: monetisation (Stripe + affiliates), c
 | Phase | Sessions |
 |-------|---------|
 | Immediate | 6 (quick) |
-| Phase 1 | 9 |
+| Phase 1 | 10 |
 | Phase 2 | 3 |
 | Phase 3 | 3 |
-| Phase 4 | 6 |
-| Phase 5 | 6 |
+| Phase 4 | 9 |
+| Phase 5 | 7 |
 | Phase 6 | 4 |
 | Phase 7 | 3 |
 | Phase 8 | 2 |
-| **Total** | **~42** |
+| Maintenance | 3 |
+| **Total** | **~50** |

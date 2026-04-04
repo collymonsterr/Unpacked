@@ -438,3 +438,12 @@ Verified absent from codebase as of April 2026:
 - **New article types** — ranked_list, myth_buster, timeline, visual_list/photo_essay planned in Phase 1F (still 10 types in code)
 - **Inline text editing** — parked until after launch (click-to-edit paragraphs with "Edited — not verified" indicator)
 - **Plan Mode Reshape button** — planned in Phase 1E (lightweight plan card on article page with quick-action pills for structured refine)
+- **Scope pills re-research** — planned in Phase 1K (dashed-border pills with ↻ that trigger re-research pass, vs current filter-only pills)
+- **Polymarket historical trend chart** — binary chart component is a placeholder; needs time-series data source (Phase 5C)
+- **Reddit opportunity monitor** — planned in Phase 4G (admin tab, subreddit velocity detection, one-click generate)
+- **Twitter/X account monitoring** — planned in Phase 4H (Twilert webhooks, Telegram bot alerts)
+- **Entertainment/trending content strategy** — planned in Phase 4I (Google Trends 200%+ spike trigger)
+- **One free article without signup** — parked for pre-launch marketing phase
+- **API error handling sweep** — 20 routes missing try/catch, identified in health check (Maintenance M1)
+- **Database index verification** — articles + profiles tables need index audit (Maintenance M2)
+- **Admin env var consolidation** — 4 redundant vars to consolidate (Maintenance M3)
