@@ -217,7 +217,7 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 - Internal linking (client-side injection, zero DB writes, cached 1 hour)
 - Product cards, comparison tables, calculators, charts (Recharts), verdict box
 - PDF export (jspdf)
-- Reddit community section (real threads from Brave)
+- Reddit community section (real threads from Brave). **Removable quotes**: owner sees ✕ on hover (40% opacity on mobile) for each pull quote and insight card. Removes from article JSON via `POST /api/articles/[id]/remove-quote`. Toast hints about remaining quotes in Editor's Notes. If all quotes/insights removed, entire section auto-hides.
 - Refine/fork system (child article, lineage via parent/root IDs). **Image upload in refine**: paperclip icon in textarea footer, uploads to Supabase Storage (`refine-images/`), thumbnail preview with remove, 5MB limit, image URL passed to refine model for placement in article JSON.
 - **Improve prompt chip** — SearchForm calls `/api/improve-prompt` (Haiku) to generate 3 alternative query suggestions. Helps users refine vague questions before generating.
 - Navbar with search autocomplete (top 5 by view_count, published articles only)
@@ -264,7 +264,7 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 
 ---
 
-## API Routes (49 confirmed)
+## API Routes (51 confirmed)
 
 Covering: articles CRUD (create, view, delete, refine, regenerate, visibility, type switch), admin (costs, feedback, analytics, users, backfill, reclassify, migrate), article features (fact-check, featured, trending, pin, hide, share-credit, social-content, card-summary, research, cost-breakdown), images (upload-hero, replace-image, replace-thumbnail, set-primary-image, regenerate-images, upload-refine-image), profile (profile, usage, article-count), founding creators, improve-prompt, plan-preview, categories, saved-articles, waitlist, search, recent, reorder, claim, start-writing.
 

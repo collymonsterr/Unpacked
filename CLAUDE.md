@@ -267,7 +267,7 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - `components/editor/FindingCard.tsx` — individual research finding with source link + checkbox
 - `components/SharePanel.tsx` — 4-tab social content panel (Twitter, LinkedIn, Reddit, Image Cards)
 
-### API Routes (50 total)
+### API Routes (51 total)
 - `app/api/articles/create/route.ts` — main generation flow
 - `app/api/articles/plan-preview/route.ts` — plan mode: planning + research + angle generation
 - `app/api/articles/search/route.ts` — navbar autocomplete

@@ -1,4 +1,7 @@
-import type { CommunityInsights as CommunityInsightsType } from '@/types/article'
+'use client'
+
+import { useState, useCallback } from 'react'
+import type { CommunityInsights as CommunityInsightsType, ArticleContent } from '@/types/article'
 
 const consensusConfig = {
   strong: { label: 'Mostly positive', color: '#16a34a', bg: '#f0fdf4' },
@@ -12,10 +15,72 @@ const sentimentDot: Record<string, string> = {
   mixed: '#d97706',
 }
 
-export default function CommunityInsights({ section }: { section: CommunityInsightsType }) {
+interface Props {
+  section: CommunityInsightsType
+  isOwner?: boolean
+  articleId?: string
+  onArticleUpdated?: (article: ArticleContent) => void
+}
+
+export default function CommunityInsights({ section, isOwner = false, articleId, onArticleUpdated }: Props) {
   const cfg = consensusConfig[section.consensus] ?? consensusConfig.mixed
   const quotes = section.quotes?.slice(0, 2) ?? []
   const threads = section.reddit_threads?.slice(0, 5) ?? []
+
+  // Track items being removed (fade-out animation)
+  const [removingQuotes, setRemovingQuotes] = useState<Set<number>>(new Set())
+  const [removingInsights, setRemovingInsights] = useState<Set<number>>(new Set())
+  const [toast, setToast] = useState<string | null>(null)
+
+  const handleRemove = useCallback(async (type: 'quote' | 'insight', index: number) => {
+    if (!articleId) return
+
+    // Start fade-out
+    if (type === 'quote') {
+      setRemovingQuotes(prev => new Set(prev).add(index))
+    } else {
+      setRemovingInsights(prev => new Set(prev).add(index))
+    }
+
+    try {
+      const res = await fetch(`/api/articles/${articleId}/remove-quote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, index }),
+      })
+
+      if (!res.ok) {
+        // Revert fade
+        if (type === 'quote') {
+          setRemovingQuotes(prev => { const n = new Set(prev); n.delete(index); return n })
+        } else {
+          setRemovingInsights(prev => { const n = new Set(prev); n.delete(index); return n })
+        }
+        return
+      }
+
+      const data = await res.json()
+      if (data.article && onArticleUpdated) {
+        onArticleUpdated(data.article)
+      }
+
+      // Toast hint about available Reddit findings
+      if (data.availableRedditFindings > 0) {
+        setToast(`Removed. ${data.availableRedditFindings} more quote${data.availableRedditFindings === 1 ? '' : 's'} available in Editor's Notes.`)
+        setTimeout(() => setToast(null), 4000)
+      }
+    } catch {
+      // Revert fade on error
+      if (type === 'quote') {
+        setRemovingQuotes(prev => { const n = new Set(prev); n.delete(index); return n })
+      } else {
+        setRemovingInsights(prev => { const n = new Set(prev); n.delete(index); return n })
+      }
+    }
+  }, [articleId, onArticleUpdated])
+
+  // If the section is empty (all items removed via parent re-render), don't render
+  if (quotes.length === 0 && section.insights.length === 0) return null
 
   return (
     <div className="mb-8" style={{ borderTop: '3px solid #BA7517', paddingTop: '24px' }}>
@@ -49,6 +114,7 @@ export default function CommunityInsights({ section }: { section: CommunityInsig
       {quotes.length > 0 && (
         <div className="mb-5 space-y-3">
           {quotes.map((q, i) => {
+            const isRemoving = removingQuotes.has(i)
             // Try to find a matching thread URL for this quote's source
             const sourceMatch = q.source?.match(/r\/(\w+)/i)
             const threadUrl = sourceMatch
@@ -61,11 +127,23 @@ export default function CommunityInsights({ section }: { section: CommunityInsig
             return (
               <div
                 key={i}
-                className="pl-4 py-2"
+                className="group relative pl-4 py-2 transition-opacity duration-300"
                 style={{
                   borderLeft: '3px solid #BA7517',
+                  opacity: isRemoving ? 0 : 1,
                 }}
               >
+                {/* Remove button — owner only */}
+                {isOwner && articleId && (
+                  <button
+                    onClick={() => handleRemove('quote', i)}
+                    className="absolute top-1 right-1 w-[22px] h-[22px] flex items-center justify-center rounded-full opacity-[0.4] md:opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                    style={{ color: '#94918D', cursor: 'pointer', backgroundColor: 'transparent', border: 'none' }}
+                    aria-label="Remove quote"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  </button>
+                )}
                 <p
                   className="text-sm leading-relaxed mb-1"
                   style={{ color: 'var(--text-primary)', fontStyle: 'italic' }}
@@ -96,18 +174,31 @@ export default function CommunityInsights({ section }: { section: CommunityInsig
       {/* Platform insight cards — grid on desktop */}
       <div className={`gap-3 ${section.insights.length >= 2 ? 'grid md:grid-cols-2' : 'space-y-3'}`}>
         {section.insights.map((insight, i) => {
+          const isRemoving = removingInsights.has(i)
           const isLastOdd = section.insights.length >= 2
             && section.insights.length % 2 === 1
             && i === section.insights.length - 1
           return (
           <div
             key={i}
-            className={`rounded-xl p-4${isLastOdd ? ' md:col-span-2' : ''}`}
+            className={`group relative rounded-xl p-4 transition-opacity duration-300${isLastOdd ? ' md:col-span-2' : ''}`}
             style={{
               backgroundColor: 'var(--card)',
               border: '1px solid var(--border)',
+              opacity: isRemoving ? 0 : 1,
             }}
           >
+            {/* Remove button — owner only */}
+            {isOwner && articleId && (
+              <button
+                onClick={() => handleRemove('insight', i)}
+                className="absolute top-2 right-2 w-[22px] h-[22px] flex items-center justify-center rounded-full opacity-[0.4] md:opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                style={{ color: '#94918D', cursor: 'pointer', backgroundColor: 'transparent', border: 'none' }}
+                aria-label="Remove insight"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            )}
             <div className="flex items-center gap-2 mb-2">
               <span
                 className="w-2 h-2 rounded-full shrink-0"
@@ -213,6 +304,16 @@ export default function CommunityInsights({ section }: { section: CommunityInsig
               </a>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Toast notification */}
+      {toast && (
+        <div
+          className="mt-3 text-xs px-3 py-2 rounded-lg generation-fade-in"
+          style={{ backgroundColor: '#FDF8F0', color: '#BA7517', border: '1px solid #E8E6E0' }}
+        >
+          {toast}
         </div>
       )}
     </div>
