@@ -246,7 +246,7 @@ function buildSimpleOptionsPrompt(options: Record<string, unknown>): string {
   if (options.length === 'quick') parts.push('LENGTH: Concise quick-read. 800-1200 words. Fewer sections, tighter writing.')
   if (options.length === 'deep') parts.push('LENGTH: Comprehensive deep-dive. 4000-6000 words.')
   if (options.tone === 'balanced') parts.push('TONE: Balanced. Present all options fairly.')
-  if (options.tone === 'casual') parts.push('TONE: Casual and conversational.')
+  if (options.tone === 'technical') parts.push('TONE: Technical. Expert audience, assume domain knowledge, skip basics.')
   if (options.visual === 'minimal') parts.push('VISUALS: Minimal. Focus on text.')
   if (options.visual === 'maximum') parts.push('VISUALS: Maximum. Charts in every section.')
   if (options.location) parts.push(`LOCATION: ${options.location} (only if topic-relevant)`)

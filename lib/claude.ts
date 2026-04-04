@@ -802,7 +802,7 @@ IMPORTANT:
 
 interface GenOptions {
   length?: 'quick' | 'standard' | 'deep'
-  tone?: 'opinionated' | 'balanced' | 'casual'
+  tone?: 'opinionated' | 'balanced' | 'technical'
   visual?: 'minimal' | 'standard' | 'maximum'
   location?: string
   currency?: string
@@ -868,8 +868,8 @@ General rule: ask "what are the 3-4 things the reader absolutely needs?" and bui
   // Tone
   if (options.tone === 'balanced') {
     parts.push('TONE: Be balanced and even-handed. Present all options fairly with pros and cons for each. Still have a recommendation but frame it as "if we had to choose" rather than declaring a definitive winner. Let the reader decide.')
-  } else if (options.tone === 'casual') {
-    parts.push('TONE: Write in a casual, conversational tone. Use humour where appropriate. Less formal structure. Write like you\'re explaining to a friend over coffee, not writing a formal review.')
+  } else if (options.tone === 'technical') {
+    parts.push('TONE: Write for an expert audience. Assume domain knowledge. Skip introductory explanations. Go deeper on specifics, methodology, and nuance. Use precise terminology without over-explaining.')
   }
 
   // Visual

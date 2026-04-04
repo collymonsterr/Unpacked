@@ -68,7 +68,7 @@ ARTICLE QUERY: "${query}"
 ARTICLE TYPE: ${plan.article_type} — ${typeConfig?.description ?? ''}
 TONE: ${toneDesc}
 ${toneOption === 'balanced' ? 'NOTE: The reader chose "balanced" tone — still take positions but acknowledge counter-arguments more.' : ''}
-${toneOption === 'casual' ? 'NOTE: The reader chose "casual" tone — conversational, shorter sentences, more personality.' : ''}
+${toneOption === 'technical' ? 'NOTE: The reader chose "technical" tone — write for an expert audience, assume domain knowledge, skip introductory explanations, go deeper on specifics and methodology.' : ''}
 TARGET LENGTH: ~${targetWords} words total
 ${(options as Record<string, unknown>)?._userFeedback ? `\nREADER FEEDBACK (incorporate this direction into your blueprint):\n"${(options as Record<string, unknown>)._userFeedback}"\n` : ''}
 

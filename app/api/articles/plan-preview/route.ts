@@ -3,15 +3,34 @@ import { planArticle } from '@/lib/claude'
 import { executeResearch } from '@/lib/research-orchestrator'
 import { createServerSupabase } from '@/lib/supabase'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { getArticleTypePromptList } from '@/lib/article-types'
+import { extractJSON } from '@/lib/utils/extract-json'
+import { logApiCall } from '@/lib/api-usage'
+import Anthropic from '@anthropic-ai/sdk'
+
+let _anthropic: Anthropic | null = null
+function getAnthropic(): Anthropic {
+  if (!_anthropic) {
+    _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 2, timeout: 30_000 })
+  }
+  return _anthropic
+}
+
+interface AngleOption {
+  headline: string
+  article_type: string
+  pitch: string
+  questions: string[]
+  scope_pills: string[]
+}
 
 /**
  * POST /api/articles/plan-preview
  *
- * Runs planning (Haiku) + research in full, returns the plan + research data
- * as JSON so the user can see the angle, findings, and options before committing
- * to article generation.
+ * Runs planning (Haiku) + research + angle generation.
+ * Returns plan + research + 3 angles with per-angle questions and scope pills.
  *
- * Rate limited: 20/hour per user or IP. Does NOT consume article allowance.
+ * Rate limited: 20/hour per user. Requires auth.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -70,7 +89,31 @@ export async function POST(request: NextRequest) {
     const research = await executeResearch(manifest, plan, length)
     const researchMs = Date.now() - t1
 
-    console.log(`[plan-preview] Plan ${planMs}ms + Research ${researchMs}ms = ${planMs + researchMs}ms total`)
+    // ── Phase 3: Generate 3 angle options with questions and scope pills ──
+    const t2 = Date.now()
+    let angles: AngleOption[] = []
+    try {
+      angles = await generateAngles(trimmedQuery, plan, research)
+    } catch (err) {
+      console.warn('[plan-preview] Angle generation failed, using single fallback:', (err as Error).message)
+      // Fallback: single angle from the plan itself
+      angles = [{
+        headline: plan.title,
+        article_type: plan.article_type,
+        pitch: research.synthesis?.thesis_direction
+          ? `${research.synthesis.thesis_direction} This article covers the key findings from ${research.findings?.length ?? 0} sources.`
+          : `A ${plan.article_type.replace(/_/g, ' ')} covering the essential facts and data. Based on ${research.findings?.length ?? 0} sources.`,
+        questions: (plan.sections_outline ?? []).slice(0, 5).map((s: string) => {
+          // Turn section headings into questions
+          if (s.endsWith('?')) return s
+          return `What about ${s.toLowerCase()}?`
+        }),
+        scope_pills: Array.isArray(plan.suggestion_chips) ? (plan.suggestion_chips as string[]).slice(0, 5) : [],
+      }]
+    }
+    const anglesMs = Date.now() - t2
+
+    console.log(`[plan-preview] Plan ${planMs}ms + Research ${researchMs}ms + Angles ${anglesMs}ms = ${planMs + researchMs + anglesMs}ms total`)
 
     // Return everything the plan page needs
     return Response.json({
@@ -84,9 +127,11 @@ export async function POST(request: NextRequest) {
         sources: research.sources,
         redditThreads: research.redditThreads,
       },
+      angles,
       timing: {
         plan_ms: planMs,
         research_ms: researchMs,
+        angles_ms: anglesMs,
       },
     })
   } catch (err) {
@@ -102,4 +147,97 @@ export async function POST(request: NextRequest) {
 
     return Response.json({ error: 'Failed to generate plan' }, { status: 500 })
   }
+}
+
+/**
+ * Generate 3 different article angles using Haiku.
+ * Each angle has its own headline, article type, pitch, questions, and scope pills.
+ */
+async function generateAngles(
+  query: string,
+  plan: { article_type: string; title: string; sections_outline: string[]; suggestion_chips?: unknown },
+  research: {
+    synthesis?: { thesis_direction: string; likely_winner: string | null; key_data_points: string[]; community_sentiment_summary: string } | null
+    entityCards?: Array<{ canonical_name: string; type: string; facts: Array<{ claim: string; source: string }> }>
+    findings?: Array<{ content?: string; claim?: string; source: string }>
+  },
+): Promise<AngleOption[]> {
+  const typeList = getArticleTypePromptList()
+
+  const synthesisSummary = research.synthesis
+    ? `Thesis direction: ${research.synthesis.thesis_direction}\nLikely winner: ${research.synthesis.likely_winner ?? 'none'}\nKey data: ${research.synthesis.key_data_points?.slice(0, 5).join('; ') ?? 'none'}\nCommunity sentiment: ${research.synthesis.community_sentiment_summary ?? 'none'}`
+    : 'No synthesis available'
+
+  const entitySummary = (research.entityCards ?? []).slice(0, 6).map(e =>
+    `- ${e.canonical_name} (${e.type}): ${e.facts.slice(0, 2).map(f => f.claim).join('; ')}`
+  ).join('\n') || '(no entities)'
+
+  const topFindings = (research.findings ?? []).slice(0, 6).map(f =>
+    `- ${f.content || f.claim || ''} (${f.source})`
+  ).join('\n') || '(no findings)'
+
+  const prompt = `Given this research, generate exactly 3 different article angles for the query: "${query}".
+
+Each angle should use a different article type and take a genuinely different editorial approach.
+
+The original planning classified this as "${plan.article_type}" with title "${plan.title}". Use that as ONE of the three angles (refine the headline if needed), then create two genuinely different approaches.
+
+RESEARCH SYNTHESIS:
+${synthesisSummary}
+
+ENTITIES FOUND:
+${entitySummary}
+
+TOP FINDINGS:
+${topFindings}
+
+VALID ARTICLE TYPES:
+${typeList}
+
+For each angle, provide:
+- headline: a publication-ready title (engaging, specific, not generic)
+- article_type: one of the valid types listed above
+- pitch: exactly 2 sentences explaining what this article would argue and why it's interesting
+- questions: exactly 5 specific questions this article would answer, relevant to this angle's article type. A buyer guide asks product comparison questions. An explainer asks "how does X work" questions. A trend analysis asks "what's actually happening with..." questions. Make them concrete, not generic.
+- scope_pills: 4-5 short phrases (2-5 words each) representing meaningful ways the user could narrow or redirect this specific angle. A buyer guide might offer "Under $150", "Best for meetings", "Wireless only". An explainer might offer "For beginners", "EU regulation focus", "Technical deep dive". A news analysis might offer "Last 7 days only", "US perspective", "Economic impact". Each pill should be relevant to this angle's article type.
+
+Return ONLY a JSON array of exactly 3 objects with fields: headline, article_type, pitch, questions (array of 5 strings), scope_pills (array of 4-5 strings).`
+
+  const anthropic = getAnthropic()
+  const t0 = Date.now()
+
+  const response = await anthropic.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 2000,
+    temperature: 0.7,
+    messages: [{ role: 'user', content: prompt }],
+  })
+
+  const ms = Date.now() - t0
+  const usage = response.usage
+  await logApiCall({
+    model: 'claude-haiku-4-5-20251001',
+    callType: 'plan_angles',
+    inputTokens: usage.input_tokens,
+    outputTokens: usage.output_tokens,
+  })
+
+  const text = response.content
+    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+    .map(b => b.text)
+    .join('')
+
+  const parsed = extractJSON(text) as unknown as AngleOption[] | null
+  if (!parsed || !Array.isArray(parsed) || parsed.length === 0) {
+    throw new Error('Failed to parse angles JSON')
+  }
+
+  // Validate and clean each angle
+  return parsed.slice(0, 3).map(angle => ({
+    headline: angle.headline || 'Untitled',
+    article_type: angle.article_type || plan.article_type,
+    pitch: angle.pitch || '',
+    questions: Array.isArray(angle.questions) ? angle.questions.slice(0, 5).filter(Boolean) : [],
+    scope_pills: Array.isArray(angle.scope_pills) ? angle.scope_pills.slice(0, 5).filter(Boolean) : [],
+  }))
 }

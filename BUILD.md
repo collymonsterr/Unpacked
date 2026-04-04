@@ -331,7 +331,7 @@ Covering: articles CRUD, admin actions, search, saved articles, profile manageme
 
 ---
 
-## Plan Mode — Two-Path Generation (built April 2026)
+## Plan Mode — Interactive Editorial Brief (v7, upgraded April 2026)
 
 Two buttons on homepage: **"Plan first"** (outline amber border, `#BA7517` text, 8px radius) and **"Unpack it"** (solid `#BA7517`, white text, 8px radius).
 
@@ -339,32 +339,67 @@ Two buttons on homepage: **"Plan first"** (outline amber border, `#BA7517` text,
 
 **"Plan first"** — requires authentication. Redirects to Google OAuth if not signed in, then returns to `/plan?q=...`.
 
-### Plan card (3 sections)
+### 3 Angle Options
 
-1. **The angle** — article type label (amber, uppercase), thesis/angle from research synthesis (15px), "Based on X sources" top-right
-2. **What the research turned up** — 3 diverse findings (different source domains preferred), each with amber check-circle icon, finding text (13px), and source attribution (11px muted)
-3. **Options + feedback** — inline length pills (Quick/Standard/Deep) and tone pills (Opinionated/Balanced/Casual) with selected = amber bg, unselected = `#EDECEA`. Feedback textarea ("Anything to add or change?"). Right-aligned "Start over" (ghost) and "Write it" (solid amber) buttons.
+After planning + research, an additional Haiku call generates 3 different article angles. Each angle has:
+- **Headline** — publication-ready title
+- **Article type** — from 10 valid types, each different. Type pill with dark tooltip showing description + feature tags.
+- **Pitch** — 2 sentences explaining the angle
+- **5 questions** — specific to that angle's type
+- **4-5 scope pills** — per-angle focus narrowing
 
-### Flow
+Angles displayed as selectable radio cards. Switching angles instantly swaps questions and scope pills (client-side, no API call). Findings and sentiment stay the same.
 
-1. `POST /api/articles/plan-preview` — runs planning (Haiku) + research (Brave/Reddit/live data), returns JSON. Auth required (401 if not signed in).
-2. `/plan` page shows loading with stacking messages: "Researching your question...", "Searching real sources...", "Checking Reddit discussions...", "Pulling live data...", "Synthesising findings..."
-3. Plan card displays with 3-section layout
-4. "Write it" sends `planData` (plan + research + userFeedback + length/tone) to `POST /api/articles/create`
-5. Create route detects `planData`, skips planning + research, jumps to `runWritePipeline()` (blueprint → write → editorial → images → fact-check)
-6. User feedback injected into blueprint prompt via `generationOptions._userFeedback`
-7. Redirects to `/article/[id]` for standard generation progress
+### Interactive Sections
+
+1. **Angle Selection** — 3 radio cards with headline, type pill (with tooltip), pitch, radio dot. First pre-selected.
+2. **Scope Pills** — "NARROW YOUR FOCUS". Toggle on/off, multiple allowed. Reset on angle switch.
+3. **Products** — Conditional: only shows for buyer_guide, comparison, roundup, ranked_list. 2-column grid. Hover ✕ to exclude (35% opacity + strikethrough + Undo). "+ Add a product" input.
+4. **Key Findings** — Top 4 data-backed findings from synthesis/entity cards/research. Not raw source titles. Same ✕/Undo pattern. "+ Add something the research missed."
+5. **Questions** — 5 per-angle questions. Per-angle state preserved on switch. Same ✕/Undo pattern. "+ Add a question."
+6. **Community Sentiment** — Top 3 active (amber border) + 2 reserve (40% opacity, grey border). Click reserve to promote. ✕ on active only. Hidden if no Reddit data.
+7. **Length & Tone** — 2-column radio cards, top-aligned. Length: Quick/Standard/Deep. Tone: Opinionated/Balanced/Technical.
+8. **Feedback & Actions** — "Anything else?" textarea. "Start over" (ghost) + "Write it" (solid amber).
+
+### Data Flow
+
+"Write it" collects all selections into a structured editorial brief:
+- Selected angle (headline, type, pitch)
+- Active scope pills
+- Included/excluded products
+- Included/excluded findings
+- Included questions (per-angle)
+- Active sentiment quotes
+- Length, tone, feedback
+
+Sent as `planData.userFeedback` (editorial brief string) to `POST /api/articles/create`. Blueprint prompt receives the full brief.
+
+### Tone Rename
+
+"Casual" tone renamed to "Technical" across the entire codebase:
+- `components/ArticleOptions.tsx` — type + UI label
+- `lib/claude.ts` — planning prompt
+- `lib/blueprint.ts` — blueprint prompt
+- `app/api/articles/[id]/generate/route.ts` — generate route
+- `app/plan/page.tsx` — plan mode UI
+
+Technical tone: "Write for an expert audience. Assume domain knowledge. Skip introductory explanations. Go deeper on specifics, methodology, and nuance."
+
+### Graceful Degradation
+
+- No Reddit comments → sentiment section hidden
+- No products identified → products section hidden even for product types
+- Fewer than 4 findings → show however many exist
+- Angle generation fails → single fallback angle from original plan
 
 **Rate limiting:** 20/hour per user (key: `plan:user:{userId}`). Does NOT consume article allowance.
 
-**Error handling:** Generic errors show "We couldn't research this topic. Try rephrasing your question." with retry and back-to-home buttons.
-
 **Files:**
-- `components/SearchForm.tsx` — two buttons with amber styling, article options removed from homepage
-- `app/api/articles/plan-preview/route.ts` — plan + research endpoint, auth required, 20/hr rate limit
-- `app/plan/page.tsx` — plan page with auth gate, loading, 3-section plan card, inline options, feedback, "Write it"
+- `components/SearchForm.tsx` — two buttons with amber styling
+- `app/api/articles/plan-preview/route.ts` — plan + research + angle generation (3 Haiku calls total)
+- `app/plan/page.tsx` — full interactive editorial brief with per-angle state management
 - `app/api/articles/create/route.ts` — accepts `planData` field, skips plan+research when present
-- `lib/blueprint.ts` — injects `_userFeedback` into blueprint prompt
+- `lib/blueprint.ts` — injects editorial brief into blueprint prompt
 
 ---
 

@@ -4,7 +4,7 @@
 
 export interface GenerationOptions {
   length: 'quick' | 'standard' | 'deep'
-  tone: 'opinionated' | 'balanced' | 'casual'
+  tone: 'opinionated' | 'balanced' | 'technical'
   visual: 'minimal' | 'standard' | 'maximum'
 }
 
@@ -100,7 +100,7 @@ export default function ArticleOptions({ value, onChange }: Props) {
         options={[
           { value: 'opinionated', label: 'Opinionated', subtitle: 'picks winners' },
           { value: 'balanced', label: 'Balanced', subtitle: 'even-handed' },
-          { value: 'casual', label: 'Casual', subtitle: 'conversational' },
+          { value: 'technical', label: 'Technical', subtitle: 'expert audience' },
         ]}
         selected={value.tone}
         onChange={(v) => onChange({ ...value, tone: v as GenerationOptions['tone'] })}

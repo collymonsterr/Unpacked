@@ -33,7 +33,7 @@ The single metric that matters: number of articles shared externally and discove
 - Creator affiliate share: start 20%, scale to 30-50% for Verified Creators with quality gates.
 - Views mechanic: 2,000 views/month = 1 free month Standard, 5,000 = 1 free month Pro.
 - Reddit strategy: genuine 90/10 participation — no VA spam.
-- Visibility default: private for logged-in, unlisted for anonymous.
+- Visibility default: published for logged-in, unlisted for anonymous.
 
 **Breaking news as flagship:**
 - Polymarket odds + Reddit sentiment + stock impact + live data in one article.
@@ -91,8 +91,8 @@ Admin view of downvote reasons and comments. Quality scoring per article. Compos
 ### ~~1G. Research Companion Tab~~ ALREADY DONE
 Built as "Editor" tab (EditorCoPilot). `research_findings` persisted as JSONB. Owner sees findings, entity cards, synthesis, blueprint. Can select findings and submit rewrite instructions.
 
-### ~~1H. Plan Mode~~ DONE (April 2026)
-Two-path generation: "Plan first" runs planning + research then shows a plan card with angle, 3 key findings, length/tone options, and feedback textarea. "Write it" skips plan+research and goes straight to writing. Auth required. 20/hr rate limit, doesn't consume article allowance. Default visibility changed to published for logged-in users, with inline visibility dropdown on article page.
+### ~~1H. Plan Mode~~ DONE → UPGRADED to v7 (April 2026)
+Full interactive editorial brief. 3 angle options with per-angle questions and scope pills (client-side swapping). Removable/addable findings, products, questions, sentiment. Community sentiment with active/reserve promotion. 2-column length/tone radio cards. "Casual" tone renamed to "Technical" across codebase. Structured editorial brief sent to blueprint. Auth required. 20/hr rate limit, doesn't consume article allowance.
 
 ---
 
