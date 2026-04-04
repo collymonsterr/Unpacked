@@ -89,29 +89,38 @@ export async function POST(request: NextRequest) {
     const research = await executeResearch(manifest, plan, length)
     const researchMs = Date.now() - t1
 
-    // ── Phase 3: Generate 3 angle options with questions and scope pills ──
+    // ── Phase 3: Generate angles + summarize Reddit threads (parallel) ──
     const t2 = Date.now()
-    let angles: AngleOption[] = []
-    try {
-      angles = await generateAngles(trimmedQuery, plan, research)
-    } catch (err) {
-      console.warn('[plan-preview] Angle generation failed, using single fallback:', (err as Error).message)
-      // Fallback: single angle from the plan itself
-      angles = [{
-        headline: plan.title,
-        article_type: plan.article_type,
-        pitch: research.synthesis?.thesis_direction
-          ? `${research.synthesis.thesis_direction} This article covers the key findings from ${research.findings?.length ?? 0} sources.`
-          : `A ${plan.article_type.replace(/_/g, ' ')} covering the essential facts and data. Based on ${research.findings?.length ?? 0} sources.`,
-        questions: (plan.sections_outline ?? []).slice(0, 5).map((s: string) => {
-          // Turn section headings into questions
-          if (s.endsWith('?')) return s
-          return `What about ${s.toLowerCase()}?`
-        }),
-        scope_pills: Array.isArray(plan.suggestion_chips) ? (plan.suggestion_chips as string[]).slice(0, 5) : [],
-      }]
-    }
+
+    // Run angle generation and Reddit summary in parallel
+    const [anglesResult, redditSummaries] = await Promise.all([
+      (async () => {
+        try {
+          return await generateAngles(trimmedQuery, plan, research)
+        } catch (err) {
+          console.warn('[plan-preview] Angle generation failed, using single fallback:', (err as Error).message)
+          return [{
+            headline: plan.title,
+            article_type: plan.article_type,
+            pitch: research.synthesis?.thesis_direction
+              ? `${research.synthesis.thesis_direction} This article covers the key findings from ${research.findings?.length ?? 0} sources.`
+              : `A ${plan.article_type.replace(/_/g, ' ')} covering the essential facts and data. Based on ${research.findings?.length ?? 0} sources.`,
+            questions: (plan.sections_outline ?? []).slice(0, 5).filter((s: string) => s.endsWith('?')),
+            scope_pills: Array.isArray(plan.suggestion_chips) ? (plan.suggestion_chips as string[]).slice(0, 5) : [],
+          }] as AngleOption[]
+        }
+      })(),
+      summarizeRedditThreads(research.redditThreads),
+    ])
+
+    const angles = anglesResult
     const anglesMs = Date.now() - t2
+
+    // Merge summaries into Reddit threads
+    const enrichedRedditThreads = research.redditThreads.map((t, i) => ({
+      ...t,
+      summary: redditSummaries[i] ?? undefined,
+    }))
 
     console.log(`[plan-preview] Plan ${planMs}ms + Research ${researchMs}ms + Angles ${anglesMs}ms = ${planMs + researchMs + anglesMs}ms total`)
 
@@ -125,7 +134,7 @@ export async function POST(request: NextRequest) {
         synthesis: research.synthesis,
         liveData: research.liveData,
         sources: research.sources,
-        redditThreads: research.redditThreads,
+        redditThreads: enrichedRedditThreads,
       },
       angles,
       timing: {
@@ -198,7 +207,7 @@ For each angle, provide:
 - headline: a publication-ready title (engaging, specific, not generic)
 - article_type: one of the valid types listed above
 - pitch: exactly 2 sentences explaining what this article would argue and why it's interesting
-- questions: exactly 5 specific questions this article would answer, relevant to this angle's article type. A buyer guide asks product comparison questions. An explainer asks "how does X work" questions. A trend analysis asks "what's actually happening with..." questions. Make them concrete, not generic.
+- questions: exactly 5 specific questions that a READER would type into Google or ask a friend about this topic. These must be genuine information-seeking questions, NOT rephrased section headings. Never start a question with "What about". Never reference article sections, components, or formatting (no "comparison matrix", "executive summary", "quick verdict", "stat cards", etc.). A buyer guide asks "Which X has the best Y?", "Is X worth $Z?". An explainer asks "How does X actually work?", "Why is X happening now?". A trend analysis asks "Is X overhyped?", "What's driving the shift to X?".
 - scope_pills: 4-5 short phrases (2-5 words each) representing meaningful ways the user could narrow or redirect this specific angle. A buyer guide might offer "Under $150", "Best for meetings", "Wireless only". An explainer might offer "For beginners", "EU regulation focus", "Technical deep dive". A news analysis might offer "Last 7 days only", "US perspective", "Economic impact". Each pill should be relevant to this angle's article type.
 
 CRITICAL: You MUST return exactly 3 angles. Not 1, not 2 — exactly 3. Each must use a different article_type.
@@ -254,12 +263,71 @@ Return ONLY a JSON array of exactly 3 objects with fields: headline, article_typ
         : `The Complete Picture on ${query}`,
       article_type: fallbackType,
       pitch: `A ${fallbackType.replace(/_/g, ' ')} covering the key facts and data from ${research.findings?.length ?? 0} sources.`,
-      questions: (plan.sections_outline ?? []).slice(0, 5).map((s: string) =>
-        s.endsWith('?') ? s : `What about ${s.toLowerCase()}?`
-      ),
+      questions: (plan.sections_outline ?? []).slice(0, 5).filter((s: string) => s.endsWith('?')),
       scope_pills: Array.isArray(plan.suggestion_chips) ? (plan.suggestion_chips as string[]).slice(0, 5) : [],
     })
   }
 
   return cleaned
+}
+
+/**
+ * Summarize Reddit threads using Haiku to generate one-sentence community insights.
+ * Returns an array of summaries aligned with the input threads array.
+ * Falls back to empty strings on failure (caller uses thread title as fallback).
+ */
+async function summarizeRedditThreads(
+  threads: Array<{ title: string; url: string; subreddit: string; num_comments?: number; score?: number }>
+): Promise<string[]> {
+  if (!threads || threads.length === 0) return []
+
+  try {
+    const threadList = threads.slice(0, 5).map((t, i) =>
+      `${i + 1}. [r/${t.subreddit}] "${t.title}"${t.num_comments ? ` (${t.num_comments} comments)` : ''}`
+    ).join('\n')
+
+    const prompt = `For each Reddit thread below, write a one-sentence summary of what the community likely thinks based on the thread title and subreddit context. Focus on the consensus view, the main debate, or the most surprising insight. Write from the community's perspective, not as a description of the thread.
+
+Bad example: "r/aigear on Reddit: Soundcore Work AI Voice Recorder review | Cult of Mac"
+Good example: "Most users say the Soundcore records well in quiet rooms but picks up too much background noise in open offices."
+
+Bad example: "r/RewindAI on Reddit: Honest review after daily use"
+Good example: "Daily users report the promise doesn't match reality — transcription accuracy drops significantly after the first hour of continuous use."
+
+THREADS:
+${threadList}
+
+Return ONLY a JSON array of ${threads.slice(0, 5).length} strings, one summary per thread, in the same order. Each summary should be a single sentence, 15-30 words.`
+
+    const anthropic = getAnthropic()
+    const response = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 500,
+      temperature: 0.3,
+      messages: [{ role: 'user', content: prompt }],
+    })
+
+    const usage = response.usage
+    await logApiCall({
+      model: 'claude-haiku-4-5-20251001',
+      callType: 'plan_reddit_summary',
+      inputTokens: usage.input_tokens,
+      outputTokens: usage.output_tokens,
+    })
+
+    const text = response.content
+      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+      .map(b => b.text)
+      .join('')
+
+    const parsed = extractJSON(text) as unknown as string[] | null
+    if (!parsed || !Array.isArray(parsed)) return threads.map(() => '')
+
+    // Pad to match thread count
+    while (parsed.length < threads.length) parsed.push('')
+    return parsed.slice(0, threads.length)
+  } catch (err) {
+    console.warn('[plan-preview] Reddit summary failed, falling back to titles:', (err as Error).message)
+    return threads.map(() => '')
+  }
 }

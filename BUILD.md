@@ -363,10 +363,10 @@ Angles displayed as selectable radio cards. Switching angles instantly swaps que
 
 1. **Angle Selection** — 3 radio cards with headline, type pill (with tooltip), pitch, radio dot. First pre-selected.
 2. **Scope Pills** — "NARROW YOUR FOCUS". Toggle on/off, multiple allowed. Reset on angle switch.
-3. **Products** — Conditional: only shows for buyer_guide, comparison, roundup, ranked_list. 2-column grid. Hover ✕ to exclude (35% opacity + strikethrough + Undo). "+ Add a product" input.
-4. **Key Findings** — Top 4 data-backed findings from synthesis/entity cards/research. Not raw source titles. Same ✕/Undo pattern. "+ Add something the research missed."
-5. **Questions** — 5 per-angle questions. Per-angle state preserved on switch. Same ✕/Undo pattern. "+ Add a question."
-6. **Community Sentiment** — Top 3 active (amber border) + 2 reserve (40% opacity, grey border). Click reserve to promote. ✕ on active only. Hidden if no Reddit data.
+3. **Products** — Conditional: only shows for buyer_guide, comparison, roundup, ranked_list. 2-column grid. Hover ✕ to exclude (35% opacity + strikethrough + Undo). "+ Add a product" input supports comma-separated entries (each creates its own card). User-added products have ✕ to remove (instant, no undo — they're user-added, not from research).
+4. **Key Findings** — Top 4 data-backed findings from synthesis/entity cards/research. Not raw source titles. Same ✕/Undo pattern. "+ Add something the research missed." User-added findings have ✕ to remove.
+5. **Questions** — 5 per-angle questions generated as genuine reader questions (not rephrased section headings). Per-angle state preserved on switch. Same ✕/Undo pattern. "+ Add a question." User-added questions have ✕ to remove.
+6. **Community Sentiment** — Top 3 active (amber border) + 2 reserve (40% opacity, grey border). Click reserve to promote. ✕ on active only. Hidden if no Reddit data. Haiku summarizes Reddit thread titles into one-sentence community insights (parallel with angle generation, ~$0.001). Falls back to raw thread titles if summary fails.
 7. **Length & Tone** — 2-column radio cards, top-aligned. Length: Quick/Standard/Deep. Tone: Opinionated/Balanced/Technical.
 8. **Feedback & Actions** — "Anything else?" textarea. "Start over" (ghost) + "Write it" (solid amber).
 
@@ -405,7 +405,7 @@ Technical tone: "Write for an expert audience. Assume domain knowledge. Skip int
 
 **Files:**
 - `components/SearchForm.tsx` — two buttons with amber styling
-- `app/api/articles/plan-preview/route.ts` — plan + research + angle generation (3 Haiku calls total)
+- `app/api/articles/plan-preview/route.ts` — plan + research + angle generation + Reddit summary (4 Haiku calls total)
 - `app/plan/page.tsx` — full interactive editorial brief with per-angle state management
 - `app/api/articles/create/route.ts` — accepts `planData` field, skips plan+research when present
 - `lib/blueprint.ts` — injects editorial brief into blueprint prompt

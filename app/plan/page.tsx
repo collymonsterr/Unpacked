@@ -38,6 +38,7 @@ interface RedditThread {
   comment_text?: string
   body?: string
   top_comment?: string
+  summary?: string
   score?: number
 }
 
@@ -192,11 +193,13 @@ function extractFindings(research: PlanData['research']): Array<{ text: string; 
 }
 
 // ═══ Helper: extract Reddit sentiment ═══
-function extractRedditSentiment(threads: RedditThread[]): Array<{ quote: string; subreddit: string; upvotes?: number; num_comments?: number }> {
+function extractRedditSentiment(threads: RedditThread[]): Array<{ quote: string; sourceLabel: string; subreddit: string; upvotes?: number; num_comments?: number }> {
   return threads
-    .filter(t => (t.comment_text || t.body || t.top_comment || t.title)?.length > 20)
+    .filter(t => (t.summary || t.comment_text || t.body || t.top_comment || t.title)?.length > 20)
     .map(t => ({
-      quote: (t.comment_text || t.top_comment || t.body || t.title).slice(0, 200),
+      // Prefer Haiku summary, then actual comment content, then title as last resort
+      quote: (t.summary || t.comment_text || t.top_comment || t.body || t.title).slice(0, 200),
+      sourceLabel: t.title.slice(0, 80),
       subreddit: t.subreddit || 'reddit',
       upvotes: t.upvotes ?? t.score,
       num_comments: t.num_comments,
@@ -844,13 +847,24 @@ function PlanPageContent() {
                     </RemovableItem>
                   ))}
                   {addedProducts.map((name, i) => (
-                    <div key={`added-${i}`} className="rounded-lg p-3" style={{ border: '1px solid #E8E6E0', borderRadius: '8px', padding: '10px 12px' }}>
+                    <div key={`added-${i}`} className="group relative rounded-lg p-3" style={{ border: '1px solid #E8E6E0', borderRadius: '8px', padding: '10px 12px' }}>
                       <p className="text-[13px] font-medium" style={{ color: '#1A1714' }}>{name}</p>
                       <p className="text-[11px] mt-0.5" style={{ color: '#BA7517' }}>Added by you</p>
+                      <button
+                        onClick={() => setAddedProducts(prev => prev.filter((_, idx) => idx !== i))}
+                        className="absolute top-1 right-1 w-[22px] h-[22px] flex items-center justify-center rounded-full opacity-[0.4] md:opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                        style={{ color: '#94918D', cursor: 'pointer', backgroundColor: 'transparent', border: 'none' }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      </button>
                     </div>
                   ))}
                 </div>
-                <AddItemInput placeholder="Add a product" onAdd={name => setAddedProducts(prev => [...prev, name])} />
+                <AddItemInput placeholder="Add a product (comma-separated for multiple)" onAdd={name => {
+                  // Split on commas to support adding multiple products at once
+                  const items = name.split(',').map(s => s.trim()).filter(s => s.length > 0)
+                  setAddedProducts(prev => [...prev, ...items])
+                }} />
               </div>
             )}
 
@@ -883,15 +897,22 @@ function PlanPageContent() {
                     </RemovableItem>
                   ))}
                   {addedFindings.map((text, i) => (
-                    <div key={`added-${i}`} className="flex items-start gap-2.5">
+                    <div key={`added-${i}`} className="group relative flex items-start gap-2.5">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 mt-0.5">
                         <circle cx="12" cy="12" r="10" stroke="#BA7517" strokeWidth="1.5" />
                         <polyline points="9 12 11 14 15 10" fill="none" stroke="#BA7517" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
-                      <div>
+                      <div className="pr-6">
                         <p style={{ fontSize: '13px', lineHeight: '1.55', color: 'var(--text-primary)', fontFamily: 'var(--font-outfit)' }}>{text}</p>
                         <p className="mt-0.5" style={{ fontSize: '11px', color: '#BA7517' }}>Added by you</p>
                       </div>
+                      <button
+                        onClick={() => setAddedFindings(prev => prev.filter((_, idx) => idx !== i))}
+                        className="absolute top-0 right-0 w-[22px] h-[22px] flex items-center justify-center rounded-full opacity-[0.4] md:opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                        style={{ color: '#94918D', cursor: 'pointer', backgroundColor: 'transparent', border: 'none' }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -928,12 +949,22 @@ function PlanPageContent() {
                     </RemovableItem>
                   ))}
                   {currentAddedQuestions.map((q, i) => (
-                    <div key={`added-q-${i}`} className="flex items-start gap-2.5">
+                    <div key={`added-q-${i}`} className="group relative flex items-start gap-2.5">
                       <span className="flex-shrink-0 mt-0.5 text-[13px]" style={{ color: '#BA7517' }}>→</span>
-                      <div>
+                      <div className="pr-6">
                         <p style={{ fontSize: '13px', lineHeight: '1.55', color: 'var(--text-primary)', fontFamily: 'var(--font-outfit)' }}>{q}</p>
                         <p style={{ fontSize: '11px', color: '#BA7517' }}>Added by you</p>
                       </div>
+                      <button
+                        onClick={() => setAddedQuestions(prev => ({
+                          ...prev,
+                          [selectedAngle]: (prev[selectedAngle] ?? []).filter((_, idx) => idx !== i),
+                        }))}
+                        className="absolute top-0 right-0 w-[22px] h-[22px] flex items-center justify-center rounded-full opacity-[0.4] md:opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                        style={{ color: '#94918D', cursor: 'pointer', backgroundColor: 'transparent', border: 'none' }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -961,8 +992,8 @@ function PlanPageContent() {
                       onUndo={() => setRemovedSentiment(prev => { const n = new Set(prev); n.delete(i); return n })}
                     >
                       <div className="pl-3 py-2 pr-7" style={{ borderLeft: `3px solid ${removedSentiment.has(i) ? '#D3D1C7' : '#BA7517'}` }}>
-                        <p className="text-[13px] italic leading-relaxed" style={{ color: 'var(--text-primary)', textDecoration: removedSentiment.has(i) ? 'line-through' : 'none' }}>
-                          &ldquo;{s.quote}&rdquo;
+                        <p className="text-[13px] leading-relaxed" style={{ color: 'var(--text-primary)', textDecoration: removedSentiment.has(i) ? 'line-through' : 'none' }}>
+                          {s.quote}
                         </p>
                         <p className="text-[11px] mt-1" style={{ color: 'var(--text-secondary)' }}>
                           r/{s.subreddit}{s.num_comments ? ` · ${s.num_comments} comments` : ''}{s.upvotes ? ` · ${s.upvotes} upvotes` : ''}
@@ -984,8 +1015,8 @@ function PlanPageContent() {
                         style={{ opacity: isPromoted ? 1 : 0.4, cursor: isPromoted ? 'default' : 'pointer', background: 'none', border: 'none', padding: 0 }}
                       >
                         <div className="pl-3 py-2" style={{ borderLeft: `3px solid ${isPromoted ? '#BA7517' : '#D3D1C7'}` }}>
-                          <p className="text-[13px] italic leading-relaxed" style={{ color: 'var(--text-primary)' }}>
-                            &ldquo;{s.quote}&rdquo;
+                          <p className="text-[13px] leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+                            {s.quote}
                           </p>
                           <p className="text-[11px] mt-1" style={{ color: 'var(--text-secondary)' }}>
                             r/{s.subreddit}{s.num_comments ? ` · ${s.num_comments} comments` : ''}{s.upvotes ? ` · ${s.upvotes} upvotes` : ''}
