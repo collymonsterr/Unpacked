@@ -207,6 +207,31 @@ This applies to ALL article types:
 - comparison: Do not declare the winner before the analysis.
 - All types: The reader should reach the verdict feeling like they earned the answer by reading the evidence. If they already know the answer from the title, the article has failed.
 
+EXECUTIVE SUMMARY RULES — Key Takeaways and Watch Out For:
+These boxes should ONLY appear on specific article types:
+
+BOTH Key Takeaways AND Watch Out For:
+- buyer_guide (practical purchase advice and warnings)
+- decision_guide (helping someone make a choice)
+- how_to (practical steps with pitfalls to avoid)
+
+Key Takeaways ONLY (no Watch Out For — set watch_out_for to empty array []):
+- comparison (summarise the key differences)
+- explainer (summarise the key concepts)
+- deep_dive (summarise a long piece)
+
+NEITHER (set executive_summary key_takeaways and watch_out_for to empty arrays []):
+- ranked_list (the ranking is the takeaway)
+- myth_buster (the myth/reality pairs are the takeaway)
+- timeline_article (narrative, not advisory)
+- visual_list (image-led, no analytical sections)
+- news_analysis (the analysis is the content)
+- trend_analysis (the trends are the point)
+- breaking_news (short and urgent)
+- roundup (the roundup is already a summary)
+
+Never generate a Key Takeaways or Watch Out For section for types in the NEITHER list. These sections add nothing and undermine the format.
+
 STRUCTURE:
 1. Quick Verdict + Executive Summary (always first)
 2. "What You Need to Know" — mandatory context section. What separates good from bad? What mistakes do beginners make? Be specific.

@@ -98,6 +98,8 @@ ${plan.article_type === 'ranked_list' ? `RANKED LIST: Plan a numbered section sk
 
 HEADLINE RULE: The article headline must NOT contain the verdict, winner, or conclusion. The headline promises what the reader will discover. The introduction establishes the question without answering it. The verdict section at the end is where the answer lives. Plan the article to build tension toward the conclusion.
 
+EXECUTIVE SUMMARY RULE: For article types ranked_list, myth_buster, timeline_article, visual_list, news_analysis, trend_analysis, breaking_news, and roundup: do NOT include key_takeaways or watch_out_for in the executive_summary. Set both to empty arrays. These formats are self-contained — the content IS the takeaway. For comparison, explainer, and deep_dive: include key_takeaways but set watch_out_for to empty array. Only buyer_guide, decision_guide, and how_to get both.
+
 YOUR TASK:
 
 OPINION ELEMENTS (generate these BEFORE the section plan):

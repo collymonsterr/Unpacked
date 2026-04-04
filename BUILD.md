@@ -153,6 +153,7 @@ Four distinct components in `components/sections/LiveDataCard.tsx`, auto-selecte
 - `lib/editorial-pass.ts`: Sonnet primary, Gemini fallback, 16 checks, section-level rewrites
 - Applied automatically in pipeline after writing phase
 - **No verdict in title rule (April 2026)**: Enforced at 4 layers — writing prompt (gemini-writer.ts), blueprint prompt (blueprint.ts), plan-mode headline generation (plan-preview route), and editorial pass check #16 (flags + rewrites titles that reveal the winner). Titles must create curiosity, not satisfy it.
+- **Executive summary restrictions (April 2026)**: Key Takeaways + Watch Out For only on buyer_guide, decision_guide, how_to. Key Takeaways only (no Watch Out For) on comparison, explainer, deep_dive. Neither on ranked_list, myth_buster, timeline_article, visual_list, news_analysis, trend_analysis, breaking_news, roundup. Enforced in writing prompt, blueprint prompt, and `forbiddenComponents` in article-types.ts.
 
 ---
 
