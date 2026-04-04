@@ -210,14 +210,16 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 - **Expandable fact-check panel** — click "Triple-Verified · N claims" badge to see per-claim breakdown with verdict icons (green/amber/red), agreement status (Unanimous/Majority/Disputed), corrections inline. Summary stats at top. No internal model names exposed. Non-expandable when no audit data.
 - **Per-model breakdown** — verification report shows progress bars for each model (branded as Gemini/Grok/Perplexity — consumer-facing names). Confirmed/flagged counts. Only shows models that actually ran.
 - **Disputed claims callout** — amber-highlighted section in both the bottom panel and claims panel. Shows claim text, plain-English explanation, and correction (if any). Only appears when claims were corrected or softened.
-- **Card badges** — "Triple checked" badge with 3 coloured dots on all article cards (Featured, Trending, Popular, Recent) when fact_check data exists. Semi-transparent dark green, bottom-right of image area.
+- **Card badges** — Small green shield icon (16px hero, 14px small cards) inline next to article title on all homepage cards (Featured, Trending, Popular, Recent) when `fact_check` data exists. NOT an image overlay — sits next to the title text. TripleCheckBadge component exists but is unused (dead code).
 - **Trust strip upgrade** — homepage trust strip now shows green shield + "Triple fact-checked" with Gemini/Grok/Perplexity pills (green/blue/purple) instead of generic "Independent fact-checking" text.
+- **Fact-check explainer** — green info box at top of both the bottom-bar expanded panel and inline ClaimsPanel. Mentions Google Gemini and Claude by name. Text: "Every factual claim was extracted and checked by Google Gemini with live web search, then reviewed by Claude for credibility. Corrections are applied automatically."
 - Verified badge (green shield, "Verified" label) — now clickable with chevron when claims data exists
 - Internal linking (client-side injection, zero DB writes, cached 1 hour)
 - Product cards, comparison tables, calculators, charts (Recharts), verdict box
 - PDF export (jspdf)
 - Reddit community section (real threads from Brave)
 - Refine/fork system (child article, lineage via parent/root IDs). **Image upload in refine**: paperclip icon in textarea footer, uploads to Supabase Storage (`refine-images/`), thumbnail preview with remove, 5MB limit, image URL passed to refine model for placement in article JSON.
+- **Improve prompt chip** — SearchForm calls `/api/improve-prompt` (Haiku) to generate 3 alternative query suggestions. Helps users refine vague questions before generating.
 - Navbar with search autocomplete (top 5 by view_count, published articles only)
 - **Author block** — 40px avatar, 15px font-medium name, bio line. Social icons (X, LinkedIn, Medium) right-aligned at 18px with hover states. Flexbox justify-between layout.
 - **Cost + generation time** — admin-only display showing "4¢ · 47s" from `generation_options.timings` breakdowns
@@ -230,7 +232,7 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 ## Generation Options (built, wired to prompts)
 
 - **Length:** quick / standard / deep
-- **Tone:** opinionated / balanced / casual (+ 7 more codes in editorial-rules.ts)
+- **Tone:** opinionated / balanced / technical (+ 7 more codes in editorial-rules.ts). Renamed from "casual" April 2026.
 - **Visual density:** configurable
 - Profile preferences: location, currency, language merged into generation options
 
@@ -254,6 +256,7 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 | `/build` | `app/build/page.tsx` | Build page |
 | `/pricing` | `app/pricing/page.tsx` | Pricing page, 3 tiers |
 | `/founding-creators` | `app/founding-creators/page.tsx` | Founding Creators application |
+| `/plan` | `app/plan/page.tsx` | Plan Mode — interactive editorial brief |
 | `/category/[slug]` | `app/category/[slug]/page.tsx` | Category pages, 12 categories |
 | `/terms` | `app/terms/page.tsx` | Terms of Service, static |
 | `/privacy` | `app/privacy/page.tsx` | Privacy Policy (GDPR-compliant), static |
@@ -261,9 +264,9 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 
 ---
 
-## API Routes (39 confirmed)
+## API Routes (49 confirmed)
 
-Covering: articles CRUD, admin actions, search, saved articles, profile management, voting, fact-check, images, social content, rate limiting.
+Covering: articles CRUD (create, view, delete, refine, regenerate, visibility, type switch), admin (costs, feedback, analytics, users, backfill, reclassify, migrate), article features (fact-check, featured, trending, pin, hide, share-credit, social-content, card-summary, research, cost-breakdown), images (upload-hero, replace-image, replace-thumbnail, set-primary-image, regenerate-images, upload-refine-image), profile (profile, usage, article-count), founding creators, improve-prompt, plan-preview, categories, saved-articles, waitlist, search, recent, reorder, claim, start-writing.
 
 ---
 
@@ -417,7 +420,6 @@ Technical tone: "Write for an expert audience. Assume domain knowledge. Skip int
 Verified absent from codebase as of April 2026:
 
 - **Stripe / payment processing** — tier infrastructure built, but no Stripe checkout/webhooks/billing. Paid tiers are waitlist-only.
-- **Stripe / payment processing** — tier infrastructure built, but no Stripe checkout/webhooks/billing. Paid tiers are waitlist-only.
 - **Affiliate infrastructure** — no `affiliate_url` field, no link routing, no revenue tracking
 - ~~**Category pages**~~ — **BUILT April 2026.** 12 category pages at `/category/[slug]` with SEO, pagination, sort.
 - **Creator analytics dashboard** — not built (basic dashboard exists but no per-article analytics)
@@ -430,3 +432,7 @@ Verified absent from codebase as of April 2026:
 - **Views-for-premium mechanic** — not built
 - **Screenshot-proof branding** — not built
 - ~~**Onboarding flow**~~ — **BUILT April 2026.** First-time user hero with example prompt cards, disappears after first article.
+- **Account deletion** — documented in privacy policy but no endpoint or UI exists yet
+- **Sign-in gate terms acceptance** — not built. Terms page exists, but users don't have to accept terms during sign-up flow.
+- **New article types** — ranked_list, myth_buster, visual_list, timeline not yet added (still 10 types)
+- **Inline text editing** — parked

@@ -42,27 +42,9 @@ The single metric that matters: number of articles shared externally and discove
 
 ---
 
-## Immediate — Bug Fixes and Quick Wins
+## Immediate — Bug Fixes and Quick Wins — ALL DONE
 
-These require no architecture work and should be done first.
-
-### ~~1. Fix big statement vs pull quote visual clash~~ DONE
-Pull quotes now use left-border italic style. Big statements keep amber card + quote SVG.
-
-### ~~2. Update Polymarket Haiku model~~ DONE
-Updated to `claude-haiku-4-5-20251001`.
-
-### ~~3. Fix editorial pass score threshold~~ DONE
-Code threshold aligned to ≤80, matching the prompt.
-
-### ~~4. Author block prominence~~ ALREADY DONE
-Already 40px avatar, 15px font-medium name, bio line, Twitter link.
-
-### ~~5. Social links on creator profiles~~ ALREADY DONE
-`twitter_url` and `linkedin_url` already in profiles table, settings page, API, creator profile page, and article author block.
-
-### ~~6. One-click social copy UI~~ ALREADY DONE
-SharePanel with 4 tabs (Twitter, LinkedIn, Reddit, Image Cards) already built and wired into ArticleView. Owner-only, lazy-loaded.
+~~All 6 items completed April 2026:~~ big statement/pull quote visual fix, Polymarket model update, editorial threshold alignment, author block, social links, one-click social copy.
 
 ---
 
@@ -218,21 +200,28 @@ App Store and Google Play. Apple requires StoreKit for iOS subscriptions.
 - Metered reading / verdict paywall
 - API access for publishers
 - Full tone matching from uploaded writing samples
+- New article types (ranked_list, myth_buster, visual_list, timeline)
+- Creator challenge / bounty system
+- Reddit opportunity monitor
 
 ---
 
-## Critical Path
+## Critical Path (updated April 2026)
 
-1. Bug fixes (immediate section) → quality baseline
-2. Author block + social links → profiles look good for outreach
-3. Stripe → monetisation foundation
-4. ~~Onboarding flow → conversion~~ DONE
-5. 20 curated showcase articles → content ready
-6. Pre-launch creator cohort → real feedback
-7. ~~Category pages → SEO foundation~~ DONE
-8. Affiliate infrastructure → revenue
+1. ~~Bug fixes (immediate section) → quality baseline~~ DONE
+2. ~~Author block + social links → profiles look good for outreach~~ DONE
+3. ~~Onboarding flow → conversion~~ DONE
+4. ~~Category pages → SEO foundation~~ DONE
+5. ~~Plan Mode → user control over article direction~~ DONE
+6. ~~Legal pages → compliance baseline~~ DONE
+7. **Account deletion flow** → GDPR compliance (privacy policy promises it)
+8. **Stripe** → monetisation foundation
+9. **Seed article regeneration** → 20 curated showcase articles
+10. **Mobile end-to-end testing** → verify all new features on phone
+11. **Pre-launch creator cohort** → real feedback
+12. **Affiliate infrastructure** → revenue
 
-The product is ready enough to start creator outreach now. The pipeline is sophisticated — the gaps are in monetisation, distribution, and polish.
+The product is feature-rich. The gaps are: monetisation (Stripe + affiliates), compliance (account deletion), content curation, and distribution.
 
 ---
 

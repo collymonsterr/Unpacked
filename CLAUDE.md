@@ -96,7 +96,7 @@ Every article flows through these stages in order. File paths and models verifie
 - **Primary:** Claude Sonnet (`claude-sonnet-4-20250514`)
 - **Fallback:** Gemini Flash
 - 15 editorial checks, rewrites weak sections via `applyEditorRewrites()`
-- Rewrite threshold: prompt says ≤80, code applies at ≤75
+- Rewrite threshold: prompt says ≤80, code applies at ≤80 (aligned April 2026)
 - If both models fail, returns score 85 (never blocks pipeline)
 - Rules: `lib/editorial-rules.ts` — `FORBIDDEN_PHRASES` (50+), `FILLER_PATTERNS` (20), `TONE_DESCRIPTIONS` (10 codes)
 
@@ -152,7 +152,7 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 
 | Source | File | Requires | Notes |
 |--------|------|----------|-------|
-| Polymarket | `lib/data-sources/polymarket.ts` | Free API | 3-stage: fetch → blocklist → Haiku LLM selection. **BUG:** uses old `claude-3-haiku-20240307` model |
+| Polymarket | `lib/data-sources/polymarket.ts` | Free API | 3-stage: fetch → blocklist → Haiku LLM selection. Uses `claude-haiku-4-5-20251001`. |
 | Yahoo Finance | `lib/data-sources/yahoo-finance.ts` | Free API | 5-symbol limit, sparklines from 1-month daily close. In-memory 5-min cache |
 | Google Trends | `lib/data-sources/google-trends.ts` | `SERPAPI_KEY` | 12-month timeline, trend direction: rising/declining/stable/peaking |
 
@@ -177,11 +177,15 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - Yahoo Finance cache in `lib/data-sources/yahoo-finance.ts` — in-memory (5-min)
 - These work within a single serverless instance but don't coordinate across instances
 
+### Missing Features (documented but not built)
+- **Account deletion** — privacy policy promises it, no endpoint or UI exists
+- **Sign-in gate terms acceptance** — legal pages exist, but no acceptance step in auth flow
+
 ---
 
 ## Database — Key Columns on Articles Table
 
-- `visibility` — private / unlisted / published (default: unlisted for anon, published for logged-in)
+- `visibility` — private / unlisted / published (default: published for logged-in, unlisted for anonymous)
 - `status` — generating / awaiting_auth / complete / verified / error
 - `article_type` — one of 10 types
 - `category` — one of 12 categories (top-level column)
@@ -211,6 +215,7 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - `recentArticles` — up to 10 recently visited articles
 - `unpacked_votes_[articleId]` — vote state per article
 - `unpacked_session_id` — anonymous session for voting
+- `unpacked_visibility_nudge_[articleId]` — one-time visibility pill pulse animation
 
 ---
 
@@ -242,6 +247,13 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - `app/article/[slug]/page.tsx` — article page (server, JSON-LD injection)
 - `app/article/[slug]/ArticlePageClient.tsx` — article rendering + polling
 - `app/admin/page.tsx` — admin dashboard (4 tabs: overview, articles, costs, feedback)
+- `app/plan/page.tsx` — plan mode interactive editorial brief
+- `app/terms/page.tsx` — Terms of Service (static)
+- `app/privacy/page.tsx` — Privacy Policy (static, GDPR-compliant)
+- `app/copyright/page.tsx` — Copyright Policy (static)
+- `app/pricing/page.tsx` — pricing page (3 tiers, waitlist for paid)
+- `app/founding-creators/page.tsx` — Founding Creators application
+- `app/category/[slug]/page.tsx` — 12 category pages with SEO
 
 ### Components
 - `components/SearchForm.tsx` — homepage search/generate form
@@ -255,9 +267,11 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - `components/editor/FindingCard.tsx` — individual research finding with source link + checkbox
 - `components/SharePanel.tsx` — 4-tab social content panel (Twitter, LinkedIn, Reddit, Image Cards)
 
-### API Routes (37 total)
+### API Routes (49 total)
 - `app/api/articles/create/route.ts` — main generation flow
+- `app/api/articles/plan-preview/route.ts` — plan mode: planning + research + angle generation
 - `app/api/articles/search/route.ts` — navbar autocomplete
+- `app/api/improve-prompt/route.ts` — Haiku-powered query improvement suggestions
 
 ### Other
 - `lib/api-usage.ts` — cost logging + duplicate guard
@@ -318,11 +332,15 @@ GOOGLE_GEMINI_API_KEY          # Gemini Flash writing + blueprint + fact-check +
 BRAVE_SEARCH_API_KEY           # Web research + image search (paid plan)
 OPENAI_API_KEY                 # GPT-4o-mini fact-check arbitration
 PEXELS_API_KEY                 # Pexels image search (hero editorial)
+UNSPLASH_ACCESS_KEY            # Unsplash image search (hero fallback)
 SERPAPI_KEY                    # Google Trends data
 NEXT_PUBLIC_SUPABASE_URL       # https://obyywahmmkrpsimjbdua.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY  # Public key
 SUPABASE_SERVICE_ROLE_KEY      # Server-side only — never in client code
 NEXT_PUBLIC_ADMIN_EMAIL        # Admin user's email
+NEXT_PUBLIC_ADMIN_USER_ID      # Admin user's Supabase UUID (used in useAdminMode hook)
+ADMIN_USER_ID                  # Server-side admin user ID (lib/auth-check.ts)
+ADMIN_EMAIL                    # Server-side admin email (lib/auth-check.ts)
 GEMINI_MAX_CONCURRENT=3        # Concurrent generation limit (in-memory)
 ```
 
@@ -330,8 +348,9 @@ GEMINI_MAX_CONCURRENT=3        # Concurrent generation limit (in-memory)
 
 ## Rate Limiting
 
-- Create: 10/hour per user ID or IP | Refine: 20/hour
+- Create: 10/hour per user ID or IP | Refine: 20/hour | Plan preview: 20/hour per user
 - Stored in Supabase `rate_limits` table (not in-memory — serverless safe)
+- Tier-based article allowance: Free 3/month, Standard 15/month, Pro 60/month (checked in create route, admin bypasses)
 
 ---
 
