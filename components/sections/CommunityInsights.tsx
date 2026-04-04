@@ -60,6 +60,12 @@ export default function CommunityInsights({ section, isOwner = false, articleId,
       }
 
       const data = await res.json()
+
+      // Clear removing state BEFORE updating parent — otherwise the shifted
+      // indices still match the old "removing" set and hide the wrong items.
+      setRemovingQuotes(new Set())
+      setRemovingInsights(new Set())
+
       if (data.article && onArticleUpdated) {
         onArticleUpdated(data.article)
       }
