@@ -3,8 +3,9 @@
   "configurations": [
     {
       "name": "dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "/Users/colly/.hermes/node/bin/node",
+      "runtimeArgs": ["node_modules/.bin/next", "dev"],
+      "env": { "PATH": "/Users/colly/.hermes/node/bin:/usr/bin:/bin" },
       "port": 3000,
       "autoPort": true
     }

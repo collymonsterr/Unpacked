@@ -79,10 +79,14 @@ export default function SectionRenderer({
 }: Props) {
   const [removingSection, setRemovingSection] = useState<number | null>(null)
   const [editingSection, setEditingSection] = useState<number | null>(null)
+  const [replacingSection, setReplacingSection] = useState<number | null>(null)
+  const [updatedSection, setUpdatedSection] = useState<number | null>(null)
+  const [updatedFading, setUpdatedFading] = useState(false)
 
   const handleRemoveSection = useCallback(async (sectionIndex: number) => {
     if (!articleId) return
     setRemovingSection(sectionIndex)
+    setReplacingSection(null)
     try {
       const res = await fetch(`/api/articles/${articleId}/section-edit`, {
         method: 'POST',
@@ -101,6 +105,7 @@ export default function SectionRenderer({
 
   const handleEditSection = useCallback(async (sectionIndex: number, instruction: string) => {
     if (!articleId) return
+    const wasReplacing = replacingSection === sectionIndex
     setEditingSection(sectionIndex)
     try {
       const res = await fetch(`/api/articles/${articleId}/section-edit`, {
@@ -111,12 +116,36 @@ export default function SectionRenderer({
       if (!res.ok) throw new Error('Failed to edit section')
       const data = await res.json()
       onArticleUpdated?.(data.article)
+
+      // Show Updated indicator if this was a replacement action
+      if (wasReplacing) {
+        setReplacingSection(null)
+        setUpdatedSection(sectionIndex)
+        setUpdatedFading(false)
+        // Start fade after 7 seconds, complete by 10
+        setTimeout(() => setUpdatedFading(true), 7000)
+        setTimeout(() => setUpdatedSection(null), 10000)
+      }
     } catch (err) {
       console.error('[section-edit]', err)
+      // Restore section on error if replacing
+      if (wasReplacing) {
+        setReplacingSection(null)
+      }
+      throw err // re-throw so SectionToolbar can show error
     } finally {
       setEditingSection(null)
     }
-  }, [articleId, onArticleUpdated])
+  }, [articleId, onArticleUpdated, replacingSection])
+
+  const handleStartReplace = useCallback((sectionIndex: number) => {
+    // Only one section can be in replacement mode at a time
+    setReplacingSection(sectionIndex)
+  }, [])
+
+  const handleCancelReplace = useCallback(() => {
+    setReplacingSection(null)
+  }, [])
 
   // Pre-process: group consecutive Polymarket cards for grid layout
   const elements: React.ReactNode[] = []
@@ -286,6 +315,8 @@ export default function SectionRenderer({
       const showToolbar = isAdmin && articleId && !NO_TOOLBAR_TYPES.has(section.type)
       const isBeingRemoved = removingSection === sectionIdx
       const isBeingEdited = editingSection === sectionIdx
+      const isBeingReplaced = replacingSection === sectionIdx
+      const isUpdated = updatedSection === sectionIdx
 
       elements.push(
         <div
@@ -295,17 +326,53 @@ export default function SectionRenderer({
           style={{
             ...style,
             ...(isBeingRemoved ? { opacity: 0, transition: 'opacity 0.3s ease' } : {}),
+            ...(isUpdated ? { borderLeft: `3px solid ${updatedFading ? 'transparent' : '#22C55E'}`, paddingLeft: '12px', transition: 'border-color 3s ease, padding-left 3s ease' } : {}),
           }}
         >
+          {/* Updated indicator after successful replacement */}
+          {isUpdated && (
+            <div
+              className="flex items-center gap-1 mb-1.5"
+              style={{
+                opacity: updatedFading ? 0 : 1,
+                transition: 'opacity 3s ease',
+              }}
+              data-no-print
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="16 10 11 16 8 13" />
+              </svg>
+              <span style={{ fontSize: '11px', color: '#22C55E', fontWeight: 500 }}>Updated</span>
+            </div>
+          )}
+
           {showToolbar && (
             <SectionToolbar
               sectionIndex={sectionIdx}
+              articleId={articleId!}
               onRemove={handleRemoveSection}
               onEdit={handleEditSection}
               isEditing={isBeingEdited}
+              isReplacing={isBeingReplaced}
+              onStartReplace={handleStartReplace}
+              onCancelReplace={handleCancelReplace}
             />
           )}
-          {inner}
+
+          {/* Section content — dimmed when being replaced */}
+          <div
+            style={isBeingReplaced ? {
+              opacity: 0.15,
+              filter: 'blur(1px)',
+              pointerEvents: 'none' as const,
+              transition: 'opacity 0.3s ease, filter 0.3s ease',
+            } : {
+              transition: 'opacity 0.3s ease, filter 0.3s ease',
+            }}
+          >
+            {inner}
+          </div>
         </div>
       )
     }
