@@ -10,6 +10,7 @@ interface SearchResult {
   title: string
   category: string | null
   view_count: number
+  card_summary: string | null
 }
 
 export default function NavSearchBar() {
@@ -163,7 +164,7 @@ export default function NavSearchBar() {
         <button
           key={r.id}
           onClick={() => navigateToArticle(r.slug)}
-          className="w-full text-left px-4 py-2.5 flex items-center gap-2 transition-colors"
+          className="w-full text-left px-4 py-2.5 transition-colors"
           style={{
             cursor: 'pointer',
             backgroundColor: 'transparent',
@@ -173,21 +174,28 @@ export default function NavSearchBar() {
           onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F5F3EE')}
           onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
         >
-          <span className="flex-1 text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
-            {r.title}
-          </span>
-          {r.category && (
-            <span
-              className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 uppercase tracking-wider"
-              style={{ backgroundColor: '#FAEEDA', color: '#633806' }}
-            >
-              {formatCategory(r.category)}
+          <div className="flex items-center gap-2">
+            <span className="flex-1 text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+              {r.title}
             </span>
-          )}
-          {r.view_count > 0 && (
-            <span className="text-[11px] flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>
-              {r.view_count.toLocaleString()} views
-            </span>
+            {r.category && (
+              <span
+                className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 uppercase tracking-wider"
+                style={{ backgroundColor: '#FAEEDA', color: '#633806' }}
+              >
+                {formatCategory(r.category)}
+              </span>
+            )}
+            {r.view_count > 0 && (
+              <span className="text-[11px] flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>
+                {r.view_count.toLocaleString()} views
+              </span>
+            )}
+          </div>
+          {r.card_summary && (
+            <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-secondary)' }}>
+              {r.card_summary}
+            </p>
           )}
         </button>
       ))}
