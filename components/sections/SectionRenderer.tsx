@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react'
 import type { ArticleSection, ArticleContent } from '@/types/article'
 import ProductCard from './ProductCard'
 import ComparisonTable from './ComparisonTable'
@@ -20,6 +21,7 @@ import ImageSection from './ImageSection'
 import InteractiveCalculator from './InteractiveCalculator'
 import LiveDataCard from './LiveDataCard'
 import BigStatement from './BigStatement'
+import SectionToolbar from './SectionToolbar'
 
 interface Props {
   sections: ArticleSection[]
@@ -61,6 +63,9 @@ function isChartDataCard(section: ArticleSection): boolean {
   return ds === 'yahoo_finance' || ds === 'google_trends'
 }
 
+// Section types that should NOT get the edit/remove toolbar
+const NO_TOOLBAR_TYPES = new Set(['sources', 'further_reading'])
+
 export default function SectionRenderer({
   sections,
   animated = false,
@@ -72,6 +77,47 @@ export default function SectionRenderer({
   onSetPrimaryImage,
   onArticleUpdated,
 }: Props) {
+  const [removingSection, setRemovingSection] = useState<number | null>(null)
+  const [editingSection, setEditingSection] = useState<number | null>(null)
+
+  const handleRemoveSection = useCallback(async (sectionIndex: number) => {
+    if (!articleId) return
+    setRemovingSection(sectionIndex)
+    try {
+      const res = await fetch(`/api/articles/${articleId}/section-edit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'remove', sectionIndex }),
+      })
+      if (!res.ok) throw new Error('Failed to remove section')
+      const data = await res.json()
+      onArticleUpdated?.(data.article)
+    } catch (err) {
+      console.error('[section-remove]', err)
+    } finally {
+      setRemovingSection(null)
+    }
+  }, [articleId, onArticleUpdated])
+
+  const handleEditSection = useCallback(async (sectionIndex: number, instruction: string) => {
+    if (!articleId) return
+    setEditingSection(sectionIndex)
+    try {
+      const res = await fetch(`/api/articles/${articleId}/section-edit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'edit', sectionIndex, instruction }),
+      })
+      if (!res.ok) throw new Error('Failed to edit section')
+      const data = await res.json()
+      onArticleUpdated?.(data.article)
+    } catch (err) {
+      console.error('[section-edit]', err)
+    } finally {
+      setEditingSection(null)
+    }
+  }, [articleId, onArticleUpdated])
+
   // Pre-process: group consecutive Polymarket cards for grid layout
   const elements: React.ReactNode[] = []
   let i = 0
@@ -236,8 +282,29 @@ export default function SectionRenderer({
     if (inner) {
       // Add extra bottom margin after live data cards so they don't crowd the next heading
       const extraClass = section.type === 'live_data_card' ? ' mb-8' : ''
+      const sectionIdx = i // capture for closure
+      const showToolbar = isAdmin && articleId && !NO_TOOLBAR_TYPES.has(section.type)
+      const isBeingRemoved = removingSection === sectionIdx
+      const isBeingEdited = editingSection === sectionIdx
+
       elements.push(
-        <div key={i} id={`section-${i}`} className={`${className}${extraClass}`} style={style}>
+        <div
+          key={i}
+          id={`section-${i}`}
+          className={`${className}${extraClass} ${showToolbar ? 'group/section relative' : ''}`}
+          style={{
+            ...style,
+            ...(isBeingRemoved ? { opacity: 0, transition: 'opacity 0.3s ease' } : {}),
+          }}
+        >
+          {showToolbar && (
+            <SectionToolbar
+              sectionIndex={sectionIdx}
+              onRemove={handleRemoveSection}
+              onEdit={handleEditSection}
+              isEditing={isBeingEdited}
+            />
+          )}
           {inner}
         </div>
       )

@@ -522,6 +522,7 @@ export async function refineWithGemini(
   instruction: string,
   optionsPrompt: string,
   articleId?: string,
+  researchContext?: string,
 ): Promise<{ article: ArticleContent; suggestion_chips: { refinements: string[]; related: string[] } }> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY
   if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY not set')
@@ -530,16 +531,29 @@ export async function refineWithGemini(
   const currentYear = new Date().getFullYear()
   const systemPrompt = getWritingPrompt(currentDate, currentYear)
 
-  const userMessage = `Refine this article. Apply the instruction below and return the FULL updated article as valid JSON.
+  const researchBlock = researchContext
+    ? `\n\nORIGINAL RESEARCH FINDINGS (use these as factual source material when adding or replacing content — do NOT hallucinate product names, specs, or claims):\n${researchContext}`
+    : ''
+
+  const userMessage = `You are making a SURGICAL EDIT to an existing article. Apply ONLY the specific change requested below. This is critical — you must preserve everything the user did not ask to change.
+
+RULES FOR REFINEMENT:
+1. Do NOT change the article title unless the user explicitly asks for a title change.
+2. Do NOT change the article_type field. Ever.
+3. Do NOT rewrite sections that are not affected by the user's instruction. Copy them exactly as-is.
+4. Do NOT remove products, sections, or content unless the user explicitly asks for their removal.
+5. Do NOT rephrase, reorganise, or "improve" content the user didn't mention.
+6. When adding new content, draw from the research findings provided below — do not invent product names, specifications, prices, or claims.
+7. Preserve all existing text, structure, formatting, component types, and data exactly as written for unchanged sections.
 
 QUERY: ${query}
 REFINEMENT INSTRUCTION: "${instruction}"
-${optionsPrompt}
+${optionsPrompt}${researchBlock}
 
 CURRENT ARTICLE:
 ${JSON.stringify(currentArticle)}
 
-Apply the refinement and return the full updated article JSON. Also include a "suggestion_chips" key at the top level with new contextually relevant suggestions. IMPORTANT: The current year is ${currentYear} — if any suggestion includes a year, use ${currentYear}, never 2024 or 2025.
+Apply ONLY the requested change and return the full updated article JSON. All sections not affected by the instruction must be identical to the input. Also include a "suggestion_chips" key at the top level with new contextually relevant suggestions. IMPORTANT: The current year is ${currentYear} — if any suggestion includes a year, use ${currentYear}, never 2024 or 2025.
 {
   ...article fields...,
   "suggestion_chips": {

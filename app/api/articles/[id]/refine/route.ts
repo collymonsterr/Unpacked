@@ -223,13 +223,54 @@ export async function POST(
       finalInstruction += `\n\nThe user has uploaded an image. The image URL is: ${imageUrl}. Insert this image into the article at the location specified in their instruction. Use an image_section component in the article JSON with this URL, layout "single", and the source set to "user_upload". If the user didn't specify a location, place it in the most contextually appropriate section.`
     }
 
+    // Build research context so the refine model has factual grounding
+    const findings = (row.research_findings ?? []) as Array<{ source: string; content: string }>
+    const researchContext = findings.length > 0
+      ? findings.slice(0, 15).map(f => `[${f.source}]\n${f.content}`).join('\n\n---\n\n')
+      : undefined
+
     const { article: refined, suggestion_chips } = await refineArticle(
       row.query,
       row.article,
       finalInstruction,
       storedOptions,
-      id
+      id,
+      researchContext
     )
+
+    // ── Title mutation safeguard ──
+    // Unless the user explicitly asked for a title change, revert to original
+    const originalTitle = row.article.title
+    const titleKeywords = /\b(title|rename|headline|name|call it|retitle)\b/i
+    if (refined.title !== originalTitle && !titleKeywords.test(instruction ?? '')) {
+      console.warn(`[refine] Title mutation blocked: "${refined.title}" → reverted to "${originalTitle}" (instruction: "${instruction?.slice(0, 80)}")`)
+      refined.title = originalTitle
+    }
+
+    // ── Structural diff check ──
+    // Warn if >50% of sections changed when user asked for a small edit
+    const originalSections = row.article.sections ?? []
+    const refinedSections = refined.sections ?? []
+    if (originalSections.length > 0) {
+      let changedCount = 0
+      const minLen = Math.min(originalSections.length, refinedSections.length)
+      for (let s = 0; s < minLen; s++) {
+        if (JSON.stringify(originalSections[s]) !== JSON.stringify(refinedSections[s])) {
+          changedCount++
+        }
+      }
+      // Count added/removed sections as changes
+      changedCount += Math.abs(originalSections.length - refinedSections.length)
+      const changeRatio = changedCount / originalSections.length
+      if (changeRatio > 0.5) {
+        console.warn(`[refine] High drift: ${changedCount}/${originalSections.length} sections changed (${Math.round(changeRatio * 100)}%) for instruction: "${instruction?.slice(0, 80)}"`)
+      }
+    }
+
+    // ── Preserve article_type ──
+    if (row.article.article_type) {
+      refined.article_type = row.article.article_type
+    }
 
     const enriched = await enrichArticleWithImages(refined, row.plan?.entities ?? [])
 
@@ -249,6 +290,10 @@ export async function POST(
         plan: row.plan,
         article: enriched,
         suggestion_chips,
+        research_findings: row.research_findings,
+        entity_cards: row.entity_cards,
+        research_synthesis: row.research_synthesis,
+        live_data: row.live_data,
         user_id: row.user_id,
         user_name: row.user_name,
         user_avatar: row.user_avatar,

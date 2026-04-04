@@ -1239,7 +1239,8 @@ export async function refineArticle(
   currentArticle: ArticleContent,
   instruction: string,
   options?: GenOptions,
-  articleId?: string
+  articleId?: string,
+  researchContext?: string,
 ): Promise<{ article: ArticleContent; suggestion_chips: { refinements: string[]; related: string[] } }> {
   if (articleId && isDuplicateCall(articleId, 'refine')) {
     throw new Error('Duplicate refinement call blocked')
@@ -1250,7 +1251,7 @@ export async function refineArticle(
   // Try Gemini Flash first (much cheaper: ~$0.02 vs ~$0.40)
   try {
     const { refineWithGemini } = await import('@/lib/gemini-writer')
-    const result = await refineWithGemini(query, currentArticle, instruction, optionsPrompt, articleId)
+    const result = await refineWithGemini(query, currentArticle, instruction, optionsPrompt, articleId, researchContext)
     return {
       article: stripCitations(result.article),
       suggestion_chips: result.suggestion_chips,
@@ -1258,6 +1259,10 @@ export async function refineArticle(
   } catch (geminiErr) {
     console.warn('[refine] Gemini Flash failed — falling back to Sonnet:', (geminiErr as Error).message)
   }
+
+  const researchBlock = researchContext
+    ? `\n\nORIGINAL RESEARCH FINDINGS (use as factual source material — do NOT hallucinate):\n${researchContext}`
+    : ''
 
   // Fallback: Claude Sonnet
   const model = 'claude-sonnet-4-20250514'
@@ -1268,14 +1273,24 @@ export async function refineArticle(
     messages: [
       {
         role: 'user',
-        content: `You previously wrote this article for the query: "${query}"
+        content: `You are making a SURGICAL EDIT to an existing article. Apply ONLY the specific change requested below.
+
+RULES FOR REFINEMENT:
+1. Do NOT change the article title unless the user explicitly asks for a title change.
+2. Do NOT change the article_type field. Ever.
+3. Do NOT rewrite sections that are not affected by the user's instruction. Copy them exactly as-is.
+4. Do NOT remove products, sections, or content unless the user explicitly asks for their removal.
+5. Do NOT rephrase, reorganise, or "improve" content the user didn't mention.
+6. When adding new content, draw from the research findings below — do not invent product names, specs, or claims.
+7. Preserve all existing text, structure, formatting, and data exactly as written for unchanged sections.
+
+Query: "${query}"
+Refinement instruction: "${instruction}"${optionsPrompt}${researchBlock}
 
 Current article:
 ${JSON.stringify(currentArticle, null, 2)}
 
-Refinement instruction: "${instruction}"${optionsPrompt}
-
-Apply the refinement and return the full updated article JSON. Also append a "suggestion_chips" key at the top level (outside the article structure) with new contextually relevant suggestions. IMPORTANT: The current year is ${new Date().getFullYear()} — if any suggestion includes a year, use ${new Date().getFullYear()}, never 2024 or 2025.
+Apply ONLY the requested change and return the full updated article JSON. All sections not affected by the instruction must be identical to the input. Also append a "suggestion_chips" key at the top level with new contextually relevant suggestions. IMPORTANT: The current year is ${new Date().getFullYear()} — if any suggestion includes a year, use ${new Date().getFullYear()}, never 2024 or 2025.
 {
   ...article fields...,
   "suggestion_chips": {
