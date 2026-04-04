@@ -19,6 +19,8 @@ interface RedditThread {
   title: string
   url: string
   subreddit: string
+  num_comments?: number
+  score?: number
 }
 
 interface ResearchFinding {
@@ -79,6 +81,84 @@ function sanitizeSnippet(text: string): string {
   return text.replace(/"/g, "'").replace(/\\/g, '/')
 }
 
+const MIN_REDDIT_COMMENTS = 10
+
+/**
+ * Fetch metadata for a Reddit thread via public JSON API.
+ * Returns num_comments and score, or null on failure.
+ */
+async function fetchRedditMetadata(url: string): Promise<{ num_comments: number; score: number } | null> {
+  try {
+    // Normalize URL: strip trailing slash, query params, append .json
+    let cleanUrl = url.split('?')[0].replace(/\/+$/, '')
+    // Remove existing .json if present
+    cleanUrl = cleanUrl.replace(/\.json$/, '')
+    const jsonUrl = `${cleanUrl}.json`
+
+    const res = await fetch(jsonUrl, {
+      headers: { 'User-Agent': 'Unpacked/1.0' },
+      signal: AbortSignal.timeout(5000),
+    })
+    if (!res.ok) return null
+
+    const data = await res.json()
+    // Reddit returns an array — first element is the post listing
+    const postData = data?.[0]?.data?.children?.[0]?.data
+    if (!postData) return null
+
+    return {
+      num_comments: postData.num_comments ?? 0,
+      score: postData.score ?? 0,
+    }
+  } catch {
+    // Don't block pipeline on metadata failure
+    return null
+  }
+}
+
+/**
+ * Enrich Reddit threads with metadata and filter by comment count.
+ * Fetches .json for each thread sequentially with 200ms delay.
+ * If all threads fail the filter, keeps the one with the highest comment count.
+ */
+async function enrichAndFilterRedditThreads(threads: RedditThread[]): Promise<RedditThread[]> {
+  if (threads.length === 0) return []
+
+  const enriched: RedditThread[] = []
+
+  for (let i = 0; i < threads.length; i++) {
+    if (i > 0) {
+      // 200ms delay between requests to avoid Reddit rate limiting
+      await new Promise(resolve => setTimeout(resolve, 200))
+    }
+
+    const meta = await fetchRedditMetadata(threads[i].url)
+    if (meta) {
+      enriched.push({ ...threads[i], num_comments: meta.num_comments, score: meta.score })
+    } else {
+      // Metadata fetch failed — include thread without filtering (benefit of the doubt)
+      enriched.push(threads[i])
+    }
+  }
+
+  // Apply 10-comment minimum filter
+  const passing = enriched.filter(t => {
+    if (t.num_comments === undefined) return true // no metadata — include anyway
+    if (t.num_comments >= MIN_REDDIT_COMMENTS) return true
+    console.log(`[brave-research] Discarded ${t.subreddit} thread (${t.num_comments} comments) — below ${MIN_REDDIT_COMMENTS}-comment minimum`)
+    return false
+  })
+
+  // If ALL threads were filtered out, keep the best one
+  if (passing.length === 0 && enriched.length > 0) {
+    const best = enriched.reduce((a, b) => ((a.num_comments ?? 0) >= (b.num_comments ?? 0) ? a : b))
+    console.warn(`[brave-research] All Reddit threads below ${MIN_REDDIT_COMMENTS} comments — keeping best (${best.num_comments ?? '?'} comments in ${best.subreddit})`)
+    return [best]
+  }
+
+  return passing
+}
+
 function generateSearchQueries(
   query: string,
   entities: { name: string }[],
@@ -118,10 +198,10 @@ function generateSearchQueries(
 
 export { type SearchResult, type ResearchOutput, type ResearchFinding }
 
-export function compileResearch(
+export async function compileResearch(
   allResults: Map<string, SearchResult[]>,
   entities: { name: string }[],
-): ResearchOutput {
+): Promise<ResearchOutput> {
   const sources: { title: string; url: string }[] = []
   const seenUrls = new Set<string>()
   const allFindings: ResearchFinding[] = []
@@ -270,32 +350,37 @@ export function compileResearch(
     parts.push('')
   }
 
-  // Extract Reddit threads from sources
-  const redditThreads: RedditThread[] = []
+  // Extract Reddit threads from sources + enrich with metadata + filter
+  let redditThreads: RedditThread[] = []
   try {
+    const rawThreads: RedditThread[] = []
     for (const s of sources) {
       if (!s.url.includes('reddit.com')) continue
-      if (redditThreads.length >= 5) break
+      if (rawThreads.length >= 5) break
 
       // Extract subreddit from URL: /r/subreddit/
       const subMatch = s.url.match(/\/r\/([^/]+)/)
       const subreddit = subMatch ? `r/${subMatch[1]}` : 'Reddit'
 
-      redditThreads.push({
+      rawThreads.push({
         title: s.title,
         url: s.url,
         subreddit,
       })
     }
+
+    // Fetch metadata and filter by comment count
+    redditThreads = await enrichAndFilterRedditThreads(rawThreads)
   } catch {
     // Never fail research because of Reddit extraction
   }
 
-  // Reddit threads section
+  // Reddit threads section (include comment count for writer credibility)
   if (redditThreads.length > 0) {
     parts.push('REDDIT THREADS:')
     for (const t of redditThreads) {
-      parts.push(`- [${t.subreddit}] ${sanitizeSnippet(t.title)} — ${t.url}`)
+      const commentInfo = t.num_comments ? ` (${t.num_comments} comments)` : ''
+      parts.push(`- [${t.subreddit}]${commentInfo} ${sanitizeSnippet(t.title)} — ${t.url}`)
     }
     parts.push('')
   }
@@ -417,7 +502,7 @@ export async function runBraveResearch(
     }
   }
 
-  const research = compileResearch(allResults, entities)
+  const research = await compileResearch(allResults, entities)
   console.log(`[brave-research] Complete: ${research.searchCount} searches, ~${research.tokenEstimate} tokens, ${research.sources.length} sources`)
 
   return research

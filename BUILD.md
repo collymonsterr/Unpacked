@@ -165,6 +165,7 @@ Four distinct components in `components/sections/LiveDataCard.tsx`, auto-selecte
 - Haiku synthesis replaces flat research summaries
 - Brave web + Reddit + live data all parallel
 - `sanitizeSnippet()` in brave-research.ts prevents JSON failures from unescaped content
+- **Reddit thread quality filter**: fetches `.json` metadata for each Reddit thread URL (public API, no auth). Discards threads with fewer than 10 comments. If all threads fail the filter, keeps the one with the highest comment count. 200ms delay between metadata fetches to avoid Reddit rate limits. Comment count (`num_comments`) and score passed through to plan page sentiment display, article JSON, and writing phase for credibility ("In a thread with 47 comments on r/MechanicalKeyboards...").
 
 ---
 

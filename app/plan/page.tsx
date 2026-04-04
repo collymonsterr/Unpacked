@@ -34,6 +34,7 @@ interface RedditThread {
   url: string
   subreddit: string
   upvotes?: number
+  num_comments?: number
   comment_text?: string
   body?: string
   top_comment?: string
@@ -191,13 +192,14 @@ function extractFindings(research: PlanData['research']): Array<{ text: string; 
 }
 
 // ═══ Helper: extract Reddit sentiment ═══
-function extractRedditSentiment(threads: RedditThread[]): Array<{ quote: string; subreddit: string; upvotes?: number }> {
+function extractRedditSentiment(threads: RedditThread[]): Array<{ quote: string; subreddit: string; upvotes?: number; num_comments?: number }> {
   return threads
     .filter(t => (t.comment_text || t.body || t.top_comment || t.title)?.length > 20)
     .map(t => ({
       quote: (t.comment_text || t.top_comment || t.body || t.title).slice(0, 200),
       subreddit: t.subreddit || 'reddit',
       upvotes: t.upvotes ?? t.score,
+      num_comments: t.num_comments,
     }))
     .slice(0, 5)
 }
@@ -567,7 +569,7 @@ function PlanPageContent() {
         if (i < 3) return !removedSentiment.has(i)
         return promotedSentiment.has(i)
       })
-      .map(s => `"${s.quote}" — r/${s.subreddit}${s.upvotes ? ` (${s.upvotes} upvotes)` : ''}`)
+      .map(s => `"${s.quote}" — r/${s.subreddit}${s.num_comments ? ` (${s.num_comments} comments)` : ''}${s.upvotes ? ` (${s.upvotes} upvotes)` : ''}`)
 
     // Build the editorial brief for the blueprint prompt
     const editorialBrief = [
@@ -963,7 +965,7 @@ function PlanPageContent() {
                           &ldquo;{s.quote}&rdquo;
                         </p>
                         <p className="text-[11px] mt-1" style={{ color: 'var(--text-secondary)' }}>
-                          r/{s.subreddit}{s.upvotes ? ` · ${s.upvotes} upvotes` : ''}
+                          r/{s.subreddit}{s.num_comments ? ` · ${s.num_comments} comments` : ''}{s.upvotes ? ` · ${s.upvotes} upvotes` : ''}
                         </p>
                       </div>
                     </RemovableItem>
@@ -986,7 +988,7 @@ function PlanPageContent() {
                             &ldquo;{s.quote}&rdquo;
                           </p>
                           <p className="text-[11px] mt-1" style={{ color: 'var(--text-secondary)' }}>
-                            r/{s.subreddit}{s.upvotes ? ` · ${s.upvotes} upvotes` : ''}
+                            r/{s.subreddit}{s.num_comments ? ` · ${s.num_comments} comments` : ''}{s.upvotes ? ` · ${s.upvotes} upvotes` : ''}
                             {!isPromoted && <span style={{ color: '#BA7517', marginLeft: '6px' }}>Click to include</span>}
                           </p>
                         </div>

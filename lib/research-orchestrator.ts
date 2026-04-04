@@ -48,8 +48,8 @@ export interface OrchestratedResearchResult {
   searchCount: number
   /** Unique sources found */
   sources: Array<{ title: string; url: string }>
-  /** Reddit threads found */
-  redditThreads: Array<{ title: string; url: string; subreddit: string }>
+  /** Reddit threads found (enriched with metadata when available) */
+  redditThreads: Array<{ title: string; url: string; subreddit: string; num_comments?: number; score?: number }>
   /** All structured findings */
   findings: ResearchFinding[]
   /** Structured entity cards extracted from findings */
@@ -93,7 +93,7 @@ export async function executeResearch(
   }
 
   // ── Step 2: Compile into structured findings + summary ──
-  const compiled = compileResearch(allResults, plan.entities ?? [])
+  const compiled = await compileResearch(allResults, plan.entities ?? [])
 
   // ── Step 3: Extract entity cards (sync, pure) ──
   const entityStart = Date.now()

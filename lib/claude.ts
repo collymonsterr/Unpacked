@@ -279,7 +279,7 @@ For articles categorised as 'current_affairs' or with article types 'news_analys
 3. EXPERT ANALYSIS query (purpose: 'expert_analysis'): "[core topic] analysis expert criticism" — finds think tank papers, economist commentary, opposing viewpoints for tension and depth.
 Do NOT add these for buyer guides, how-to, comparisons, or product-focused content.
 
-For reddit_queries: generate 1-3 Reddit search queries with targeted subreddits. Examples:
+For reddit_queries: generate 1-3 Reddit search queries with targeted subreddits. Target specific active subreddits where possible — instead of generic queries like "best macro keyboards reddit", use targeted queries like "macro keyboard recommendations" with subreddits: ["MechanicalKeyboards"] or "macro pad vs stream deck" with subreddits: ["productivity"]. Reference subreddits known to be active for the article's category. Prefer large, active subreddits (50k+ members) for higher-quality threads with real discussion. Examples:
 - "best wireless earbuds" → subreddits: ["headphones", "audiophile", "BudgetAudiophile"]
 - "should I buy or lease a car" → subreddits: ["personalfinance", "askcarsales", "whatcarshouldIbuy"]
 - "Iran Strait of Hormuz" → subreddits: ["worldnews", "geopolitics", "economics"]

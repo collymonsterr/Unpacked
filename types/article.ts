@@ -240,7 +240,7 @@ export interface CommunityInsights {
   consensus: 'strong' | 'mixed' | 'divided'
   consensus_summary: string
   insights: Array<{ source: string; summary: string; sentiment: 'positive' | 'negative' | 'mixed' }>
-  reddit_threads?: Array<{ title: string; url: string; subreddit: string }>
+  reddit_threads?: Array<{ title: string; url: string; subreddit: string; num_comments?: number; score?: number }>
   quotes?: Array<{ text: string; source: string }>
 }
 
