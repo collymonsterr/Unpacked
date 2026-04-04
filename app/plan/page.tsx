@@ -101,17 +101,49 @@ const PLAN_MESSAGES = [
   'Generating angles...',
 ]
 
+// ═══ Helper: sanitize description text from research ═══
+function sanitizeDescription(raw: string): string {
+  if (!raw) return ''
+  let text = raw
+  // Decode HTML entities
+  text = text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
+  // Remove first-person Reddit-style text
+  text = text.replace(/^(I |My |We |IMO |IMHO |Personally,?\s)/i, '')
+  text = text.replace(/\b(I think|I believe|I've found|I use|I bought|my wife|my husband)\b/gi, '')
+  // Remove markdown artifacts
+  text = text.replace(/\*\*/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+  // Clean up excess whitespace
+  text = text.replace(/\s{2,}/g, ' ').trim()
+  // Take first sentence only (up to 100 chars)
+  const firstSentence = text.match(/^[^.!?]+[.!?]/)
+  if (firstSentence && firstSentence[0].length <= 100) {
+    text = firstSentence[0]
+  } else {
+    text = text.slice(0, 80)
+    // Don't cut mid-word
+    const lastSpace = text.lastIndexOf(' ')
+    if (lastSpace > 40) text = text.slice(0, lastSpace)
+  }
+  return text.trim()
+}
+
+// ═══ Helper: clean price string ═══
+function cleanPrice(raw: string): string | undefined {
+  const match = raw.match(/[\$£€][\d,.]+/)
+  return match?.[0] ?? undefined
+}
+
 // ═══ Helper: extract products from entity cards ═══
 function extractProducts(entityCards: PlanData['research']['entityCards']): Array<{ name: string; description: string; price?: string }> {
   return entityCards
     .filter(e => e.type === 'product' || e.type === 'service' || e.type === 'tool' || e.type === 'device')
     .map(e => {
-      const priceFact = e.facts.find(f => /price|cost|\$/i.test(f.claim))
-      const descFact = e.facts.find(f => !/price|cost|\$/i.test(f.claim))
+      const priceFact = e.facts.find(f => /price|cost|\$|£|€/i.test(f.claim))
+      const descFact = e.facts.find(f => !/price|cost|\$|£|€/i.test(f.claim))
       return {
         name: e.canonical_name,
-        description: descFact?.claim ?? '',
-        price: priceFact?.claim?.match(/\$[\d,.]+/)?.[0] ?? undefined,
+        description: sanitizeDescription(descFact?.claim ?? ''),
+        price: priceFact ? cleanPrice(priceFact.claim) : undefined,
       }
     })
     .slice(0, 8)
@@ -170,14 +202,33 @@ function extractRedditSentiment(threads: RedditThread[]): Array<{ quote: string;
     .slice(0, 5)
 }
 
-// ═══ Type Tooltip Component ═══
+// ═══ Type Tooltip Component (click/tap + hover) ═══
 function TypeTooltip({ type, children }: { type: string; children: React.ReactNode }) {
   const [show, setShow] = useState(false)
+  const ref = useRef<HTMLSpanElement>(null)
   const info = TYPE_DESCRIPTIONS[type] ?? { name: type.replace(/_/g, ' '), description: '', tags: [] }
+
+  // Close on outside click/tap
+  useEffect(() => {
+    if (!show) return
+    function handleOutside(e: MouseEvent | TouchEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setShow(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutside)
+    document.addEventListener('touchstart', handleOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleOutside)
+      document.removeEventListener('touchstart', handleOutside)
+    }
+  }, [show])
 
   return (
     <span
+      ref={ref}
       className="relative inline-block"
+      onClick={(e) => { e.stopPropagation(); setShow(prev => !prev) }}
       onMouseEnter={() => setShow(true)}
       onMouseLeave={() => setShow(false)}
     >
@@ -687,7 +738,7 @@ function PlanPageContent() {
             {/* ─── SECTION: Angle Selection ─── */}
             <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
               <div className="p-6">
-                <SectionHeader label="Choose your angle" count={`${angles.length} options`} />
+                <SectionHeader label="Choose your angle" count={`${angles.length} ${angles.length === 1 ? 'option' : 'options'}`} />
                 <div className="space-y-3">
                   {angles.map((angle, i) => (
                     <button
@@ -743,7 +794,7 @@ function PlanPageContent() {
                         <button
                           key={`${selectedAngle}-${i}`}
                           onClick={() => toggleScopePill(i)}
-                          className="text-xs font-medium px-3 py-1.5 transition-all duration-150"
+                          className="text-xs font-medium px-3 py-2 min-h-[44px] flex items-center transition-all duration-150"
                           style={{
                             borderRadius: '8px',
                             backgroundColor: isActive ? '#FDF8F0' : '#fff',
@@ -948,7 +999,7 @@ function PlanPageContent() {
 
             {/* ─── SECTION: Length & Tone ─── */}
             <div className="rounded-2xl p-6" style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-              <div className="grid grid-cols-2 gap-6 items-start" style={{ borderBottom: 'none' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start" style={{ borderBottom: 'none' }}>
                 {/* Length column */}
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: '#BA7517', fontFamily: 'var(--font-outfit)', letterSpacing: '0.06em' }}>

@@ -201,6 +201,8 @@ For each angle, provide:
 - questions: exactly 5 specific questions this article would answer, relevant to this angle's article type. A buyer guide asks product comparison questions. An explainer asks "how does X work" questions. A trend analysis asks "what's actually happening with..." questions. Make them concrete, not generic.
 - scope_pills: 4-5 short phrases (2-5 words each) representing meaningful ways the user could narrow or redirect this specific angle. A buyer guide might offer "Under $150", "Best for meetings", "Wireless only". An explainer might offer "For beginners", "EU regulation focus", "Technical deep dive". A news analysis might offer "Last 7 days only", "US perspective", "Economic impact". Each pill should be relevant to this angle's article type.
 
+CRITICAL: You MUST return exactly 3 angles. Not 1, not 2 — exactly 3. Each must use a different article_type.
+
 Return ONLY a JSON array of exactly 3 objects with fields: headline, article_type, pitch, questions (array of 5 strings), scope_pills (array of 4-5 strings).`
 
   const anthropic = getAnthropic()
@@ -233,11 +235,31 @@ Return ONLY a JSON array of exactly 3 objects with fields: headline, article_typ
   }
 
   // Validate and clean each angle
-  return parsed.slice(0, 3).map(angle => ({
+  const cleaned = parsed.slice(0, 3).map(angle => ({
     headline: angle.headline || 'Untitled',
     article_type: angle.article_type || plan.article_type,
     pitch: angle.pitch || '',
     questions: Array.isArray(angle.questions) ? angle.questions.slice(0, 5).filter(Boolean) : [],
     scope_pills: Array.isArray(angle.scope_pills) ? angle.scope_pills.slice(0, 5).filter(Boolean) : [],
   }))
+
+  // Guarantee exactly 3 angles — pad with fallbacks if LLM returned fewer
+  while (cleaned.length < 3) {
+    const idx = cleaned.length
+    const fallbackTypes = ['explainer', 'deep_dive', 'trend_analysis']
+    const fallbackType = fallbackTypes[idx % fallbackTypes.length] ?? plan.article_type
+    cleaned.push({
+      headline: idx === 1
+        ? `${query}: What You Need to Know`
+        : `The Complete Picture on ${query}`,
+      article_type: fallbackType,
+      pitch: `A ${fallbackType.replace(/_/g, ' ')} covering the key facts and data from ${research.findings?.length ?? 0} sources.`,
+      questions: (plan.sections_outline ?? []).slice(0, 5).map((s: string) =>
+        s.endsWith('?') ? s : `What about ${s.toLowerCase()}?`
+      ),
+      scope_pills: Array.isArray(plan.suggestion_chips) ? (plan.suggestion_chips as string[]).slice(0, 5) : [],
+    })
+  }
+
+  return cleaned
 }

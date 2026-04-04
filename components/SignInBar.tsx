@@ -60,6 +60,12 @@ export default function SignInBar() {
             </>
           )}
         </button>
+        <p className="text-[10px] mt-2 text-center" style={{ color: 'var(--text-secondary)', opacity: 0.5, lineHeight: 1.4 }}>
+          By signing in, you agree to our{' '}
+          <a href="/terms" target="_blank" className="underline" style={{ color: 'var(--text-secondary)' }}>Terms</a>
+          {' '}and{' '}
+          <a href="/privacy" target="_blank" className="underline" style={{ color: 'var(--text-secondary)' }}>Privacy Policy</a>.
+        </p>
       </div>
     </div>
   )

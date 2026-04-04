@@ -130,6 +130,14 @@ export default function SignInGate({ articleId, onDismiss }: Props) {
         <p className="text-xs mt-4" style={{ color: 'var(--text-secondary)', opacity: 0.6 }}>
           It only takes 2 seconds.
         </p>
+
+        {/* Terms agreement */}
+        <p className="text-[11px] mt-3" style={{ color: 'var(--text-secondary)', opacity: 0.5, lineHeight: 1.5 }}>
+          By signing in, you agree to our{' '}
+          <a href="/terms" target="_blank" className="underline" style={{ color: 'var(--text-secondary)' }}>Terms of Service</a>
+          {' '}and{' '}
+          <a href="/privacy" target="_blank" className="underline" style={{ color: 'var(--text-secondary)' }}>Privacy Policy</a>.
+        </p>
       </div>
     </div>
   )

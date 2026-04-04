@@ -419,7 +419,87 @@ export default function ProfileSettingsPage() {
             </a>
           </div>
         )}
+
+        {/* ─── Delete Account Section ─── */}
+        <DeleteAccountSection />
       </div>
+    </div>
+  )
+}
+
+function DeleteAccountSection() {
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+
+  async function handleDelete() {
+    setDeleting(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/profile/delete', { method: 'POST' })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error ?? 'Failed to delete account')
+      }
+      // Clear local storage and redirect
+      try { localStorage.clear() } catch { /* ignore */ }
+      router.push('/')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <div className="mt-12 pt-8" style={{ borderTop: '1px solid var(--border)' }}>
+      <p
+        className="text-xs font-semibold uppercase tracking-widest mb-2"
+        style={{ color: '#dc2626' }}
+      >
+        Danger Zone
+      </p>
+      <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+        Deleting your account will make all your articles private and remove your profile data.
+        This action cannot be undone.
+      </p>
+
+      {!showConfirm ? (
+        <button
+          onClick={() => setShowConfirm(true)}
+          className="px-4 py-2 rounded-lg text-sm font-medium transition-opacity"
+          style={{ color: '#dc2626', border: '1px solid #fca5a5', backgroundColor: 'transparent', cursor: 'pointer' }}
+        >
+          Delete my account
+        </button>
+      ) : (
+        <div className="rounded-xl p-4" style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5' }}>
+          <p className="text-sm font-medium mb-3" style={{ color: '#dc2626' }}>
+            Are you sure? This is permanent.
+          </p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="px-4 py-2 rounded-lg text-sm font-semibold transition-opacity disabled:opacity-50"
+              style={{ backgroundColor: '#dc2626', color: '#fff', cursor: 'pointer', border: 'none' }}
+            >
+              {deleting ? 'Deleting...' : 'Yes, delete everything'}
+            </button>
+            <button
+              onClick={() => { setShowConfirm(false); setError(null) }}
+              disabled={deleting}
+              className="px-4 py-2 rounded-lg text-sm font-medium"
+              style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)', cursor: 'pointer', backgroundColor: 'transparent' }}
+            >
+              Cancel
+            </button>
+          </div>
+          {error && (
+            <p className="text-xs mt-2" style={{ color: '#dc2626' }}>{error}</p>
+          )}
+        </div>
+      )}
     </div>
   )
 }

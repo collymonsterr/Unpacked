@@ -432,7 +432,7 @@ Verified absent from codebase as of April 2026:
 - **Views-for-premium mechanic** — not built
 - **Screenshot-proof branding** — not built
 - ~~**Onboarding flow**~~ — **BUILT April 2026.** First-time user hero with example prompt cards, disappears after first article.
-- **Account deletion** — documented in privacy policy but no endpoint or UI exists yet
-- **Sign-in gate terms acceptance** — not built. Terms page exists, but users don't have to accept terms during sign-up flow.
+- ~~**Account deletion**~~ — **BUILT April 2026.** API route `POST /api/profile/delete` + settings page UI with inline confirmation. Sets articles to private, cleans up related tables, deletes profile, signs out.
+- ~~**Sign-in gate terms acceptance**~~ — **BUILT April 2026.** "By signing in, you agree to our Terms of Service and Privacy Policy" line added below Google sign-in button in SignInGate.
 - **New article types** — ranked_list, myth_buster, visual_list, timeline not yet added (still 10 types)
 - **Inline text editing** — parked

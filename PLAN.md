@@ -214,7 +214,7 @@ App Store and Google Play. Apple requires StoreKit for iOS subscriptions.
 4. ~~Category pages → SEO foundation~~ DONE
 5. ~~Plan Mode → user control over article direction~~ DONE
 6. ~~Legal pages → compliance baseline~~ DONE
-7. **Account deletion flow** → GDPR compliance (privacy policy promises it)
+7. ~~Account deletion flow → GDPR compliance~~ DONE
 8. **Stripe** → monetisation foundation
 9. **Seed article regeneration** → 20 curated showcase articles
 10. **Mobile end-to-end testing** → verify all new features on phone
