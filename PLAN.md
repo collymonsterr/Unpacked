@@ -64,16 +64,29 @@ Add to My Articles: views per article (7/30/all time), shares, traffic sources, 
 ### 1D. Referral System
 Unique referral link on signup. 3 free article credits per qualified referral. Track in Supabase. "Invite friends" prompt after first published article.
 
-### 1E. Creator Profile Upgrade
+### 1E. Plan Mode "Reshape" Button
+On the rendered article page, alongside the refine box, a "Reshape" button opens a lightweight version of the plan card. Shows what's currently in the article, what's in the research but wasn't used, and contextual quick-action pills ("Add 3 more products," "Expand comparison table," "Include Reddit sentiment," "Make it longer"). User clicks pills and hits "Rewrite" — triggers a refine pass with structured instructions. Reuses existing research findings and Editor's Notes infrastructure. No new API routes needed.
+
+### 1F. New Article Types (4)
+Add 4 new types to `lib/article-types.ts` (currently 10, becomes 14):
+
+- **ranked_list** — numbered ranking from worst to best, backed by evidence, picks a clear winner. Highly shareable because people disagree with rankings.
+- **myth_buster** — takes common beliefs and debunks them with evidence. Each myth stated boldly then dismantled. Shares well because people want to prove they knew better.
+- **timeline** — chronological entries with dates and narrative. Needs a new visual timeline component. Good for company histories, technology evolution, political situations.
+- **visual_list / photo_essay** — image-first, story-second, repeated N times. Pipeline searches for images per list item. Only works for topics where stock/free images are available (architecture, food, landscapes, products). Not suitable for specific historical events or editorial photography.
+
+Each needs: requiredComponents, allowedComponents, forbiddenComponents, lengthRange, tone, verdictRequired, verdictStyle. Planning prompt and blueprint prompt need type-aware instructions.
+
+### 1G. Creator Profile Upgrade
 Add to profiles table: tagline, avatar_url (upload, not just Google). Article page author block: 40px avatar, prominent name, bio line, links to profile.
 
-### 1F. Voting System Enhancement
+### 1H. Voting System Enhancement
 Admin view of downvote reasons and comments. Quality scoring per article. Composite ranking signals (votes + dwell time + shares + recency).
 
-### ~~1G. Research Companion Tab~~ ALREADY DONE
+### ~~1I. Research Companion Tab~~ ALREADY DONE
 Built as "Editor" tab (EditorCoPilot). `research_findings` persisted as JSONB. Owner sees findings, entity cards, synthesis, blueprint. Can select findings and submit rewrite instructions.
 
-### ~~1H. Plan Mode~~ DONE → UPGRADED to v7 (April 2026)
+### ~~1J. Plan Mode~~ DONE → UPGRADED to v7 (April 2026)
 Full interactive editorial brief. 3 angle options with per-angle questions and scope pills (client-side swapping). Removable/addable findings, products, questions, sentiment. Community sentiment with active/reserve promotion. 2-column length/tone radio cards. "Casual" tone renamed to "Technical" across codebase. Structured editorial brief sent to blueprint. Auth required. 20/hr rate limit, doesn't consume article allowance.
 
 ---
@@ -100,7 +113,10 @@ Blueprint and editorial pass are built. These sessions push quality further.
 ### 3A. GPT-4o-mini A/B Test (conditional)
 50-article blind comparison: current Gemini Flash vs GPT-4o-mini. Only proceed if results prove improvement. Don't change models on assumption.
 
-### 3B. Screenshot-Proof Visual Branding
+### 3B. Engagement-Optimised Headlines
+For every article (not just Plan Mode), the planning step generates 2–3 headline options using proven engagement patterns (numbered, curiosity gap, contrarian, superlative). User picks one in Plan Mode; direct generation uses the best-scoring option automatically. Applies to all article types.
+
+### 3C. Screenshot-Proof Visual Branding
 Unpacked logo and creator attribution baked into verdict boxes, comparison cards, charts. Brand travels with every screenshot.
 
 ---
@@ -194,14 +210,14 @@ App Store and Google Play. Apple requires StoreKit for iOS subscriptions.
 - Twitter/X auto-posting
 - Global search (build at 500+ articles)
 - Multilingual — Spanish/Portuguese first
-- Inline text editing
+- Inline text editing — click a paragraph in the rendered article, it becomes contentEditable, blue border appears, edit, save. Edited sections get a small "Edited — not verified" indicator. Structured component editing (product cards, tables) as a follow-up. Parked until after launch.
 - Tags system
 - White label / Enterprise
 - Metered reading / verdict paywall
 - API access for publishers
 - Full tone matching from uploaded writing samples
-- New article types (ranked_list, myth_buster, visual_list, timeline)
-- Creator challenge / bounty system
+- ~~New article types (ranked_list, myth_buster, visual_list, timeline)~~ → moved to Phase 1F
+- Creator challenge / bounty — $500 prize pool for top creators in first 30 days. $250 for most external views, $150 for most signups driven, $100 wildcard editorial pick. Parked until creator cohort is active.
 - Reddit opportunity monitor
 
 ---
@@ -230,12 +246,12 @@ The product is feature-rich. The gaps are: monetisation (Stripe + affiliates), c
 | Phase | Sessions |
 |-------|---------|
 | Immediate | 6 (quick) |
-| Phase 1 | 7 |
+| Phase 1 | 9 |
 | Phase 2 | 3 |
-| Phase 3 | 2 |
+| Phase 3 | 3 |
 | Phase 4 | 6 |
 | Phase 5 | 6 |
 | Phase 6 | 4 |
 | Phase 7 | 3 |
 | Phase 8 | 2 |
-| **Total** | **~39** |
+| **Total** | **~42** |

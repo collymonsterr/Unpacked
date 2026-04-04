@@ -435,5 +435,6 @@ Verified absent from codebase as of April 2026:
 - ~~**Onboarding flow**~~ — **BUILT April 2026.** First-time user hero with example prompt cards, disappears after first article.
 - ~~**Account deletion**~~ — **BUILT April 2026.** API route `POST /api/profile/delete` + settings page UI with inline confirmation. Sets articles to private, cleans up related tables, deletes profile, signs out.
 - ~~**Sign-in gate terms acceptance**~~ — **BUILT April 2026.** "By signing in, you agree to our Terms of Service and Privacy Policy" line added below Google sign-in button in SignInGate.
-- **New article types** — ranked_list, myth_buster, visual_list, timeline not yet added (still 10 types)
-- **Inline text editing** — parked
+- **New article types** — ranked_list, myth_buster, timeline, visual_list/photo_essay planned in Phase 1F (still 10 types in code)
+- **Inline text editing** — parked until after launch (click-to-edit paragraphs with "Edited — not verified" indicator)
+- **Plan Mode Reshape button** — planned in Phase 1E (lightweight plan card on article page with quick-action pills for structured refine)
