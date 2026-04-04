@@ -72,8 +72,8 @@ Add 4 new types to `lib/article-types.ts` (currently 10, becomes 14):
 
 - **ranked_list** — numbered ranking from worst to best, backed by evidence, picks a clear winner. Highly shareable because people disagree with rankings.
 - **myth_buster** — takes common beliefs and debunks them with evidence. Each myth stated boldly then dismantled. Shares well because people want to prove they knew better.
-- **timeline** — chronological entries with dates and narrative. Needs a new visual timeline component. Good for company histories, technology evolution, political situations.
-- **visual_list / photo_essay** — image-first, story-second, repeated N times. Pipeline searches for images per list item. Only works for topics where stock/free images are available (architecture, food, landscapes, products). Not suitable for specific historical events or editorial photography.
+- **timeline** — chronological entries with dates and narrative. Needs a new visual timeline component with vertical line and date markers. Good for company histories, technology evolution, political situations.
+- **visual_list / photo_essay** — image-first, story-second, repeated N times. Pipeline searches for images per list item. Only works for topics where stock/free images are available (architecture, food, landscapes, products, workspaces, bridges, markets, coastlines). Not suitable for specific historical events, copyrighted artworks, movie/TV content, or editorial photography requiring specific images. Rule of thumb: if any good photo of the subject works, stock APIs can handle it.
 
 Each needs: requiredComponents, allowedComponents, forbiddenComponents, lengthRange, tone, verdictRequired, verdictStyle. Planning prompt and blueprint prompt need type-aware instructions.
 
@@ -92,7 +92,24 @@ Built as "Editor" tab (EditorCoPilot). `research_findings` persisted as JSONB. O
 Full interactive editorial brief. 3 angle options with per-angle questions and scope pills (client-side swapping). Removable/addable findings, products, questions, sentiment. Community sentiment with active/reserve promotion. 2-column length/tone radio cards. "Casual" tone renamed to "Technical" across codebase. Structured editorial brief sent to blueprint. Auth required. 20/hr rate limit, doesn't consume article allowance.
 
 ### 1K. Plan Mode: Scope Pills Re-Research
-Upgrade certain scope pills from filter-only to re-research. Dashed-border pills with ↻ indicator trigger a new planning + research pass with the constraint baked in (~15 seconds). Filter pills remain instant. Visual distinction between the two types already designed. v7 has filter-only pills; this is the next evolution.
+Upgrade certain scope pills from filter-only to re-research. Dashed-border pills with ↻ indicator trigger a new planning + research pass with the constraint baked in (~15 seconds). Filter pills remain instant. Visual distinction between the two types already designed in v7 mockup. v7 has filter-only pills; this is the next evolution.
+
+### 1L. Editor Bar
+Persistent toolbar between article header and first section, visible to article owner only. Replaces First Draft Banner, Editor's Notes nudge, and visibility pulse — one unified control surface. Contains:
+- **Sections** — hover shows education tooltip ("Hover any section to edit or replace"), click scrolls to refine box
+- **Images** — upload/manage hero and section images
+- **Research** — badge count of unused findings, opens Editor's Notes tab
+- **Share** — opens SharePanel
+- **Export** — PDF/CMS export
+- **Visibility** — current status pill (Published/Unlisted/Private), click to change
+
+One line of contextual helper text below that changes based on user actions (e.g. "You have 12 unused research findings → Editor's Notes"). On mobile: labels hide, icons only. Replaces the post-generation education banner if built first.
+
+### 1M. Research Over-Gather
+Increase Brave web searches from 6–10 to 12–15. Increase Reddit searches from 2–3 to 5–8. Extra cost: ~3 cents per article. The surplus research gets stored in `research_findings` JSONB and populates the Editor's Notes tab and section replacement suggestions. Ensures Editor's Notes always has meaningful content even after a good article. Also surface: contrarian viewpoints, alternative products, additional statistics, and related questions from the plan mode questions pool.
+
+### 1N. Post-Generation Education Banner
+Slim banner between article header and first section: "12 unused findings, 3 videos, and 4 alternative products available in Editor's Notes →". One line, muted, dismissible, shows once per article. Superseded by the Editor Bar (1L) — build whichever comes first. If Editor Bar is built, this is unnecessary.
 
 ---
 
@@ -111,6 +128,16 @@ GPT-4o-mini vision evaluates 4–6 candidates. Reject: corporate stock, staged s
 
 ---
 
+## Phase 2D — Media and Video Support
+
+### 2D1. Video Embed Support
+New `video_embed` block type in the article JSON schema. Renders as a responsive 16:9 iframe. Supports YouTube and Vimeo URLs. Two entry points: paste a URL in the refine box with placement instructions, or select from videos surfaced in Editor's Notes. Needs `video_embed` added to `ArticleSection` union type, a `VideoEmbed` component in `components/sections/`, and a case in `SectionRenderer.tsx`.
+
+### 2D2. Video Discovery in Research Phase
+Add `video_queries` field to the Haiku planner (1–2 queries targeting video content). Use Brave's `/videos/search` endpoint during parallel research. Filter: minimum 10,000 views, published within 12 months, YouTube/Vimeo only. Surface found videos in Editor's Notes as "Related videos" section with thumbnail, title, view count, channel name. User clicks "Include" to embed. Don't auto-embed — user-initiated only.
+
+---
+
 ## Phase 3 — Writing Quality
 
 Blueprint and editorial pass are built. These sessions push quality further.
@@ -119,7 +146,7 @@ Blueprint and editorial pass are built. These sessions push quality further.
 50-article blind comparison: current Gemini Flash vs GPT-4o-mini. Only proceed if results prove improvement. Don't change models on assumption.
 
 ### 3B. Engagement-Optimised Headlines
-For every article (not just Plan Mode), the planning step generates 2–3 headline options using proven engagement patterns (numbered, curiosity gap, contrarian, superlative). User picks one in Plan Mode; direct generation uses the best-scoring option automatically. Applies to all article types.
+For every article (not just Plan Mode), the planning step generates 2–3 headline options using proven engagement patterns: numbered lists, curiosity gaps, contrarian framing, superlatives. User picks one in Plan Mode; direct generation uses the best-scoring option automatically. Applies to all article types. Separate from Plan Mode — could be shown in a quick headline picker after generation completes.
 
 ### 3C. Screenshot-Proof Visual Branding
 Unpacked logo and creator attribution baked into verdict boxes, comparison cards, charts. Brand travels with every screenshot.
@@ -147,7 +174,7 @@ Before generation: check for similar existing articles. Non-blocking warning wit
 Monthly view aggregation per creator. 2,000 views = 1 month Standard free, 5,000 = 1 month Pro. Monthly calculation job. Dashboard shows progress.
 
 ### 4G. Reddit Opportunity Monitor
-Admin tab watching 40–60 curated subreddits. Detects rising threads by velocity not just score. Haiku classifies thread type and generates 2–3 suggested article prompts. Alert shows subreddit, thread title, upvote velocity, suggested prompt, one-click generate. Refreshes every 15–30 minutes. Reddit API free tier sufficient.
+Admin tab watching 40–60 curated subreddits across Unpacked's 12 categories. Detects rising threads by velocity not just total score. Haiku classifies thread type and generates 2–3 suggested article prompts. Alert shows subreddit, thread title, upvote velocity, suggested prompt, one-click generate. Refreshes every 15–30 minutes. Reddit API free tier sufficient.
 
 ### 4H. Twitter/X Account Monitoring
 Watch list of accounts in admin. Polls via third-party service (Twilert ~$10–20/month) firing webhook to Unpacked. Haiku extracts topic and generates suggested article prompts. Telegram bot alert with tweet text, prompt suggestions, pre-fill buttons. Manual reply only, no automated posting.
@@ -227,17 +254,17 @@ App Store and Google Play. Apple requires StoreKit for iOS subscriptions.
 - Twitter/X auto-posting
 - Global search (build at 500+ articles)
 - Multilingual — Spanish/Portuguese first
-- Inline text editing — click a paragraph in the rendered article, it becomes contentEditable, blue border appears, edit, save. Edited sections get a small "Edited — not verified" indicator. Structured component editing (product cards, tables) as a follow-up. Parked until after launch.
+- Inline text editing — click a paragraph in the rendered article, it becomes contentEditable, blue border appears, edit, save. Edited sections get a small "Edited — not verified" indicator. Structured component editing (product cards, tables) as a follow-up. Option B upgrade: re-run fact-check on edited sections to restore "Verified" status. Parked until after launch.
 - Tags system
 - White label / Enterprise
 - Metered reading / verdict paywall
 - API access for publishers
 - Full tone matching from uploaded writing samples
 - ~~New article types (ranked_list, myth_buster, visual_list, timeline)~~ → moved to Phase 1F
-- Creator challenge / bounty — $500 prize pool for top creators in first 30 days. $250 for most external views, $150 for most signups driven, $100 wildcard editorial pick. Parked until creator cohort is active.
-- Reddit opportunity monitor — admin tab watching 40–60 curated subreddits. Detects rising threads by velocity not just score. Haiku classifies thread type and generates 2–3 suggested article prompts. Alert shows subreddit, thread title, upvote velocity, suggested prompt, one-click generate. Refreshes every 15–30 minutes. Reddit API free tier sufficient. Parked until admin tooling phase.
-- Twitter/X account monitoring — watch list of accounts in admin. Polls via third-party service (Twilert ~$10–20/month) firing webhook to Unpacked. Haiku extracts topic and generates suggested article prompts. Telegram bot alert with tweet text, prompt suggestions, pre-fill buttons. Manual reply only, no automated posting. Parked until distribution phase.
-- Entertainment/trending content strategy — Google Trends 200%+ spike as trigger for auto-suggested articles. Parked until Reddit opportunity monitor is built.
+- Creator challenge / bounty — $500 prize pool for top creators in first 30 days. $250 for most external views, $150 for most signups driven, $100 wildcard editorial pick by founder. Anti-gaming: unique IP views only, referral signups must generate 1+ article, founder reserves disqualification rights. Parked until creator cohort is active.
+- ~~Reddit opportunity monitor~~ → moved to Phase 4G
+- ~~Twitter/X account monitoring~~ → moved to Phase 4H
+- ~~Entertainment/trending content strategy~~ → moved to Phase 4I
 - Pre-launch "one free article without signup" flow — allow one article generation without requiring Google OAuth. After the first article, require sign-in for subsequent articles. Parked — revisit for pre-launch marketing phase.
 
 ---
@@ -254,6 +281,9 @@ Verify indexes exist on: `articles.category`, `articles.visibility`, `articles.s
 
 ### M3. Admin Env Var Consolidation
 Four env vars doing the same job: `NEXT_PUBLIC_ADMIN_EMAIL`, `NEXT_PUBLIC_ADMIN_USER_ID`, `ADMIN_EMAIL`, `ADMIN_USER_ID`. Consolidate to one source of truth. Server-side routes should use server-only vars; client-side hook uses public var. Eliminate redundancy.
+
+### M4. CommunityInsights Nested `<a>` Tag Bug
+Reddit thread links in `CommunityInsights.tsx` wrap subreddit links, producing `<a>` inside `<a>` — invalid HTML that causes React hydration errors. Fix by restructuring the link hierarchy so subreddit link is a sibling, not a descendant. Pre-existing bug, visible in console on all article pages with Reddit content.
 
 ---
 
@@ -272,7 +302,7 @@ Four env vars doing the same job: `NEXT_PUBLIC_ADMIN_EMAIL`, `NEXT_PUBLIC_ADMIN_
 11. **Pre-launch creator cohort** → real feedback
 12. **Affiliate infrastructure** → revenue
 
-The product is feature-rich. The gaps are: monetisation (Stripe + affiliates), compliance (account deletion), content curation, and distribution.
+The product is feature-rich. The gaps are: monetisation (Stripe + affiliates), content curation, distribution, and creator tooling (Editor Bar, analytics, research over-gather).
 
 ---
 
@@ -281,13 +311,14 @@ The product is feature-rich. The gaps are: monetisation (Stripe + affiliates), c
 | Phase | Sessions |
 |-------|---------|
 | Immediate | 6 (quick) |
-| Phase 1 | 10 |
+| Phase 1 | 13 |
 | Phase 2 | 3 |
+| Phase 2D (Media) | 2 |
 | Phase 3 | 3 |
 | Phase 4 | 9 |
 | Phase 5 | 7 |
 | Phase 6 | 4 |
 | Phase 7 | 3 |
 | Phase 8 | 2 |
-| Maintenance | 3 |
-| **Total** | **~50** |
+| Maintenance | 4 |
+| **Total** | **~56** |
