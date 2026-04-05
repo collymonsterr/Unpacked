@@ -507,7 +507,8 @@ export async function enrichArticleWithImages(
     imageSections.map(async ({ section, idx }) => {
       const enrichedImages = await Promise.all(
         section.images.map(async (img) => {
-          if (!img.search_query) return img
+          // Skip images that already have a URL (e.g. user-uploaded) or have no search query
+          if (!img.search_query || img.image_url) return img
           // Route editorial section images through Pexels/Unsplash → Brave
           const sources = routeImageRequest({
             query: img.search_query,
