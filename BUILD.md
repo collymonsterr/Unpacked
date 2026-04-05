@@ -243,6 +243,7 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 - **Editor tab (EditorCoPilot)** — research findings, entity cards, synthesis, blueprint, live data. Finding selection with checkboxes, "Include selected" action bar (Add/Replace/Automatic modes), source links on findings. Animated badge showing unused findings count.
 - **SharePanel** — 4-tab slide-out (Twitter thread, LinkedIn, Reddit, Image Cards) with copy buttons, character counts, subreddit submit links. Owner-only, lazy-loaded.
 - **Social links** — `twitter_url`, `linkedin_url`, `medium_url` on profiles table. Settings page, API, creator profile, article author block all wired.
+- **Bottom CTA** — conversion block below Related Articles. Three versions: (A) logged-out: pen icon, heading, source-count subline, stats strip, search input + "Unpack it" button, category-contextual example pills; (B) logged-in non-owner: lighter heading, search + pills, fork link ("Write your own take on…"); (C) owner: hidden. Search input navigates to `/?q=...`. 12 category pill sets. Component: `components/ArticleBottomCTA.tsx`.
 
 ---
 

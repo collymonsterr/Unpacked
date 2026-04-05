@@ -28,6 +28,7 @@ import { ARTICLE_TYPE_LABELS } from '@/lib/article-config'
 import { categoryToSlug } from '@/lib/category-config'
 import { useUser } from '@/hooks/useUser'
 import SignInNudge from './ui/SignInNudge'
+import ArticleBottomCTA from './ArticleBottomCTA'
 
 const SharePanel = lazy(() => import('./SharePanel'))
 
@@ -643,6 +644,15 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           articleType={article.article_type}
         />
       </div>
+
+      {/* 6. Bottom CTA — convert readers to creators */}
+      <ArticleBottomCTA
+        isOwner={isOwner}
+        isLoggedIn={!!user}
+        category={articleRow.category ?? null}
+        query={articleRow.query}
+        sourceCount={articleRow.research_preview?.source_count}
+      />
     </div>
 
     {/* Share Panel — owner only, lazy loaded */}
