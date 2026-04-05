@@ -1,6 +1,6 @@
 # PLAN.md — Unpacked Forward Build Plan
 
-Last updated: April 2026 (after full codebase audit)
+Last updated: April 2026 (Build 5 sync — 1F, 1L, 1N marked done)
 
 ---
 
@@ -67,17 +67,8 @@ Unique referral link on signup. 3 free article credits per qualified referral. T
 ### 1E. Plan Mode "Reshape" Button
 On the rendered article page, alongside the refine box, a "Reshape" button opens a lightweight version of the plan card. Shows what's currently in the article, what's in the research but wasn't used, and contextual quick-action pills ("Add 3 more products," "Expand comparison table," "Include Reddit sentiment," "Make it longer"). User clicks pills and hits "Rewrite" — triggers a refine pass with structured instructions. Reuses existing research findings and Editor's Notes infrastructure. No new API routes needed.
 
-### 1F. New Article Types (4)
-Add 4 new types to `lib/article-types.ts` (currently 10, becomes 14):
-
-- **ranked_list** — numbered ranking from worst to best, backed by evidence, picks a clear winner. Highly shareable because people disagree with rankings.
-- **myth_buster** — takes common beliefs and debunks them with evidence. Each myth stated boldly then dismantled. Shares well because people want to prove they knew better.
-- **timeline** — chronological entries with dates and narrative. Needs a new visual timeline component with vertical line and date markers. Good for company histories, technology evolution, political situations.
-- **visual_list / photo_essay** — image-first, story-second, repeated N times. Pipeline searches for images per list item. Only works for topics where stock/free images are available (architecture, food, landscapes, products, workspaces, bridges, markets, coastlines). Not suitable for specific historical events, copyrighted artworks, movie/TV content, or editorial photography requiring specific images. Rule of thumb: if any good photo of the subject works, stock APIs can handle it.
-
-Each needs: requiredComponents, allowedComponents, forbiddenComponents, lengthRange, tone, verdictRequired, verdictStyle. Planning prompt and blueprint prompt need type-aware instructions.
-
-**Photo essay / visual list content guidelines:** Topics that work well: architecture, food, national parks, landscapes, products, workspaces, bridges, street markets, coastlines. Topics that don't work: specific historical events (need editorial photography), copyrighted artworks, movie/TV screenshots, specific people or news moments. Rule of thumb: if any good photo of the subject works, stock APIs can handle it. If it needs to be *that specific image*, it won't be available.
+### ~~1F. New Article Types (4)~~ DONE (April 2026)
+All 4 types built: ranked_list, myth_buster, timeline_article, visual_list. Full pipeline: type definitions in `article-types.ts`, planning prompt classification + rules, blueprint guidance, writing prompt tone/structure, new rendering components (`RankedItemSection.tsx`, `MythRealitySection.tsx`), admin UI type selector, entity extraction routing. Executive summary restrictions per type. Visual list: image-forward with empty analytical sections.
 
 ### 1G. Creator Profile Upgrade
 Add to profiles table: tagline, avatar_url (upload, not just Google). Article page author block: 40px avatar, prominent name, bio line, links to profile.
@@ -94,22 +85,14 @@ Full interactive editorial brief. 3 angle options with per-angle questions and s
 ### 1K. Plan Mode: Scope Pills Re-Research
 Upgrade certain scope pills from filter-only to re-research. Dashed-border pills with ↻ indicator trigger a new planning + research pass with the constraint baked in (~15 seconds). Filter pills remain instant. Visual distinction between the two types already designed in v7 mockup. v7 has filter-only pills; this is the next evolution.
 
-### 1L. Editor Bar
-Persistent toolbar between article header and first section, visible to article owner only. Replaces First Draft Banner, Editor's Notes nudge, and visibility pulse — one unified control surface. Contains:
-- **Sections** — hover shows education tooltip ("Hover any section to edit or replace"), click scrolls to refine box
-- **Images** — upload/manage hero and section images
-- **Research** — badge count of unused findings, opens Editor's Notes tab
-- **Share** — opens SharePanel
-- **Export** — PDF/CMS export
-- **Visibility** — current status pill (Published/Unlisted/Private), click to change
-
-One line of contextual helper text below that changes based on user actions (e.g. "You have 12 unused research findings → Editor's Notes"). On mobile: labels hide, icons only. Replaces the post-generation education banner if built first.
+### ~~1L. Editor Bar~~ DONE (April 2026)
+Persistent owner-only toolbar between article metadata and hero image. Six buttons: Sections, Images, Research (amber badge with unused findings count), Share, Export, Visibility (dropdown: Published/Unlisted/Private). Contextual helper text rotates based on article state. Mobile: icon-only. Replaced FirstDraftBanner, Editor's Notes nudge animation, and visibility pulse animation. Component: `components/ui/EditorBar.tsx`.
 
 ### 1M. Research Over-Gather
 Increase Brave web searches from 6–10 to 12–15. Increase Reddit searches from 2–3 to 5–8. Extra cost: ~3 cents per article. The surplus research gets stored in `research_findings` JSONB and populates the Editor's Notes tab and section replacement suggestions. Ensures Editor's Notes always has meaningful content even after a good article. Also surface: contrarian viewpoints, alternative products, additional statistics, and related questions from the plan mode questions pool.
 
-### 1N. Post-Generation Education Banner
-Slim banner between article header and first section: "12 unused findings, 3 videos, and 4 alternative products available in Editor's Notes →". One line, muted, dismissible, shows once per article. Superseded by the Editor Bar (1L) — build whichever comes first. If Editor Bar is built, this is unnecessary.
+### ~~1N. Post-Generation Education Banner~~ SUPERSEDED by Editor Bar (1L)
+Editor Bar handles this — contextual helper text shows unused findings count and other nudges. No separate banner needed.
 
 ---
 
@@ -260,7 +243,7 @@ App Store and Google Play. Apple requires StoreKit for iOS subscriptions.
 - Metered reading / verdict paywall
 - API access for publishers
 - Full tone matching from uploaded writing samples
-- ~~New article types (ranked_list, myth_buster, visual_list, timeline)~~ → moved to Phase 1F
+- ~~New article types (ranked_list, myth_buster, visual_list, timeline)~~ → Phase 1F DONE
 - Creator challenge / bounty — $500 prize pool for top creators in first 30 days. $250 for most external views, $150 for most signups driven, $100 wildcard editorial pick by founder. Anti-gaming: unique IP views only, referral signups must generate 1+ article, founder reserves disqualification rights. Parked until creator cohort is active.
 - ~~Reddit opportunity monitor~~ → moved to Phase 4G
 - ~~Twitter/X account monitoring~~ → moved to Phase 4H
@@ -302,7 +285,7 @@ Reddit thread links in `CommunityInsights.tsx` wrap subreddit links, producing `
 11. **Pre-launch creator cohort** → real feedback
 12. **Affiliate infrastructure** → revenue
 
-The product is feature-rich. The gaps are: monetisation (Stripe + affiliates), content curation, distribution, and creator tooling (Editor Bar, analytics, research over-gather).
+The product is feature-rich. The gaps are: monetisation (Stripe + affiliates), content curation, distribution, and creator tooling (analytics, research over-gather).
 
 ---
 
@@ -311,7 +294,7 @@ The product is feature-rich. The gaps are: monetisation (Stripe + affiliates), c
 | Phase | Sessions |
 |-------|---------|
 | Immediate | 6 (quick) |
-| Phase 1 | 13 |
+| Phase 1 | 10 |
 | Phase 2 | 3 |
 | Phase 2D (Media) | 2 |
 | Phase 3 | 3 |
@@ -321,4 +304,4 @@ The product is feature-rich. The gaps are: monetisation (Stripe + affiliates), c
 | Phase 7 | 3 |
 | Phase 8 | 2 |
 | Maintenance | 4 |
-| **Total** | **~56** |
+| **Total** | **~53** |
