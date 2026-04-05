@@ -262,8 +262,21 @@ export default function SectionRenderer({
           return <ComparisonTable section={section} />
         case 'warning_box':
           return <WarningBox section={section} />
-        case 'content_section':
-          return <ContentSection section={section} currentSlug={currentSlug} relatedArticles={linkableArticles} />
+        case 'content_section': {
+          // In visual_list articles, content_section follows image_section with the same heading.
+          // Suppress the duplicate heading on the content_section.
+          const prevSection = i > 0 ? sections[i - 1] : null
+          const prevHeading = prevSection && 'heading' in prevSection ? (prevSection as { heading?: string }).heading : null
+          const thisHeading = 'heading' in section ? (section as { heading?: string }).heading : null
+          const suppressHeading = !!(
+            prevSection &&
+            prevSection.type === 'image_section' &&
+            prevHeading &&
+            thisHeading &&
+            prevHeading.toLowerCase().trim() === thisHeading.toLowerCase().trim()
+          )
+          return <ContentSection section={section} currentSlug={currentSlug} relatedArticles={linkableArticles} hideHeading={suppressHeading} />
+        }
         case 'price_tier_breakdown':
           return <PriceTierBreakdown section={section} />
         case 'community_insights':

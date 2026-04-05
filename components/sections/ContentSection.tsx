@@ -189,9 +189,10 @@ interface ContentSectionProps {
   section: ContentSectionType
   currentSlug?: string
   relatedArticles?: LinkableArticle[]
+  hideHeading?: boolean
 }
 
-export default function ContentSection({ section, currentSlug, relatedArticles }: ContentSectionProps) {
+export default function ContentSection({ section, currentSlug, relatedArticles, hideHeading }: ContentSectionProps) {
   // Build the link transform if we have linkable articles
   const linkTransform = (currentSlug && relatedArticles?.length)
     ? (text: string) => injectInternalLinks(text, currentSlug, relatedArticles, 3)
@@ -221,12 +222,14 @@ export default function ContentSection({ section, currentSlug, relatedArticles }
 
   return (
     <div className="mb-8">
-      <h2
-        className="text-xl font-bold mb-4"
-        style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
-      >
-        {section.heading}
-      </h2>
+      {!hideHeading && (
+        <h2
+          className="text-xl font-bold mb-4"
+          style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
+        >
+          {section.heading}
+        </h2>
+      )}
       <div className="prose-content" style={{ color: 'var(--text-primary)' }}>
         {renderContent(content, linkTransform)}
       </div>
