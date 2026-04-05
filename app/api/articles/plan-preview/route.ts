@@ -148,8 +148,17 @@ export async function POST(request: NextRequest) {
     console.error('[plan-preview] Failed:', err)
 
     if (errCode === 'PLANNING_REFUSED') {
+      const errMsg = (err as Error).message
+      // Extract suggestion if present: "PLANNING_REFUSED:suggested query text"
+      const suggestion = errMsg.startsWith('PLANNING_REFUSED:')
+        ? errMsg.slice('PLANNING_REFUSED:'.length).trim()
+        : null
       return Response.json(
-        { error: 'This topic hit a safety filter. Try rewording your question.' },
+        {
+          error: 'content_filter',
+          message: 'This topic hit a content filter.',
+          suggestion,
+        },
         { status: 422 }
       )
     }

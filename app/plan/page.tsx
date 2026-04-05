@@ -385,6 +385,7 @@ function PlanPageContent() {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error' | 'writing'>('loading')
   const [planData, setPlanData] = useState<PlanData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [filterSuggestion, setFilterSuggestion] = useState<string | null>(null)
   const [loadingMsgCount, setLoadingMsgCount] = useState(0)
   const [retryCount, setRetryCount] = useState(0)
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -449,6 +450,10 @@ function PlanPageContent() {
           if (data.error === 'auth_required') {
             router.push('/')
             return
+          }
+          if (data.error === 'content_filter') {
+            setFilterSuggestion(data.suggestion ?? null)
+            throw new Error('content_filter')
           }
           throw new Error(data.error ?? 'Failed to generate plan')
         }
@@ -708,11 +713,32 @@ function PlanPageContent() {
         {status === 'error' && (
           <div className="rounded-2xl p-6 text-center" style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}>
             <p className="text-sm mb-4" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-outfit)' }}>
-              {error === 'Plan rate limit reached. Try again in a bit.' ? error : "We couldn\u2019t research this topic. Try rephrasing your question."}
+              {error === 'Plan rate limit reached. Try again in a bit.'
+                ? error
+                : error === 'content_filter'
+                  ? 'This topic hit a content filter. Try rephrasing your question.'
+                  : "We couldn\u2019t research this topic. Try rephrasing your question."}
             </p>
+            {error === 'content_filter' && filterSuggestion && (
+              <button
+                onClick={() => router.push(`/plan?q=${encodeURIComponent(filterSuggestion)}`)}
+                className="text-sm mb-4 px-4 py-2 rounded-lg inline-block transition-colors"
+                style={{
+                  backgroundColor: '#FAEEDA',
+                  color: '#633806',
+                  cursor: 'pointer',
+                  border: 'none',
+                  fontFamily: 'var(--font-outfit)',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F5E6C8')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#FAEEDA')}
+              >
+                Try instead: &ldquo;{filterSuggestion}&rdquo;
+              </button>
+            )}
             <div className="flex items-center gap-3 justify-center">
               <button
-                onClick={() => { setError(null); setPlanData(null); setLoadingMsgCount(0); fetchedRef.current = false; setRetryCount(c => c + 1); setStatus('loading') }}
+                onClick={() => { setError(null); setFilterSuggestion(null); setPlanData(null); setLoadingMsgCount(0); fetchedRef.current = false; setRetryCount(c => c + 1); setStatus('loading') }}
                 className="px-4 py-2 text-sm font-semibold"
                 style={{ backgroundColor: 'var(--accent)', color: '#fff', cursor: 'pointer', borderRadius: '8px', border: 'none' }}
               >
