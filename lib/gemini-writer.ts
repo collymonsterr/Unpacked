@@ -193,6 +193,7 @@ VISUAL LIST RULES:
 - Do NOT include analytical sections like "Key Takeaways", "Things to Watch Out For", "Tips", "Practical Advice", or any summary/warning sections.
 - The executive_summary key_takeaways and watch_out_for arrays MUST be empty arrays [] — visual lists speak through their items, not through analytical summaries.
 - For each visual item's content_section, the section heading already contains the item name. Do NOT repeat the item name at the start of the body text. Start the body text with the narrative directly.
+- For image sections: the alt_text should be a factual accessibility description of the image. The caption must add editorial context — what makes this significant, where it was photographed, or why it matters. The caption must NOT be the same as the alt_text.
 
 CRITICAL RULE — NEVER REVEAL THE VERDICT EARLY:
 - The article title must NOT name the winner, #1 pick, or verdict. It should promise what the reader will learn, not give them the answer.

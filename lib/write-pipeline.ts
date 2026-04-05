@@ -22,7 +22,61 @@ import { pickBestArticleImage } from '@/lib/imagen'
 import { runTripleFactCheck, applyCorrections } from '@/lib/fact-check'
 import { generateSocialContent, saveSocialContent } from '@/lib/social-content'
 import { getSupabaseAdmin } from '@/lib/supabase'
-import type { ArticlePlan, EntityCard, ResearchSynthesis, ArticleContent } from '@/types/article'
+import type { ArticlePlan, EntityCard, ResearchSynthesis, ArticleContent, ArticleSection } from '@/types/article'
+
+// ── Post-write sanitisation ──
+
+// Types that should NOT have key_takeaways or watch_out_for in executive_summary
+const NO_EXEC_SUMMARY_TYPES = new Set([
+  'ranked_list', 'myth_buster', 'timeline_article', 'visual_list',
+  'news_analysis', 'trend_analysis', 'breaking_news', 'roundup',
+])
+
+// Types that get key_takeaways only (no watch_out_for)
+const TAKEAWAYS_ONLY_TYPES = new Set(['comparison', 'explainer', 'deep_dive'])
+
+// Headings that indicate analytical/advisory sections not suited for visual_list
+const VISUAL_LIST_FORBIDDEN_HEADINGS = /\b(key takeaway|watch out|how to find|how to|tips for|things to look|things to watch|practical advice|what to avoid|warnings?|before you|getting started)\b/i
+
+/**
+ * Hard-code enforcement of article type rules that the model may have ignored.
+ * Mutates the article in place.
+ */
+function sanitiseArticleForType(article: ArticleContent, articleType: string): void {
+  // 1. Strip executive summary content for types that shouldn't have it
+  if (NO_EXEC_SUMMARY_TYPES.has(articleType) && article.executive_summary) {
+    if (article.executive_summary.key_takeaways?.length) {
+      console.log(`[sanitise] Stripping ${article.executive_summary.key_takeaways.length} key_takeaways from ${articleType}`)
+      article.executive_summary.key_takeaways = []
+    }
+    if (article.executive_summary.watch_out_for?.length) {
+      console.log(`[sanitise] Stripping ${article.executive_summary.watch_out_for.length} watch_out_for from ${articleType}`)
+      article.executive_summary.watch_out_for = []
+    }
+  }
+
+  // 2. Strip watch_out_for for types that only get key_takeaways
+  if (TAKEAWAYS_ONLY_TYPES.has(articleType) && article.executive_summary?.watch_out_for?.length) {
+    console.log(`[sanitise] Stripping ${article.executive_summary.watch_out_for.length} watch_out_for from ${articleType}`)
+    article.executive_summary.watch_out_for = []
+  }
+
+  // 3. For visual_list: remove any analytical/advisory sections
+  if (articleType === 'visual_list') {
+    const before = article.sections.length
+    article.sections = article.sections.filter((s: ArticleSection) => {
+      const heading = 'heading' in s ? (s as { heading?: string }).heading ?? '' : ''
+      if (VISUAL_LIST_FORBIDDEN_HEADINGS.test(heading)) {
+        console.log(`[sanitise] Removing visual_list section: "${heading}"`)
+        return false
+      }
+      return true
+    })
+    if (article.sections.length < before) {
+      console.log(`[sanitise] Removed ${before - article.sections.length} forbidden sections from visual_list`)
+    }
+  }
+}
 
 export interface PipelineTimings {
   planning_ms?: number
@@ -126,6 +180,9 @@ export async function runWritePipeline({
     }),
   ])
   t.writing_ms = Date.now() - writeStart
+
+  // ── Post-write sanitisation: strip sections forbidden for this article type ──
+  sanitiseArticleForType(rawArticle, plan.article_type)
 
   // ── Phase 3: Editorial pass + product images (parallel) ──
   const isBreakingNews = plan.article_type === 'breaking_news'

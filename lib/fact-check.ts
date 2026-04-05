@@ -59,7 +59,7 @@ DO NOT CHECK:
 For each issue found, provide:
 - The original claim in the article
 - What you found through Google Search
-- Your correction
+- Your correction: write ONLY the corrected text that should directly replace the original claim in the article. Do NOT include instructions like "Update the claim to...", "Change this to...", "Clarify that...", or "Price should be updated to...". Just write the corrected sentence exactly as it should appear in the article.
 - Severity: "critical" (completely wrong, misleading), "minor" (slightly off, outdated price), or "note" (worth updating but not wrong)
 
 Respond ONLY with valid JSON:
@@ -73,7 +73,7 @@ Respond ONLY with valid JSON:
       "entity_name": "Yamaha Pacifica 112V",
       "original_claim": "Price: $299",
       "finding": "Current price on Sweetwater is $349 as of March 2026",
-      "correction": "Price should be updated to $349",
+      "correction": "Price: $349",
       "severity": "minor"
     }
   ]
@@ -595,6 +595,38 @@ export async function runFactCheck(article: ArticleContent): Promise<FactCheckRe
  * Only applies "critical" and "minor" severity issues.
  * Returns the corrected article.
  */
+/**
+ * Sanitise a correction string: strip instructional prefixes so the
+ * correction reads as natural prose that can replace the original claim.
+ */
+function sanitiseCorrection(correction: string): string {
+  if (!correction) return correction
+
+  // Strip common instructional prefixes the model sometimes generates
+  const instructionalPrefixes = [
+    /^update\s+the\s+claim\s+to\s+(reflect|say|read|state|indicate)\s+/i,
+    /^change\s+(this\s+)?to\s+(reflect|say|read|state)\s+/i,
+    /^correct\s+this\s+to\s+(say|read|state|reflect)\s+/i,
+    /^clarify\s+that\s+/i,
+    /^should\s+(be\s+)?(updated|changed|corrected)\s+to\s+(say|read|reflect|state)?\s*/i,
+    /^(price|this)\s+should\s+be\s+(updated|changed|corrected)\s+to\s+/i,
+    /^replace\s+with\s+/i,
+    /^revise\s+to\s+(say|read|reflect|state)\s+/i,
+    /^modify\s+to\s+(say|read|reflect|state)\s+/i,
+  ]
+
+  let result = correction
+  for (const prefix of instructionalPrefixes) {
+    result = result.replace(prefix, '')
+  }
+
+  // Strip surrounding quotes that wrapping the actual correction
+  result = result.replace(/^["']+|["']+$/g, '').trim()
+
+  // If stripping emptied the string, return original
+  return result || correction
+}
+
 export function applyCorrections(
   article: ArticleContent,
   factCheck: FactCheckResult
@@ -607,6 +639,9 @@ export function applyCorrections(
 
   for (const issue of factCheck.issues) {
     if (issue.severity === 'note') continue // Don't modify for notes
+
+    // Sanitise the correction text to remove instructional prefixes
+    issue.correction = sanitiseCorrection(issue.correction)
 
     // Try to fix product card prices/specs
     if (issue.section_type === 'product_card' && issue.entity_name) {

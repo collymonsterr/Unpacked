@@ -13,6 +13,26 @@ interface Props {
 
 type ImageItem = ImageSectionType['images'][number]
 
+/**
+ * Check if a caption is just a generic image description that adds no editorial value.
+ * These are typically auto-generated as alt-text-style descriptions and are
+ * redundant when shown as visible text below the image.
+ *
+ * Captions worth showing: source attributions ("Photo by...", "via Pexels"),
+ * location/date context, editorial context that complements the image.
+ */
+function isGenericImageDescription(caption: string | undefined): boolean {
+  if (!caption) return true
+  const c = caption.trim()
+  // Short generic descriptions starting with articles
+  if (c.length < 120 && /^(A |An |The |Fragrant |Steaming |Beautiful |Stunning |Delicious |Traditional |Classic |Fresh |Authentic |Colorful |Vibrant )/i.test(c)) {
+    // But keep if it has editorial context markers
+    if (/\b(photo by|image by|via |source:|credit:|©|\d{4}|shot in|taken at|photographed)\b/i.test(c)) return false
+    return true
+  }
+  return false
+}
+
 export default function ImageSection({ section, isAdmin, onReplaceImage }: Props) {
   // Track which indices have valid URLs
   const validIndices = section.images
@@ -129,7 +149,7 @@ function SingleImage({
           </button>
         )}
       </div>
-      {image.caption && (
+      {image.caption && !isGenericImageDescription(image.caption) && (
         <figcaption
           className="px-4 py-2.5 text-xs italic"
           style={{ color: 'var(--text-secondary)' }}
@@ -234,7 +254,7 @@ function GalleryItem({
           </button>
         )}
       </div>
-      {image.caption && (
+      {image.caption && !isGenericImageDescription(image.caption) && (
         <figcaption
           className="px-3 py-2 text-xs"
           style={{ color: 'var(--text-secondary)' }}
