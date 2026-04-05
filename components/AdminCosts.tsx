@@ -13,6 +13,13 @@ interface FallbackStats {
   estimatedExtraCost24h: number
 }
 
+interface PipelineHealth {
+  avgGenTimeMs: number | null
+  failedLast7d: number
+  avgCostLast7d: number
+  articlesLast7d: number
+}
+
 interface CostsData {
   totalCost: number
   costByProvider: Record<string, number>
@@ -22,6 +29,7 @@ interface CostsData {
   dailyCosts: { date: string; cost: number }[]
   totalCalls: number
   fallbackStats?: FallbackStats
+  pipelineHealth?: PipelineHealth
   note: string
 }
 
@@ -100,6 +108,27 @@ export default function AdminCosts() {
       >
         Costs
       </h2>
+
+      {/* Pipeline health — last 7 days */}
+      {data.pipelineHealth && (
+        <div className="grid grid-cols-3 gap-4 mb-5">
+          <CostCard
+            label="Avg gen time (7d)"
+            value={data.pipelineHealth.avgGenTimeMs !== null
+              ? `${Math.round(data.pipelineHealth.avgGenTimeMs / 1000)}s`
+              : '–'}
+          />
+          <CostCard
+            label="Failed gens (7d)"
+            value={String(data.pipelineHealth.failedLast7d)}
+            highlight={data.pipelineHealth.failedLast7d > 0}
+          />
+          <CostCard
+            label="Avg cost/article (7d)"
+            value={`$${data.pipelineHealth.avgCostLast7d.toFixed(3)}`}
+          />
+        </div>
+      )}
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
@@ -393,7 +422,7 @@ export default function AdminCosts() {
   )
 }
 
-function CostCard({ label, value }: { label: string; value: string }) {
+function CostCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div
       className="rounded-xl p-4 text-center"
@@ -401,7 +430,7 @@ function CostCard({ label, value }: { label: string; value: string }) {
     >
       <p
         className="text-xl font-bold mb-1"
-        style={{ color: 'var(--accent)', fontFamily: 'var(--font-sora)' }}
+        style={{ color: highlight ? '#C13A28' : 'var(--accent)', fontFamily: 'var(--font-sora)' }}
       >
         {value}
       </p>

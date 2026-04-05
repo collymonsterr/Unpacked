@@ -99,6 +99,52 @@ export async function GET() {
     // Each fallback costs ~$0.09 more than a successful Gemini write ($0.11 Sonnet avg vs $0.02 Gemini avg)
     const estimatedExtraCost24h = geminiFallbacksLast24h * 0.09
 
+    // Pipeline health — last 7 days
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
+    // Failed generations last 7 days
+    const { count: failedCount } = await db
+      .from('articles')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'error')
+      .gte('created_at', sevenDaysAgo)
+
+    // Average generation time last 7 days (from generation_options.timings.total_ms)
+    const { data: recentArticles } = await db
+      .from('articles')
+      .select('generation_options, created_at')
+      .in('status', ['complete', 'verified'])
+      .gte('created_at', sevenDaysAgo)
+
+    let totalGenTime = 0
+    let genTimeCount = 0
+    for (const a of recentArticles ?? []) {
+      const totalMs = (a.generation_options as Record<string, unknown>)?.timings
+        ? ((a.generation_options as Record<string, unknown>).timings as Record<string, unknown>)?.total_ms
+        : null
+      if (typeof totalMs === 'number' && totalMs > 0) {
+        totalGenTime += totalMs
+        genTimeCount++
+      }
+    }
+    const avgGenTimeMs = genTimeCount > 0 ? Math.round(totalGenTime / genTimeCount) : null
+
+    // Average cost per article last 7 days
+    const last7dRows = rows.filter(r => r.created_at >= sevenDaysAgo)
+    let last7dCost = 0
+    for (const row of last7dRows) {
+      last7dCost += estimateCost(row.model, row.input_tokens ?? 0, row.output_tokens ?? 0)
+    }
+    const last7dArticleIds = new Set(last7dRows.filter(r => r.article_id).map(r => r.article_id))
+    const avgCostLast7d = last7dArticleIds.size > 0 ? last7dCost / last7dArticleIds.size : 0
+
+    const pipelineHealth = {
+      avgGenTimeMs,
+      failedLast7d: failedCount ?? 0,
+      avgCostLast7d: Math.round(avgCostLast7d * 1000) / 1000,
+      articlesLast7d: (recentArticles ?? []).length,
+    }
+
     return NextResponse.json({
       totalCost: Math.round(totalCost * 100) / 100,
       costByProvider: Object.fromEntries(
@@ -117,6 +163,7 @@ export async function GET() {
         fallbackRate24h: Math.round(fallbackRate24h * 1000) / 10, // percentage, 1dp
         estimatedExtraCost24h: Math.round(estimatedExtraCost24h * 100) / 100,
       },
+      pipelineHealth,
       note: 'Costs are estimates based on token counts. Brave Search and OpenAI image costs are not yet tracked.',
     })
   } catch (err) {

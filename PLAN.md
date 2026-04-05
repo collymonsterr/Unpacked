@@ -73,8 +73,11 @@ All 4 types built: ranked_list, myth_buster, timeline_article, visual_list. Full
 ### 1G. Creator Profile Upgrade
 Add to profiles table: tagline, avatar_url (upload, not just Google). Article page author block: 40px avatar, prominent name, bio line, links to profile.
 
-### 1H. Voting System Enhancement
-Admin view of downvote reasons and comments. Quality scoring per article. Composite ranking signals (votes + dwell time + shares + recency).
+### 1H. Voting System Enhancement *(partially done)*
+Admin feedback tab upgraded: article titles from JSONB (fixes "Unknown" bug), clickable links, resolved toggle per item, unresolved-first sorting. Remaining: quality scoring per article, composite ranking signals (votes + dwell time + shares + recency).
+
+### ~~1H-admin. Admin Dashboard Improvements~~ DONE (April 2026)
+Overview: article count breakdown by visibility (Published/Unlisted/Private/Error), Content Health section (no-hero, unverified, zero-views, 7d/30d counts, avg word count). Articles: visibility filter, fact-check filter, sort by date/views/title. Costs: pipeline health cards (avg gen time, failed gens, avg cost — all 7-day window). Feedback: real article titles, resolved toggle.
 
 ### ~~1I. Research Companion Tab~~ ALREADY DONE
 Built as "Editor" tab (EditorCoPilot). `research_findings` persisted as JSONB. Owner sees findings, entity cards, synthesis, blueprint. Can select findings and submit rewrite instructions.

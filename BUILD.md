@@ -203,12 +203,13 @@ Deduplicates article chains via `root_article_id`.
 
 ---
 
-## Admin Dashboard (built — 4 tabs)
+## Admin Dashboard (built — 5 tabs)
 
-- **Overview:** stats summary
-- **Articles:** 5 filter tabs, star/flame/eye toggles, drag-to-reorder (@dnd-kit), per-article controls
-- **Costs:** API usage, Gemini vs Sonnet split, fallback rate %, amber alert >5%
-- **Feedback:** vote data and comments
+- **Overview:** Total Views, Total Articles breakdown (Published/Unlisted/Private/Error), Avg Views/Article, Article Types count. Content Health section: no-hero-image count, unverified count, zero-views count, last 7d/30d generation counts, avg word count. 30-day views chart, top articles, articles by type, views by category, content by category. Users section.
+- **Articles:** 5 sub-tabs (All, Featured, Trending, Hidden, No Image). Filter dropdowns: Visibility (All/Published/Unlisted/Private), Fact-check (All/Verified/Unverified), Sort (Date/Views/Title). Star/flame/eye toggles, drag-to-reorder (@dnd-kit), per-article controls.
+- **Costs:** Pipeline health cards (avg gen time 7d, failed gens 7d, avg cost/article 7d). Monthly stats: total spend, avg per article, articles, API calls. Fallback monitoring: Gemini vs Sonnet split, rate %, amber alert >5%. Daily spend chart, provider/call-type breakdown. Recent articles cost table.
+- **Feedback:** Weekly summary (votes, positive %, top issues). Negative feedback list with real article titles from JSONB (clickable links, "Deleted article" for missing). Resolved toggle per item (checkbox, resolved items sorted below with reduced opacity). Requires `resolved` boolean column on `article_feedback` table.
+- **Founders:** Application management with approve/reject.
 
 Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 

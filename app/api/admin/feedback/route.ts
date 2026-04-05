@@ -10,33 +10,61 @@ export async function GET() {
   const db = getSupabaseAdmin()
 
   // Recent negative feedback with article info
-  const { data: negative } = await db
-    .from('article_feedback')
-    .select('id, article_id, vote, reasons, comment, created_at')
-    .eq('vote', 'needs_work')
-    .order('created_at', { ascending: false })
-    .limit(30)
+  // Try with resolved column first; if it doesn't exist yet, fall back without it
+  let negative: Array<Record<string, unknown>> | null = null
+  {
+    const { data, error } = await db
+      .from('article_feedback')
+      .select('id, article_id, vote, reasons, comment, resolved, created_at')
+      .eq('vote', 'needs_work')
+      .order('created_at', { ascending: false })
+      .limit(30)
+    if (error && error.message.includes('resolved')) {
+      // Column doesn't exist yet — query without it
+      const { data: fallback } = await db
+        .from('article_feedback')
+        .select('id, article_id, vote, reasons, comment, created_at')
+        .eq('vote', 'needs_work')
+        .order('created_at', { ascending: false })
+        .limit(30)
+      negative = fallback
+    } else {
+      negative = data
+    }
+  }
 
-  // Get article titles for the feedback entries
+  // Get article titles from JSONB article column (no top-level title column exists)
   const articleIds = [...new Set((negative ?? []).map(f => f.article_id))]
   const { data: articles } = articleIds.length > 0
     ? await db
         .from('articles')
-        .select('id, title, slug')
+        .select('id, slug, article->title')
         .in('id', articleIds)
     : { data: [] }
 
-  const articleMap = new Map((articles ?? []).map(a => [a.id, a]))
+  const articleMap = new Map(
+    (articles ?? []).map((a: Record<string, unknown>) => [
+      a.id as string,
+      {
+        title: typeof a.title === 'string' ? a.title : null,
+        slug: a.slug as string,
+      },
+    ])
+  )
 
-  const negativeFeedback = (negative ?? []).map(f => ({
-    id: f.id,
-    article_id: f.article_id,
-    article_title: articleMap.get(f.article_id)?.title ?? 'Unknown',
-    article_slug: articleMap.get(f.article_id)?.slug ?? '',
-    reasons: f.reasons ?? [],
-    comment: f.comment,
-    created_at: f.created_at,
-  }))
+  const negativeFeedback = (negative ?? []).map(f => {
+    const art = articleMap.get(f.article_id as string)
+    return {
+      id: f.id,
+      article_id: f.article_id,
+      article_title: art?.title ?? null,
+      article_slug: art?.slug ?? null,
+      resolved: f.resolved ?? false,
+      reasons: f.reasons ?? [],
+      comment: f.comment,
+      created_at: f.created_at,
+    }
+  })
 
   // Weekly summary
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -71,4 +99,26 @@ export async function GET() {
       topReasons,
     },
   })
+}
+
+export async function POST(req: Request) {
+  const auth = await requireAdmin()
+  if (!auth.authorized) return auth.error!
+
+  const { id, resolved } = await req.json()
+  if (!id || typeof resolved !== 'boolean') {
+    return Response.json({ error: 'Missing id or resolved' }, { status: 400 })
+  }
+
+  const db = getSupabaseAdmin()
+  const { error } = await db
+    .from('article_feedback')
+    .update({ resolved })
+    .eq('id', id)
+
+  if (error) {
+    return Response.json({ error: error.message }, { status: 500 })
+  }
+
+  return Response.json({ ok: true })
 }

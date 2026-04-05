@@ -6,9 +6,28 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts'
 
+interface VisibilityBreakdown {
+  published: number
+  unlisted: number
+  private: number
+  error: number
+  total: number
+}
+
+interface ContentHealth {
+  noHeroImage: number
+  noFactCheck: number
+  zeroViews: number
+  last7Days: number
+  last30Days: number
+  avgWordCount: number
+}
+
 interface AnalyticsData {
   totalViews: number
   totalArticles: number
+  visibilityBreakdown?: VisibilityBreakdown
+  contentHealth?: ContentHealth
   topArticles: { title: string; slug: string; views: number }[]
   viewsByType: Record<string, number>
   articlesByType: Record<string, number>
@@ -65,7 +84,31 @@ export default function AdminAnalytics() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <StatCard label="Total Views" value={data.totalViews.toLocaleString()} />
-        <StatCard label="Total Articles" value={data.totalArticles.toString()} />
+
+        {/* Article count breakdown by visibility */}
+        {data.visibilityBreakdown ? (
+          <div
+            className="rounded-xl p-4"
+            style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
+          >
+            <p
+              className="text-2xl font-bold text-center"
+              style={{ color: 'var(--accent)', fontFamily: 'var(--font-sora)' }}
+            >
+              {data.visibilityBreakdown.total}
+            </p>
+            <p className="text-xs text-center mt-1 mb-2" style={{ color: 'var(--text-secondary)' }}>Total Articles</p>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+              <MiniStat label="Published" value={data.visibilityBreakdown.published} color="#2D8A4E" />
+              <MiniStat label="Unlisted" value={data.visibilityBreakdown.unlisted} color="#BA7517" />
+              <MiniStat label="Private" value={data.visibilityBreakdown.private} color="var(--text-secondary)" />
+              <MiniStat label="Error" value={data.visibilityBreakdown.error} color={data.visibilityBreakdown.error > 0 ? '#C13A28' : 'var(--text-secondary)'} />
+            </div>
+          </div>
+        ) : (
+          <StatCard label="Total Articles" value={data.totalArticles.toString()} />
+        )}
+
         <StatCard
           label="Avg Views / Article"
           value={data.totalArticles > 0 ? Math.round(data.totalViews / data.totalArticles).toString() : '0'}
@@ -75,6 +118,51 @@ export default function AdminAnalytics() {
           value={Object.keys(data.articlesByType).length.toString()}
         />
       </div>
+
+      {/* Content Health */}
+      {data.contentHealth && (
+        <div
+          className="rounded-xl p-5 mb-8"
+          style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
+        >
+          <h3 className="text-sm font-bold mb-4" style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}>
+            Content Health
+          </h3>
+          <div className="space-y-2.5">
+            <HealthRow
+              label="No hero image"
+              value={data.contentHealth.noHeroImage}
+              warn={data.contentHealth.noHeroImage > 0}
+            />
+            <HealthRow
+              label="Fact-check not completed"
+              value={data.contentHealth.noFactCheck}
+              warn={data.contentHealth.noFactCheck > 5}
+            />
+            <HealthRow
+              label="Zero views"
+              value={data.contentHealth.zeroViews}
+              warn={false}
+            />
+            <HealthRow
+              label="Generated last 7 days"
+              value={data.contentHealth.last7Days}
+              warn={false}
+            />
+            <HealthRow
+              label="Generated last 30 days"
+              value={data.contentHealth.last30Days}
+              warn={false}
+            />
+            <HealthRow
+              label="Avg word count (published)"
+              value={data.contentHealth.avgWordCount}
+              warn={false}
+              suffix=" words"
+            />
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Views over time */}
@@ -243,6 +331,29 @@ export default function AdminAnalytics() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function HealthRow({ label, value, warn, suffix = '' }: { label: string; value: number; warn: boolean; suffix?: string }) {
+  return (
+    <div className="flex items-center justify-between py-1">
+      <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{label}</span>
+      <span
+        className="text-sm font-semibold tabular-nums"
+        style={{ color: warn ? '#BA7517' : 'var(--text-primary)' }}
+      >
+        {value.toLocaleString()}{suffix}
+      </span>
+    </div>
+  )
+}
+
+function MiniStat({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{label}</span>
+      <span className="text-xs font-semibold tabular-nums" style={{ color }}>{value}</span>
     </div>
   )
 }

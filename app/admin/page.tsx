@@ -448,9 +448,51 @@ function ActionButton({
 
 // ── Article Sub-Tabs Component ──
 
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  options: { value: string; label: string }[]
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
+        {label}
+      </span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="text-xs px-2 py-1 rounded-lg outline-none"
+        style={{
+          backgroundColor: 'var(--card)',
+          border: '1px solid var(--border)',
+          color: 'var(--text-primary)',
+          cursor: 'pointer',
+        }}
+      >
+        {options.map(o => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
+type VisFilter = 'all' | 'published' | 'unlisted' | 'private'
+type FcFilter = 'all' | 'verified' | 'unverified'
+type SortBy = 'date' | 'views' | 'title'
+
 function ArticleSubTabs({ articles: initialArticles }: { articles: ArticleRow[] }) {
   const [localArticles, setLocalArticles] = useState(initialArticles)
   const [subTab, setSubTab] = useState<'all' | 'featured' | 'trending' | 'hidden' | 'no-image'>('all')
+  const [visFilter, setVisFilter] = useState<VisFilter>('all')
+  const [fcFilter, setFcFilter] = useState<FcFilter>('all')
+  const [sortBy, setSortBy] = useState<SortBy>('date')
 
   // Sync with parent if articles prop changes
   useEffect(() => { setLocalArticles(initialArticles) }, [initialArticles])
@@ -514,13 +556,40 @@ function ArticleSubTabs({ articles: initialArticles }: { articles: ArticleRow[] 
   const noImage = articles.filter(a => !a.article?.thumbnail_url)
 
   const filteredArticles = (() => {
+    let list: ArticleRow[]
     switch (subTab) {
-      case 'featured': return featured
-      case 'trending': return trending
-      case 'hidden': return hidden
-      case 'no-image': return noImage
-      default: return articles
+      case 'featured': list = featured; break
+      case 'trending': list = trending; break
+      case 'hidden': list = hidden; break
+      case 'no-image': list = noImage; break
+      default: list = articles
     }
+
+    // Visibility filter
+    if (visFilter !== 'all') {
+      list = list.filter(a => (a.visibility ?? 'published') === visFilter)
+    }
+
+    // Fact-check filter
+    if (fcFilter === 'verified') {
+      list = list.filter(a => a.status === 'verified')
+    } else if (fcFilter === 'unverified') {
+      list = list.filter(a => a.status !== 'verified')
+    }
+
+    // Sort
+    if (sortBy === 'views') {
+      list = [...list].sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0))
+    } else if (sortBy === 'title') {
+      list = [...list].sort((a, b) => {
+        const ta = a.article?.title ?? a.query ?? ''
+        const tb = b.article?.title ?? b.query ?? ''
+        return ta.localeCompare(tb)
+      })
+    }
+    // 'date' is already the default sort from the fetch
+
+    return list
   })()
 
   const tabs = [
@@ -560,6 +629,41 @@ function ArticleSubTabs({ articles: initialArticles }: { articles: ArticleRow[] 
             )}
           </button>
         ))}
+      </div>
+
+      {/* Filter & sort controls */}
+      <div className="flex flex-wrap items-center gap-3 mb-3">
+        <FilterSelect
+          label="Visibility"
+          value={visFilter}
+          onChange={(v) => setVisFilter(v as VisFilter)}
+          options={[
+            { value: 'all', label: 'All' },
+            { value: 'published', label: 'Published' },
+            { value: 'unlisted', label: 'Unlisted' },
+            { value: 'private', label: 'Private' },
+          ]}
+        />
+        <FilterSelect
+          label="Fact-check"
+          value={fcFilter}
+          onChange={(v) => setFcFilter(v as FcFilter)}
+          options={[
+            { value: 'all', label: 'All' },
+            { value: 'verified', label: 'Verified' },
+            { value: 'unverified', label: 'Unverified' },
+          ]}
+        />
+        <FilterSelect
+          label="Sort"
+          value={sortBy}
+          onChange={(v) => setSortBy(v as SortBy)}
+          options={[
+            { value: 'date', label: 'Date' },
+            { value: 'views', label: 'Views' },
+            { value: 'title', label: 'Title' },
+          ]}
+        />
       </div>
 
       {/* Filtered article count */}

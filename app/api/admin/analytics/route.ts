@@ -6,13 +6,34 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   const db = getSupabaseAdmin()
 
-  // Total views across all articles
-  const { data: articles } = await db
+  // All articles for visibility/status breakdown
+  const { data: allArticles } = await db
     .from('articles')
-    .select('id, slug, article, view_count, status, category, plan')
-    .in('status', ['complete', 'verified'])
+    .select('id, slug, article, view_count, status, category, plan, visibility, created_at')
 
+  // Filter to complete/verified for analytics (same as before)
+  const articles = (allArticles ?? []).filter(a => a.status === 'complete' || a.status === 'verified')
   const totalViews = (articles ?? []).reduce((sum, a) => sum + (a.view_count ?? 0), 0)
+
+  // Visibility breakdown across ALL articles
+  const visibilityBreakdown = {
+    published: 0,
+    unlisted: 0,
+    private: 0,
+    error: 0,
+    total: (allArticles ?? []).length,
+  }
+  for (const a of allArticles ?? []) {
+    if (a.status === 'error') {
+      visibilityBreakdown.error++
+    } else if (a.visibility === 'private') {
+      visibilityBreakdown.private++
+    } else if (a.visibility === 'unlisted') {
+      visibilityBreakdown.unlisted++
+    } else {
+      visibilityBreakdown.published++
+    }
+  }
 
   // Top 5 articles by views
   const topArticles = (articles ?? [])
@@ -108,9 +129,50 @@ export async function GET() {
     }
   }
 
+  // Content health metrics
+  const now = new Date()
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const thirtyDaysAgo2 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+
+  const noHeroImage = articles.filter(a => !a.article?.thumbnail_url).length
+  const noFactCheck = articles.filter(a => a.status !== 'verified').length
+  const zeroViews = articles.filter(a => (a.view_count ?? 0) === 0).length
+  const last7Days = (allArticles ?? []).filter(a => new Date(a.created_at) >= sevenDaysAgo).length
+  const last30Days = (allArticles ?? []).filter(a => new Date(a.created_at) >= thirtyDaysAgo2).length
+
+  // Average article word count across published articles
+  let totalWords = 0
+  let countedArticles = 0
+  for (const a of articles) {
+    if (a.article?.sections) {
+      let words = 0
+      for (const s of a.article.sections as Array<Record<string, unknown>>) {
+        if (typeof s.body === 'string') words += s.body.split(/\s+/).length
+        if (typeof s.content === 'string') words += s.content.split(/\s+/).length
+        if (typeof s.intro === 'string') words += s.intro.split(/\s+/).length
+      }
+      if (words > 0) {
+        totalWords += words
+        countedArticles++
+      }
+    }
+  }
+  const avgWordCount = countedArticles > 0 ? Math.round(totalWords / countedArticles) : 0
+
+  const contentHealth = {
+    noHeroImage,
+    noFactCheck,
+    zeroViews,
+    last7Days,
+    last30Days,
+    avgWordCount,
+  }
+
   return NextResponse.json({
     totalViews,
     totalArticles,
+    visibilityBreakdown,
+    contentHealth,
     topArticles,
     viewsByType,
     articlesByType,
