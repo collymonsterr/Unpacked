@@ -609,6 +609,12 @@ RULES FOR REFINEMENT:
 6. When adding new content, draw from the research findings provided below — do not invent product names, specifications, prices, or claims.
 7. Preserve all existing text, structure, formatting, component types, and data exactly as written for unchanged sections.
 
+IMAGE HANDLING RULES (critical — images break if you get this wrong):
+8. UPLOADING: When the user provides an image URL to insert, use EXACTLY that URL in the image_section's image_url field. Never substitute a different URL. Set source to "user_upload".
+9. SWAPPING: When the user asks to swap/replace an existing image, change ONLY the image_url field on the target image. Keep the same image_section position, layout, caption, alt_text, and search_query. Do NOT remove the image_section or set image_url to null.
+10. REMOVING: When the user asks to remove an image, remove ONLY that specific image_section. Keep all other image_sections unchanged.
+11. PRESERVING: Every image_section in the current article that the user did NOT mention must appear in your output with identical image_url, search_query, caption, alt_text, and layout. Clearing image_url or search_query makes the image disappear — never do this unless explicitly asked.
+
 QUERY: ${query}
 REFINEMENT INSTRUCTION: "${instruction}"
 ${optionsPrompt}${researchBlock}

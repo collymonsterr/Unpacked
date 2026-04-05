@@ -272,6 +272,56 @@ export async function POST(
       refined.article_type = row.article.article_type
     }
 
+    // ── Image preservation check ──
+    // If the original article had images and the instruction wasn't to remove them,
+    // restore any images the model accidentally wiped
+    type ImgData = { image_url?: string | null; search_query?: string | null }
+    type ImgSection = { type: string; heading?: string; images?: ImgData[] }
+
+    const originalImageSections = ((row.article.sections ?? []) as Array<{ type: string }>)
+      .filter(s => s.type === 'image_section') as unknown as ImgSection[]
+    const refinedImageSections = (refined.sections ?? [])
+      .filter((s: { type: string }) => s.type === 'image_section') as unknown as ImgSection[]
+
+    const isRemovalInstruction = /\b(remove|delete|drop|get rid of)\b.*\b(image|photo|picture|img)\b/i.test(instruction ?? '')
+
+    if (originalImageSections.length > 0 && !isRemovalInstruction) {
+      // Check for images with wiped URLs (model cleared image_url but kept the section)
+      for (const section of refinedImageSections) {
+        const imgs = section.images ?? []
+        for (let i = 0; i < imgs.length; i++) {
+          if (!imgs[i].image_url && !imgs[i].search_query) {
+            // Find matching original image to restore
+            const matchingOriginal = originalImageSections.find(os => os.heading === section.heading)
+            if (matchingOriginal) {
+              const origImgs = matchingOriginal.images ?? []
+              if (origImgs[i]) {
+                console.warn(`[refine] Restoring wiped image in "${section.heading}" from original`)
+                imgs[i] = { ...imgs[i], ...origImgs[i] }
+              }
+            }
+          }
+        }
+      }
+
+      // Check if entire image_sections were dropped
+      const minExpected = originalImageSections.length - 1 // Allow removing at most 1
+      if (refinedImageSections.length < minExpected) {
+        console.warn(`[refine] Image sections dropped from ${originalImageSections.length} to ${refinedImageSections.length} — restoring missing`)
+        // Find which original image_sections are missing by heading match
+        const refinedHeadings = new Set(refinedImageSections.map(s => s.heading))
+        for (const origSection of originalImageSections) {
+          if (!refinedHeadings.has(origSection.heading)) {
+            // Find the original position and re-insert
+            const origIdx = (row.article.sections ?? []).indexOf(origSection as never)
+            const insertIdx = Math.min(origIdx, refined.sections.length)
+            refined.sections.splice(insertIdx, 0, origSection as never)
+            console.warn(`[refine] Restored image_section "${origSection.heading}" at position ${insertIdx}`)
+          }
+        }
+      }
+    }
+
     const enriched = await enrichArticleWithImages(refined, row.plan?.entities ?? [])
 
     // Preserve hero image from parent
