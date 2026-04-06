@@ -1,6 +1,6 @@
 # PLAN.md — Unpacked Forward Build Plan
 
-Last updated: April 2026 (Build 5 sync — 1F, 1L, 1N marked done)
+Last updated: April 2026 (Build 5 — Stripe wired, URL prefetch built, monetisation strategy added)
 
 ---
 
@@ -112,6 +112,9 @@ After blueprint: cheap model call generates context-aware image query and image_
 ### 2C. Vision Selection Model
 GPT-4o-mini vision evaluates 4–6 candidates. Reject: corporate stock, staged scenes, irrelevant imagery, text overlays. ~$0.005/article added.
 
+### 2E. Interactive Map Component
+New `map_section` type in the article JSON schema. Renders an interactive map with custom markers, popups with data labels (e.g. "Strait of Hormuz — 20.9M barrels/day"), and Unpacked design system styling. Use Leaflet (free, open source) or Google Maps JavaScript API (free tier: 28,000 loads/month). Pipeline changes: planner detects geographic content and adds `map_data` field with locations/coordinates/labels. Writer includes `map_section` with array of points: `{ name, lat, lng, value, description }`. New `MapSection.tsx` component. Use cases: oil chokepoints, travel destination lists, "best cities" rankings, geopolitical articles, visual lists of places.
+
 ---
 
 ## Phase 2D — Media and Video Support
@@ -168,6 +171,9 @@ Watch list of accounts in admin. Polls via third-party service (Twilert ~$10–2
 ### 4I. Entertainment/Trending Content Strategy
 Google Trends 200%+ spike as automatic trigger for suggested articles. Builds on existing Google Trends integration. Complements Reddit opportunity monitor — different signal source, same one-click generate UX.
 
+### ~~4J. Tweet-to-Article URL Detection~~ DONE (April 2026)
+Detect tweet/X URLs pasted into the search box. Extract tweet content via oEmbed API (free, no auth) with Brave Search fallback. Inject tweet text, author, and engagement stats as structured context before planning. Also handles Reddit URLs and general article URLs. Store source tweet data in `generation_options.source_tweet` for attribution display. SearchForm shows "Tweet detected" indicator. Article page shows "Inspired by @handle" attribution when generated from a tweet. Built as `lib/url-prefetch.ts` — URL detection + content fetching for tweets (oEmbed + Brave fallback), Reddit posts (existing `.json` pattern), and general URLs (Brave snippet).
+
 ---
 
 ## Phase 5 — Live Data Expansion
@@ -214,8 +220,20 @@ Generate article on real phone. Read, share, use every feature. Fix what feels w
 
 ## Phase 7 — Monetisation Activation
 
+### 7A-pre. Skimlinks Integration (FIRST STEP)
+Add Skimlinks JavaScript snippet to `app/layout.tsx`. Skimlinks automatically converts existing product links in articles into affiliate links across 48,500+ merchants. No code changes to the article pipeline needed. One script tag. Sign up for Skimlinks account, paste snippet, immediate affiliate revenue on all existing buyer guides and comparisons. This should be the FIRST monetisation step — before any custom affiliate infrastructure.
+
 ### 7A. Affiliate Infrastructure
 `affiliate_url` field alongside `product_url`. Admin toggle routes buy buttons. Skimlinks or impact.com. Quality gate: 5 published articles + quality score + traffic threshold. Start at 20%.
+
+### 7A.1. "Products Mentioned" Section
+Surface purchasable entities at the bottom of ANY article type, not just buyer guides. Any article that mentions specific products, brands, or services should show them as clickable product cards in a "Products mentioned in this article" section before the CTA. Planner already extracts entity cards — filter for purchasable entities and surface them. Skimlinks converts the links automatically.
+
+### 7A.2. Creator Product Additions
+Let creators add their own product recommendations to any article type via the Editor Bar. "Add a product" button that accepts a product URL. Skimlinks converts it. Creators are incentivised to add products because they'll eventually earn affiliate revenue.
+
+### 7A.3. Related Products from Research
+After article generation, a secondary pass identifies contextually relevant products not directly discussed. An article about "best cities for digital nomads" could surface: portable monitors, travel insurance, international SIM cards, coworking memberships. Contextual, not spammy.
 
 ### 7B. Creator Revenue Dashboard
 Real affiliate earnings per article. Must be trustworthy.
@@ -232,6 +250,24 @@ Check Next.js App Router compatibility, Supabase Google OAuth in webview, native
 
 ### 8B. Capacitor Build
 App Store and Google Play. Apple requires StoreKit for iOS subscriptions.
+
+---
+
+## Monetisation Strategy Notes
+
+### Category Monetisation Tiers
+
+- **High affiliate potential**: Tech (highest commissions, every article mentions products), Home (appliances, high AOV), Health (supplements, equipment, recurring), Finance (credit cards pay $50-200 per signup), Automotive (accessories, insurance)
+- **Medium affiliate potential**: Travel (booking links, gear, insurance), Entertainment (streaming, gaming products)
+- **Low direct affiliate but high traffic**: News, Culture, Science, AI — these drive traffic to the platform; monetise via reader-to-creator conversion and newsletter capture, not direct affiliate
+
+### Affiliate Creator Outreach Strategy
+
+Target niche site owners, Substack writers, and YouTube reviewers who publish product content. Found in r/juststart, r/Affiliatemarketing, r/blogging, and affiliate marketing Twitter. Pitch: "Your expertise, our infrastructure. Research in minutes, earn on every click." Don't say "AI writes for you" — say "we accelerate your research and handle formatting."
+
+### Viral Content → Buyer Guide Funnel
+
+Viral articles (myth busters, ranked lists, tweet-inspired) drive traffic. At the bottom, the CTA converts readers to creators. Those creators make buyer guides and comparisons that earn affiliate. The viral articles are the top of the funnel, not the monetisation point.
 
 ---
 
@@ -282,13 +318,16 @@ Reddit thread links in `CommunityInsights.tsx` wrap subreddit links, producing `
 5. ~~Plan Mode → user control over article direction~~ DONE
 6. ~~Legal pages → compliance baseline~~ DONE
 7. ~~Account deletion flow → GDPR compliance~~ DONE
-8. **Stripe** → monetisation foundation
-9. **Seed article regeneration** → 20 curated showcase articles
-10. **Mobile end-to-end testing** → verify all new features on phone
-11. **Pre-launch creator cohort** → real feedback
-12. **Affiliate infrastructure** → revenue
+8. ~~Stripe~~ DONE → monetisation foundation
+9. ~~Tweet-to-article URL detection~~ DONE → content sourcing
+10. **Skimlinks integration** → immediate affiliate revenue (one script tag)
+11. **Seed article regeneration** → 20 curated showcase articles
+12. **Mobile end-to-end testing** → verify all new features on phone
+13. **Pre-launch creator cohort** → real feedback
+14. **"Products Mentioned" section** → affiliate surface area on all article types
+15. **Creator analytics dashboard** → retention
 
-The product is feature-rich. The gaps are: monetisation (Stripe + affiliates), content curation, distribution, and creator tooling (analytics, research over-gather).
+The product is feature-rich. The gaps are: affiliate activation (Skimlinks → immediate), content curation, distribution, and creator tooling (analytics, research over-gather).
 
 ---
 
@@ -298,13 +337,13 @@ The product is feature-rich. The gaps are: monetisation (Stripe + affiliates), c
 |-------|---------|
 | Immediate | 6 (quick) |
 | Phase 1 | 10 |
-| Phase 2 | 3 |
+| Phase 2 | 4 |
 | Phase 2D (Media) | 2 |
 | Phase 3 | 3 |
-| Phase 4 | 9 |
+| Phase 4 | 9 (4J done) |
 | Phase 5 | 7 |
 | Phase 6 | 4 |
-| Phase 7 | 3 |
+| Phase 7 | 6 |
 | Phase 8 | 2 |
 | Maintenance | 4 |
-| **Total** | **~53** |
+| **Total** | **~57** |
