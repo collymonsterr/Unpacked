@@ -284,9 +284,9 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 
 ---
 
-## API Routes (54 confirmed)
+## API Routes (57 confirmed)
 
-Covering: articles CRUD (create, view, delete, refine, regenerate, visibility, type switch), admin (costs, feedback, analytics, users, backfill, reclassify, migrate), article features (fact-check, featured, trending, pin, hide, share-credit, social-content, card-summary, research, cost-breakdown, section-edit, section-suggestions), images (upload-hero, replace-image, replace-thumbnail, set-primary-image, regenerate-images, upload-refine-image, swap-image), profile (profile, usage, article-count), founding creators, improve-prompt, plan-preview, categories, saved-articles, waitlist, search, recent, reorder, claim, start-writing.
+Covering: articles CRUD (create, view, delete, refine, regenerate, visibility, type switch), admin (costs, feedback, analytics, users, backfill, reclassify, migrate), article features (fact-check, featured, trending, pin, hide, share-credit, social-content, card-summary, research, cost-breakdown, section-edit, section-suggestions), images (upload-hero, replace-image, replace-thumbnail, set-primary-image, regenerate-images, upload-refine-image, swap-image), stripe (checkout, webhook, portal), profile (profile, usage, article-count), founding creators, improve-prompt, plan-preview, categories, saved-articles, waitlist, search, recent, reorder, claim, start-writing.
 
 ---
 
@@ -309,19 +309,29 @@ Covering: articles CRUD (create, view, delete, refine, regenerate, visibility, t
 
 ---
 
-## Tier System (built — waitlist mode, Stripe not yet connected)
+## Tier System (built — Stripe Checkout connected)
 
 - Three tiers: Free ($0, 3 articles/month), Standard ($12, 15/month), Pro ($29, 60/month)
-- `profiles` table: `tier`, `monthly_article_limit`, `articles_used_this_month`, `month_reset_date`, `bonus_credits`, `is_founding_creator`, `tier_updated_at`
-- `upgrade_waitlist` table for paid tier interest tracking
+- `profiles` table: `tier`, `monthly_article_limit`, `articles_used_this_month`, `month_reset_date`, `bonus_credits`, `is_founding_creator`, `tier_updated_at`, `stripe_customer_id`, `stripe_subscription_id`, `payment_failed`
+- `upgrade_waitlist` table for paid tier interest tracking (cleaned up on successful checkout)
 - Tier enforcement in `app/api/articles/create/route.ts` — checks allowance after rate limit, auto-resets monthly, admin bypasses all limits
 - Bonus credits consumed after tier allowance exhausted
-- Pricing page at `/pricing` — three-column layout, "Most popular" badge on Standard, waitlist CTA for paid tiers
-- Waitlist API at `app/api/waitlist/route.ts`
+- **Stripe Checkout (April 2026):**
+  - `lib/stripe-config.ts` — Stripe instance, price ID mapping, tier limits
+  - `app/api/stripe/checkout/route.ts` — creates Stripe Checkout session, creates/reuses Stripe customer
+  - `app/api/stripe/webhook/route.ts` — handles `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`. Raw body + signature verification.
+  - `app/api/stripe/portal/route.ts` — creates Stripe Billing Portal session for managing subscription
+  - Stripe SDK: `stripe` (server) + `@stripe/stripe-js` (client, for future use)
+  - Env vars: `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`
+  - Migration: `scripts/add-stripe-columns.sql` (stripe_customer_id, stripe_subscription_id, payment_failed)
+- Pricing page at `/pricing` — three-column layout, "Most popular" badge on Standard, real checkout buttons for paid tiers (redirects to Stripe Checkout). Shows "Current plan" when already subscribed. Sign-in redirects back with `?checkout=tier` param.
+- Waitlist API at `app/api/waitlist/route.ts` (still exists; waitlist entries cleaned on checkout completion)
 - Usage API at `app/api/profile/usage/route.ts`
 - Usage indicator on homepage hero: "2 of 3 articles remaining" (amber at 0)
 - Limit reached modal with upgrade/share options
 - Usage section on dashboard with progress bar, tier display, reset date
+- Upgrade success toast on `/dashboard?upgraded=true` — green banner with tier name
+- Settings page: "Manage billing" section for paid users → redirects to Stripe Customer Portal (payment method, invoices, cancellation)
 - Pricing link in navbar and footer
 
 ---

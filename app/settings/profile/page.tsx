@@ -22,6 +22,11 @@ interface ProfileData {
   language: string
 }
 
+interface UsageData {
+  tier: string
+  monthlyLimit: number
+}
+
 export default function ProfileSettingsPage() {
   const { user, loading: authLoading } = useUser()
   const router = useRouter()
@@ -38,6 +43,7 @@ export default function ProfileSettingsPage() {
   const [location, setLocation] = useState('')
   const [currency, setCurrency] = useState('USD')
   const [language, setLanguage] = useState('en')
+  const [usageData, setUsageData] = useState<UsageData | null>(null)
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -62,6 +68,11 @@ export default function ProfileSettingsPage() {
         setLoading(false)
       })
       .catch(() => setLoading(false))
+
+    fetch('/api/profile/usage')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (data) setUsageData(data) })
+      .catch(() => {})
   }, [user, authLoading, router])
 
   async function handleSave() {
@@ -420,9 +431,89 @@ export default function ProfileSettingsPage() {
           </div>
         )}
 
+        {/* ─── Subscription Section (paid users only) ─── */}
+        {usageData && usageData.tier !== 'free' && (
+          <SubscriptionSection tier={usageData.tier} monthlyLimit={usageData.monthlyLimit} />
+        )}
+
         {/* ─── Delete Account Section ─── */}
         <DeleteAccountSection />
       </div>
+    </div>
+  )
+}
+
+function SubscriptionSection({ tier, monthlyLimit }: { tier: string; monthlyLimit: number }) {
+  const [loading, setLoading] = useState(false)
+  const tierLabels: Record<string, string> = { standard: 'Standard', pro: 'Pro' }
+  const tierPrices: Record<string, string> = { standard: '$12', pro: '$29' }
+
+  async function openBillingPortal() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/stripe/portal', { method: 'POST' })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="mt-12 pt-8" style={{ borderTop: '1px solid var(--border)' }}>
+      <p
+        className="text-xs font-semibold uppercase tracking-widest mb-4"
+        style={{ color: 'var(--accent)' }}
+      >
+        Subscription
+      </p>
+
+      <div
+        className="rounded-xl p-5 mb-4"
+        style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span
+              className="text-sm font-bold"
+              style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-sora)' }}
+            >
+              {tierLabels[tier] ?? tier}
+            </span>
+            <span
+              className="text-xs px-2 py-0.5 rounded-full font-semibold"
+              style={{ backgroundColor: 'var(--accent-light)', color: 'var(--accent)' }}
+            >
+              Active
+            </span>
+          </div>
+          <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+            {tierPrices[tier] ?? ''}/month
+          </span>
+        </div>
+        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+          {monthlyLimit} articles per month
+        </p>
+      </div>
+
+      <button
+        onClick={openBillingPortal}
+        disabled={loading}
+        className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-50"
+        style={{
+          backgroundColor: 'var(--text-primary)',
+          color: '#fff',
+          cursor: loading ? 'default' : 'pointer',
+          border: 'none',
+        }}
+      >
+        {loading ? 'Opening...' : 'Manage billing'}
+      </button>
+      <p className="text-xs mt-2" style={{ color: 'var(--text-secondary)' }}>
+        Update payment method, view invoices, or cancel your subscription.
+      </p>
     </div>
   )
 }

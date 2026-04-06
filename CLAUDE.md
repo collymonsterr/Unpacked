@@ -236,6 +236,7 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - `lib/image-router.ts` — source routing by image type
 - `lib/pexels.ts` — Pexels API integration
 - `lib/article-types.ts` — 14 type definitions with component rules
+- `lib/stripe-config.ts` — Stripe instance, price IDs, tier limits
 
 ### Live Data
 - `lib/data-sources/polymarket.ts` — prediction market odds
@@ -267,7 +268,7 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - `components/editor/FindingCard.tsx` — individual research finding with source link + checkbox
 - `components/SharePanel.tsx` — 4-tab social content panel (Twitter, LinkedIn, Reddit, Image Cards)
 
-### API Routes (51 total)
+### API Routes (57 total)
 - `app/api/articles/create/route.ts` — main generation flow
 - `app/api/articles/plan-preview/route.ts` — plan mode: planning + research + angle generation
 - `app/api/articles/search/route.ts` — navbar autocomplete
@@ -334,6 +335,9 @@ OPENAI_API_KEY                 # GPT-4o-mini fact-check arbitration
 PEXELS_API_KEY                 # Pexels image search (hero editorial)
 UNSPLASH_ACCESS_KEY            # Unsplash image search (hero fallback)
 SERPAPI_KEY                    # Google Trends data
+STRIPE_WEBHOOK_SECRET          # Webhook signing secret (from Stripe Dashboard)
+STRIPE_PRICE_STANDARD          # Stripe price ID for Standard tier ($12/month)
+STRIPE_PRICE_PRO               # Stripe price ID for Pro tier ($29/month)
 NEXT_PUBLIC_SUPABASE_URL       # https://obyywahmmkrpsimjbdua.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY  # Public key
 SUPABASE_SERVICE_ROLE_KEY      # Server-side only — never in client code

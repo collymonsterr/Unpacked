@@ -53,7 +53,7 @@ The single metric that matters: number of articles shared externally and discove
 Priority order. Each is one build session.
 
 ### ~~1A. Tier Infrastructure~~ DONE (April 2026)
-Tier system (free/standard/pro), pricing page, tier enforcement in article creation, usage indicators, upgrade prompts, waitlist for paid tiers — all built. Share credits system built (1 credit per platform per article, max 4). Founding Creators programme built (100 spots, manual admin approval, +10 bonus credits/month, amber badge). **Remaining: Stripe checkout + webhooks to activate paid tiers.** When Stripe credentials are added, wire checkout to upgrade_waitlist → profiles.tier update.
+Tier system (free/standard/pro), pricing page, tier enforcement in article creation, usage indicators, upgrade prompts, waitlist for paid tiers — all built. Share credits system built (1 credit per platform per article, max 4). Founding Creators programme built (100 spots, manual admin approval, +10 bonus credits/month, amber badge). **Stripe Checkout + webhooks wired (April 2026):** checkout session API, webhook handler (4 events), billing portal, pricing page updated with real subscribe buttons, upgrade toast on dashboard, manage billing in settings. Migration: `scripts/add-stripe-columns.sql`.
 
 ### ~~1B. Guided First-Article Onboarding~~ DONE (April 2026)
 First-time users see onboarding hero with 6 example prompt cards (Tech, Finance, Health, Travel, Home, News). Clicking a card starts generation immediately. Disappears after first article. Simplified from original plan (no nudges, no forced review moment — just example cards).

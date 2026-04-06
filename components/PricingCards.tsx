@@ -1,63 +1,136 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useUser } from '@/hooks/useUser'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createBrowserSupabase } from '@/lib/supabase'
 import { Suspense } from 'react'
 
+interface UsageData {
+  tier: string
+  articlesUsed: number
+  monthlyLimit: number
+}
+
 function PricingCardsInner() {
   const { user, loading } = useUser()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [waitlistState, setWaitlistState] = useState<Record<string, 'idle' | 'loading' | 'done'>>({
+  const [checkoutState, setCheckoutState] = useState<Record<string, 'idle' | 'loading' | 'error'>>({
     standard: 'idle',
     pro: 'idle',
   })
+  const [usage, setUsage] = useState<UsageData | null>(null)
 
-  // Auto-join waitlist if redirected back with ?join=standard or ?join=pro
-  const autoJoinTier = searchParams.get('join')
-  if (autoJoinTier && user && !loading && ['standard', 'pro'].includes(autoJoinTier) && waitlistState[autoJoinTier] === 'idle') {
-    joinWaitlist(autoJoinTier)
-  }
+  // Fetch current tier for logged-in users
+  useEffect(() => {
+    if (!user || loading) return
+    fetch('/api/profile/usage')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (data) setUsage(data) })
+      .catch(() => {})
+  }, [user, loading])
 
-  async function joinWaitlist(tier: string) {
+  // Handle ?checkout=standard or ?checkout=pro redirect after sign-in
+  const autoCheckoutTier = searchParams.get('checkout')
+  useEffect(() => {
+    if (autoCheckoutTier && user && !loading && ['standard', 'pro'].includes(autoCheckoutTier) && checkoutState[autoCheckoutTier] === 'idle') {
+      // Clear param from URL first
+      router.replace('/pricing', { scroll: false })
+      startCheckout(autoCheckoutTier)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoCheckoutTier, user, loading])
+
+  async function startCheckout(tier: string) {
     if (!user) {
-      // Redirect to sign in, then back to /pricing with join param
+      // Redirect to sign in, then back to /pricing with checkout param
       const supabase = createBrowserSupabase()
       await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}/pricing?join=${tier}` },
+        options: { redirectTo: `${window.location.origin}/pricing?checkout=${tier}` },
       })
       return
     }
 
-    setWaitlistState(prev => ({ ...prev, [tier]: 'loading' }))
+    setCheckoutState(prev => ({ ...prev, [tier]: 'loading' }))
     try {
-      const res = await fetch('/api/waitlist', {
+      const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tier }),
       })
-      if (res.ok) {
-        setWaitlistState(prev => ({ ...prev, [tier]: 'done' }))
-        // Clear join param from URL
-        if (autoJoinTier) {
-          router.replace('/pricing', { scroll: false })
-        }
+      const data = await res.json()
+
+      if (!res.ok) {
+        console.error('[pricing] Checkout error:', data.error)
+        setCheckoutState(prev => ({ ...prev, [tier]: 'error' }))
+        setTimeout(() => setCheckoutState(prev => ({ ...prev, [tier]: 'idle' })), 3000)
+        return
+      }
+
+      // Redirect to Stripe Checkout
+      if (data.url) {
+        window.location.href = data.url
       }
     } catch {
-      setWaitlistState(prev => ({ ...prev, [tier]: 'idle' }))
+      setCheckoutState(prev => ({ ...prev, [tier]: 'error' }))
+      setTimeout(() => setCheckoutState(prev => ({ ...prev, [tier]: 'idle' })), 3000)
     }
   }
 
   function handleFreeCTA() {
-    if (user) return // Disabled when logged in
+    if (user) return
     const supabase = createBrowserSupabase()
     supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/` },
     })
+  }
+
+  const currentTier = usage?.tier ?? 'free'
+
+  function getCtaForTier(tier: string): { label: string; disabled: boolean; action: () => void } {
+    if (tier === 'free') {
+      if (user) return { label: "You're on the Free plan", disabled: true, action: () => {} }
+      return { label: 'Get started', disabled: false, action: handleFreeCTA }
+    }
+
+    // Paid tiers
+    if (!user) {
+      return {
+        label: 'Sign in to subscribe',
+        disabled: false,
+        action: () => startCheckout(tier),
+      }
+    }
+
+    // Already on this tier
+    if (currentTier === tier) {
+      return { label: 'Current plan', disabled: true, action: () => {} }
+    }
+
+    // On a higher tier
+    if (currentTier === 'pro' && tier === 'standard') {
+      return { label: "You're on Pro", disabled: true, action: () => {} }
+    }
+
+    // Checkout states
+    const state = checkoutState[tier]
+    if (state === 'loading') {
+      return { label: 'Redirecting...', disabled: true, action: () => {} }
+    }
+    if (state === 'error') {
+      return { label: 'Something went wrong', disabled: true, action: () => {} }
+    }
+
+    // Ready to subscribe
+    const price = tier === 'standard' ? '$12' : '$29'
+    const label = currentTier !== 'free' && currentTier !== tier
+      ? `Switch to ${tier === 'standard' ? 'Standard' : 'Pro'} \u2014 ${price}/month`
+      : `Subscribe \u2014 ${price}/month`
+
+    return { label, disabled: false, action: () => startCheckout(tier) }
   }
 
   const tiers = [
@@ -73,9 +146,7 @@ function PricingCardsInner() {
         'All 10 article types',
         'Share to earn bonus credits',
       ],
-      cta: user ? "You're on the Free plan" : 'Get started',
-      ctaDisabled: !!user,
-      onCTA: handleFreeCTA,
+      ...getCtaForTier('free'),
       highlight: false,
       tier: 'free',
     },
@@ -93,13 +164,7 @@ function PricingCardsInner() {
         'CMS and Substack export',
         'Custom creator CTA on articles',
       ],
-      cta: waitlistState.standard === 'done'
-        ? "You're on the list"
-        : waitlistState.standard === 'loading'
-        ? 'Joining...'
-        : 'Join the waitlist',
-      ctaDisabled: waitlistState.standard !== 'idle',
-      onCTA: () => joinWaitlist('standard'),
+      ...getCtaForTier('standard'),
       highlight: true,
       tier: 'standard',
     },
@@ -117,13 +182,7 @@ function PricingCardsInner() {
         'Creator analytics',
         'Priority generation',
       ],
-      cta: waitlistState.pro === 'done'
-        ? "You're on the list"
-        : waitlistState.pro === 'loading'
-        ? 'Joining...'
-        : 'Join the waitlist',
-      ctaDisabled: waitlistState.pro !== 'idle',
-      onCTA: () => joinWaitlist('pro'),
+      ...getCtaForTier('pro'),
       highlight: false,
       tier: 'pro',
     },
@@ -147,22 +206,6 @@ function PricingCardsInner() {
           <TierCard key={t.tier} {...t} />
         ))}
       </div>
-
-      {/* Waitlist confirmation toast */}
-      {(waitlistState.standard === 'done' || waitlistState.pro === 'done') && (
-        <div
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-lg z-50"
-          style={{
-            backgroundColor: 'var(--text-primary)',
-            color: '#fff',
-            fontFamily: 'var(--font-outfit)',
-          }}
-        >
-          <p className="text-sm font-medium">
-            You&apos;re on the list. We&apos;ll notify you when paid plans go live.
-          </p>
-        </div>
-      )}
     </>
   )
 }
@@ -174,9 +217,9 @@ function TierCard({
   badge,
   description,
   features,
-  cta,
-  ctaDisabled,
-  onCTA,
+  label,
+  disabled,
+  action,
   highlight,
 }: {
   name: string
@@ -185,9 +228,9 @@ function TierCard({
   badge?: string
   description: string
   features: string[]
-  cta: string
-  ctaDisabled: boolean
-  onCTA: () => void
+  label: string
+  disabled: boolean
+  action: () => void
   highlight: boolean
   tier: string
 }) {
@@ -239,18 +282,18 @@ function TierCard({
       </div>
 
       <button
-        onClick={onCTA}
-        disabled={ctaDisabled}
+        onClick={action}
+        disabled={disabled}
         className="w-full py-3 rounded-xl font-semibold text-sm transition-opacity mb-6"
         style={{
-          backgroundColor: highlight ? 'var(--accent)' : ctaDisabled ? 'var(--border)' : 'var(--text-primary)',
-          color: ctaDisabled && !highlight ? 'var(--text-secondary)' : '#fff',
+          backgroundColor: highlight ? 'var(--accent)' : disabled ? 'var(--border)' : 'var(--text-primary)',
+          color: disabled && !highlight ? 'var(--text-secondary)' : '#fff',
           fontFamily: 'var(--font-sora)',
-          cursor: ctaDisabled ? 'default' : 'pointer',
-          opacity: ctaDisabled && !highlight ? 0.7 : 1,
+          cursor: disabled ? 'default' : 'pointer',
+          opacity: disabled && !highlight ? 0.7 : 1,
         }}
       >
-        {cta}
+        {label}
       </button>
 
       <ul className="space-y-3">

@@ -37,7 +37,7 @@ export default function PricingPage() {
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             All plans include triple-verified fact-checking, all 10 article types, and full image and chart support.
             <br />
-            Paid plans are coming soon. Join the waitlist to be first in line.
+            Cancel anytime. No long-term commitment.
           </p>
         </div>
       </section>
