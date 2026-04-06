@@ -105,6 +105,21 @@ Four distinct components in `components/sections/LiveDataCard.tsx`, auto-selecte
 
 ---
 
+## URL Pre-Fetch Layer (built April 2026)
+
+- Users can paste tweet, Reddit, or article URLs directly into the search box
+- **URL detection**: `detectUrls()` in `lib/url-prefetch.ts` classifies URLs as tweet, reddit, or article
+- **Tweet fetching**: Twitter oEmbed API (free, no auth) → falls back to Brave Search if oEmbed fails. Returns full tweet text.
+- **Reddit fetching**: `.json` endpoint on Reddit post URL → falls back to Brave. Returns title, selftext, author, score, comments.
+- **Article fetching**: Brave Search for the URL → returns snippet/description
+- **Context injection**: `buildPrefetchContext()` prepends the fetched content to the planning prompt so the planner sees the actual source material
+- **Source metadata**: Stored in `generation_options.source_tweet` / `.source_reddit` / `.source_article` on the article record (for future "Inspired by @handle" display)
+- **SearchForm indicator**: 12px muted text below search box when URL detected: "Tweet detected — we'll extract the content and build an article from it" (or Reddit/Article variant)
+- Wired into both `plan-preview` and `create` routes (Phase 0, before planning)
+- No new API keys required — uses existing Brave Search + free Twitter oEmbed
+
+---
+
 ## Planning Refusal Handling (built April 2026)
 
 - **Query sanitisation (Layer 1)** — `sanitizeQueryForPlanning()` in `lib/claude.ts` strips idiomatic phrases that trigger false-positive safety refusals: "before you die" → "in your lifetime", "killer deals" → "amazing deals", "drop dead gorgeous" → "stunning", "destroyed Blockbuster" → "disrupted Blockbuster", etc. 11 rules. Original query preserved for display — only the planning API call gets the sanitised version.

@@ -26,6 +26,20 @@ const PHASE1_MESSAGES = [
   'Starting the research pass...',
 ]
 
+// URL detection for indicator text (client-side only — lightweight regex, no fetching)
+function detectUrlType(text: string): 'tweet' | 'reddit' | 'article' | null {
+  if (/https?:\/\/(?:x\.com|twitter\.com)\/\w+\/status\/\d+/i.test(text)) return 'tweet'
+  if (/https?:\/\/(?:www\.)?reddit\.com\/r\/\w+\/comments\/\w+/i.test(text)) return 'reddit'
+  if (/https?:\/\/[^\s]{10,}/i.test(text)) return 'article'
+  return null
+}
+
+const URL_INDICATOR_TEXT: Record<string, string> = {
+  tweet: "Tweet detected \u2014 we'll extract the content and build an article from it",
+  reddit: "Reddit post detected \u2014 we'll extract the content and build an article from it",
+  article: "Article detected \u2014 we'll extract the content and build an article from it",
+}
+
 export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean } = {}) {
   const [query, setQuery] = useState('')
   const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0])
@@ -434,6 +448,24 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
             autoFocus={autoFocus}
           />
         </div>
+
+        {/* URL detection indicator */}
+        {(() => {
+          const urlType = detectUrlType(query)
+          if (!urlType) return null
+          return (
+            <p
+              className="mt-1.5 px-4"
+              style={{
+                fontSize: '12px',
+                color: 'var(--text-secondary)',
+                fontFamily: 'var(--font-outfit)',
+              }}
+            >
+              {URL_INDICATOR_TEXT[urlType]}
+            </p>
+          )
+        })()}
 
         {/* Improve prompt chip */}
         {improveState === 'chip' && (

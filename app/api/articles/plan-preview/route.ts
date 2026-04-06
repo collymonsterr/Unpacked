@@ -6,6 +6,7 @@ import { checkRateLimit } from '@/lib/rate-limit'
 import { getArticleTypePromptList } from '@/lib/article-types'
 import { extractJSON } from '@/lib/utils/extract-json'
 import { logApiCall } from '@/lib/api-usage'
+import { detectUrls, prefetchUrls, extractUserRequest, buildPrefetchContext } from '@/lib/url-prefetch'
 import Anthropic from '@anthropic-ai/sdk'
 
 let _anthropic: Anthropic | null = null
@@ -73,9 +74,24 @@ export async function POST(request: NextRequest) {
     // Default generation options for planning (standard defaults)
     const generationOptions = { length: 'standard' as const, tone: 'opinionated' as const, visual: 'standard' as const }
 
+    // ── Phase 0: Detect and prefetch URLs ──
+    const urlDetections = detectUrls(trimmedQuery)
+    let planQuery = trimmedQuery
+    let prefetchedContent: Awaited<ReturnType<typeof prefetchUrls>> = []
+
+    if (urlDetections.length > 0) {
+      console.log(`[plan-preview] Detected ${urlDetections.length} URL(s):`, urlDetections.map(d => `${d.type}:${d.label}`).join(', '))
+      prefetchedContent = await prefetchUrls(urlDetections)
+      if (prefetchedContent.length > 0) {
+        const userRequest = extractUserRequest(trimmedQuery)
+        planQuery = buildPrefetchContext(prefetchedContent, userRequest)
+        console.log(`[plan-preview] Injecting ${prefetchedContent.length} prefetched source(s) into planning context (${planQuery.length} chars)`)
+      }
+    }
+
     // ── Phase 1: Plan the article ──
     const t0 = Date.now()
-    const plan = await planArticle(trimmedQuery, generationOptions)
+    const plan = await planArticle(planQuery, generationOptions)
     const planMs = Date.now() - t0
 
     // ── Phase 2: Research ──
@@ -124,6 +140,15 @@ export async function POST(request: NextRequest) {
 
     console.log(`[plan-preview] Plan ${planMs}ms + Research ${researchMs}ms + Angles ${anglesMs}ms = ${planMs + researchMs + anglesMs}ms total`)
 
+    // Build source metadata from prefetched content (for storage on article record)
+    const sourceMeta: Record<string, unknown> = {}
+    const tweetSource = prefetchedContent.find(p => p.type === 'tweet')
+    if (tweetSource) sourceMeta.source_tweet = tweetSource.sourceMeta
+    const redditSource = prefetchedContent.find(p => p.type === 'reddit')
+    if (redditSource) sourceMeta.source_reddit = redditSource.sourceMeta
+    const articleSource = prefetchedContent.find(p => p.type === 'article')
+    if (articleSource) sourceMeta.source_article = articleSource.sourceMeta
+
     // Return everything the plan page needs
     return Response.json({
       plan,
@@ -142,6 +167,7 @@ export async function POST(request: NextRequest) {
         research_ms: researchMs,
         angles_ms: anglesMs,
       },
+      ...(Object.keys(sourceMeta).length > 0 ? { sourceMeta } : {}),
     })
   } catch (err) {
     const errCode = (err as NodeJS.ErrnoException).code

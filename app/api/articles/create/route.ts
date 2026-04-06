@@ -8,6 +8,7 @@ import { checkRateLimit, getRateLimitInfo } from '@/lib/rate-limit'
 import { findCachedArticle } from '@/lib/query-cache'
 import { buildResearchPreview } from '@/lib/research-preview'
 import { runWritePipeline } from '@/lib/write-pipeline'
+import { detectUrls, prefetchUrls, extractUserRequest, buildPrefetchContext, type PrefetchedContent } from '@/lib/url-prefetch'
 
 export async function POST(request: NextRequest) {
   try {
@@ -259,10 +260,49 @@ export async function POST(request: NextRequest) {
         }
 
         // ── STANDARD FLOW: Plan + Research from scratch ──
+
+        // ── Phase 0: Detect and prefetch URLs ──
+        let planQuery = trimmedQuery
+        let prefetched: PrefetchedContent[] = []
+        const urlDetections = detectUrls(trimmedQuery)
+        if (urlDetections.length > 0) {
+          console.log(`[create] Detected ${urlDetections.length} URL(s):`, urlDetections.map(d => `${d.type}:${d.label}`).join(', '))
+          prefetched = await prefetchUrls(urlDetections)
+          if (prefetched.length > 0) {
+            const userRequest = extractUserRequest(trimmedQuery)
+            planQuery = buildPrefetchContext(prefetched, userRequest)
+            console.log(`[create] Injecting ${prefetched.length} prefetched source(s) into planning context`)
+
+            // Store source data on the article record
+            const sourceData: Record<string, unknown> = {}
+            const tweetSource = prefetched.find(p => p.type === 'tweet')
+            if (tweetSource) {
+              sourceData.source_tweet = tweetSource.sourceMeta
+            }
+            const redditSource = prefetched.find(p => p.type === 'reddit')
+            if (redditSource) {
+              sourceData.source_reddit = redditSource.sourceMeta
+            }
+            const articleSource = prefetched.find(p => p.type === 'article')
+            if (articleSource) {
+              sourceData.source_article = articleSource.sourceMeta
+            }
+            if (Object.keys(sourceData).length > 0) {
+              // Merge into generation_options JSONB
+              await db
+                .from('articles')
+                .update({
+                  generation_options: { ...generationOptions, ...sourceData },
+                })
+                .eq('id', data.id)
+            }
+          }
+        }
+
         // ── Phase 1: Plan the article ──
         console.log('[create] Planning article for:', trimmedQuery.slice(0, 50), 'options:', JSON.stringify(generationOptions))
         const t0 = Date.now()
-        const plan = await planArticle(trimmedQuery, generationOptions, data.id)
+        const plan = await planArticle(planQuery, generationOptions, data.id)
         t.planning_ms = Date.now() - t0
 
         // Generate clean slug from AI title and update

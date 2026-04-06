@@ -237,6 +237,7 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - `lib/pexels.ts` — Pexels API integration
 - `lib/article-types.ts` — 14 type definitions with component rules
 - `lib/stripe-config.ts` — Stripe instance, price IDs, tier limits
+- `lib/url-prefetch.ts` — URL detection, content fetching (tweets/Reddit/articles), context injection
 
 ### Live Data
 - `lib/data-sources/polymarket.ts` — prediction market odds
