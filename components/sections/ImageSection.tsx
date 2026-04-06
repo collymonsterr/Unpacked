@@ -1,40 +1,35 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import Image from 'next/image'
-import type { ImageSection as ImageSectionType } from '@/types/article'
+import type { ImageSection as ImageSectionType, ArticleContent } from '@/types/article'
+import ImageSwapOverlay from '@/components/ui/ImageSwapOverlay'
 
 interface Props {
   section: ImageSectionType
   isAdmin?: boolean
   sectionIndex?: number
+  articleId?: string
   onReplaceImage?: (imageIndex: number) => Promise<void>
+  onArticleUpdated?: (article: ArticleContent) => void
 }
 
 type ImageItem = ImageSectionType['images'][number]
 
 /**
  * Check if a caption is just a generic image description that adds no editorial value.
- * These are typically auto-generated as alt-text-style descriptions and are
- * redundant when shown as visible text below the image.
- *
- * Captions worth showing: source attributions ("Photo by...", "via Pexels"),
- * location/date context, editorial context that complements the image.
  */
 function isGenericImageDescription(caption: string | undefined): boolean {
   if (!caption) return true
   const c = caption.trim()
-  // Short generic descriptions starting with articles
   if (c.length < 120 && /^(A |An |The |Fragrant |Steaming |Beautiful |Stunning |Delicious |Traditional |Classic |Fresh |Authentic |Colorful |Vibrant )/i.test(c)) {
-    // But keep if it has editorial context markers
     if (/\b(photo by|image by|via |source:|credit:|©|\d{4}|shot in|taken at|photographed)\b/i.test(c)) return false
     return true
   }
   return false
 }
 
-export default function ImageSection({ section, isAdmin, onReplaceImage }: Props) {
-  // Track which indices have valid URLs
+export default function ImageSection({ section, isAdmin, sectionIndex, articleId, onReplaceImage, onArticleUpdated }: Props) {
   const validIndices = section.images
     .map((img, i) => (img.image_url ? i : -1))
     .filter((i) => i >= 0)
@@ -57,7 +52,10 @@ export default function ImageSection({ section, isAdmin, onReplaceImage }: Props
           image={section.images[validIndices[0]]}
           imageIndex={validIndices[0]}
           isAdmin={isAdmin}
+          sectionIndex={sectionIndex}
+          articleId={articleId}
           onReplace={onReplaceImage}
+          onArticleUpdated={onArticleUpdated}
         />
       )}
 
@@ -66,7 +64,10 @@ export default function ImageSection({ section, isAdmin, onReplaceImage }: Props
           indices={validIndices}
           allImages={section.images}
           isAdmin={isAdmin}
+          sectionIndex={sectionIndex}
+          articleId={articleId}
           onReplace={onReplaceImage}
+          onArticleUpdated={onArticleUpdated}
         />
       )}
 
@@ -75,7 +76,10 @@ export default function ImageSection({ section, isAdmin, onReplaceImage }: Props
           indices={validIndices.slice(0, 2)}
           allImages={section.images}
           isAdmin={isAdmin}
+          sectionIndex={sectionIndex}
+          articleId={articleId}
           onReplace={onReplaceImage}
+          onArticleUpdated={onArticleUpdated}
         />
       )}
     </div>
@@ -86,34 +90,53 @@ function SingleImage({
   image,
   imageIndex,
   isAdmin,
+  sectionIndex,
+  articleId,
   onReplace,
+  onArticleUpdated,
 }: {
   image: { image_url?: string | null; caption?: string }
   imageIndex: number
   isAdmin?: boolean
+  sectionIndex?: number
+  articleId?: string
   onReplace?: (imageIndex: number) => Promise<void>
+  onArticleUpdated?: (article: unknown) => void
 }) {
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
   const [replacing, setReplacing] = useState(false)
+  const [currentUrl, setCurrentUrl] = useState(image.image_url)
+  const [removed, setRemoved] = useState(false)
 
-  if (!image.image_url || error) return null
+  const handleSwapped = useCallback((newUrl: string | null) => {
+    if (newUrl === null) {
+      setRemoved(true)
+    } else {
+      setCurrentUrl(newUrl)
+      setLoaded(false)
+    }
+  }, [])
+
+  if (removed) return null
+  if (!currentUrl || error) return null
 
   async function handleReplace() {
     if (!onReplace || replacing) return
     setReplacing(true)
     try {
       await onReplace(imageIndex)
-      // Only reset loaded after a successful replace — the new src will trigger onLoad
       setLoaded(false)
     } catch {
-      // Replace failed — keep current image visible
+      // Replace failed
     } finally {
       setReplacing(false)
     }
   }
 
-  return (
+  const canOverlay = isAdmin && articleId && sectionIndex !== undefined
+
+  const imageContent = (
     <figure
       className="rounded-2xl overflow-hidden group"
       style={{
@@ -124,7 +147,7 @@ function SingleImage({
     >
       <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
         <Image
-          src={image.image_url}
+          src={currentUrl}
           alt={image.caption ?? ''}
           fill
           className="object-cover transition-opacity duration-300"
@@ -133,7 +156,8 @@ function SingleImage({
           onError={() => setError(true)}
           unoptimized
         />
-        {isAdmin && onReplace && (
+        {/* Legacy admin replace button — only show when overlay is NOT active */}
+        {isAdmin && onReplace && !canOverlay && (
           <button
             onClick={handleReplace}
             disabled={replacing}
@@ -159,18 +183,38 @@ function SingleImage({
       )}
     </figure>
   )
+
+  if (canOverlay) {
+    return (
+      <ImageSwapOverlay
+        articleId={articleId}
+        target={{ type: 'section', sectionIndex, imageIndex }}
+        onSwapped={handleSwapped}
+      >
+        {imageContent}
+      </ImageSwapOverlay>
+    )
+  }
+
+  return imageContent
 }
 
 function Gallery({
   indices,
   allImages,
   isAdmin,
+  sectionIndex,
+  articleId,
   onReplace,
+  onArticleUpdated,
 }: {
   indices: number[]
   allImages: ImageItem[]
   isAdmin?: boolean
+  sectionIndex?: number
+  articleId?: string
   onReplace?: (imageIndex: number) => Promise<void>
+  onArticleUpdated?: (article: unknown) => void
 }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -180,6 +224,8 @@ function Gallery({
           image={allImages[idx]}
           imageIndex={idx}
           isAdmin={isAdmin}
+          sectionIndex={sectionIndex}
+          articleId={articleId}
           onReplace={onReplace}
         />
       ))}
@@ -191,34 +237,51 @@ function GalleryItem({
   image,
   imageIndex,
   isAdmin,
+  sectionIndex,
+  articleId,
   onReplace,
 }: {
   image: { image_url?: string | null; caption?: string }
   imageIndex: number
   isAdmin?: boolean
+  sectionIndex?: number
+  articleId?: string
   onReplace?: (imageIndex: number) => Promise<void>
 }) {
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
   const [replacing, setReplacing] = useState(false)
+  const [currentUrl, setCurrentUrl] = useState(image.image_url)
+  const [removed, setRemoved] = useState(false)
 
-  if (!image.image_url || error) return null
+  const handleSwapped = useCallback((newUrl: string | null) => {
+    if (newUrl === null) {
+      setRemoved(true)
+    } else {
+      setCurrentUrl(newUrl)
+      setLoaded(false)
+    }
+  }, [])
+
+  if (removed) return null
+  if (!currentUrl || error) return null
 
   async function handleReplace() {
     if (!onReplace || replacing) return
     setReplacing(true)
     try {
       await onReplace(imageIndex)
-      // Only reset loaded after a successful replace — the new src will trigger onLoad
       setLoaded(false)
     } catch {
-      // Replace failed — keep current image visible
+      // Replace failed
     } finally {
       setReplacing(false)
     }
   }
 
-  return (
+  const canOverlay = isAdmin && articleId && sectionIndex !== undefined
+
+  const imageContent = (
     <figure
       className="rounded-xl overflow-hidden group"
       style={{
@@ -229,7 +292,7 @@ function GalleryItem({
     >
       <div className="relative w-full" style={{ aspectRatio: '4/3' }}>
         <Image
-          src={image.image_url}
+          src={currentUrl}
           alt={image.caption ?? ''}
           fill
           className="object-cover transition-opacity duration-300"
@@ -238,7 +301,7 @@ function GalleryItem({
           onError={() => setError(true)}
           unoptimized
         />
-        {isAdmin && onReplace && (
+        {isAdmin && onReplace && !canOverlay && (
           <button
             onClick={handleReplace}
             disabled={replacing}
@@ -264,18 +327,38 @@ function GalleryItem({
       )}
     </figure>
   )
+
+  if (canOverlay) {
+    return (
+      <ImageSwapOverlay
+        articleId={articleId}
+        target={{ type: 'section', sectionIndex, imageIndex }}
+        onSwapped={handleSwapped}
+      >
+        {imageContent}
+      </ImageSwapOverlay>
+    )
+  }
+
+  return imageContent
 }
 
 function SideBySide({
   indices,
   allImages,
   isAdmin,
+  sectionIndex,
+  articleId,
   onReplace,
+  onArticleUpdated,
 }: {
   indices: number[]
   allImages: ImageItem[]
   isAdmin?: boolean
+  sectionIndex?: number
+  articleId?: string
   onReplace?: (imageIndex: number) => Promise<void>
+  onArticleUpdated?: (article: unknown) => void
 }) {
   return (
     <div className="grid grid-cols-2 gap-3">
@@ -285,6 +368,8 @@ function SideBySide({
           image={allImages[idx]}
           imageIndex={idx}
           isAdmin={isAdmin}
+          sectionIndex={sectionIndex}
+          articleId={articleId}
           onReplace={onReplace}
         />
       ))}

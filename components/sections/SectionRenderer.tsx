@@ -309,7 +309,9 @@ export default function SectionRenderer({
               section={section}
               isAdmin={isAdmin}
               sectionIndex={i}
+              articleId={articleId}
               onReplaceImage={onReplaceImage ? (imgIdx) => onReplaceImage(i, imgIdx) : undefined}
+              onArticleUpdated={onArticleUpdated}
             />
           )
         case 'interactive_calculator':

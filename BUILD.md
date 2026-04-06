@@ -244,6 +244,7 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 - **Editor tab (EditorCoPilot)** — research findings, entity cards, synthesis, blueprint, live data. Finding selection with checkboxes, "Include selected" action bar (Add/Replace/Automatic modes), source links on findings. Animated badge showing unused findings count.
 - **SharePanel** — 4-tab slide-out (Twitter thread, LinkedIn, Reddit, Image Cards) with copy buttons, character counts, subreddit submit links. Owner-only, lazy-loaded.
 - **Social links** — `twitter_url`, `linkedin_url`, `medium_url` on profiles table. Settings page, API, creator profile, article author block all wired.
+- **Inline image replacement (section images)** — owner/admin hover overlay on `image_section` images (single, gallery, side-by-side). Dark overlay (50% opacity) with "Replace image" button (file picker + drag-and-drop) and "Remove" button. Uploads to Supabase Storage, then calls `POST /api/articles/[id]/swap-image` for surgical JSON update (no AI model involved). Success: green border flash. Remove: confirmation dialog, then splices image from article JSON. Touch: tap to show overlay, 44px touch targets. Component: `ImageSwapOverlay.tsx` (shared, reusable). API: `app/api/articles/[id]/swap-image/route.ts` (supports hero/section/product targets, only section wired). Scope: section images only — hero and product card images retain their existing controls.
 - **Bottom CTA** — conversion block below Related Articles. Three versions: (A) logged-out: pen icon, heading, source-count subline, stats strip, search input + "Unpack it" button, category-contextual example pills; (B) logged-in non-owner: lighter heading, search + pills, fork link ("Write your own take on…"); (C) owner: hidden. Search input navigates to `/?q=...`. 12 category pill sets. Component: `components/ArticleBottomCTA.tsx`.
 
 ---
@@ -283,9 +284,9 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 
 ---
 
-## API Routes (53 confirmed)
+## API Routes (54 confirmed)
 
-Covering: articles CRUD (create, view, delete, refine, regenerate, visibility, type switch), admin (costs, feedback, analytics, users, backfill, reclassify, migrate), article features (fact-check, featured, trending, pin, hide, share-credit, social-content, card-summary, research, cost-breakdown, section-edit, section-suggestions), images (upload-hero, replace-image, replace-thumbnail, set-primary-image, regenerate-images, upload-refine-image), profile (profile, usage, article-count), founding creators, improve-prompt, plan-preview, categories, saved-articles, waitlist, search, recent, reorder, claim, start-writing.
+Covering: articles CRUD (create, view, delete, refine, regenerate, visibility, type switch), admin (costs, feedback, analytics, users, backfill, reclassify, migrate), article features (fact-check, featured, trending, pin, hide, share-credit, social-content, card-summary, research, cost-breakdown, section-edit, section-suggestions), images (upload-hero, replace-image, replace-thumbnail, set-primary-image, regenerate-images, upload-refine-image, swap-image), profile (profile, usage, article-count), founding creators, improve-prompt, plan-preview, categories, saved-articles, waitlist, search, recent, reorder, claim, start-writing.
 
 ---
 

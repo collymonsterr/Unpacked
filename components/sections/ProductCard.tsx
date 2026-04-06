@@ -373,12 +373,10 @@ export default function ProductCard({ section, isAdmin, sectionIndex, articleId,
                     <button
                       onClick={() => openPicker(allImages.indexOf(heroUrl))}
                       className="absolute top-2 right-2 z-10 w-7 h-7 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff' }}
+                      style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff', cursor: 'pointer' }}
                       title="Replace this image"
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                        <path d="M18 6L6 18M6 6l12 12" />
-                      </svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
                     </button>
                   )}
                 </>
