@@ -101,7 +101,7 @@ function SingleImage({
   sectionIndex?: number
   articleId?: string
   onReplace?: (imageIndex: number) => Promise<void>
-  onArticleUpdated?: (article: unknown) => void
+  onArticleUpdated?: (article: ArticleContent) => void
 }) {
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
@@ -214,7 +214,7 @@ function Gallery({
   sectionIndex?: number
   articleId?: string
   onReplace?: (imageIndex: number) => Promise<void>
-  onArticleUpdated?: (article: unknown) => void
+  onArticleUpdated?: (article: ArticleContent) => void
 }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -358,7 +358,7 @@ function SideBySide({
   sectionIndex?: number
   articleId?: string
   onReplace?: (imageIndex: number) => Promise<void>
-  onArticleUpdated?: (article: unknown) => void
+  onArticleUpdated?: (article: ArticleContent) => void
 }) {
   return (
     <div className="grid grid-cols-2 gap-3">
