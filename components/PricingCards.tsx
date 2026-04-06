@@ -20,6 +20,7 @@ function PricingCardsInner() {
     standard: 'idle',
     pro: 'idle',
   })
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [usage, setUsage] = useState<UsageData | null>(null)
 
   // Fetch current tier for logged-in users
@@ -64,8 +65,9 @@ function PricingCardsInner() {
 
       if (!res.ok) {
         console.error('[pricing] Checkout error:', data.error)
+        setErrorMsg(data.error || 'Something went wrong')
         setCheckoutState(prev => ({ ...prev, [tier]: 'error' }))
-        setTimeout(() => setCheckoutState(prev => ({ ...prev, [tier]: 'idle' })), 3000)
+        setTimeout(() => { setCheckoutState(prev => ({ ...prev, [tier]: 'idle' })); setErrorMsg(null) }, 5000)
         return
       }
 
@@ -206,6 +208,21 @@ function PricingCardsInner() {
           <TierCard key={t.tier} {...t} />
         ))}
       </div>
+
+      {/* Error toast */}
+      {errorMsg && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-lg z-50"
+          style={{
+            backgroundColor: '#dc2626',
+            color: '#fff',
+            fontFamily: 'var(--font-outfit)',
+            maxWidth: '90vw',
+          }}
+        >
+          <p className="text-sm font-medium">{errorMsg}</p>
+        </div>
+      )}
     </>
   )
 }
