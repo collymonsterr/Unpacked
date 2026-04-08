@@ -54,7 +54,10 @@ export async function POST(
   const db = getSupabaseAdmin()
   const buffer = Buffer.from(await file.arrayBuffer())
   const ext = EXT_MAP[file.type] ?? 'jpg'
-  const storagePath = `refine-images/${id}/${Date.now()}.${ext}`
+  // Scope storage path by uploader userId so one user can't deposit bytes
+  // into another article's folder. (Refine creates a fork — we can't require
+  // the caller to own `id`, so namespace on the uploader instead.)
+  const storagePath = `refine-images/${auth.userId}/${id}/${Date.now()}.${ext}`
 
   const { error: uploadError } = await db.storage
     .from('article-images')

@@ -1,5 +1,14 @@
 'use client'
 
+function escapeHtml(text: string) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 interface RankedItem {
   rank: number
   name: string
@@ -50,7 +59,7 @@ export default function RankedItemSection({ section }: Props) {
               <div
                 className="text-sm leading-relaxed"
                 style={{ color: 'var(--text-secondary)' }}
-                dangerouslySetInnerHTML={{ __html: item.content.replace(/\n\n/g, '<br/><br/>') }}
+                dangerouslySetInnerHTML={{ __html: escapeHtml(item.content).replace(/\n\n/g, '<br/><br/>') }}
               />
             </div>
           </div>

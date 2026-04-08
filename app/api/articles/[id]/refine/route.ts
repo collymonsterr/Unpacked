@@ -56,8 +56,11 @@ export async function POST(
   const auth = await requireAuth()
   if (!auth.authorized) return auth.error!
 
-  // Rate limiting — refine is cheaper, allow more
-  const { key } = getRateLimitInfo(request)
+  // Rate limiting — refine is cheaper, allow more.
+  // Pass the authenticated userId so the bucket is per-user, not IP-wide
+  // (NAT'd users would otherwise share the same bucket, and a single user
+  // could bypass their own limit by switching IPs).
+  const { key } = getRateLimitInfo(request, auth.userId ?? undefined)
   const rateResult = await checkRateLimit(`refine:${key}`, 20)
   if (!rateResult.allowed) {
     return Response.json({ error: "You've reached the refinement limit. Try again in a bit." }, { status: 429 })

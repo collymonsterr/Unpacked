@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { runTripleFactCheck, applyCorrections } from '@/lib/fact-check'
 import { isValidUUID } from '@/lib/validate'
+import { requireAdmin } from '@/lib/auth-check'
 
 export const maxDuration = 120
 
@@ -11,7 +12,11 @@ export async function POST(
 ) {
   const { id } = await params
   if (!isValidUUID(id)) return NextResponse.json({ error: 'Invalid article ID' }, { status: 400 })
-  // No rate limiting — fact-check is system-triggered after generation
+
+  // Admin-only: triggering a fact-check costs ~$0.05–$0.10 per run and mutates
+  // the article. Pipeline-internal calls use the library directly, not this route.
+  const auth = await requireAdmin()
+  if (!auth.authorized) return auth.error!
 
   try {
     const supabase = getSupabaseAdmin()

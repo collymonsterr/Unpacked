@@ -152,7 +152,14 @@ export default async function ArticlePage({ params }: Props) {
         <script
           key={i}
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
+          // Escape `<` so untrusted string fields (e.g. user display_name) can't
+          // break out of the <script> block with `</script><script>…`.
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(ld)
+              .replace(/</g, '\\u003c')
+              .replace(/\u2028/g, '\\u2028')
+              .replace(/\u2029/g, '\\u2029'),
+          }}
         />
       ))}
       <ArticlePageClient initialRow={row} linkableArticles={linkableArticles} creatorBio={creatorBio} creatorTwitterUrl={creatorTwitterUrl} creatorLinkedinUrl={creatorLinkedinUrl} creatorMediumUrl={creatorMediumUrl} isFoundingCreator={isFoundingCreator} />

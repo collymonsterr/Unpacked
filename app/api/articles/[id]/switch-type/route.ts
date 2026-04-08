@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
+import { requireArticleOwner } from '@/lib/auth-check'
 import { ARTICLE_TYPE_LIST, isComponentAllowed, getForbiddenComponents } from '@/lib/article-types'
 import type { ArticleType, ArticlePlan } from '@/types/article'
 
@@ -16,6 +17,14 @@ export async function POST(
 ) {
   try {
     const { id } = await params
+
+    // UUID validation + auth: only owner or admin may switch type
+    if (!/^[0-9a-f-]{36}$/i.test(id)) {
+      return Response.json({ error: 'Invalid article id' }, { status: 400 })
+    }
+    const auth = await requireArticleOwner(id)
+    if (!auth.authorized) return auth.error!
+
     const body = await request.json()
     const newType = body?.type as string
 

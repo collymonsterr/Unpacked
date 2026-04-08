@@ -24,7 +24,7 @@ export async function POST(
   // Fetch the article
   const { data: row, error: fetchErr } = await db
     .from('articles')
-    .select('id, query, status, plan, research_findings, entity_cards, research_synthesis, live_data, generation_options')
+    .select('id, query, status, user_id, plan, research_findings, entity_cards, research_synthesis, live_data, generation_options')
     .eq('id', id)
     .single()
 
@@ -37,11 +37,18 @@ export async function POST(
     return Response.json({ error: `Article is in '${row.status}' status, not awaiting_auth` }, { status: 409 })
   }
 
+  // Reject if article is already owned by someone else (prevents claim-hijack)
+  if (row.user_id && row.user_id !== user.id) {
+    return Response.json({ error: 'Article already claimed' }, { status: 403 })
+  }
+
   // Claim the article for this user
   const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
   const isAdmin = adminEmail && user.email && user.email.toLowerCase() === adminEmail.toLowerCase()
 
-  const { error: updateErr } = await db
+  // Atomic claim: only succeeds if the article is still unclaimed (user_id IS NULL)
+  // or already owned by this user. This closes the race with concurrent claims.
+  const claimQuery = db
     .from('articles')
     .update({
       user_id: user.id,
@@ -51,10 +58,19 @@ export async function POST(
       status: 'generating',
     })
     .eq('id', id)
+    .eq('status', 'awaiting_auth')
+
+  const { data: claimed, error: updateErr } = row.user_id
+    ? await claimQuery.eq('user_id', user.id).select('id')
+    : await claimQuery.is('user_id', null).select('id')
 
   if (updateErr) {
     console.error('[start-writing] Failed to claim article:', updateErr)
     return Response.json({ error: 'Failed to claim article' }, { status: 500 })
+  }
+
+  if (!claimed || claimed.length === 0) {
+    return Response.json({ error: 'Article already claimed' }, { status: 409 })
   }
 
   console.log('[start-writing] Article claimed by', user.email, '— starting writing pipeline')

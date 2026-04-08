@@ -122,7 +122,8 @@ export default function CommunityInsights({ section, isOwner = false, articleId,
           {quotes.map((q, i) => {
             const isRemoving = removingQuotes.has(i)
             // Try to find a matching thread URL for this quote's source
-            const sourceMatch = q.source?.match(/r\/(\w+)/i)
+            // Match r/subreddit only at a word boundary — avoids matching "r/X" inside "Twitter/X"
+            const sourceMatch = q.source?.match(/\br\/([A-Za-z0-9_]+)/i)
             const threadUrl = sourceMatch
               ? threads.find(t => {
                   const tSub = t.subreddit.replace(/^r\//, '')
@@ -213,7 +214,8 @@ export default function CommunityInsights({ section, isOwner = false, articleId,
               <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
                 {(() => {
                   // Extract subreddit from source like "Reddit r/headphones" or "Reddit r/headphoneadvice"
-                  const subMatch = insight.source.match(/r\/(\w+)/i)
+                  // Word boundary required so "Twitter/X" doesn't match as "r/X"
+                  const subMatch = insight.source.match(/\br\/([A-Za-z0-9_]+)/i)
                   if (subMatch) {
                     const sub = subMatch[0] // e.g. "r/headphones"
                     const prefix = insight.source.slice(0, insight.source.indexOf(sub)).trim()
@@ -288,16 +290,30 @@ export default function CommunityInsights({ section, isOwner = false, articleId,
                   >
                     {thread.title}
                   </p>
-                  <a
-                    href={`https://reddit.com/${thread.subreddit.startsWith('r/') ? thread.subreddit : 'r/' + thread.subreddit}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs mt-0.5 no-underline hover:underline block"
+                  {/* Not an <a> — nesting anchors is invalid HTML. Uses a span with
+                      a click handler that stops propagation and opens the subreddit. */}
+                  <span
+                    role="link"
+                    tabIndex={0}
+                    className="text-xs mt-0.5 hover:underline block cursor-pointer"
                     style={{ color: '#BA7517' }}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      const sub = thread.subreddit.startsWith('r/') ? thread.subreddit : `r/${thread.subreddit}`
+                      window.open(`https://reddit.com/${sub}`, '_blank', 'noopener,noreferrer')
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        const sub = thread.subreddit.startsWith('r/') ? thread.subreddit : `r/${thread.subreddit}`
+                        window.open(`https://reddit.com/${sub}`, '_blank', 'noopener,noreferrer')
+                      }
+                    }}
                   >
                     {thread.subreddit}
-                  </a>
+                  </span>
                 </div>
                 <svg
                   width="14" height="14" viewBox="0 0 24 24" fill="none"

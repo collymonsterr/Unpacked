@@ -96,8 +96,14 @@ function extractPullQuote(content: string): string | null {
 }
 
 function renderContent(content: string, linkTransform?: (text: string) => string) {
-  // Pipeline: text → injectLinks → boldify → HTML
-  const transform = (text: string) => boldify(linkTransform ? linkTransform(text) : text)
+  // Pipeline: text → escapeHtml → injectLinks → boldify → HTML
+  // Escape HTML FIRST so LLM-generated content can't inject <script> or event handlers.
+  // injectInternalLinks writes literal <a> tags into escaped text (safe — we control the markup).
+  const transform = (text: string) => {
+    const escaped = escapeHtml(text)
+    const linked = linkTransform ? linkTransform(escaped) : escaped
+    return boldify(linked)
+  }
 
   const paragraphs = content.split(/\n\n+/)
   const elements: React.ReactElement[] = []
@@ -183,6 +189,15 @@ function renderContent(content: string, linkTransform?: (text: string) => string
 
 function boldify(text: string) {
   return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+}
+
+function escapeHtml(text: string) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
 interface ContentSectionProps {

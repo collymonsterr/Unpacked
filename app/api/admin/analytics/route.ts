@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
+import { requireAdmin } from '@/lib/auth-check'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
+  const auth = await requireAdmin()
+  if (!auth.authorized) return auth.error!
+
   const db = getSupabaseAdmin()
 
   // All articles for visibility/status breakdown
