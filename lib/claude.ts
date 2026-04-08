@@ -337,11 +337,29 @@ For reddit_queries: generate 1-3 Reddit search queries with targeted subreddits.
 - For explainers/how_to: use subreddits where people ask and answer questions
 - For product articles: use enthusiast subreddits where users share real experiences
 
-For twitter_queries: generate 2-3 Twitter/X search queries that target the most useful kinds of X content for this topic — direct reactions to a moment, expert takes from people in the field, or strong opinions that would add colour the article wouldn't otherwise have. Each query MUST use the site:x.com prefix. Skip entirely (return an empty array) for purely evergreen topics where X adds nothing — generic buyer guides, basic how-to, deep historical explainers. Examples of good queries:
-- "Claude Opus 4 announcement" → ["site:x.com Claude Opus 4 reactions", "site:x.com Claude Opus 4 vs GPT", "site:x.com anthropic opus 4 launch"]
-- "Fed rate decision" → ["site:x.com Fed rate cut reactions", "site:x.com FOMC decision economists", "site:x.com powell press conference"]
-- "Tesla earnings" → ["site:x.com Tesla earnings reactions", "site:x.com TSLA delivery numbers", "site:x.com elon musk earnings call"]
-- For evergreen buyer guides, how-to articles, or general explainers: leave twitter_queries as an empty array.
+For twitter_queries: generate 2-3 Twitter/X search queries that target the most useful kinds of X content for this topic — direct reactions to a moment, expert takes from people in the field, or strong opinions that would add colour the article wouldn't otherwise have.
+
+QUERY CRAFT RULES — these are non-negotiable. Brave Search has a small x.com index and dies on long queries. Follow them exactly:
+- KEEP IT SHORT. 2 to 4 words max. Anything longer returns zero results.
+- DO NOT include the site:x.com prefix — the system adds it automatically.
+- DO NOT include years (2024, 2025, 2026). Years almost always return zero results.
+- DO NOT include filler words like "reactions", "commentary", "thoughts", "opinions", "discussion", "launch", "announcement". They narrow Brave's match too aggressively.
+- DO use core entity names, product names, ticker symbols, people's surnames, and concrete nouns. Pair an entity with another entity, a verb, or a counter-entity.
+- Skip entirely (return an empty array) for purely evergreen topics where X adds nothing — generic buyer guides, basic how-to, deep historical explainers.
+
+Examples of GOOD queries (short, entity-led, no years, no filler):
+- "Claude Opus 4 announcement" → ["Claude Opus 4", "Anthropic Opus", "Opus vs GPT"]
+- "Fed rate decision" → ["Fed rate cut", "FOMC Powell", "rate decision"]
+- "Tesla earnings" → ["TSLA earnings", "Tesla delivery", "Elon earnings"]
+- "Apple AI strategy 2026" → ["Apple Intelligence", "Siri AI", "Apple OpenAI"]
+- "iPhone 17 review" → ["iPhone 17", "iPhone 17 Pro", "iPhone camera"]
+
+Examples of BAD queries (will return zero results):
+- "site:x.com Apple Intelligence launch reactions 2026" — too long, has year, has filler, has prefix
+- "Claude Opus 4 developer reactions" — has filler word "reactions"
+- "Tesla Q4 2025 earnings call commentary" — has year and filler
+
+For evergreen buyer guides, how-to articles, or general explainers: leave twitter_queries as an empty array.
 
 PER-QUERY FRESHNESS — applies to BOTH reddit_queries and twitter_queries:
 For each reddit_query and twitter_query, set a freshness value that controls how recent the results must be. Set this PER QUERY based on what that specific query is looking for:
@@ -471,7 +489,7 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
   "research_manifest": {
     "brave_queries": [{ "query": "string — specific search query", "purpose": "core_facts | product_review | pricing | specs | community | expert_opinion | comparison | how_to | alternatives | economic_impact | background | wider_context | fact_check_sources | official_data | expert_analysis" }],
     "reddit_queries": [{ "query": "string", "subreddits": ["string — 2-4 relevant subreddits"], "freshness": "pd | pw | pm | none — per-query time filter, see freshness rules below" }],
-    "twitter_queries": [{ "query": "string — site:x.com search query targeting Twitter/X content", "freshness": "pd | pw | pm | none — per-query time filter, see freshness rules below" }],
+    "twitter_queries": [{ "query": "string — 2-4 words, no site:x.com prefix, no years, no filler (see twitter_queries rules)", "freshness": "pd | pw | pm | none — per-query time filter, see freshness rules below" }],
     "image_queries": {
       "hero": { "query": "string — 5-8 word magazine-quality photo search", "style": "editorial_photo | news_photo | product_photo | abstract" },
       "products": [{ "entity_name": "string", "query": "string" }]

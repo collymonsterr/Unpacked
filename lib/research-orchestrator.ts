@@ -594,6 +594,35 @@ async function executeTwitterQueries(
     return []
   }
 
+  // Retry-without-freshness fallback: Brave's x.com index is small and often
+  // returns nothing for queries with a freshness window. For any query that had
+  // freshness set AND came back empty, retry once without the freshness param.
+  const retryQueries = searchQueries.filter(q => {
+    if (!q.freshness) return false
+    const existing = resultsMap.get(q.query) ?? []
+    return existing.length === 0
+  })
+  if (retryQueries.length > 0) {
+    try {
+      const retryMap = await executeBraveQueries(
+        retryQueries.map(q => ({ query: q.query, purpose: q.purpose })),
+        resultsPerQuery,
+      )
+      let recovered = 0
+      for (const [q, results] of retryMap) {
+        if (results.length > 0) {
+          resultsMap.set(q, results)
+          recovered++
+        }
+      }
+      if (recovered > 0) {
+        console.log(`[research] Twitter: retried ${retryQueries.length} empty queries without freshness, recovered ${recovered}`)
+      }
+    } catch (err) {
+      console.warn('[research] Twitter retry failed:', (err as Error).message)
+    }
+  }
+
   const findings: TwitterFinding[] = []
   const seenTweetIds = new Set<string>()
 

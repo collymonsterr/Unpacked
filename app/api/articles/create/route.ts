@@ -227,7 +227,9 @@ export async function POST(request: NextRequest) {
           researchUpdate.entity_cards = research.entityCards ?? []
           if (research.synthesis) researchUpdate.research_synthesis = research.synthesis
           if (research.liveData?.length > 0) researchUpdate.live_data = research.liveData
-          if (research.twitterFindings?.length > 0) researchUpdate.twitter_findings = research.twitterFindings
+          // Always persist twitter_findings (even as []) so we can distinguish
+          // "planner didn't ask" (null) from "ran but nothing came back" ([]).
+          researchUpdate.twitter_findings = research.twitterFindings ?? []
           if (research.twitterSummary) researchUpdate.twitter_summary = research.twitterSummary
           if (Object.keys(researchUpdate).length > 0) {
             await db.from('articles').update(researchUpdate).eq('id', data.id)
@@ -347,7 +349,9 @@ export async function POST(request: NextRequest) {
         researchUpdate.entity_cards = research.entityCards ?? []
         if (research.synthesis) researchUpdate.research_synthesis = research.synthesis
         if (research.liveData && research.liveData.length > 0) researchUpdate.live_data = research.liveData
-        if (research.twitterFindings && research.twitterFindings.length > 0) researchUpdate.twitter_findings = research.twitterFindings
+        // Always persist twitter_findings (even as []) so we can distinguish
+        // "planner didn't ask" (null) from "ran but nothing came back" ([]).
+        researchUpdate.twitter_findings = research.twitterFindings ?? []
         if (research.twitterSummary) researchUpdate.twitter_summary = research.twitterSummary
         if (Object.keys(researchUpdate).length > 0) {
           const t3 = Date.now()

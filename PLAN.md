@@ -200,6 +200,28 @@ One session each. Test before adding next. All parallel during research phase.
 ### 5C. Polymarket Historical Trend Chart
 The binary trend chart component is built as a placeholder in `LiveDataCard.tsx`. Needs a data source for historical odds time-series — the Polymarket API doesn't currently provide this. Options: investigate third-party aggregators, or implement daily snapshot caching to build the data over time. Low effort once a data source is identified.
 
+### 5D. twitterapi.io for Real-Time X Results (DEFERRED — cost gate)
+Current Twitter/X integration (built April 2026) uses Brave Search with `site:x.com` — free, zero new dependencies, but limited by Brave's crawl lag. Best-case freshness is `pd` (past 24h) as a soft filter, and fresh content (minutes to hours old) is often missing because Brave hasn't indexed it yet. Not good enough for true breaking news where reaction speed is the point.
+
+**The upgrade path**: [twitterapi.io](https://twitterapi.io) is a pay-per-use wrapper around the X API that returns real-time search results without the $100/month X API Basic tier commitment. Pricing is usage-based — cents per search. Would give us minute-level freshness on reaction tweets.
+
+**Why deferred**: cost. Not worth paying until breaking-news articles become a meaningful share of the generation mix or until a specific creator/use-case demands it. Current Brave-based integration is "good enough" for 80% of articles.
+
+**When to revisit**:
+- Breaking news becomes a core content vertical (not just occasional)
+- A founding creator specifically needs real-time reaction content
+- Monthly generation volume makes Brave's lag the bottleneck for a measurable % of articles
+
+**Implementation sketch when unblocked**:
+- Add `TWITTER_API_IO_KEY` env var
+- New file `lib/data-sources/twitter-api-io.ts` with `fetchRecentTweets(query, sinceHours)` helper
+- Modify `executeTwitterQueries()` in `lib/research-orchestrator.ts` to branch: when planner emits `freshness: "pd"` AND article_type is `breaking_news`, use twitterapi.io instead of Brave; otherwise keep Brave (free).
+- Planner prompt gains a new freshness value `ph` (past hour) that only triggers the paid path.
+- Add spend cap in `lib/api-usage.ts` to prevent runaway costs on a viral breaking-news storm.
+- Keep all existing filtering (URL pattern match, snippet length, dedupe, max 8) — only the source changes.
+
+Zero UI changes needed — `twitter_findings` schema is already compatible. The Haiku sentiment summary, ✕ removal, plan-mode surfacing all work unchanged.
+
 ---
 
 ## Phase 6 — Content and Launch
