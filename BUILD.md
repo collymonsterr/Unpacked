@@ -9,7 +9,7 @@ What exists right now, confirmed by full codebase audit April 2026. Update this 
 | Stage | What | Model | File |
 |-------|------|-------|------|
 | 1. Planning | Type classification, structure, research manifest, forbidden_components | Claude Haiku 4.5 | `lib/claude.ts` |
-| 2. Research | Brave + Reddit + live data (parallel), entity cards, Haiku synthesis | Brave API + Haiku | `lib/research-orchestrator.ts` |
+| 2. Research | Brave + Reddit + Twitter/X + live data (parallel), entity cards, Haiku synthesis, Haiku Twitter sentiment summary | Brave API + Haiku | `lib/research-orchestrator.ts` |
 | 3. Blueprint | Thesis, winner, section skeleton, word budgets, big statement placement | Gemini 2.5 Flash | `lib/blueprint.ts` |
 | 4. Writing | Full article JSON with validation + retry + fallback | Gemini Flash (default), Sonnet (premium/fallback) | `lib/gemini-writer.ts`, `lib/claude.ts` |
 | 5. Editorial | 15-check scoring, section rewrites | Sonnet (primary), Gemini (fallback) | `lib/editorial-pass.ts` |
@@ -188,10 +188,12 @@ Four distinct components in `components/sections/LiveDataCard.tsx`, auto-selecte
 
 - `lib/research-orchestrator.ts` orchestrates all research in parallel
 - Entity card extraction from findings (structured: name, type, facts, sources, confidence)
-- Haiku synthesis replaces flat research summaries
-- Brave web + Reddit + live data all parallel
+- Haiku synthesis replaces flat research summaries — runs in parallel with Twitter sentiment Haiku call
+- Brave web + Reddit + Twitter/X + live data all parallel
 - `sanitizeSnippet()` in brave-research.ts prevents JSON failures from unescaped content
+- **Per-query freshness** (built April 2026): planner sets `freshness: pd | pw | pm | none` per Reddit/Twitter query; passed through to Brave Search as the `freshness` URL param. Backwards-compatible normalisation in `lib/claude.ts` `normaliseSocialQueries()` handles all legacy/cached plan shapes.
 - **Reddit thread quality filter**: fetches `.json` metadata for each Reddit thread URL (public API, no auth). Discards threads with fewer than 10 comments. If all threads fail the filter, keeps the one with the highest comment count. 200ms delay between metadata fetches to avoid Reddit rate limits. Comment count (`num_comments`) and score passed through to plan page sentiment display, article JSON, and writing phase for credibility ("In a thread with 47 comments on r/MechanicalKeyboards...").
+- **Twitter/X integration** (built April 2026): planner emits 2-3 `twitter_queries` (or empty for evergreen topics). `executeTwitterQueries()` runs them through Brave Search with `site:x.com`, filters to canonical `x.com/{handle}/status/{id}` URLs, requires snippet ≥50 chars, dedupes by tweet id, caps at 8 findings. `summariseTwitterFindings()` generates a one-paragraph Haiku sentiment summary in parallel with the existing synthesis call. Persisted to `twitter_findings` (JSONB) and `twitter_summary` (TEXT) columns. NO Twitter SDK, NO iframes, NO API key required. NOT injected into article body — rendered as a standalone `TwitterSentimentSection` component after `SectionRenderer` in `ArticleView.tsx`. Owner-only ✕ removal via extended `/api/articles/[id]/remove-quote` endpoint (`type: 'twitter'`, `id: string`). Section render-gated to ≥2 findings; falling below gate clears the summary too. Surfaced in plan-preview route + plan page UI alongside Reddit Community Sentiment.
 
 ---
 

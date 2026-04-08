@@ -160,6 +160,8 @@ export async function POST(request: NextRequest) {
         liveData: research.liveData,
         sources: research.sources,
         redditThreads: enrichedRedditThreads,
+        twitterFindings: research.twitterFindings,
+        twitterSummary: research.twitterSummary,
       },
       angles,
       timing: {

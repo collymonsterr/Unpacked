@@ -337,6 +337,21 @@ For reddit_queries: generate 1-3 Reddit search queries with targeted subreddits.
 - For explainers/how_to: use subreddits where people ask and answer questions
 - For product articles: use enthusiast subreddits where users share real experiences
 
+For twitter_queries: generate 2-3 Twitter/X search queries that target the most useful kinds of X content for this topic — direct reactions to a moment, expert takes from people in the field, or strong opinions that would add colour the article wouldn't otherwise have. Each query MUST use the site:x.com prefix. Skip entirely (return an empty array) for purely evergreen topics where X adds nothing — generic buyer guides, basic how-to, deep historical explainers. Examples of good queries:
+- "Claude Opus 4 announcement" → ["site:x.com Claude Opus 4 reactions", "site:x.com Claude Opus 4 vs GPT", "site:x.com anthropic opus 4 launch"]
+- "Fed rate decision" → ["site:x.com Fed rate cut reactions", "site:x.com FOMC decision economists", "site:x.com powell press conference"]
+- "Tesla earnings" → ["site:x.com Tesla earnings reactions", "site:x.com TSLA delivery numbers", "site:x.com elon musk earnings call"]
+- For evergreen buyer guides, how-to articles, or general explainers: leave twitter_queries as an empty array.
+
+PER-QUERY FRESHNESS — applies to BOTH reddit_queries and twitter_queries:
+For each reddit_query and twitter_query, set a freshness value that controls how recent the results must be. Set this PER QUERY based on what that specific query is looking for:
+- pd (past day) — breaking announcements, things that just happened in the last 24 hours
+- pw (past week) — developing stories, recent reactions, active discussions
+- pm (past month) — ongoing trends, comparisons, broader context
+- none — evergreen topics where recency doesn't matter (product reviews, how-to discussions, general recommendations)
+
+Consider each query independently. A breaking news article might have one query at pd for the announcement itself, another at pw for developing reactions, and another at pm for broader context. A buyer guide about mechanical keyboards might have all queries at pm or none. Match the freshness to what the query is actually trying to find. Default to "none" when in doubt — over-filtering by recency loses relevant evergreen discussion.
+
 For image_queries: specify hero image search and product images.
 - hero: {query (5-8 words for a magazine-quality photo), style: editorial_photo | news_photo | product_photo | abstract}
 - products: array of {entity_name, query} for each product needing an image (buyer_guide/comparison/roundup only, empty for other types)
@@ -455,7 +470,8 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
   "sections": [{ "heading": "string", "purpose": "string — what this section covers" }],
   "research_manifest": {
     "brave_queries": [{ "query": "string — specific search query", "purpose": "core_facts | product_review | pricing | specs | community | expert_opinion | comparison | how_to | alternatives | economic_impact | background | wider_context | fact_check_sources | official_data | expert_analysis" }],
-    "reddit_queries": [{ "query": "string", "subreddits": ["string — 2-4 relevant subreddits"] }],
+    "reddit_queries": [{ "query": "string", "subreddits": ["string — 2-4 relevant subreddits"], "freshness": "pd | pw | pm | none — per-query time filter, see freshness rules below" }],
+    "twitter_queries": [{ "query": "string — site:x.com search query targeting Twitter/X content", "freshness": "pd | pw | pm | none — per-query time filter, see freshness rules below" }],
     "image_queries": {
       "hero": { "query": "string — 5-8 word magazine-quality photo search", "style": "editorial_photo | news_photo | product_photo | abstract" },
       "products": [{ "entity_name": "string", "query": "string" }]
@@ -1194,6 +1210,12 @@ export async function planArticle(query: string, options?: GenOptions, articleId
       plan.research_manifest = buildFallbackManifest(query, plan)
       console.log('[planArticle] Built fallback research_manifest')
     }
+
+    // Normalise reddit_queries and twitter_queries from any legacy/cached shape.
+    // executeRedditQueries() also handles this defensively, but normalising here
+    // keeps the shape consistent everywhere downstream (DB persistence, Editor tab,
+    // future twitter execution path).
+    plan.research_manifest = normaliseSocialQueries(plan.research_manifest)
   } catch (enhancedErr) {
     // If any enhanced validation fails, ensure we have safe defaults and continue
     console.warn('[planArticle] Enhanced field validation failed — using defaults:', (enhancedErr as Error).message)
@@ -1243,10 +1265,13 @@ function buildFallbackManifest(query: string, plan: ArticlePlan): ResearchManife
     braveQueries.push({ query: `${query} explained`, purpose: 'background' })
   }
 
-  // Reddit queries
+  // Reddit queries — fallback omits freshness (no time filter, evergreen-safe)
   const redditQueries: ResearchManifest['reddit_queries'] = [
     { query: query, subreddits: [] },
   ]
+
+  // Twitter queries — fallback emits empty array; planner adds them when relevant
+  const twitterQueries: ResearchManifest['twitter_queries'] = []
 
   // Image queries
   const imageQueries: ResearchManifest['image_queries'] = {
@@ -1259,7 +1284,80 @@ function buildFallbackManifest(query: string, plan: ArticlePlan): ResearchManife
       : [],
   }
 
-  return { brave_queries: braveQueries, reddit_queries: redditQueries, image_queries: imageQueries }
+  return {
+    brave_queries: braveQueries,
+    reddit_queries: redditQueries,
+    twitter_queries: twitterQueries,
+    image_queries: imageQueries,
+  }
+}
+
+/**
+ * Normalise reddit_queries and twitter_queries to the canonical shape.
+ * Handles all legacy/cached/loose shapes safely:
+ *  - reddit_queries entries that are plain strings (very old cached plans)
+ *  - reddit_queries entries missing subreddits (new shape from brief example)
+ *  - reddit_queries entries missing freshness (just-added field)
+ *  - reddit_queries entries with freshness === "none" or invalid (treated as undefined)
+ *  - twitter_queries missing entirely (defaulted to empty array)
+ *  - twitter_queries entries that are plain strings
+ *
+ * Anything that can't be coerced into a usable query is dropped silently.
+ */
+function normaliseSocialQueries(manifest: ResearchManifest): ResearchManifest {
+  const VALID = new Set(['pd', 'pw', 'pm'])
+
+  const normaliseFreshness = (raw: unknown): 'pd' | 'pw' | 'pm' | undefined => {
+    if (typeof raw !== 'string') return undefined
+    return VALID.has(raw) ? (raw as 'pd' | 'pw' | 'pm') : undefined
+  }
+
+  // Reddit
+  const rawReddit = (manifest as unknown as { reddit_queries?: unknown }).reddit_queries
+  const redditList = Array.isArray(rawReddit) ? rawReddit : []
+  const reddit_queries: ResearchManifest['reddit_queries'] = redditList
+    .map((entry): ResearchManifest['reddit_queries'][number] | null => {
+      if (typeof entry === 'string') {
+        return { query: entry, subreddits: [] }
+      }
+      if (entry && typeof entry === 'object') {
+        const o = entry as { query?: unknown; subreddits?: unknown; freshness?: unknown }
+        const query = typeof o.query === 'string' ? o.query : ''
+        if (!query) return null
+        const subreddits = Array.isArray(o.subreddits)
+          ? o.subreddits.filter((s): s is string => typeof s === 'string')
+          : []
+        const freshness = normaliseFreshness(o.freshness)
+        return freshness ? { query, subreddits, freshness } : { query, subreddits }
+      }
+      return null
+    })
+    .filter((q): q is ResearchManifest['reddit_queries'][number] => q !== null)
+
+  // Twitter
+  const rawTwitter = (manifest as unknown as { twitter_queries?: unknown }).twitter_queries
+  const twitterList = Array.isArray(rawTwitter) ? rawTwitter : []
+  const twitter_queries: NonNullable<ResearchManifest['twitter_queries']> = twitterList
+    .map((entry): NonNullable<ResearchManifest['twitter_queries']>[number] | null => {
+      if (typeof entry === 'string') {
+        return { query: entry }
+      }
+      if (entry && typeof entry === 'object') {
+        const o = entry as { query?: unknown; freshness?: unknown }
+        const query = typeof o.query === 'string' ? o.query : ''
+        if (!query) return null
+        const freshness = normaliseFreshness(o.freshness)
+        return freshness ? { query, freshness } : { query }
+      }
+      return null
+    })
+    .filter((q): q is NonNullable<ResearchManifest['twitter_queries']>[number] => q !== null)
+
+  return {
+    ...manifest,
+    reddit_queries,
+    twitter_queries,
+  }
 }
 
 /**

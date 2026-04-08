@@ -69,12 +69,13 @@ Every article flows through these stages in order. File paths and models verifie
 - 400+ line system prompt with all type definitions and rules
 
 ### Stage 2: Research → `lib/research-orchestrator.ts` → `executeResearch()`
-- Runs in parallel: Brave web search + Reddit search + live data queries
-- **Brave:** `lib/brave-research.ts` — 4–10 searches, `sanitizeSnippet()` prevents JSON failures
-- **Reddit:** `executeRedditQueries()` — via Brave site:reddit.com searches
+- Runs in parallel: Brave web search + Reddit search + Twitter/X search + live data queries
+- **Brave:** `lib/brave-research.ts` — 4–10 searches, `sanitizeSnippet()` prevents JSON failures, optional per-query `freshness` (pd/pw/pm)
+- **Reddit:** `executeRedditQueries()` — via Brave site:reddit.com searches, per-query freshness
+- **Twitter/X:** `executeTwitterQueries()` — via Brave site:x.com searches; filters by canonical `x.com/{handle}/status/{id}` URL pattern, snippet ≥50 chars, max 8 findings; stored as `twitter_findings` (top-level JSONB column). Haiku sentiment paragraph stored as `twitter_summary` (TEXT column). NO Twitter SDK, NO API key required.
 - **Live data:** `executeLiveDataQueries()` — Polymarket + Yahoo Finance + Google Trends (all parallel)
 - Entity card extraction from research findings
-- **Synthesis:** Haiku call (`buildSynthesis()`) replacing flat research summaries
+- **Synthesis:** Haiku call (`buildSynthesis()`) — runs in parallel with `summariseTwitterFindings()` (also Haiku)
 
 ### Stage 3: Blueprint → `lib/blueprint.ts` → `generateBlueprint()`
 - **Model:** Gemini 2.5 Flash (temp 0.2, thinkingBudget: 0)
@@ -202,6 +203,8 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - `user_id`, `user_name`, `user_avatar` — creator attribution
 - `research_preview` JSONB — shown during sign-in gate
 - `entity_cards` JSONB — structured research entities
+- `twitter_findings` JSONB — array of `{ id, author_handle, snippet, url }` from Brave site:x.com searches
+- `twitter_summary` TEXT — Haiku-generated paragraph summarising X conversation
 - `blueprint` JSONB — section skeleton from blueprint phase
 - `social_content` JSONB — generated social posts
 
@@ -388,10 +391,12 @@ GEMINI_MAX_CONCURRENT=3        # Concurrent generation limit (in-memory)
 ## Mandatory Process Rules
 
 ### 1. Documentation Updates
-When any feature ships, update BUILD.md immediately. When the plan changes, update PLAN.md. CLAUDE.md only changes when the tech stack, pipeline, or architecture changes.
+When any feature ships, update BUILD.md immediately. When the plan changes, update PLAN.md. When a non-trivial decision is made, append it to DECISIONS.md. CLAUDE.md only changes when the tech stack, pipeline, or architecture changes. OVERVIEW.md and STRATEGY.md change only when product positioning or growth strategy shifts.
 
 ### 2. Session Start
-At the start of every session, read CLAUDE.md, BUILD.md, and PLAN.md before doing anything. Verify your understanding of the current state matches what's documented.
+At the start of every session, read CLAUDE.md, BUILD.md, PLAN.md, OVERVIEW.md, and STRATEGY.md before doing anything. Verify your understanding of the current state matches what's documented.
+
+**The canonical doc set is exactly 7 files in the repo root:** CLAUDE.md, BUILD.md, PLAN.md, DECISIONS.md, OVERVIEW.md, STRATEGY.md, README.md. If you encounter any other markdown file in the root, flag it — it is either drift or a working draft that should be moved to `docs/drafts/` or deleted.
 
 ### 3. Autonomous Execution
 When the founder gives a clear, detailed brief: execute it fully without stopping to ask questions. When the brief is ambiguous or high-risk: use investigate-plan-approve-code.

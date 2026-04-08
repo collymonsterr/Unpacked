@@ -41,7 +41,14 @@ interface ResearchOutput {
   findings: ResearchFinding[]
 }
 
-export async function braveSearch(query: string, count = 8): Promise<SearchResult[]> {
+/** Brave Search freshness param. pd = past day, pw = past week, pm = past month. */
+export type BraveFreshness = 'pd' | 'pw' | 'pm'
+
+export async function braveSearch(
+  query: string,
+  count = 8,
+  freshness?: BraveFreshness,
+): Promise<SearchResult[]> {
   const apiKey = process.env.BRAVE_SEARCH_API_KEY
   if (!apiKey) return []
 
@@ -51,6 +58,9 @@ export async function braveSearch(query: string, count = 8): Promise<SearchResul
     url.searchParams.set('count', String(count))
     url.searchParams.set('safesearch', 'strict')
     url.searchParams.set('text_decorations', 'false')
+    if (freshness) {
+      url.searchParams.set('freshness', freshness)
+    }
 
     const res = await fetch(url.toString(), {
       headers: { Accept: 'application/json', 'X-Subscription-Token': apiKey },
@@ -427,9 +437,11 @@ export async function compileResearch(
 /**
  * Execute an array of Brave search queries in parallel.
  * Cap at 6 simultaneous to avoid rate limits — if more than 6, split into two batches.
+ * Each query may carry an optional `freshness` value (pd/pw/pm) — when set, it's passed
+ * to the Brave Search API as a per-query time filter. Omit for no filter.
  */
 export async function executeBraveQueries(
-  queries: Array<{ query: string; purpose?: string }>,
+  queries: Array<{ query: string; purpose?: string; freshness?: BraveFreshness }>,
   resultsPerQuery = 6,
 ): Promise<Map<string, SearchResult[]>> {
   const allResults = new Map<string, SearchResult[]>()
@@ -439,7 +451,7 @@ export async function executeBraveQueries(
     // All at once
     const results = await Promise.all(
       queries.map(async (q) => {
-        const r = await braveSearch(q.query, resultsPerQuery)
+        const r = await braveSearch(q.query, resultsPerQuery, q.freshness)
         return [q.query, r] as const
       })
     )
@@ -448,14 +460,14 @@ export async function executeBraveQueries(
     }
   } else {
     // Split into batches of MAX_PARALLEL
-    const batches: Array<{ query: string; purpose?: string }>[] = []
+    const batches: Array<{ query: string; purpose?: string; freshness?: BraveFreshness }>[] = []
     for (let i = 0; i < queries.length; i += MAX_PARALLEL) {
       batches.push(queries.slice(i, i + MAX_PARALLEL))
     }
     for (const batch of batches) {
       const results = await Promise.all(
         batch.map(async (q) => {
-          const r = await braveSearch(q.query, resultsPerQuery)
+          const r = await braveSearch(q.query, resultsPerQuery, q.freshness)
           return [q.query, r] as const
         })
       )

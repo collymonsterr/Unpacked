@@ -41,9 +41,33 @@ export interface BraveQuery {
   purpose: 'core_facts' | 'economic_impact' | 'background' | 'wider_context' | 'product_review' | 'pricing' | 'specs' | 'community' | 'expert_opinion' | 'comparison' | 'how_to' | 'alternatives' | 'fact_check_sources' | 'official_data' | 'expert_analysis'
 }
 
+/** Brave Search freshness parameter — controls how recent results must be.
+ *  pd = past day, pw = past week, pm = past month. Omit for no time filter. */
+export type SearchFreshness = 'pd' | 'pw' | 'pm'
+
 export interface RedditQuery {
   query: string
   subreddits: string[]
+  /** Optional time filter applied per query when fetching from Brave. */
+  freshness?: SearchFreshness
+}
+
+export interface TwitterQuery {
+  query: string
+  /** Optional time filter applied per query when fetching from Brave. */
+  freshness?: SearchFreshness
+}
+
+/** A single tweet/X post surfaced through Brave site:x.com search. */
+export interface TwitterFinding {
+  /** Stable id used by remove-quote and the renderer. */
+  id: string
+  /** Author handle without the leading @. Extracted from x.com/{handle}/status/{id}. */
+  author_handle: string
+  /** Tweet snippet text from Brave Search. */
+  snippet: string
+  /** Direct URL to the tweet (x.com/{handle}/status/{id}). */
+  url: string
 }
 
 export interface ImageQueries {
@@ -67,6 +91,8 @@ export interface LiveDataQuery {
 export interface ResearchManifest {
   brave_queries: BraveQuery[]
   reddit_queries: RedditQuery[]
+  /** Optional Twitter/X queries (executed via Brave site:x.com searches). Schema added Part 1; execution wired in Part 2. */
+  twitter_queries?: TwitterQuery[]
   image_queries: ImageQueries
   live_data?: LiveDataQuery[]
 }
@@ -616,6 +642,8 @@ export interface ArticleRow {
   research_synthesis?: ResearchSynthesis | null
   blueprint?: ArticleBlueprint | null
   live_data?: Record<string, unknown>[] | null
+  twitter_findings?: TwitterFinding[] | null
+  twitter_summary?: string | null
   social_content?: Record<string, unknown> | null
   category?: string | null
   card_summary?: string | null

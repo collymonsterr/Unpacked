@@ -307,6 +307,15 @@ Four env vars doing the same job: `NEXT_PUBLIC_ADMIN_EMAIL`, `NEXT_PUBLIC_ADMIN_
 ### M4. CommunityInsights Nested `<a>` Tag Bug
 Reddit thread links in `CommunityInsights.tsx` wrap subreddit links, producing `<a>` inside `<a>` — invalid HTML that causes React hydration errors. Fix by restructuring the link hierarchy so subreddit link is a sibling, not a descendant. Pre-existing bug, visible in console on all article pages with Reddit content.
 
+### M5. Loading Message Pacing
+Loading messages exhaust at ~70 seconds but articles average ~188 seconds, leaving ~1.7 minutes of dead silence. Flat 5s interval, no adaptive pacing. Fix: implement graduated intervals (fast early, slow mid, long tail). File: `components/ArticleGenerating.tsx`. Highest-priority UX bug rescued from old TODO.md.
+
+### M6. Set Provider Spending Caps
+Set hard spending caps in Anthropic, OpenAI, and Google billing dashboards as last-line cost defence. Not yet confirmed done. No code change — operational task.
+
+### M7. Remove Unused Vercel Env Vars
+Three env vars confirmed unused and should be removed from Vercel: `GOOGLE_CUSTOM_SEARCH_API_KEY`, `GOOGLE_CUSTOM_SEARCH_ENGINE_ID`, `FAL_API_KEY`. Operational task.
+
 ---
 
 ## Critical Path (updated April 2026)

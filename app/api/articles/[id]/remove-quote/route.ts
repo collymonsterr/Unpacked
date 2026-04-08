@@ -5,10 +5,12 @@ import { isValidUUID } from '@/lib/validate'
 /**
  * POST /api/articles/[id]/remove-quote
  *
- * Removes a quote or insight from the community_insights section of an article.
+ * Removes a quote/insight from community_insights, OR a tweet from twitter_findings.
  * Owner-only (or admin).
  *
- * Body: { type: 'quote' | 'insight', index: number }
+ * Body:
+ *   { type: 'quote' | 'insight', index: number }   — community_insights items
+ *   { type: 'twitter', id: string }                 — single tweet by TwitterFinding.id
  */
 export async function POST(
   request: NextRequest,
@@ -28,7 +30,7 @@ export async function POST(
     // Fetch article
     const { data: row, error: fetchErr } = await db
       .from('articles')
-      .select('article, user_id')
+      .select('article, user_id, twitter_findings, twitter_summary')
       .eq('id', id)
       .single()
 
@@ -44,10 +46,43 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { type, index } = body
+    const { type, index, id: itemId } = body as { type?: string; index?: number; id?: string }
+
+    // ── Twitter branch: remove a single tweet by id from the top-level twitter_findings array ──
+    if (type === 'twitter') {
+      if (typeof itemId !== 'string' || itemId.length === 0) {
+        return Response.json({ error: 'Invalid request: twitter removal needs id' }, { status: 400 })
+      }
+
+      const current = Array.isArray(row.twitter_findings) ? row.twitter_findings : []
+      const next = current.filter((t: { id?: string }) => t?.id !== itemId)
+
+      // If the removal dropped us below 2 findings the section will hide entirely;
+      // also clear the summary because it no longer reflects the reduced set.
+      const nextSummary = next.length >= 2 ? row.twitter_summary ?? null : null
+
+      const { error: updateErr } = await db
+        .from('articles')
+        .update({
+          twitter_findings: next,
+          twitter_summary: nextSummary,
+        })
+        .eq('id', id)
+
+      if (updateErr) {
+        console.error('[remove-quote] Twitter update failed:', updateErr.message)
+        return Response.json({ error: 'Failed to update article' }, { status: 500 })
+      }
+
+      return Response.json({
+        success: true,
+        twitter_findings: next,
+        twitter_summary: nextSummary,
+      })
+    }
 
     if (!type || typeof index !== 'number' || index < 0) {
-      return Response.json({ error: 'Invalid request: need type (quote|insight) and index' }, { status: 400 })
+      return Response.json({ error: 'Invalid request: need type (quote|insight|twitter) and index/id' }, { status: 400 })
     }
 
     // Find and modify the community_insights section

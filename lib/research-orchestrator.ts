@@ -13,7 +13,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
-import type { ArticlePlan, ResearchManifest, EntityCard, ResearchSynthesis, PlanEntity, LiveDataQuery } from '@/types/article'
+import type { ArticlePlan, ResearchManifest, EntityCard, ResearchSynthesis, PlanEntity, LiveDataQuery, TwitterFinding } from '@/types/article'
 import {
   executeBraveQueries,
   compileResearch,
@@ -58,6 +58,10 @@ export interface OrchestratedResearchResult {
   synthesis: ResearchSynthesis
   /** Live data results from Polymarket, Yahoo Finance, Google Trends */
   liveData: Record<string, unknown>[]
+  /** Tweet/X findings sourced via Brave site:x.com searches */
+  twitterFindings: TwitterFinding[]
+  /** One-paragraph Haiku-generated summary of the X conversation, or null when no findings */
+  twitterSummary: string | null
 }
 
 /**
@@ -76,9 +80,10 @@ export async function executeResearch(
   const startTime = Date.now()
 
   // ── Step 1: Fire all research tasks in parallel ──
-  const [braveResults, redditResults, liveData] = await Promise.all([
+  const [braveResults, redditResults, twitterFindings, liveData] = await Promise.all([
     executeBraveQueries(manifest.brave_queries, resultsPerQuery),
     executeRedditQueries(manifest.reddit_queries, resultsPerQuery),
+    executeTwitterQueries(manifest.twitter_queries, resultsPerQuery),
     executeLiveDataQueries(liveDataQueries, plan, articleId),
   ])
   const searchMs = Date.now() - startTime
@@ -112,19 +117,24 @@ export async function executeResearch(
   }
   const entityMs = Date.now() - entityStart
 
-  // ── Step 4: Build synthesis via Haiku ──
+  // ── Step 4: Build synthesis (Haiku) + Twitter summary (Haiku) in parallel ──
   const synthStart = Date.now()
-  let synthesis: ResearchSynthesis = buildDefaultSynthesis(entityCards, plan)
-  try {
-    synthesis = await buildSynthesis(entityCards, compiled.findings, plan)
-  } catch (err) {
-    console.warn('[research] Synthesis failed — using default:', (err as Error).message)
-  }
+  const [synthesisResult, twitterSummary] = await Promise.all([
+    buildSynthesis(entityCards, compiled.findings, plan).catch(err => {
+      console.warn('[research] Synthesis failed — using default:', (err as Error).message)
+      return buildDefaultSynthesis(entityCards, plan)
+    }),
+    summariseTwitterFindings(twitterFindings, plan).catch(err => {
+      console.warn('[research] Twitter summary failed:', (err as Error).message)
+      return null
+    }),
+  ])
+  const synthesis: ResearchSynthesis = synthesisResult
   const synthMs = Date.now() - synthStart
 
   const totalElapsed = Date.now() - startTime
   console.log(
-    `[research] Complete in ${totalElapsed}ms: search=${searchMs}ms entity=${entityMs}ms synthesis=${synthMs}ms | ${compiled.searchCount} searches, ${entityCards.length} entities, ${liveData.length} live data`
+    `[research] Complete in ${totalElapsed}ms: search=${searchMs}ms entity=${entityMs}ms synthesis=${synthMs}ms | ${compiled.searchCount} searches, ${entityCards.length} entities, ${liveData.length} live data, ${twitterFindings.length} tweets`
   )
 
   return {
@@ -137,6 +147,8 @@ export async function executeResearch(
     entityCards,
     synthesis,
     liveData,
+    twitterFindings,
+    twitterSummary,
   }
 }
 
@@ -448,9 +460,43 @@ async function executeLiveDataQueries(
 
 // ── Reddit query helper ───────────────────────────────────────────────────────
 
+/** Brave freshness values we support — narrow set, validated before forwarding. */
+type RedditFreshness = 'pd' | 'pw' | 'pm'
+const VALID_FRESHNESS: ReadonlySet<string> = new Set(['pd', 'pw', 'pm'])
+
+/**
+ * Normalise a single reddit query entry from any of the legacy/cached shapes:
+ *  - plain string                              → { query, subreddits: [], freshness: undefined }
+ *  - { query, subreddits }                     → freshness left undefined (no time filter)
+ *  - { query, subreddits, freshness }          → freshness validated
+ *  - { query, freshness } (no subreddits)      → subreddits defaulted to []
+ *  - freshness === 'none' or unknown           → treated as undefined (no time filter)
+ */
+function normaliseRedditQuery(raw: unknown): { query: string; subreddits: string[]; freshness?: RedditFreshness } {
+  if (typeof raw === 'string') {
+    return { query: raw, subreddits: [] }
+  }
+  if (raw && typeof raw === 'object') {
+    const obj = raw as { query?: unknown; subreddits?: unknown; freshness?: unknown }
+    const query = typeof obj.query === 'string' ? obj.query : ''
+    const subreddits = Array.isArray(obj.subreddits)
+      ? obj.subreddits.filter((s): s is string => typeof s === 'string')
+      : []
+    const freshnessRaw = typeof obj.freshness === 'string' ? obj.freshness : undefined
+    const freshness = freshnessRaw && VALID_FRESHNESS.has(freshnessRaw)
+      ? (freshnessRaw as RedditFreshness)
+      : undefined
+    return { query, subreddits, freshness }
+  }
+  return { query: '', subreddits: [] }
+}
+
 /**
  * Execute Reddit-specific queries via Brave Search.
  * Appends "reddit" and subreddit names to queries for targeted results.
+ * Each query carries an optional freshness value (pd/pw/pm) forwarded to Brave
+ * as a per-query time filter — set by the planner based on what each query is
+ * actually trying to find. See planning prompt in lib/claude.ts.
  */
 async function executeRedditQueries(
   redditQueries: ResearchManifest['reddit_queries'],
@@ -460,19 +506,178 @@ async function executeRedditQueries(
     return new Map()
   }
 
-  const searchQueries = redditQueries.map(rq => {
+  const searchQueries = redditQueries.map(rawQuery => {
+    const rq = normaliseRedditQuery(rawQuery)
     const subs = rq.subreddits.slice(0, 3)
-    if (subs.length > 0) {
-      return {
-        query: `${rq.query} reddit ${subs.map(s => `r/${s}`).join(' ')}`,
-        purpose: 'community' as const,
-      }
-    }
+    const queryString = subs.length > 0
+      ? `${rq.query} reddit ${subs.map(s => `r/${s}`).join(' ')}`
+      : `${rq.query} reddit`
     return {
-      query: `${rq.query} reddit`,
+      query: queryString,
       purpose: 'community' as const,
+      freshness: rq.freshness,
     }
   })
 
   return executeBraveQueries(searchQueries, resultsPerQuery)
+}
+
+// ── Twitter/X query helper ────────────────────────────────────────────────────
+
+const TWITTER_URL_PATTERN = /(?:^|\/)x\.com\/([A-Za-z0-9_]{1,15})\/status\/(\d+)/i
+const MIN_TWEET_SNIPPET = 50
+const MAX_TWITTER_FINDINGS = 8
+
+/**
+ * Normalise a single twitter query entry from any of the legacy/cached shapes:
+ *  - plain string                              → { query, freshness: undefined }
+ *  - { query }                                 → freshness left undefined
+ *  - { query, freshness }                      → freshness validated
+ *  - freshness === 'none' or unknown           → treated as undefined
+ */
+function normaliseTwitterQuery(raw: unknown): { query: string; freshness?: RedditFreshness } {
+  if (typeof raw === 'string') {
+    return { query: raw }
+  }
+  if (raw && typeof raw === 'object') {
+    const obj = raw as { query?: unknown; freshness?: unknown }
+    const query = typeof obj.query === 'string' ? obj.query : ''
+    const freshnessRaw = typeof obj.freshness === 'string' ? obj.freshness : undefined
+    const freshness = freshnessRaw && VALID_FRESHNESS.has(freshnessRaw)
+      ? (freshnessRaw as RedditFreshness)
+      : undefined
+    return { query, freshness }
+  }
+  return { query: '' }
+}
+
+/**
+ * Execute Twitter/X queries via Brave Search using site:x.com.
+ * Filters to results that match the canonical x.com/{handle}/status/{id} pattern,
+ * extracts the author handle, applies a minimum snippet length, dedupes by tweet id,
+ * and caps total findings at MAX_TWITTER_FINDINGS.
+ *
+ * Each query carries an optional freshness value (pd/pw/pm) forwarded to Brave
+ * as a per-query time filter — set by the planner based on what each query is
+ * actually trying to find. See planning prompt in lib/claude.ts.
+ *
+ * Failures inside Brave never block the pipeline — empty array is returned.
+ */
+async function executeTwitterQueries(
+  twitterQueries: ResearchManifest['twitter_queries'],
+  resultsPerQuery: number,
+): Promise<TwitterFinding[]> {
+  if (!twitterQueries || twitterQueries.length === 0) {
+    return []
+  }
+
+  // Coerce + ensure each query targets x.com via site: prefix.
+  const searchQueries = twitterQueries.map(rawQuery => {
+    const tq = normaliseTwitterQuery(rawQuery)
+    const queryString = /\bsite:x\.com\b/i.test(tq.query)
+      ? tq.query
+      : `site:x.com ${tq.query}`
+    return {
+      query: queryString,
+      purpose: 'community' as const,
+      freshness: tq.freshness,
+    }
+  }).filter(q => q.query.replace(/site:x\.com/i, '').trim().length > 0)
+
+  if (searchQueries.length === 0) return []
+
+  let resultsMap: Map<string, SearchResult[]>
+  try {
+    resultsMap = await executeBraveQueries(searchQueries, resultsPerQuery)
+  } catch (err) {
+    console.warn('[research] Twitter Brave search failed:', (err as Error).message)
+    return []
+  }
+
+  const findings: TwitterFinding[] = []
+  const seenTweetIds = new Set<string>()
+
+  for (const [, results] of resultsMap) {
+    for (const r of results) {
+      if (findings.length >= MAX_TWITTER_FINDINGS) break
+
+      const match = r.url.match(TWITTER_URL_PATTERN)
+      if (!match) continue
+
+      const author_handle = match[1]
+      const tweetId = match[2]
+      if (seenTweetIds.has(tweetId)) continue
+
+      const snippet = (r.snippet ?? '').trim()
+      if (snippet.length < MIN_TWEET_SNIPPET) continue
+
+      // Skip junk handles often returned by Brave (e.g. /i/ pages, search pages)
+      if (!/^[A-Za-z0-9_]{1,15}$/.test(author_handle)) continue
+      if (author_handle.toLowerCase() === 'i') continue
+
+      seenTweetIds.add(tweetId)
+      findings.push({
+        id: `tweet_${tweetId}`,
+        author_handle,
+        snippet,
+        url: `https://x.com/${author_handle}/status/${tweetId}`,
+      })
+    }
+    if (findings.length >= MAX_TWITTER_FINDINGS) break
+  }
+
+  console.log(`[research] Twitter: ${findings.length} findings from ${searchQueries.length} queries`)
+  return findings
+}
+
+// ── Twitter sentiment summary (Haiku) ─────────────────────────────────────────
+
+const TWITTER_SUMMARY_SYSTEM = `You are summarising what people are actually saying on X (Twitter) about a topic. You will be given a small set of tweet snippets with author handles. Write ONE short paragraph (2-3 sentences, max ~60 words) capturing the prevailing sentiment, the main camps if there is disagreement, and any standout reactions.
+
+HARD RULES:
+- Never use generic phrases like "users are talking about", "the community is buzzing", "people have mixed feelings", "X users had a lot to say", "the discourse online".
+- Never invent quotes or attributions.
+- Never reference individual handles unless the tweet content makes them notable.
+- Do NOT use hashtags or emoji.
+- No preamble. No "Here is the summary". Just the paragraph.
+- If the tweets contradict each other, say so directly ("The split is roughly...", "Critics argue X while supporters point to Y").
+- Write in the voice of an editor describing the conversation, not a marketer.`
+
+async function summariseTwitterFindings(
+  findings: TwitterFinding[],
+  plan: ArticlePlan,
+): Promise<string | null> {
+  if (!findings || findings.length < 2) return null
+
+  const tweetList = findings
+    .slice(0, MAX_TWITTER_FINDINGS)
+    .map((f, i) => `${i + 1}. @${f.author_handle}: ${f.snippet.slice(0, 280)}`)
+    .join('\n')
+
+  const userMessage = `Topic: "${plan.title}"
+Article type: ${plan.article_type}
+
+TWEETS FROM X:
+${tweetList}
+
+Write the paragraph now.`
+
+  const model = 'claude-haiku-4-5-20251001'
+  const message = await getAnthropic().messages.create({
+    model,
+    max_tokens: 256,
+    system: TWITTER_SUMMARY_SYSTEM,
+    messages: [{ role: 'user', content: userMessage }],
+  })
+
+  logApiCall({
+    callType: 'twitter_summary',
+    model,
+    inputTokens: message.usage?.input_tokens,
+    outputTokens: message.usage?.output_tokens,
+  })
+
+  const text = message.content.find(b => b.type === 'text')?.text ?? ''
+  const cleaned = text.trim()
+  return cleaned.length > 0 ? cleaned : null
 }

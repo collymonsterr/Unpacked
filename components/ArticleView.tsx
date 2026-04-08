@@ -9,6 +9,7 @@ import ArticleSidebarNav from './ui/ArticleSidebarNav'
 import QuickVerdict from './sections/QuickVerdict'
 import ExecutiveSummary from './sections/ExecutiveSummary'
 import SectionRenderer from './sections/SectionRenderer'
+import TwitterSentimentSection from './sections/TwitterSentimentSection'
 import { RefinementChips, RelatedChips } from './ui/SuggestionChips'
 import RefinementInput from './ui/RefinementInput'
 import ShareButton from './ui/ShareButton'
@@ -53,6 +54,8 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
   const { user } = useUser()
   const [article, setArticle] = useState(articleRow.article!)
   const [chips, setChips] = useState(articleRow.suggestion_chips)
+  const [twitterFindings, setTwitterFindings] = useState(() => articleRow.twitter_findings ?? [])
+  const [twitterSummary, setTwitterSummary] = useState<string | null>(() => articleRow.twitter_summary ?? null)
   const [isRefining, setIsRefining] = useState(false)
   const [refineError, setRefineError] = useState<string | null>(null)
   const [refineSuccess, setRefineSuccess] = useState(false)
@@ -507,6 +510,20 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           onReplaceImage={handleReplaceImage}
           onSetPrimaryImage={handleSetPrimaryImage}
           onArticleUpdated={(updated) => setArticle(updated)}
+        />
+      )}
+
+      {/* Twitter/X sentiment — rendered after article body. Standalone, never inserted into article.sections. */}
+      {!isRefining && twitterFindings.length >= 2 && (
+        <TwitterSentimentSection
+          findings={twitterFindings}
+          summary={twitterSummary}
+          isOwner={isOwner}
+          articleId={articleRow.id}
+          onUpdated={(next) => {
+            setTwitterFindings(next.findings)
+            setTwitterSummary(next.summary)
+          }}
         />
       )}
 

@@ -72,6 +72,8 @@ interface PlanData {
     liveData: unknown[]
     sources: PlanSource[]
     redditThreads: RedditThread[]
+    twitterFindings?: Array<{ id: string; author_handle: string; snippet: string; url: string }>
+    twitterSummary?: string | null
   }
   angles: AngleOption[]
   timing: { plan_ms: number; research_ms: number; angles_ms?: number }
@@ -410,6 +412,8 @@ function PlanPageContent() {
   // ── Sentiment state (NOT per-angle) ──
   const [removedSentiment, setRemovedSentiment] = useState<Set<number>>(new Set())
   const [promotedSentiment, setPromotedSentiment] = useState<Set<number>>(new Set())
+  // ── Twitter sentiment state — local-only (not yet persisted from plan page) ──
+  const [removedTweetIds, setRemovedTweetIds] = useState<Set<string>>(new Set())
 
   // ── Options ──
   const [selectedLength, setSelectedLength] = useState<'quick' | 'standard' | 'deep'>('standard')
@@ -1054,6 +1058,57 @@ function PlanPageContent() {
                           </p>
                         </div>
                       </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ─── SECTION: What people are saying on X ─── */}
+            {planData?.research.twitterFindings && planData.research.twitterFindings.length >= 2 && (
+              <div className="rounded-2xl p-6" style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                <SectionHeader
+                  label="What people are saying on X"
+                  count={`${planData.research.twitterFindings.length - removedTweetIds.size} active`}
+                />
+                {planData.research.twitterSummary && (
+                  <div
+                    className="mb-4 rounded-xl px-4 py-3"
+                    style={{ backgroundColor: '#FAEEDA', color: '#412402' }}
+                  >
+                    <p className="text-[13px] leading-relaxed" style={{ color: '#412402' }}>
+                      {planData.research.twitterSummary}
+                    </p>
+                  </div>
+                )}
+                <div className="space-y-2.5">
+                  {planData.research.twitterFindings.slice(0, 4).map((tweet) => {
+                    const isRemoved = removedTweetIds.has(tweet.id)
+                    return (
+                      <RemovableItem
+                        key={tweet.id}
+                        removed={isRemoved}
+                        onRemove={() => setRemovedTweetIds(prev => new Set(prev).add(tweet.id))}
+                        onUndo={() => setRemovedTweetIds(prev => { const n = new Set(prev); n.delete(tweet.id); return n })}
+                      >
+                        <div className="pl-3 py-2 pr-7" style={{ borderLeft: `3px solid ${isRemoved ? '#D3D1C7' : '#BA7517'}` }}>
+                          <p className="text-[11px] font-semibold mb-1" style={{ color: '#BA7517', fontFamily: 'var(--font-sora)' }}>
+                            @{tweet.author_handle}
+                          </p>
+                          <p className="text-[13px] leading-relaxed" style={{ color: 'var(--text-primary)', textDecoration: isRemoved ? 'line-through' : 'none' }}>
+                            {tweet.snippet}
+                          </p>
+                          <a
+                            href={tweet.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] mt-1 inline-block no-underline hover:underline"
+                            style={{ color: '#BA7517' }}
+                          >
+                            Read thread →
+                          </a>
+                        </div>
+                      </RemovableItem>
                     )
                   })}
                 </div>

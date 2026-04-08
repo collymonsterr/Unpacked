@@ -227,6 +227,8 @@ export async function POST(request: NextRequest) {
           researchUpdate.entity_cards = research.entityCards ?? []
           if (research.synthesis) researchUpdate.research_synthesis = research.synthesis
           if (research.liveData?.length > 0) researchUpdate.live_data = research.liveData
+          if (research.twitterFindings?.length > 0) researchUpdate.twitter_findings = research.twitterFindings
+          if (research.twitterSummary) researchUpdate.twitter_summary = research.twitterSummary
           if (Object.keys(researchUpdate).length > 0) {
             await db.from('articles').update(researchUpdate).eq('id', data.id)
           }
@@ -339,12 +341,14 @@ export async function POST(request: NextRequest) {
         )
         t.research_ms = Date.now() - t2
 
-        // Save research findings + entity cards + synthesis + live data immediately — preserved even if writing fails
+        // Save research findings + entity cards + synthesis + live data + twitter immediately — preserved even if writing fails
         const researchUpdate: Record<string, unknown> = {}
         if (research.findings.length > 0) researchUpdate.research_findings = research.findings
         researchUpdate.entity_cards = research.entityCards ?? []
         if (research.synthesis) researchUpdate.research_synthesis = research.synthesis
         if (research.liveData && research.liveData.length > 0) researchUpdate.live_data = research.liveData
+        if (research.twitterFindings && research.twitterFindings.length > 0) researchUpdate.twitter_findings = research.twitterFindings
+        if (research.twitterSummary) researchUpdate.twitter_summary = research.twitterSummary
         if (Object.keys(researchUpdate).length > 0) {
           const t3 = Date.now()
           const { error: saveErr } = await db
