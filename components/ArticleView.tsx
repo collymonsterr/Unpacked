@@ -434,6 +434,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
       {isOwner && (
         <EditorBar
           articleId={articleRow.id}
+          articleSlug={articleRow.slug}
           visibility={articleRow.visibility ?? 'published'}
           unusedFindingsCount={unusedFindingsCount}
           onOpenSharePanel={() => setShowSharePanel(true)}

@@ -251,6 +251,8 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - `app/page.tsx` — homepage (server component)
 - `app/article/[slug]/page.tsx` — article page (server, JSON-LD injection)
 - `app/article/[slug]/ArticlePageClient.tsx` — article rendering + polling
+- `app/article/[slug]/edit/page.tsx` — full-document editor (server, owner/admin gate)
+- `app/article/[slug]/edit/EditFullClient.tsx` — Google Docs–style editor: write/reorder modes, auto-resize textareas, dnd-kit reorder, Cmd+S save
 - `app/admin/page.tsx` — admin dashboard (4 tabs: overview, articles, costs, feedback)
 - `app/plan/page.tsx` — plan mode interactive editorial brief
 - `app/terms/page.tsx` — Terms of Service (static)
@@ -272,10 +274,11 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - `components/editor/FindingCard.tsx` — individual research finding with source link + checkbox
 - `components/SharePanel.tsx` — 4-tab social content panel (Twitter, LinkedIn, Reddit, Image Cards)
 
-### API Routes (57 total)
+### API Routes (58 total)
 - `app/api/articles/create/route.ts` — main generation flow
 - `app/api/articles/plan-preview/route.ts` — plan mode: planning + research + angle generation
 - `app/api/articles/search/route.ts` — navbar autocomplete
+- `app/api/articles/[id]/edit-full/route.ts` — patches article JSONB from full-document editor (no AI call); owner/admin gate; whitelisted fields per section type; tags modified sections with `edited: true`
 - `app/api/improve-prompt/route.ts` — Haiku-powered query improvement suggestions
 
 ### Other
