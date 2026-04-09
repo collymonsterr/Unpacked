@@ -5,6 +5,8 @@ import { isValidUUID } from '@/lib/validate'
 import { runWritePipeline } from '@/lib/write-pipeline'
 import type { ArticlePlan } from '@/types/article'
 
+export const maxDuration = 300 // 5 minutes — full pipeline runs here after sign-in gate
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

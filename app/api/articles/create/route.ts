@@ -10,6 +10,8 @@ import { buildResearchPreview } from '@/lib/research-preview'
 import { runWritePipeline } from '@/lib/write-pipeline'
 import { detectUrls, prefetchUrls, extractUserRequest, buildPrefetchContext, type PrefetchedContent } from '@/lib/url-prefetch'
 
+export const maxDuration = 300 // 5 minutes — deep articles need 2-3 min for full pipeline
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()

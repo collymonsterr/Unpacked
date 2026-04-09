@@ -1,3 +1,5 @@
+export const maxDuration = 300 // 5 minutes — admin regenerate runs full pipeline
+
 import { NextRequest, after } from 'next/server'
 import { writeWithSonnet } from '@/lib/claude'
 import { writeWithGemini } from '@/lib/gemini-writer'

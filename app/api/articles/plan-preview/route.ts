@@ -1,3 +1,5 @@
+export const maxDuration = 120 // 2 minutes — planning + research can take 30-60s
+
 import { NextRequest } from 'next/server'
 import { planArticle } from '@/lib/claude'
 import { executeResearch } from '@/lib/research-orchestrator'
