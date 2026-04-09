@@ -9,7 +9,6 @@ import ArticleSidebarNav from './ui/ArticleSidebarNav'
 import QuickVerdict from './sections/QuickVerdict'
 import ExecutiveSummary from './sections/ExecutiveSummary'
 import SectionRenderer from './sections/SectionRenderer'
-import TwitterSentimentSection from './sections/TwitterSentimentSection'
 import { RefinementChips, RelatedChips } from './ui/SuggestionChips'
 import RefinementInput from './ui/RefinementInput'
 import ShareButton from './ui/ShareButton'
@@ -511,22 +510,17 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           onReplaceImage={handleReplaceImage}
           onSetPrimaryImage={handleSetPrimaryImage}
           onArticleUpdated={(updated) => setArticle(updated)}
-        />
-      )}
-
-      {/* Twitter/X sentiment — rendered after article body. Standalone, never inserted into article.sections. */}
-      {!isRefining && twitterFindings.length >= 2 && (
-        <TwitterSentimentSection
-          findings={twitterFindings}
-          summary={twitterSummary}
+          twitterFindings={twitterFindings}
+          twitterSummary={twitterSummary}
           isOwner={isOwner}
-          articleId={articleRow.id}
-          onUpdated={(next) => {
+          onTwitterUpdated={(next) => {
             setTwitterFindings(next.findings)
             setTwitterSummary(next.summary)
           }}
         />
       )}
+
+      {/* Twitter/X sentiment is now rendered inline by SectionRenderer (after community_insights or before sources) */}
 
       {/* ─── Bottom sections (hidden in print) ─── */}
 

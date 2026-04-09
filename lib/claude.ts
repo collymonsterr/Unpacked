@@ -337,27 +337,35 @@ For reddit_queries: generate 1-3 Reddit search queries with targeted subreddits.
 - For explainers/how_to: use subreddits where people ask and answer questions
 - For product articles: use enthusiast subreddits where users share real experiences
 
-For twitter_queries: generate 2-3 Twitter/X search queries that target the most useful kinds of X content for this topic — direct reactions to a moment, expert takes from people in the field, or strong opinions that would add colour the article wouldn't otherwise have.
+For twitter_queries: generate 2-3 Twitter/X search queries that surface REACTIONS, OPINIONS, and DEBATE — not official announcements or press releases. We want journalists, analysts, critics, and enthusiasts discussing the topic, NOT the subject's own account posting marketing.
 
-QUERY CRAFT RULES — these are non-negotiable. Brave Search has a small x.com index and dies on long queries. Follow them exactly:
+TARGETING RULES — critical for useful results:
+- Target the CONTROVERSY, COST, CRITICISM, or COMPARISON angle. These get commentary from diverse voices.
+- Never query just the brand/org name alone — "NASA Artemis" returns NASA's own tweets, "Apple Intelligence" returns Apple's marketing. Instead target friction points: "Artemis delay", "Artemis SLS cost", "Apple AI vs Google".
+- Look for counter-narratives and criticism, not just positive coverage.
+- Aim for diverse voices: journalists, analysts, critics, enthusiasts — not the subject's own account.
+
+QUERY CRAFT RULES — non-negotiable. Brave Search has a small x.com index and dies on long queries:
 - KEEP IT SHORT. 2 to 4 words max. Anything longer returns zero results.
 - DO NOT include the site:x.com prefix — the system adds it automatically.
 - DO NOT include years (2024, 2025, 2026). Years almost always return zero results.
 - DO NOT include filler words like "reactions", "commentary", "thoughts", "opinions", "discussion", "launch", "announcement". They narrow Brave's match too aggressively.
-- DO use core entity names, product names, ticker symbols, people's surnames, and concrete nouns. Pair an entity with another entity, a verb, or a counter-entity.
+- DO use entity names paired with a friction/debate angle: cost, delay, vs, fail, concern, problem, controversy.
 - Skip entirely (return an empty array) for purely evergreen topics where X adds nothing — generic buyer guides, basic how-to, deep historical explainers.
 
-Examples of GOOD queries (short, entity-led, no years, no filler):
-- "Claude Opus 4 announcement" → ["Claude Opus 4", "Anthropic Opus", "Opus vs GPT"]
-- "Fed rate decision" → ["Fed rate cut", "FOMC Powell", "rate decision"]
-- "Tesla earnings" → ["TSLA earnings", "Tesla delivery", "Elon earnings"]
-- "Apple AI strategy 2026" → ["Apple Intelligence", "Siri AI", "Apple OpenAI"]
-- "iPhone 17 review" → ["iPhone 17", "iPhone 17 Pro", "iPhone camera"]
+Examples of GOOD queries (target reactions and debate, not official accounts):
+- "NASA Artemis program" → ["Artemis SLS cost", "Artemis delay", "SLS vs SpaceX"]
+- "Fed rate decision" → ["Fed rate cut", "FOMC Powell", "rate hike fear"]
+- "Tesla earnings" → ["TSLA earnings miss", "Tesla delivery", "Elon overpromise"]
+- "Apple AI strategy" → ["Apple AI behind", "Siri vs ChatGPT", "Apple AI criticism"]
+- "Trump Iran ceasefire" → ["Iran ceasefire deal", "Iran deal criticism", "ceasefire skepticism"]
+- "OpenAI GPT-5" → ["GPT-5 hype", "OpenAI safety", "GPT vs Claude"]
 
-Examples of BAD queries (will return zero results):
-- "site:x.com Apple Intelligence launch reactions 2026" — too long, has year, has filler, has prefix
-- "Claude Opus 4 developer reactions" — has filler word "reactions"
-- "Tesla Q4 2025 earnings call commentary" — has year and filler
+Examples of BAD queries (return official/institutional tweets, not commentary):
+- "NASA Artemis" — returns NASA's own press release tweets
+- "Apple Intelligence" — returns Apple's marketing posts
+- "OpenAI GPT-5 launch" — returns OpenAI's own announcements + has filler "launch"
+- "site:x.com Trump Iran ceasefire reactions 2026" — too long, has year, has filler, has prefix
 
 For evergreen buyer guides, how-to articles, or general explainers: leave twitter_queries as an empty array.
 

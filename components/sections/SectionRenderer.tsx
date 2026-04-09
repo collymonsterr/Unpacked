@@ -23,7 +23,9 @@ import LiveDataCard from './LiveDataCard'
 import BigStatement from './BigStatement'
 import RankedItemSection from './RankedItemSection'
 import MythRealitySection from './MythRealitySection'
+import TwitterSentimentSection from './TwitterSentimentSection'
 import SectionToolbar from './SectionToolbar'
+import type { TwitterFinding } from '@/types/article'
 
 interface Props {
   sections: ArticleSection[]
@@ -35,6 +37,10 @@ interface Props {
   onReplaceImage?: (sectionIndex: number, imageIndex: number) => Promise<void>
   onSetPrimaryImage?: (sectionIndex: number, imageIndex: number) => Promise<void>
   onArticleUpdated?: (article: ArticleContent) => void
+  twitterFindings?: TwitterFinding[]
+  twitterSummary?: string | null
+  isOwner?: boolean
+  onTwitterUpdated?: (next: { findings: TwitterFinding[]; summary: string | null }) => void
 }
 
 // Recharts-based sections break when rendered inside opacity:0 containers
@@ -78,6 +84,10 @@ export default function SectionRenderer({
   onReplaceImage,
   onSetPrimaryImage,
   onArticleUpdated,
+  twitterFindings,
+  twitterSummary,
+  isOwner,
+  onTwitterUpdated,
 }: Props) {
   const [removingSection, setRemovingSection] = useState<number | null>(null)
   const [editingSection, setEditingSection] = useState<number | null>(null)
@@ -152,6 +162,8 @@ export default function SectionRenderer({
   // Pre-process: group consecutive Polymarket cards for grid layout
   const elements: React.ReactNode[] = []
   let i = 0
+  let twitterInjected = false
+  const hasTwitterData = twitterFindings && twitterFindings.length >= 2
 
   while (i < sections.length) {
     const section = sections[i]
@@ -396,9 +408,56 @@ export default function SectionRenderer({
           </div>
         </div>
       )
+
+      // Inject Twitter/X sentiment immediately after community_insights
+      if (section.type === 'community_insights' && hasTwitterData) {
+        twitterInjected = true
+        elements.push(
+          <div key="twitter-sentiment" className={animated ? 'fade-in-up' : ''} style={style}>
+            <TwitterSentimentSection
+              findings={twitterFindings}
+              summary={twitterSummary ?? null}
+              isOwner={isOwner}
+              articleId={articleId}
+              onUpdated={onTwitterUpdated}
+            />
+          </div>
+        )
+      }
+
+      // Fallback: if no community_insights, inject Twitter before sources/further_reading
+      if (!twitterInjected && hasTwitterData && (section.type === 'sources' || section.type === 'further_reading')) {
+        twitterInjected = true
+        elements.splice(elements.length - 1, 0,
+          <div key="twitter-sentiment" className={animated ? 'fade-in-up' : ''}>
+            <TwitterSentimentSection
+              findings={twitterFindings}
+              summary={twitterSummary ?? null}
+              isOwner={isOwner}
+              articleId={articleId}
+              onUpdated={onTwitterUpdated}
+            />
+          </div>
+        )
+      }
     }
 
     i++
+  }
+
+  // Final fallback: no community_insights or sources — append Twitter at end
+  if (!twitterInjected && hasTwitterData) {
+    elements.push(
+      <div key="twitter-sentiment" className={animated ? 'fade-in-up' : ''}>
+        <TwitterSentimentSection
+          findings={twitterFindings}
+          summary={twitterSummary ?? null}
+          isOwner={isOwner}
+          articleId={articleId}
+          onUpdated={onTwitterUpdated}
+        />
+      </div>
+    )
   }
 
   return <>{elements}</>
