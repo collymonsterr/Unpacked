@@ -333,19 +333,28 @@ function extractEntitiesFromFindings(findings: ResearchFinding[]): PlanEntity[] 
 
 // ── Post-fetch quality filters ──────────────────────────────────────────────
 
+// News article types get relaxed live data thresholds — their value comes from real-time context
+const NEWS_TYPES = new Set(['news_analysis', 'breaking_news', 'trend_analysis'])
+
+// Standard thresholds (non-news)
 const POLYMARKET_MIN_VOLUME = 500_000 // $500k minimum for trustworthy odds
 const GOOGLE_TRENDS_MIN_SPIKE = 50 // 50% change minimum to be interesting
 const YAHOO_FINANCE_MIN_MOVE = 0.5 // ±0.5% minimum daily move
 
+// News thresholds (relaxed — show more data for current events)
+const NEWS_POLYMARKET_MIN_VOLUME = 100_000 // $100k — lower bar for news context
+// Google Trends: no threshold for news (all results kept)
+// Yahoo Finance: no threshold for news (all tickers kept)
+
 /**
  * Filter Polymarket results by volume threshold.
- * Markets below $500k total volume aren't liquid enough to be trustworthy.
  */
-function filterPolymarketByVolume(results: Record<string, unknown>[]): Record<string, unknown>[] {
+function filterPolymarketByVolume(results: Record<string, unknown>[], isNews: boolean): Record<string, unknown>[] {
+  const threshold = isNews ? NEWS_POLYMARKET_MIN_VOLUME : POLYMARKET_MIN_VOLUME
   return results.filter(r => {
     const volume = typeof r.volume === 'number' ? r.volume : 0
-    if (volume < POLYMARKET_MIN_VOLUME) {
-      console.log(`[live-data-filter] Polymarket DISCARDED: "${String(r.question ?? '').slice(0, 60)}" — volume $${Math.round(volume).toLocaleString()} < $${POLYMARKET_MIN_VOLUME.toLocaleString()} threshold`)
+    if (volume < threshold) {
+      console.log(`[live-data-filter] Polymarket DISCARDED: "${String(r.question ?? '').slice(0, 60)}" — volume $${Math.round(volume).toLocaleString()} < $${threshold.toLocaleString()} threshold`)
       return false
     }
     return true
@@ -353,13 +362,13 @@ function filterPolymarketByVolume(results: Record<string, unknown>[]): Record<st
 }
 
 /**
- * Filter Google Trends results — discard if all terms are flat (no spike ≥50%).
+ * Filter Google Trends results — news articles keep all results, others require ≥50% spike.
  */
-function filterGoogleTrendsBySpike(results: Record<string, unknown>[]): Record<string, unknown>[] {
+function filterGoogleTrendsBySpike(results: Record<string, unknown>[], isNews: boolean): Record<string, unknown>[] {
+  if (isNews) return results // News articles: show all trends data regardless of spike
   return results.filter(r => {
     const changePercent = typeof r.changePercent === 'number' ? r.changePercent : 0
     const trend = typeof r.trend === 'string' ? r.trend : 'stable'
-    // Keep if there's a significant spike (positive or negative) or if trend is rising/peaking
     if (Math.abs(changePercent) >= GOOGLE_TRENDS_MIN_SPIKE || trend === 'rising' || trend === 'peaking') {
       return true
     }
@@ -369,10 +378,11 @@ function filterGoogleTrendsBySpike(results: Record<string, unknown>[]): Record<s
 }
 
 /**
- * Filter Yahoo Finance results — discard if ALL tickers moved less than ±0.5%.
+ * Filter Yahoo Finance results — news articles keep all tickers, others require ±0.5% move.
  */
-function filterYahooFinanceByMovement(results: Record<string, unknown>[]): Record<string, unknown>[] {
+function filterYahooFinanceByMovement(results: Record<string, unknown>[], isNews: boolean): Record<string, unknown>[] {
   if (results.length === 0) return results
+  if (isNews) return results // News articles: show all tickers regardless of daily move
   const hasSignificantMove = results.some(r => {
     const pct = typeof r.changePercent === 'number' ? r.changePercent : 0
     return Math.abs(pct) >= YAHOO_FINANCE_MIN_MOVE
@@ -450,10 +460,11 @@ async function executeLiveDataQueries(
 
   await Promise.all(tasks)
 
-  // ── Post-fetch quality filters ──
-  const filteredPolymarket = filterPolymarketByVolume(polymarketResults)
-  const filteredYahoo = filterYahooFinanceByMovement(yahooResults)
-  const filteredTrends = filterGoogleTrendsBySpike(trendsResults)
+  // ── Post-fetch quality filters (relaxed for news article types) ──
+  const isNews = NEWS_TYPES.has(plan?.article_type ?? '')
+  const filteredPolymarket = filterPolymarketByVolume(polymarketResults, isNews)
+  const filteredYahoo = filterYahooFinanceByMovement(yahooResults, isNews)
+  const filteredTrends = filterGoogleTrendsBySpike(trendsResults, isNews)
 
   const results = [...filteredPolymarket, ...filteredYahoo, ...filteredTrends]
 

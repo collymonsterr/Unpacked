@@ -388,6 +388,7 @@ smartphone: Display, Processor, RAM, Storage, Camera System, Battery Life, Charg
 For unlisted categories: use 6-8 relevant specs a knowledgeable reviewer would include.
 
 COMMUNITY INSIGHTS WITH REDDIT THREADS:
+Include 4-6 insight cards in the community_insights section — each with a source, summary, and sentiment. Draw from Reddit threads, Twitter findings, and research to show the range of real opinions. More cards = better representation of the debate.
 If REDDIT THREADS data is provided in the research, include it in the community_insights section as a reddit_threads array with title, url, and subreddit fields. These are real URLs — include them exactly as provided.
 If notable direct quotes appear in the community sentiment research, include up to 2 as a quotes array in community_insights, each with text and source fields. Only include quotes that are genuinely insightful — not generic opinions.`
 }

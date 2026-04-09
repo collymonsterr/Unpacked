@@ -143,6 +143,7 @@ SECTION PLANNING:
 8. VISUAL DENSITY RULE: ${targetWords >= 2500 ? `At ${targetWords}+ words, this article MUST include at least 2 data visualization components (bar_chart, comparison_matrix, pie_chart, line_chart, stat_cards, or timeline) to break up long text. Assign them to specific sections.` : 'Include visual components where they add value — stat_cards for key numbers, charts for trends or comparisons.'}
 9. CHART DATA RULE: Only assign chart components (bar_chart, line_chart, pie_chart) to sections where the entity cards or research provide SPECIFIC NUMBERS to plot. If a section has qualitative information but no hard data, use stat_cards or bullet points instead. Never plan a chart that would require the writer to invent data points.
 10. EVIDENCE SUFFICIENCY: Do NOT allocate word budget to sections where the research findings contain insufficient supporting evidence. It is better to have 6 strong, evidence-backed sections than 10 where the last 4 are padded with caveats like "data is limited", "beyond the scope", or "figures are estimated". If the research doesn't support a section, cut it entirely. Every section must be fillable with specific facts from the research provided — if you cannot identify at least 3 concrete facts for a section, remove it from the plan.
+11. SECTION COUNT LIMITS: The number of content sections (excluding big_statement, sources, further_reading) must respect the word budget. Maximum content sections by word budget: under 800 words → 4-5 sections, 800-1500 words → 5-7 sections, 1500-2500 words → 7-9 sections, 2500-4000 words → 9-12 sections. More sections than this means each section is too thin to be substantive. For breaking_news specifically: use exactly 5 sections following this structure: What Happened, What's Confirmed vs What's Not, What People Are Saying, Why It Matters, Where This Goes Next.
 
 Return ONLY valid JSON:
 {
@@ -265,17 +266,27 @@ function normaliseBlueprint(
   plan: ArticlePlan,
   targetWords: number,
 ): ArticleBlueprint {
-  const sections: BlueprintSection[] = Array.isArray(raw.sections)
-    ? raw.sections.map((s, i) => ({
-        id: s.id || `section_${String(i + 1).padStart(2, '0')}`,
-        heading: s.heading || `Section ${i + 1}`,
-        purpose: s.purpose || '',
-        key_points: Array.isArray(s.key_points) ? s.key_points : [],
-        evidence_ids: Array.isArray(s.evidence_ids) ? s.evidence_ids : [],
-        target_words: typeof s.target_words === 'number' ? s.target_words : Math.round(targetWords / (raw.sections?.length || 5)),
-        components: Array.isArray(s.components) ? s.components : [],
-      }))
-    : []
+  // Determine max content sections based on word budget
+  const maxSections = targetWords < 800 ? 5 : targetWords < 1500 ? 7 : targetWords < 2500 ? 9 : 12
+  const rawSections = Array.isArray(raw.sections) ? raw.sections : []
+
+  // Cap section count if the model over-planned
+  const cappedSections = rawSections.length > maxSections
+    ? (() => {
+        console.log(`[blueprint] Capping sections from ${rawSections.length} to ${maxSections} (target ${targetWords} words)`)
+        return rawSections.slice(0, maxSections)
+      })()
+    : rawSections
+
+  const sections: BlueprintSection[] = cappedSections.map((s, i) => ({
+    id: s.id || `section_${String(i + 1).padStart(2, '0')}`,
+    heading: s.heading || `Section ${i + 1}`,
+    purpose: s.purpose || '',
+    key_points: Array.isArray(s.key_points) ? s.key_points : [],
+    evidence_ids: Array.isArray(s.evidence_ids) ? s.evidence_ids : [],
+    target_words: typeof s.target_words === 'number' ? s.target_words : Math.round(targetWords / (cappedSections.length || 5)),
+    components: Array.isArray(s.components) ? s.components : [],
+  }))
 
   // Merge standard forbidden phrases with any blueprint-specific ones
   const blueprintForbidden = Array.isArray(raw.forbidden_phrases) ? raw.forbidden_phrases : []
