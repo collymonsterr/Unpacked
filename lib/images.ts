@@ -643,6 +643,65 @@ export async function enrichArticleWithImages(
     }
   }
 
+  // ── Fix 3: Enforce editorial image minimums for news/analysis articles ──
+  const isNewsArticle = ['news_analysis', 'breaking_news', 'trend_analysis', 'deep_dive'].includes(article.article_type)
+  if (isNewsArticle) {
+    const existingEditorial = enrichedSections.filter(s => s.type === 'image_section').length
+    const minEditorial = article.article_type === 'breaking_news' ? 2 : 3
+    const needed = minEditorial - existingEditorial
+
+    if (needed > 0) {
+      // Build search queries from content_section headings — specific and photographable
+      const contentSections = enrichedSections
+        .map((s, idx) => ({ s, idx }))
+        .filter(x => x.s.type === 'content_section' && (x.s as { heading?: string }).heading)
+
+      // Pick sections evenly spread through the article
+      const step = Math.max(1, Math.floor(contentSections.length / (needed + 1)))
+      const targets = []
+      for (let i = step; i < contentSections.length && targets.length < needed; i += step) {
+        targets.push(contentSections[i])
+      }
+
+      const injected = await Promise.all(
+        targets.map(async ({ s, idx }) => {
+          const heading = (s as { heading?: string }).heading ?? ''
+          const searchQuery = `${heading} editorial photography`
+          const sources = routeImageRequest({
+            query: searchQuery,
+            purpose: 'editorial_section',
+            articleType: article.article_type as ArticleType,
+          })
+          let imageUrl: string | null = null
+          for (const source of sources) {
+            if (imageUrl) break
+            const candidates = await fetchFromSource(source, searchQuery, 3)
+            const filtered = filterImageCandidates(candidates, 'editorial_section')
+            if (filtered.length > 0) imageUrl = filtered[0].url
+          }
+          if (!imageUrl) return null
+          return {
+            insertAfter: idx,
+            section: {
+              type: 'image_section' as const,
+              heading: '',
+              images: [{ search_query: searchQuery, caption: '', image_url: imageUrl }],
+              layout: 'single' as const,
+            },
+          }
+        })
+      )
+
+      // Insert in reverse order so indices don't shift
+      const valid = injected.filter(Boolean) as { insertAfter: number; section: typeof enrichedSections[0] }[]
+      valid.sort((a, b) => b.insertAfter - a.insertAfter)
+      for (const { insertAfter, section } of valid) {
+        enrichedSections.splice(insertAfter + 1, 0, section as unknown as typeof enrichedSections[0])
+        console.log(`[images] Injected news editorial image after section ${insertAfter}`)
+      }
+    }
+  }
+
   // Logging
   const productCardsWithImages = enrichedSections
     .filter(s => s.type === 'product_card')

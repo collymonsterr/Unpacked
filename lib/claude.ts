@@ -373,6 +373,7 @@ Consider each query independently. A breaking news article might have one query 
 For image_queries: specify hero image search and product images.
 - hero: {query (5-8 words for a magazine-quality photo), style: editorial_photo | news_photo | product_photo | abstract}
 - products: array of {entity_name, query} for each product needing an image (buyer_guide/comparison/roundup only, empty for other types)
+- editorial_sections: (news_analysis, breaking_news, trend_analysis, deep_dive ONLY) array of 3-5 {query: "string — specific photographable subject for this section", section_hint: "string — which section this image belongs near"}. Think photojournalism: "Strait of Hormuz cargo ship aerial view", "Pakistan PM Shehbaz Sharif at podium", "oil tanker Persian Gulf sunset", "Wall Street trading floor screens". Never generic queries like "news" or "politics".
 
 For live_data (OPTIONAL — strict quality gates):
 Include live_data queries ONLY when the data genuinely adds insight. Each source has specific criteria:
@@ -492,7 +493,8 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
     "twitter_queries": [{ "query": "string — 2-4 words, no site:x.com prefix, no years, no filler (see twitter_queries rules)", "freshness": "pd | pw | pm | none — per-query time filter, see freshness rules below" }],
     "image_queries": {
       "hero": { "query": "string — 5-8 word magazine-quality photo search", "style": "editorial_photo | news_photo | product_photo | abstract" },
-      "products": [{ "entity_name": "string", "query": "string" }]
+      "products": [{ "entity_name": "string", "query": "string" }],
+      "editorial_sections": [{ "query": "string — specific photographable subject", "section_hint": "string — which section this image belongs near" }]
     },
     "live_data": [{ "source": "polymarket | yahoo_finance | google_trends", "query": "string — search term", "symbols": ["string — ticker symbols for yahoo_finance only"], "purpose": "string — why this data is relevant", "rationale": "string — one sentence explaining why this data source adds insight to THIS article (REQUIRED)", "market_type": "binary | multi_outcome — for polymarket only", "timeframe": "1d | 1m | 3m | 6m — for yahoo_finance only, matches article scope" }]
   },

@@ -294,9 +294,9 @@ IMAGES BY ARTICLE TYPE — follow these rules strictly:
 - buyer_guide, comparison, decision_guide, roundup: MANDATORY 4-5 images per product card (set image_count: 5 in each product_card). Hero image always required. Include 1-2 image_section entries between major text sections for articles over 800 words.
 - comparison: ALSO include an image_section after introducing each compared product. For "Tesla vs BYD", add an image after the Tesla section (query: "Tesla Model Y 2026 product photo") and after the BYD section (query: "BYD Seal electric car product photo"). These help readers visually identify each product.
 - explainer: 1-3 contextual editorial images only if subject is concrete and photographable. No product images unless specific products discussed.
-- news_analysis, trend_analysis, deep_dive: Hero image required. 1-2 editorial image_section entries if relevant. No product images unless specific products discussed.
+- news_analysis, trend_analysis, deep_dive: Hero image required. MANDATORY 3-5 editorial image_section entries spread throughout the article. Each should depict a specific photographable subject relevant to that section — key figures, locations, events, infrastructure, etc. Think photojournalism: "Strait of Hormuz cargo ship aerial", "Wall Street traders reacting to news", "diplomat handshake press conference". Never use generic stock-photo queries like "world news" or "geopolitics".
 - how_to: Step illustration images where they genuinely clarify a step. Not mandatory but encouraged.
-- breaking_news: Hero image only. No other images — speed over visuals.
+- breaking_news: Hero image required. Include 2-3 editorial image_section entries for key visual moments — the subject of the news, key figures, affected locations. Speed matters but visuals help readers engage.
 - For image_section entries: search_query must describe a specific photographable subject. Never "technology background" or "abstract concept". Only include if you're confident a search will return a relevant photo.
 - For product image queries: use "[Exact Product Name] official product photo" — never just the product name alone. Avoid queries that return Amazon bundles, accessory kits, or package deals.
 
