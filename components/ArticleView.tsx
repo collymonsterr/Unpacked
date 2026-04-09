@@ -512,6 +512,9 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           onArticleUpdated={(updated) => setArticle(updated)}
           twitterFindings={twitterFindings}
           twitterSummary={twitterSummary}
+          twitterSentimentSplit={articleRow.twitter_sentiment_split ?? undefined}
+          twitterContextTrigger={articleRow.twitter_context_trigger ?? undefined}
+          twitterPostsAnalysed={articleRow.twitter_posts_analysed ?? undefined}
           isOwner={isOwner}
           onTwitterUpdated={(next) => {
             setTwitterFindings(next.findings)

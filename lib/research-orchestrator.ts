@@ -13,7 +13,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
-import type { ArticlePlan, ResearchManifest, EntityCard, ResearchSynthesis, PlanEntity, LiveDataQuery, TwitterFinding } from '@/types/article'
+import type { ArticlePlan, ResearchManifest, EntityCard, ResearchSynthesis, PlanEntity, LiveDataQuery, TwitterFinding, TwitterSentimentSplit } from '@/types/article'
 import {
   executeBraveQueries,
   compileResearch,
@@ -62,6 +62,12 @@ export interface OrchestratedResearchResult {
   twitterFindings: TwitterFinding[]
   /** One-paragraph Haiku-generated summary of the X conversation, or null when no findings */
   twitterSummary: string | null
+  /** Sentiment split percentages + labels from Haiku classification */
+  twitterSentimentSplit: TwitterSentimentSplit | null
+  /** Context trigger — "Trending after [event]" — from Haiku, or null */
+  twitterContextTrigger: string | null
+  /** Total raw results analysed before filtering to final findings */
+  twitterPostsAnalysed: number
 }
 
 /**
@@ -80,12 +86,14 @@ export async function executeResearch(
   const startTime = Date.now()
 
   // ── Step 1: Fire all research tasks in parallel ──
-  const [braveResults, redditResults, twitterFindings, liveData] = await Promise.all([
+  const [braveResults, redditResults, twitterResult, liveData] = await Promise.all([
     executeBraveQueries(manifest.brave_queries, resultsPerQuery),
     executeRedditQueries(manifest.reddit_queries, resultsPerQuery),
-    executeTwitterQueries(manifest.twitter_queries, resultsPerQuery),
+    executeTwitterQueries(manifest.twitter_queries, resultsPerQuery, plan.article_type),
     executeLiveDataQueries(liveDataQueries, plan, articleId),
   ])
+  const twitterFindings = twitterResult.findings
+  const twitterPostsAnalysed = twitterResult.rawCount
   const searchMs = Date.now() - startTime
 
   // Merge all results into a single map for compilation
@@ -119,7 +127,7 @@ export async function executeResearch(
 
   // ── Step 4: Build synthesis (Haiku) + Twitter summary (Haiku) in parallel ──
   const synthStart = Date.now()
-  const [synthesisResult, twitterSummary] = await Promise.all([
+  const [synthesisResult, twitterSynthesis] = await Promise.all([
     buildSynthesis(entityCards, compiled.findings, plan).catch(err => {
       console.warn('[research] Synthesis failed — using default:', (err as Error).message)
       return buildDefaultSynthesis(entityCards, plan)
@@ -132,9 +140,16 @@ export async function executeResearch(
   const synthesis: ResearchSynthesis = synthesisResult
   const synthMs = Date.now() - synthStart
 
+  // Apply viewpoint tags from Haiku classification back to findings
+  if (twitterSynthesis?.viewpoints?.length) {
+    for (let vi = 0; vi < twitterSynthesis.viewpoints.length && vi < twitterFindings.length; vi++) {
+      twitterFindings[vi].viewpoint = twitterSynthesis.viewpoints[vi]
+    }
+  }
+
   const totalElapsed = Date.now() - startTime
   console.log(
-    `[research] Complete in ${totalElapsed}ms: search=${searchMs}ms entity=${entityMs}ms synthesis=${synthMs}ms | ${compiled.searchCount} searches, ${entityCards.length} entities, ${liveData.length} live data, ${twitterFindings.length} tweets`
+    `[research] Complete in ${totalElapsed}ms: search=${searchMs}ms entity=${entityMs}ms synthesis=${synthMs}ms | ${compiled.searchCount} searches, ${entityCards.length} entities, ${liveData.length} live data, ${twitterFindings.length} tweets (${twitterPostsAnalysed} analysed)`
   )
 
   return {
@@ -148,7 +163,10 @@ export async function executeResearch(
     synthesis,
     liveData,
     twitterFindings,
-    twitterSummary,
+    twitterSummary: twitterSynthesis?.summary ?? null,
+    twitterSentimentSplit: twitterSynthesis?.sentimentSplit ?? null,
+    twitterContextTrigger: twitterSynthesis?.contextTrigger ?? null,
+    twitterPostsAnalysed,
   }
 }
 
@@ -528,6 +546,20 @@ const TWITTER_URL_PATTERN = /(?:^|\/)x\.com\/([A-Za-z0-9_]{1,15})\/status\/(\d+)
 const MIN_TWEET_SNIPPET = 50
 const MAX_TWITTER_FINDINGS = 8
 
+/** Decode HTML entities that Brave Search returns in snippets. */
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&#x27;/g, "'")
+    .replace(/&#x2F;/g, '/')
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+}
+
 /**
  * Normalise a single twitter query entry from any of the legacy/cached shapes:
  *  - plain string                              → { query, freshness: undefined }
@@ -561,14 +593,64 @@ function normaliseTwitterQuery(raw: unknown): { query: string; freshness?: Reddi
  * as a per-query time filter — set by the planner based on what each query is
  * actually trying to find. See planning prompt in lib/claude.ts.
  *
- * Failures inside Brave never block the pipeline — empty array is returned.
+ * Failures inside Brave never block the pipeline — empty result is returned.
  */
+interface TwitterSearchResult {
+  findings: TwitterFinding[]
+  rawCount: number  // total results before filtering — used as "posts analysed" signal
+}
+
+/** Extract TwitterFindings from a Brave results map. */
+function extractFindings(
+  resultsMap: Map<string, SearchResult[]>,
+  seenTweetIds: Set<string>,
+  maxFindings: number,
+): { findings: TwitterFinding[]; rawCount: number } {
+  const findings: TwitterFinding[] = []
+  let rawCount = 0
+
+  for (const [, results] of resultsMap) {
+    rawCount += results.length
+    for (const r of results) {
+      if (findings.length >= maxFindings) break
+
+      const match = r.url.match(TWITTER_URL_PATTERN)
+      if (!match) continue
+
+      const author_handle = match[1]
+      const tweetId = match[2]
+      if (seenTweetIds.has(tweetId)) continue
+
+      const snippet = decodeHtmlEntities((r.snippet ?? '').trim())
+      if (snippet.length < MIN_TWEET_SNIPPET) continue
+
+      // Skip junk handles often returned by Brave (e.g. /i/ pages, search pages)
+      if (!/^[A-Za-z0-9_]{1,15}$/.test(author_handle)) continue
+      if (author_handle.toLowerCase() === 'i') continue
+
+      seenTweetIds.add(tweetId)
+      findings.push({
+        id: `tweet_${tweetId}`,
+        author_handle,
+        snippet,
+        url: `https://x.com/${author_handle}/status/${tweetId}`,
+      })
+    }
+    if (findings.length >= maxFindings) break
+  }
+  return { findings, rawCount }
+}
+
+/** Contested article types get two-pass balanced search. */
+const CONTESTED_TYPES = new Set(['news_analysis', 'breaking_news', 'trend_analysis', 'deep_dive'])
+
 async function executeTwitterQueries(
   twitterQueries: ResearchManifest['twitter_queries'],
   resultsPerQuery: number,
-): Promise<TwitterFinding[]> {
+  articleType?: string,
+): Promise<TwitterSearchResult> {
   if (!twitterQueries || twitterQueries.length === 0) {
-    return []
+    return { findings: [], rawCount: 0 }
   }
 
   // Coerce + ensure each query targets x.com via site: prefix.
@@ -584,14 +666,14 @@ async function executeTwitterQueries(
     }
   }).filter(q => q.query.replace(/site:x\.com/i, '').trim().length > 0)
 
-  if (searchQueries.length === 0) return []
+  if (searchQueries.length === 0) return { findings: [], rawCount: 0 }
 
   let resultsMap: Map<string, SearchResult[]>
   try {
     resultsMap = await executeBraveQueries(searchQueries, resultsPerQuery)
   } catch (err) {
     console.warn('[research] Twitter Brave search failed:', (err as Error).message)
-    return []
+    return { findings: [], rawCount: 0 }
   }
 
   // Retry-without-freshness fallback: Brave's x.com index is small and often
@@ -623,59 +705,50 @@ async function executeTwitterQueries(
     }
   }
 
-  const findings: TwitterFinding[] = []
   const seenTweetIds = new Set<string>()
+  const { findings, rawCount } = extractFindings(resultsMap, seenTweetIds, MAX_TWITTER_FINDINGS)
 
-  for (const [, results] of resultsMap) {
-    for (const r of results) {
-      if (findings.length >= MAX_TWITTER_FINDINGS) break
-
-      const match = r.url.match(TWITTER_URL_PATTERN)
-      if (!match) continue
-
-      const author_handle = match[1]
-      const tweetId = match[2]
-      if (seenTweetIds.has(tweetId)) continue
-
-      const snippet = (r.snippet ?? '').trim()
-      if (snippet.length < MIN_TWEET_SNIPPET) continue
-
-      // Skip junk handles often returned by Brave (e.g. /i/ pages, search pages)
-      if (!/^[A-Za-z0-9_]{1,15}$/.test(author_handle)) continue
-      if (author_handle.toLowerCase() === 'i') continue
-
-      seenTweetIds.add(tweetId)
-      findings.push({
-        id: `tweet_${tweetId}`,
-        author_handle,
-        snippet,
-        url: `https://x.com/${author_handle}/status/${tweetId}`,
-      })
-    }
-    if (findings.length >= MAX_TWITTER_FINDINGS) break
-  }
-
-  console.log(`[research] Twitter: ${findings.length} findings from ${searchQueries.length} queries`)
-  return findings
+  console.log(`[research] Twitter: ${findings.length} findings from ${searchQueries.length} queries (${rawCount} raw results)`)
+  return { findings, rawCount }
 }
 
 // ── Twitter sentiment summary (Haiku) ─────────────────────────────────────────
 
-const TWITTER_SUMMARY_SYSTEM = `You are summarising what people are actually saying on X (Twitter) about a topic. You will be given a small set of tweet snippets with author handles. Write ONE short paragraph (2-3 sentences, max ~60 words) capturing the prevailing sentiment, the main camps if there is disagreement, and any standout reactions.
+const TWITTER_SUMMARY_SYSTEM = `You are analysing what people are actually saying on X (Twitter) about a topic. You will be given a small set of tweet snippets with author handles. Return a JSON object with the following fields:
 
-HARD RULES:
+1. "summary": ONE short paragraph (2-3 sentences, max ~60 words) capturing the prevailing sentiment, the main camps if there is disagreement, and any standout reactions.
+2. "viewpoints": an array with one entry per tweet (same order as input). Each entry is one of "pro", "sceptical", or "neutral" — classifying whether that tweet supports the main thesis/topic, opposes/criticises it, or takes no clear side.
+3. "sentiment_split": an object with:
+   - "pro_label": a short label (2-5 words) for the supporting position (e.g. "Sanctions working", "Launch on track")
+   - "sceptical_label": a short label (2-5 words) for the opposing position (e.g. "Sceptical of impact", "Over budget and late")
+   - "pro_pct": integer percentage of posts that are pro
+   - "sceptical_pct": integer percentage that are sceptical
+   - "neutral_pct": integer percentage that are neutral
+   - "summary": one plain-English sentence describing the split (e.g. "Critics outnumber supporters roughly 3:2, with most scepticism focused on cost overruns.")
+   The three percentages MUST sum to 100.
+4. "context_trigger": a short string like "Trending after TSMC announced suspension of orders" if the tweets reference a specific triggering event, or null if no clear trigger.
+
+HARD RULES for the summary paragraph:
 - Never use generic phrases like "users are talking about", "the community is buzzing", "people have mixed feelings", "X users had a lot to say", "the discourse online".
 - Never invent quotes or attributions.
 - Never reference individual handles unless the tweet content makes them notable.
 - Do NOT use hashtags or emoji.
-- No preamble. No "Here is the summary". Just the paragraph.
-- If the tweets contradict each other, say so directly ("The split is roughly...", "Critics argue X while supporters point to Y").
-- Write in the voice of an editor describing the conversation, not a marketer.`
+- If the tweets contradict each other, say so directly.
+- Write in the voice of an editor describing the conversation, not a marketer.
+
+Return ONLY valid JSON. No markdown, no backticks, no preamble.`
+
+interface TwitterSynthesisResult {
+  summary: string
+  sentimentSplit: TwitterSentimentSplit | null
+  contextTrigger: string | null
+  viewpoints: Array<'pro' | 'sceptical' | 'neutral'>
+}
 
 async function summariseTwitterFindings(
   findings: TwitterFinding[],
   plan: ArticlePlan,
-): Promise<string | null> {
+): Promise<TwitterSynthesisResult | null> {
   if (!findings || findings.length < 2) return null
 
   const tweetList = findings
@@ -689,12 +762,12 @@ Article type: ${plan.article_type}
 TWEETS FROM X:
 ${tweetList}
 
-Write the paragraph now.`
+Return the JSON now.`
 
   const model = 'claude-haiku-4-5-20251001'
   const message = await getAnthropic().messages.create({
     model,
-    max_tokens: 256,
+    max_tokens: 512,
     system: TWITTER_SUMMARY_SYSTEM,
     messages: [{ role: 'user', content: userMessage }],
   })
@@ -707,6 +780,40 @@ Write the paragraph now.`
   })
 
   const text = message.content.find(b => b.type === 'text')?.text ?? ''
-  const cleaned = text.trim()
-  return cleaned.length > 0 ? cleaned : null
+
+  try {
+    const parsed = JSON.parse(extractJSON(text) || text)
+    const summary = (parsed.summary ?? '').trim()
+    if (!summary) return null
+
+    // Build sentiment split
+    const split = parsed.sentiment_split
+    let sentimentSplit: TwitterSentimentSplit | null = null
+    if (split && typeof split.pro_pct === 'number') {
+      sentimentSplit = {
+        pro_label: split.pro_label ?? 'Supporting',
+        sceptical_label: split.sceptical_label ?? 'Sceptical',
+        pro_pct: split.pro_pct,
+        sceptical_pct: split.sceptical_pct ?? (100 - split.pro_pct),
+        neutral_pct: split.neutral_pct ?? 0,
+        summary: split.summary ?? '',
+      }
+    }
+
+    // Build viewpoints array
+    const viewpoints: Array<'pro' | 'sceptical' | 'neutral'> = (parsed.viewpoints ?? []).map((v: string) => {
+      if (v === 'pro' || v === 'sceptical' || v === 'neutral') return v
+      return 'neutral'
+    })
+
+    const contextTrigger = typeof parsed.context_trigger === 'string' ? parsed.context_trigger : null
+
+    return { summary, sentimentSplit, contextTrigger, viewpoints }
+  } catch {
+    // Fallback: treat entire response as plain summary text (backwards compat)
+    const cleaned = text.trim()
+    return cleaned.length > 0
+      ? { summary: cleaned, sentimentSplit: null, contextTrigger: null, viewpoints: [] }
+      : null
+  }
 }

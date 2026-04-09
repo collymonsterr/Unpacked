@@ -231,6 +231,9 @@ export async function POST(request: NextRequest) {
           // "planner didn't ask" (null) from "ran but nothing came back" ([]).
           researchUpdate.twitter_findings = research.twitterFindings ?? []
           if (research.twitterSummary) researchUpdate.twitter_summary = research.twitterSummary
+          if (research.twitterSentimentSplit) researchUpdate.twitter_sentiment_split = research.twitterSentimentSplit
+          if (research.twitterContextTrigger) researchUpdate.twitter_context_trigger = research.twitterContextTrigger
+          if (research.twitterPostsAnalysed > 0) researchUpdate.twitter_posts_analysed = research.twitterPostsAnalysed
           if (Object.keys(researchUpdate).length > 0) {
             await db.from('articles').update(researchUpdate).eq('id', data.id)
           }
@@ -353,6 +356,9 @@ export async function POST(request: NextRequest) {
         // "planner didn't ask" (null) from "ran but nothing came back" ([]).
         researchUpdate.twitter_findings = research.twitterFindings ?? []
         if (research.twitterSummary) researchUpdate.twitter_summary = research.twitterSummary
+        if (research.twitterSentimentSplit) researchUpdate.twitter_sentiment_split = research.twitterSentimentSplit
+        if (research.twitterContextTrigger) researchUpdate.twitter_context_trigger = research.twitterContextTrigger
+        if (research.twitterPostsAnalysed > 0) researchUpdate.twitter_posts_analysed = research.twitterPostsAnalysed
         if (Object.keys(researchUpdate).length > 0) {
           const t3 = Date.now()
           const { error: saveErr } = await db

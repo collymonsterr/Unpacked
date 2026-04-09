@@ -64,10 +64,28 @@ export interface TwitterFinding {
   id: string
   /** Author handle without the leading @. Extracted from x.com/{handle}/status/{id}. */
   author_handle: string
-  /** Tweet snippet text from Brave Search. */
+  /** Tweet snippet text from Brave Search (HTML entities decoded). */
   snippet: string
   /** Direct URL to the tweet (x.com/{handle}/status/{id}). */
   url: string
+  /** Viewpoint classification: pro, sceptical, or neutral. Set by Haiku synthesis. */
+  viewpoint?: 'pro' | 'sceptical' | 'neutral'
+}
+
+/** Sentiment split data for Twitter/X debate. Set by Haiku synthesis. */
+export interface TwitterSentimentSplit {
+  /** Label for the pro/supporting position (e.g. "Sanctions working") */
+  pro_label: string
+  /** Label for the sceptical/opposing position (e.g. "Sceptical of impact") */
+  sceptical_label: string
+  /** Percentage of posts supporting the pro position */
+  pro_pct: number
+  /** Percentage of posts in the sceptical position */
+  sceptical_pct: number
+  /** Percentage of neutral posts */
+  neutral_pct: number
+  /** One-sentence plain English summary of the split */
+  summary: string
 }
 
 export interface ImageQueries {
@@ -644,6 +662,9 @@ export interface ArticleRow {
   live_data?: Record<string, unknown>[] | null
   twitter_findings?: TwitterFinding[] | null
   twitter_summary?: string | null
+  twitter_sentiment_split?: TwitterSentimentSplit | null
+  twitter_context_trigger?: string | null
+  twitter_posts_analysed?: number | null
   social_content?: Record<string, unknown> | null
   category?: string | null
   card_summary?: string | null

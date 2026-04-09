@@ -25,7 +25,7 @@ import RankedItemSection from './RankedItemSection'
 import MythRealitySection from './MythRealitySection'
 import TwitterSentimentSection from './TwitterSentimentSection'
 import SectionToolbar from './SectionToolbar'
-import type { TwitterFinding } from '@/types/article'
+import type { TwitterFinding, TwitterSentimentSplit } from '@/types/article'
 
 interface Props {
   sections: ArticleSection[]
@@ -39,6 +39,9 @@ interface Props {
   onArticleUpdated?: (article: ArticleContent) => void
   twitterFindings?: TwitterFinding[]
   twitterSummary?: string | null
+  twitterSentimentSplit?: TwitterSentimentSplit
+  twitterContextTrigger?: string
+  twitterPostsAnalysed?: number
   isOwner?: boolean
   onTwitterUpdated?: (next: { findings: TwitterFinding[]; summary: string | null }) => void
 }
@@ -86,6 +89,9 @@ export default function SectionRenderer({
   onArticleUpdated,
   twitterFindings,
   twitterSummary,
+  twitterSentimentSplit,
+  twitterContextTrigger,
+  twitterPostsAnalysed,
   isOwner,
   onTwitterUpdated,
 }: Props) {
@@ -417,9 +423,10 @@ export default function SectionRenderer({
             <TwitterSentimentSection
               findings={twitterFindings}
               summary={twitterSummary ?? null}
-              isOwner={isOwner}
+              sentimentSplit={twitterSentimentSplit}
+              contextTrigger={twitterContextTrigger}
+              postsAnalysed={twitterPostsAnalysed}
               articleId={articleId}
-              onUpdated={onTwitterUpdated}
             />
           </div>
         )
@@ -433,9 +440,10 @@ export default function SectionRenderer({
             <TwitterSentimentSection
               findings={twitterFindings}
               summary={twitterSummary ?? null}
-              isOwner={isOwner}
+              sentimentSplit={twitterSentimentSplit}
+              contextTrigger={twitterContextTrigger}
+              postsAnalysed={twitterPostsAnalysed}
               articleId={articleId}
-              onUpdated={onTwitterUpdated}
             />
           </div>
         )
@@ -452,9 +460,10 @@ export default function SectionRenderer({
         <TwitterSentimentSection
           findings={twitterFindings}
           summary={twitterSummary ?? null}
-          isOwner={isOwner}
+          sentimentSplit={twitterSentimentSplit}
+          contextTrigger={twitterContextTrigger}
+          postsAnalysed={twitterPostsAnalysed}
           articleId={articleId}
-          onUpdated={onTwitterUpdated}
         />
       </div>
     )
