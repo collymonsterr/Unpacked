@@ -142,6 +142,7 @@ SECTION PLANNING:
 7. STRUCTURE: Any section containing 3+ comparable items (features, pros, cons, options, reasons) should specify bullet/list format in key_points. Never bury a list inside a paragraph.
 8. VISUAL DENSITY RULE: ${targetWords >= 2500 ? `At ${targetWords}+ words, this article MUST include at least 2 data visualization components (bar_chart, comparison_matrix, pie_chart, line_chart, stat_cards, or timeline) to break up long text. Assign them to specific sections.` : 'Include visual components where they add value — stat_cards for key numbers, charts for trends or comparisons.'}
 9. CHART DATA RULE: Only assign chart components (bar_chart, line_chart, pie_chart) to sections where the entity cards or research provide SPECIFIC NUMBERS to plot. If a section has qualitative information but no hard data, use stat_cards or bullet points instead. Never plan a chart that would require the writer to invent data points.
+10. EVIDENCE SUFFICIENCY: Do NOT allocate word budget to sections where the research findings contain insufficient supporting evidence. It is better to have 6 strong, evidence-backed sections than 10 where the last 4 are padded with caveats like "data is limited", "beyond the scope", or "figures are estimated". If the research doesn't support a section, cut it entirely. Every section must be fillable with specific facts from the research provided — if you cannot identify at least 3 concrete facts for a section, remove it from the plan.
 
 Return ONLY valid JSON:
 {

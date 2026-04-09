@@ -62,7 +62,21 @@ async function logGeminiFallback(callType: string, errorMessage: string, rawResp
  * Instructs the model to include live_data_card sections when data is available.
  */
 function formatLiveDataForPrompt(liveData?: Record<string, unknown>[]): string {
-  if (!liveData || liveData.length === 0) return ''
+  if (!liveData || liveData.length === 0) {
+    return [
+      '',
+      'LIVE DATA: NONE AVAILABLE.',
+      'No live data passed quality filters for this article. Do NOT reference Polymarket odds, Yahoo Finance prices, or Google Trends data in the article text.',
+      'Do NOT write phrases like "Polymarket odds suggest...", "markets are pricing in...", or "search interest shows..." unless you have a specific data point from the research findings below.',
+      'If the blueprint mentions live data sources, ignore those references — the data was attempted but filtered out due to insufficient volume, flat trends, or no relevant markets.',
+      '',
+    ].join('\n')
+  }
+
+  // Build a set of which sources are actually present
+  const presentSources = new Set(liveData.map(item => (item.source as string).toLowerCase()))
+  const allSources = ['polymarket', 'yahoo_finance', 'google_trends']
+  const missingSources = allSources.filter(s => !presentSources.has(s))
 
   const sections: string[] = [
     '',
@@ -81,8 +95,16 @@ function formatLiveDataForPrompt(liveData?: Record<string, unknown>[]): string {
   sections.push('To include a live data card, add a section like: { "type": "live_data_card", "data_source": "<source>", "content": <the data object above> }')
   sections.push('CRITICAL: Each data item above becomes its own separate live_data_card section. Never combine multiple items into one card. The "content" field must be a flat object with keys like "symbol", "price", "change" — NOT nested objects.')
   sections.push('Place live_data_cards near the top of the article, after the executive summary or "What You Need to Know" section, where they provide immediate context.')
-  sections.push('')
 
+  // Warn about sources that were attempted but filtered out
+  if (missingSources.length > 0) {
+    const sourceLabels: Record<string, string> = { polymarket: 'Polymarket', yahoo_finance: 'Yahoo Finance', google_trends: 'Google Trends' }
+    const missingLabels = missingSources.map(s => sourceLabels[s] ?? s).join(', ')
+    sections.push('')
+    sections.push(`DATA NOT AVAILABLE: ${missingLabels} data was attempted but filtered out (insufficient volume, flat trends, or no relevant markets). Do NOT reference ${missingLabels} in the article text. Only reference the live data sources listed above.`)
+  }
+
+  sections.push('')
   return sections.join('\n')
 }
 
@@ -101,14 +123,19 @@ VOICE:
 - NO CREATIVE WRITING: Never open a section with a scene-setting paragraph ("Picture this...", "Imagine..."). Never use rhetorical questions as transitions. Start every section with the most important fact. Delete any sentence that doesn't contain a specific fact, number, name, or actionable instruction.
 - EXPERT QUOTES: If research includes direct quotes from notable people (founders, researchers, analysts, industry leaders), use them as pull quotes. Attribute clearly. Real quotes from real people add credibility.
 
-CHART DATA INTEGRITY — HARD RULE:
-NEVER generate chart data from your own knowledge or training data. Charts must ONLY visualise numbers that come from:
+DATA INTEGRITY — HARD RULES:
+
+RULE 1 — NO INVENTED NUMBERS: Never cite a specific dollar amount, percentage, statistic, or data point unless it appears verbatim in the research findings, entity cards, or live data provided below. If you cannot trace a number to a specific source in this prompt, do not include it. Write "according to analysts" or omit the claim entirely. Invented precision ($4.5B, 73%, 640 Yuan) is worse than no data — it WILL be caught by the fact-checker and destroys reader trust.
+
+RULE 2 — NO REFERENCING UNAVAILABLE DATA: Only reference live data sources (Polymarket, Yahoo Finance, Google Trends) if their data is explicitly provided in the LIVE DATA section below. If a source is listed as "NOT AVAILABLE", do not mention it, do not write "Polymarket odds suggest...", do not write "markets are pricing in...". The data was attempted but filtered out.
+
+RULE 3 — CHART DATA: Charts must ONLY visualise numbers from:
 1. The research findings provided in this prompt
 2. Entity card facts with specific numbers
-3. Live data integrations (Yahoo Finance, Google Trends, FRED)
+3. Live data provided in the LIVE DATA section below
 4. Prices, specs, or statistics explicitly stated in the research
 
-If no real data source exists for a visualisation, use stat_cards or bullet points instead. A chart with invented numbers is worse than no chart at all — it will be flagged by the fact-checker and damages credibility.
+If no real data source exists for a visualisation, use stat_cards or bullet points instead. A chart with invented numbers is worse than no chart at all.
 
 Every chart section MUST include a "source" field citing where the data came from (e.g. "Source: Yahoo Finance", "Source: Statista via Brave research", "Source: manufacturer specs"). If you cannot cite a source, do not include the chart.
 

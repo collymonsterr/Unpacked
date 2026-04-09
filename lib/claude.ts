@@ -550,14 +550,19 @@ SEARCH STRATEGY: You have 10 web searches. USE THEM ALL. Suggested approach:
 TWITTER/X IS A MANDATORY SOURCE: You MUST search Twitter/X for every article. Real people share unfiltered opinions there — complaints about products, praise for hidden gems, warnings about issues. If you find relevant tweets, weave them into the community insights or opinion sections naturally (e.g. "users on X have been complaining about…", "the consensus on Twitter is…"). Do not skip this search.
 ═══════════════════════════════════════════════════════════════
 
-CHART DATA INTEGRITY — HARD RULE:
-NEVER generate chart data from your own knowledge or training data. Charts must ONLY visualise numbers that come from:
+DATA INTEGRITY — HARD RULES:
+
+RULE 1 — NO INVENTED NUMBERS: Never cite a specific dollar amount, percentage, statistic, or data point unless it appears in the research findings, entity cards, live data, or web search results. If you cannot trace a number to a specific source, do not include it. Write "according to analysts" or omit the claim. Invented precision ($4.5B, 73%, 640 Yuan) WILL be caught by the fact-checker and destroys credibility.
+
+RULE 2 — NO REFERENCING UNAVAILABLE DATA: Only reference live data sources (Polymarket, Yahoo Finance, Google Trends) if their data is explicitly provided in the LIVE DATA section. If a source is listed as "NOT AVAILABLE", do not mention it anywhere in the article.
+
+RULE 3 — CHART DATA: Charts must ONLY visualise numbers from:
 1. The research findings provided in this prompt or found via web search
 2. Entity card facts with specific numbers
-3. Live data integrations (Yahoo Finance, Google Trends, FRED)
+3. Live data provided in the LIVE DATA section
 4. Prices, specs, or statistics explicitly stated in the research
 
-If no real data source exists for a visualisation, use stat_cards or bullet points instead. A chart with invented numbers is worse than no chart at all — it will be flagged by the fact-checker and damages credibility.
+If no real data source exists for a visualisation, use stat_cards or bullet points instead. A chart with invented numbers is worse than no chart at all.
 
 Every chart section MUST include a "source" field citing where the data came from (e.g. "Source: Yahoo Finance", "Source: Statista via web search", "Source: manufacturer specs"). If you cannot cite a source, do not include the chart.
 
@@ -909,7 +914,19 @@ interface GenOptions {
  * Format live data results for inclusion in the Sonnet writing prompt.
  */
 function formatLiveDataForSonnet(liveData?: Record<string, unknown>[]): string {
-  if (!liveData || liveData.length === 0) return ''
+  if (!liveData || liveData.length === 0) {
+    return [
+      '',
+      'LIVE DATA: NONE AVAILABLE.',
+      'No live data passed quality filters for this article. Do NOT reference Polymarket odds, Yahoo Finance prices, or Google Trends data in the article text.',
+      'Do NOT write phrases like "Polymarket odds suggest...", "markets are pricing in...", or "search interest shows...".',
+      '',
+    ].join('\n')
+  }
+
+  const presentSources = new Set(liveData.map(item => (item.source as string).toLowerCase()))
+  const allSources = ['polymarket', 'yahoo_finance', 'google_trends']
+  const missingSources = allSources.filter(s => !presentSources.has(s))
 
   const lines: string[] = [
     '',
@@ -924,6 +941,13 @@ function formatLiveDataForSonnet(liveData?: Record<string, unknown>[]): string {
   for (const item of liveData) {
     const source = item.source as string
     lines.push(`[${source.toUpperCase()}] ${JSON.stringify(item)}`)
+  }
+
+  if (missingSources.length > 0) {
+    const sourceLabels: Record<string, string> = { polymarket: 'Polymarket', yahoo_finance: 'Yahoo Finance', google_trends: 'Google Trends' }
+    const missingLabels = missingSources.map(s => sourceLabels[s] ?? s).join(', ')
+    lines.push('')
+    lines.push(`DATA NOT AVAILABLE: ${missingLabels} data was attempted but filtered out. Do NOT reference ${missingLabels} in the article text.`)
   }
 
   lines.push('')
