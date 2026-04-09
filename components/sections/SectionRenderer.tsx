@@ -24,8 +24,9 @@ import BigStatement from './BigStatement'
 import RankedItemSection from './RankedItemSection'
 import MythRealitySection from './MythRealitySection'
 import TwitterSentimentSection from './TwitterSentimentSection'
+import InteractiveComponentSection from '../interactive/InteractiveComponentSection'
 import SectionToolbar from './SectionToolbar'
-import type { TwitterFinding, TwitterSentimentSplit } from '@/types/article'
+import type { TwitterFinding, TwitterSentimentSplit, InteractiveComponentData } from '@/types/article'
 
 interface Props {
   sections: ArticleSection[]
@@ -44,6 +45,7 @@ interface Props {
   twitterPostsAnalysed?: number
   isOwner?: boolean
   onTwitterUpdated?: (next: { findings: TwitterFinding[]; summary: string | null }) => void
+  interactiveComponent?: InteractiveComponentData | null
 }
 
 // Recharts-based sections break when rendered inside opacity:0 containers
@@ -94,6 +96,7 @@ export default function SectionRenderer({
   twitterPostsAnalysed,
   isOwner,
   onTwitterUpdated,
+  interactiveComponent,
 }: Props) {
   const [removingSection, setRemovingSection] = useState<number | null>(null)
   const [editingSection, setEditingSection] = useState<number | null>(null)
@@ -169,7 +172,9 @@ export default function SectionRenderer({
   const elements: React.ReactNode[] = []
   let i = 0
   let twitterInjected = false
+  let interactiveInjected = false
   const hasTwitterData = twitterFindings && twitterFindings.length >= 2
+  const hasInteractive = !!interactiveComponent
 
   while (i < sections.length) {
     const section = sections[i]
@@ -415,6 +420,16 @@ export default function SectionRenderer({
         </div>
       )
 
+      // Inject interactive component after community_insights (before Twitter)
+      if (section.type === 'community_insights' && hasInteractive && !interactiveInjected) {
+        interactiveInjected = true
+        elements.push(
+          <div key="interactive-component" className={animated ? 'fade-in-up' : ''} style={style}>
+            <InteractiveComponentSection data={interactiveComponent!} />
+          </div>
+        )
+      }
+
       // Inject Twitter/X sentiment immediately after community_insights
       if (section.type === 'community_insights' && hasTwitterData) {
         twitterInjected = true
@@ -428,6 +443,16 @@ export default function SectionRenderer({
               postsAnalysed={twitterPostsAnalysed}
               articleId={articleId}
             />
+          </div>
+        )
+      }
+
+      // Fallback: if no community_insights, inject interactive before sources/further_reading
+      if (!interactiveInjected && hasInteractive && (section.type === 'sources' || section.type === 'further_reading')) {
+        interactiveInjected = true
+        elements.splice(elements.length - 1, 0,
+          <div key="interactive-component" className={animated ? 'fade-in-up' : ''}>
+            <InteractiveComponentSection data={interactiveComponent!} />
           </div>
         )
       }
@@ -451,6 +476,15 @@ export default function SectionRenderer({
     }
 
     i++
+  }
+
+  // Final fallback: no community_insights or sources — append interactive at end
+  if (!interactiveInjected && hasInteractive) {
+    elements.push(
+      <div key="interactive-component" className={animated ? 'fade-in-up' : ''}>
+        <InteractiveComponentSection data={interactiveComponent!} />
+      </div>
+    )
   }
 
   // Final fallback: no community_insights or sources — append Twitter at end

@@ -19,6 +19,8 @@ interface AdminMenuProps {
   initialVisibility?: ArticleVisibility
   onRegenerateImages: () => void
   onRegenerateArticle: () => void
+  onRegenerateInteractive?: () => void
+  isRegeneratingInteractive?: boolean
   onCategoryChange: (newType: string) => void
 }
 
@@ -42,6 +44,8 @@ export default function AdminMenu({
   initialVisibility = 'published',
   onRegenerateImages,
   onRegenerateArticle,
+  onRegenerateInteractive,
+  isRegeneratingInteractive = false,
   onCategoryChange,
 }: AdminMenuProps) {
   const router = useRouter()
@@ -322,6 +326,15 @@ export default function AdminMenu({
             >
               Regenerate Images
             </MenuItem>
+            {onRegenerateInteractive && (
+            <MenuItem
+              onClick={() => { onRegenerateInteractive(); setMenuOpen(false) }}
+              disabled={!!toolbarBusy}
+              loading={isRegeneratingInteractive}
+            >
+              Regenerate Interactive
+            </MenuItem>
+            )}
             {/* Admin-only: regenerate article + delete */}
             {isAdmin && (
             <MenuItem

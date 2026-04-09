@@ -509,6 +509,7 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
   "research_queries": ["string"],
   "hero_image_query": "string",
   "hero_image_subject": "string",
+  "interactive_component_type": "decision_tool | scenario_simulator | interactive_map | comparison_calculator | null — an interactive tool generated for this article. Use decision_tool for buyer_guide/comparison/decision_guide. Use scenario_simulator for news_analysis/breaking_news/trend_analysis with forward-looking uncertainty. Use interactive_map for geopolitical/travel articles where geography is central. Use comparison_calculator for financial decision articles with numbers the reader can personalise. Set null if no interactive component adds genuine value (myth_buster, ranked_list, visual_list, how_to, most explainers).",
   "forbidden_components": ["string — list every section type FORBIDDEN for this article type. The writing step will hard-block these."],
   "loading_messages": ["string"],
   "suggestion_chips": {

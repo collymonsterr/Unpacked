@@ -60,6 +60,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
   const [refineSuccess, setRefineSuccess] = useState(false)
   const [isRegeneratingImages, setIsRegeneratingImages] = useState(false)
   const [isRegeneratingArticle, setIsRegeneratingArticle] = useState(false)
+  const [isRegeneratingInteractive, setIsRegeneratingInteractive] = useState(false)
   const [toolbarBusy, setToolbarBusy] = useState<string | null>(null)
   const [refineValue, setRefineValue] = useState('')
   const [showSharePanel, setShowSharePanel] = useState(false)
@@ -86,6 +87,24 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
       // silently fail
     } finally {
       setIsRegeneratingImages(false)
+      setToolbarBusy(null)
+    }
+  }
+
+  async function handleRegenerateInteractive() {
+    setIsRegeneratingInteractive(true)
+    setToolbarBusy('interactive')
+    try {
+      const res = await fetch(`/api/articles/${articleRow.id}/regenerate-interactive`, {
+        method: 'POST',
+      })
+      if (!res.ok) throw new Error('Failed')
+      // Interactive component is stored as a top-level DB column, so refresh the page
+      router.refresh()
+    } catch {
+      // silently fail
+    } finally {
+      setIsRegeneratingInteractive(false)
       setToolbarBusy(null)
     }
   }
@@ -254,6 +273,8 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
               initialVisibility={articleRow.visibility ?? 'published'}
               onRegenerateImages={handleRegenerateImages}
               onRegenerateArticle={handleRegenerateArticle}
+              onRegenerateInteractive={handleRegenerateInteractive}
+              isRegeneratingInteractive={isRegeneratingInteractive}
               onCategoryChange={(newType) => {
                 setArticle({ ...article, article_type: newType as typeof article.article_type })
               }}
@@ -515,6 +536,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           twitterSentimentSplit={articleRow.twitter_sentiment_split ?? undefined}
           twitterContextTrigger={articleRow.twitter_context_trigger ?? undefined}
           twitterPostsAnalysed={articleRow.twitter_posts_analysed ?? undefined}
+          interactiveComponent={articleRow.interactive_component ?? null}
           isOwner={isOwner}
           onTwitterUpdated={(next) => {
             setTwitterFindings(next.findings)

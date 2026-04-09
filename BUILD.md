@@ -197,6 +197,38 @@ Four distinct components in `components/sections/LiveDataCard.tsx`, auto-selecte
 
 ---
 
+## Interactive Components (built April 2026, async)
+
+Bespoke interactive tools generated per article — decision trees, scenario simulators, maps, and calculators. No other content platform generates tailored interactive tools from article content.
+
+**Pipeline:**
+- Planner (Stage 1) sets `interactive_component_type` field: `decision_tool | scenario_simulator | interactive_map | comparison_calculator | null`. Null means no component — no downstream cost.
+- After article delivery, `generateInteractiveComponent()` in `lib/interactive-component.ts` fires async (same pattern as fact-check/social content).
+- Calls Haiku 4.5 to generate structured JSON data (not HTML). Falls back to Sonnet if Haiku output fails validation.
+- Validates output against component type schema before saving.
+- Stored as `interactive_component` JSONB column on articles table.
+- Cost: ~$0.005-0.01/article (Haiku), ~$0.05-0.08 if Sonnet fallback needed.
+- Logged to `api_usage_log` as `interactive_component` (or `interactive_component_fallback`).
+
+**Four component types (pre-built React components, not LLM-generated HTML):**
+1. **Decision Tool** (`components/interactive/DecisionTool.tsx`) — Step-by-step question flow with branching paths leading to personalised recommendations. Progress bar, animated transitions, restart button. For buyer_guide, comparison, decision_guide.
+2. **Scenario Simulator** (`components/interactive/ScenarioSimulator.tsx`) — 3-4 named scenarios with probability estimates (Polymarket if available), animated impact bars across 3-4 dimensions, verdict per scenario. For news_analysis, breaking_news, trend_analysis.
+3. **Interactive Map** (`components/interactive/InteractiveMap.tsx`) — Leaflet.js map (loaded from cdnjs) with OpenStreetMap tiles, custom markers with popups, route polylines, highlighted zones. Real coordinates only. For geopolitical, travel articles.
+4. **Comparison Calculator** (`components/interactive/ComparisonCalculator.tsx`) — Slider inputs with real-time formula evaluation, personalised output cards. Safe formula evaluation via restricted `new Function()` scope. For financial decision articles.
+
+**Rendering:**
+- `InteractiveComponentSection` wrapper (`components/interactive/InteractiveComponentSection.tsx`) with amber left border, type label, title, "Generated for this article" footer.
+- Injected via `SectionRenderer` after community_insights (before Twitter sentiment), with fallback positions before sources or at end.
+- All components lazy-loaded via `next/dynamic` with `ssr: false`.
+- Fully responsive, matches platform design system colours and fonts.
+
+**Admin controls:**
+- "Regenerate Interactive" button in AdminMenu (per-article) → `POST /api/articles/[id]/regenerate-interactive`
+- Backfill endpoint → `POST /api/admin/backfill-interactive` (processes up to 50 articles in batches of 5 with 2s delay)
+- Both refine paths copy `interactive_component` to child articles.
+
+---
+
 ## Social Content Generation (built, async)
 
 - `lib/social-content.ts` — generates X thread, LinkedIn post, Reddit summary, image cards

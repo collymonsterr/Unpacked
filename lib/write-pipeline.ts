@@ -21,6 +21,7 @@ import { enrichArticleWithImages, fetchHeroImage } from '@/lib/images'
 import { pickBestArticleImage } from '@/lib/imagen'
 import { runTripleFactCheck, applyCorrections } from '@/lib/fact-check'
 import { generateSocialContent, saveSocialContent } from '@/lib/social-content'
+import { generateInteractiveComponent } from '@/lib/interactive-component'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import type { ArticlePlan, EntityCard, ResearchSynthesis, ArticleContent, ArticleSection } from '@/types/article'
 
@@ -290,6 +291,29 @@ export async function runWritePipeline({
       }
     } catch (err) {
       console.error('[pipeline] Social content generation failed:', (err as Error).message)
+    }
+  })()
+
+  // ── Phase 4c: Interactive component generation (fire-and-forget — never blocks) ──
+  ;(async () => {
+    try {
+      if (!plan.interactive_component_type) return
+      const { data: row } = await db
+        .from('articles')
+        .select('research_findings')
+        .eq('id', articleId)
+        .single()
+      const findings = (row?.research_findings ?? []) as Array<{ source: string; content: string }>
+      const component = await generateInteractiveComponent(enrichedArticle, plan, findings, articleId)
+      if (component) {
+        await db
+          .from('articles')
+          .update({ interactive_component: component })
+          .eq('id', articleId)
+        console.log(`[pipeline] Interactive component saved: ${component.type} for ${articleId}`)
+      }
+    } catch (err) {
+      console.error('[pipeline] Interactive component generation failed:', (err as Error).message)
     }
   })()
 

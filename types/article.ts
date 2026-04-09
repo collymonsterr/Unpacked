@@ -233,7 +233,108 @@ export interface ArticlePlan {
   alternative_types?: string[]
   category?: ArticleCategory
   sections?: PlanSection[]
+  interactive_component_type?: InteractiveComponentType | null
 }
+
+// ── Interactive Component (standalone tool per article) ──────────────────────
+
+export type InteractiveComponentType = 'decision_tool' | 'scenario_simulator' | 'interactive_map' | 'comparison_calculator'
+
+export interface DecisionToolData {
+  type: 'decision_tool'
+  title: string
+  subtitle: string
+  questions: Array<{
+    id: string
+    text: string
+    options: Array<{
+      label: string
+      next: string | null          // question id or null = recommendation
+      recommendation_id?: string   // if next is null, which recommendation
+    }>
+  }>
+  recommendations: Array<{
+    id: string
+    name: string
+    reason: string
+    article_section?: string       // heading reference back to article
+  }>
+}
+
+export interface ScenarioSimulatorData {
+  type: 'scenario_simulator'
+  title: string
+  subtitle: string
+  scenarios: Array<{
+    id: string
+    name: string
+    probability: number            // 0-100
+    probability_source?: string    // e.g. "Polymarket" or "Research estimate"
+    impacts: Array<{
+      dimension: string            // e.g. "Oil price", "Global GDP"
+      value: number                // -100 to +100 scale
+      label: string                // e.g. "+40%", "-2.3%"
+      description: string
+    }>
+    verdict: string
+  }>
+}
+
+export interface InteractiveMapData {
+  type: 'interactive_map'
+  title: string
+  subtitle: string
+  center: { lat: number; lng: number }
+  zoom: number
+  markers: Array<{
+    lat: number
+    lng: number
+    title: string
+    description: string
+    color?: 'amber' | 'green' | 'red' | 'blue'
+  }>
+  routes?: Array<{
+    points: Array<{ lat: number; lng: number }>
+    color?: string
+    label?: string
+  }>
+  zones?: Array<{
+    points: Array<{ lat: number; lng: number }>
+    color?: string
+    label?: string
+  }>
+}
+
+export interface ComparisonCalculatorData {
+  type: 'comparison_calculator'
+  title: string
+  subtitle: string
+  inputs: Array<{
+    id: string
+    label: string
+    min: number
+    max: number
+    default: number
+    step: number
+    unit?: string
+    format?: 'currency' | 'percentage' | 'number'
+  }>
+  outputs: Array<{
+    id: string
+    label: string
+    format: 'currency' | 'percentage' | 'number' | 'text'
+    formula: string                // JS expression referencing input ids, e.g. "price * 0.035"
+    suffix?: string
+  }>
+  comparison_labels?: [string, string]  // e.g. ["Rent", "Buy"]
+  data_source?: string
+}
+
+export type InteractiveComponentData =
+  | DecisionToolData
+  | ScenarioSimulatorData
+  | InteractiveMapData
+  | ComparisonCalculatorData
 
 // ── Article Sections (Step 2 output) ─────────────────────────────────────────
 
@@ -666,6 +767,7 @@ export interface ArticleRow {
   twitter_context_trigger?: string | null
   twitter_posts_analysed?: number | null
   social_content?: Record<string, unknown> | null
+  interactive_component?: InteractiveComponentData | null
   category?: string | null
   card_summary?: string | null
   created_at: string
