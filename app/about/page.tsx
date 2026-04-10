@@ -79,28 +79,7 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* ═══ 3. PROBLEM GRID ═══ */}
-      <section className="max-w-[900px] mx-auto px-4 md:px-6 py-20">
-        <h2 className="text-2xl md:text-3xl font-bold mb-10 text-center" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
-          Why does every LLM answer look the same?
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[
-            { title: 'Wall of text', desc: '800 words of plain text. No images, no structure, no design. It looks like an email.', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg> },
-            { title: 'Generic generated output', desc: "Every AI writes the same thing. Safe, bland, forgettable, and won't pick a winner.", icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> },
-            { title: 'Unverified and unchecked', desc: "The AI states prices and facts confidently. Are they real? It won't tell you — and it won't check for you.", icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> },
-            { title: 'Useless images', desc: "You might get a random thumbnail at the top. Not beautiful, not relevant, not shareable.", icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9E948A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/><line x1="4" y1="4" x2="20" y2="20"/></svg> },
-          ].map(tile => (
-            <div key={tile.title} className="rounded-xl p-5" style={{ backgroundColor: '#fff', border: '1px solid #E8E2D9' }}>
-              <div className="w-9 h-9 flex items-center justify-center mb-3">{tile.icon}</div>
-              <h3 className="text-sm font-bold mb-1" style={{ color: '#1A1714' }}>{tile.title}</h3>
-              <p className="text-sm leading-relaxed" style={{ color: '#9E948A' }}>{tile.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ═══ 4. SIDE-BY-SIDE COMPARISON ═══ */}
+      {/* ═══ 3. SIDE-BY-SIDE COMPARISON ═══ */}
       <section className="max-w-[1060px] mx-auto px-4 md:px-6 py-16">
         <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-center" style={{ color: '#BA7517', letterSpacing: '0.1em' }}>The difference</p>
         <h2 className="text-2xl md:text-3xl font-bold mb-2 text-center" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>See it for yourself</h2>
@@ -205,21 +184,11 @@ export default async function AboutPage() {
           </div>
         </div>
         <p className="text-xs text-center mt-4" style={{ color: '#94918D' }}>
-          Plain text. No images. No data. No verdict. — <span style={{ color: '#BA7517' }}>Visual. Structured. Opinionated. Fact-checked.</span>
+          Plain text. No images. No data. No verdict. — <span style={{ color: '#BA7517' }}>Visual. Structured. Opinionated. Verified.</span>
         </p>
       </section>
 
-      {/* ═══ BOLD STATEMENT DIVIDER ═══ */}
-      <section className="w-full py-16" style={{ backgroundColor: '#1A1714' }}>
-        <div className="max-w-3xl mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold mb-3" style={{ fontFamily: 'var(--font-sora)', color: '#fff' }}>
-            Researched. Written. Fact-checked.<br /><span style={{ color: '#BA7517' }}>Community verified.</span>
-          </h2>
-          <p className="text-lg" style={{ color: 'rgba(255,255,255,0.4)' }}>The only article that gets smarter after it&apos;s published.</p>
-        </div>
-      </section>
-
-      {/* ═══ 5. HOW IT WORKS ═══ */}
+      {/* ═══ 4. HOW IT WORKS ═══ */}
       <section className="max-w-[1060px] mx-auto px-4 md:px-6 py-20">
         <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-center" style={{ color: '#BA7517', letterSpacing: '0.1em' }}>How it works</p>
         <h2 className="text-2xl md:text-3xl font-bold mb-10 text-center" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>Three steps. Three minutes.</h2>
@@ -240,10 +209,10 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* ═══ 6. YOU'RE IN CONTROL ═══ */}
+      {/* ═══ 5. WHAT'S INSIDE ═══ */}
       <section className="w-full py-20" style={{ backgroundColor: '#1A1714' }}>
         <div className="max-w-[1060px] mx-auto px-4 md:px-6">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-center" style={{ color: '#BA7517', letterSpacing: '0.1em' }}>You&apos;re in control</p>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-center" style={{ color: '#BA7517', letterSpacing: '0.1em' }}>What&apos;s inside every article</p>
           <h2 className="text-2xl md:text-3xl font-bold mb-3 text-center" style={{ fontFamily: 'var(--font-sora)', color: '#fff' }}>The AI builds the draft. You decide what it becomes.</h2>
           <p className="text-base mb-10 text-center max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.45)' }}>Most AI gives you output and walks away. Unpacked hands you a first draft and gives you the tools to make it yours.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -251,8 +220,9 @@ export default async function AboutPage() {
               { title: 'Your tone, your voice', desc: 'Casual, formal, or opinionated. One instruction rewrites the whole article to match.', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> },
               { title: 'Your question, your focus', desc: 'Narrow it, broaden it, or take it somewhere new. The article reshapes itself around whatever you ask.', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> },
               { title: 'Your article, your name', desc: 'Refine it, publish it under your name, and share a link that looks like a journalist spent a day on it.', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> },
-              { title: 'Verified while you read', desc: "Every article is fact-checked by a second AI. Then readers vote on whether the verdict is convincing. The best answers rise. Weak ones get flagged.", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
-              { title: 'Breaking news — with live data', desc: "Polymarket prediction odds, real Reddit reaction, stock market impact, and community sentiment — assembled in minutes. Before anyone else has put it together.", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> },
+              { title: 'Triple-verified facts', desc: 'Three independent AI systems check every claim. Corrections are applied automatically. A Verified badge shows readers the article has been checked.', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
+              { title: 'Real voices from Reddit and X', desc: 'Every article includes what people are actually saying — real threads, real viewpoints, classified by stance. Community sentiment, not generated opinions.', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
+              { title: 'Live data, not stale training', desc: 'Polymarket prediction odds, real-time stock prices, Google Trends — current data woven into every article where it matters.', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> },
             ].map(tile => (
               <div key={tile.title} className="rounded-xl p-5" style={{ backgroundColor: '#231F1B', border: '1px solid #2E2925' }}>
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: 'rgba(186,117,23,0.12)' }}>{tile.icon}</div>
@@ -261,11 +231,10 @@ export default async function AboutPage() {
               </div>
             ))}
           </div>
-          <p className="text-xs text-center mt-8" style={{ color: 'rgba(255,255,255,0.25)' }}>Affiliate revenue on every recommendation — coming to creators soon.</p>
         </div>
       </section>
 
-      {/* ═══ 7. FINAL CTA ═══ */}
+      {/* ═══ 6. FINAL CTA ═══ */}
       <section className="max-w-[600px] mx-auto px-4 py-20 text-center">
         <h2 className="text-3xl md:text-4xl font-extrabold mb-4" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
           Your question.<br />The best answer on the internet.<br /><span style={{ color: '#BA7517' }}>Three minutes.</span>
@@ -275,7 +244,7 @@ export default async function AboutPage() {
         <p className="text-sm mt-4" style={{ color: '#9E948A' }}>Give it a try now — it takes three minutes.</p>
       </section>
 
-      {/* ═══ 8. FEATURED ARTICLES ═══ */}
+      {/* ═══ 7. FEATURED ARTICLES ═══ */}
       {featuredArticles.length > 0 && (
         <section className="max-w-[1060px] mx-auto px-4 md:px-6 pb-20">
           <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-center" style={{ color: '#BA7517', letterSpacing: '0.1em' }}>From the platform</p>
@@ -298,7 +267,7 @@ export default async function AboutPage() {
                     <h3 className="text-sm font-bold leading-snug line-clamp-2 mb-2" style={{ color: '#1A1714' }}>{art.title}</h3>
                     <div className="flex items-center gap-2 text-[10px]" style={{ color: '#9E948A' }}>
                       {(row.view_count ?? 0) > 0 && <span>{(row.view_count ?? 0).toLocaleString()} views</span>}
-                      {row.verified_at && <span className="flex items-center gap-0.5" style={{ color: '#059669' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>Fact-checked</span>}
+                      {row.verified_at && <span className="flex items-center gap-0.5" style={{ color: '#059669' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>Verified</span>}
                     </div>
                   </div>
                 </Link>

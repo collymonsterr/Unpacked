@@ -72,7 +72,7 @@ const QUESTIONS = [
   {
     text: 'Best running shoes under $160 for daily training?',
     type: "Buyer's guide",
-    title: 'Best Running Shoes Under $160 (March 2026)',
+    title: 'Best Running Shoes Under $160 (2026)',
     bg: 'linear-gradient(135deg,#4A3A2D,#30221A)',
     icon: '👟',
     image: 'https://runtothefinish.com/wp-content/uploads/2023/09/running-shoe-lights.jpg',
@@ -294,7 +294,7 @@ export default function AboutHero() {
                   <span style={{ background: '#FDF6E9', color: '#BA7517', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '1px', padding: '3px 8px', borderRadius: '4px' }}>
                     {q.type}
                   </span>
-                  <span style={{ fontSize: '10px', fontWeight: 600, color: '#059669' }}>✓ Fact-checked</span>
+                  <span style={{ fontSize: '10px', fontWeight: 600, color: '#059669' }}>✓ Verified</span>
                 </div>
                 <p style={{ fontSize: '13px', fontWeight: 600, color: '#1A1714', lineHeight: 1.3, marginBottom: '10px' }}>{q.title}</p>
                 {/* Stats */}
