@@ -62,7 +62,7 @@ export default async function CreatorsPage() {
           <span style={{ color: '#BA7517' }}>Published in minutes.</span>
         </h1>
         <p className="text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-8" style={{ color: '#6B6B6B' }}>
-          Unpacked turns your knowledge into beautifully structured, fact-checked, visual articles. You edit them, publish them under your name, and share them with your audience.
+          Unpacked turns your knowledge into beautifully structured, fact-checked, visual articles. We do the research. You edit them, publish them under your name, and share them with your audience.
         </p>
         <CreatorsCTA />
       </section>
