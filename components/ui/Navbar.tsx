@@ -62,6 +62,28 @@ export default function Navbar({ showSearch = true }: NavbarProps) {
       <div className="flex items-center gap-3">
         {showSearch && <NavSearchBar />}
 
+        <a
+          href="/about"
+          className="text-sm font-medium no-underline hidden sm:block"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          About
+        </a>
+        <a
+          href="/pricing"
+          className="text-sm font-medium no-underline hidden sm:block"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          Pricing
+        </a>
+        <a
+          href="/creators"
+          className="text-sm font-medium no-underline hidden sm:block"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          Creators
+        </a>
+
         {/* Explore dropdown */}
         <div ref={dropdownRef} className="relative hidden sm:block">
           <button
@@ -123,28 +145,6 @@ export default function Navbar({ showSearch = true }: NavbarProps) {
             </div>
           )}
         </div>
-
-        <a
-          href="/pricing"
-          className="text-sm font-medium no-underline hidden sm:block"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          Pricing
-        </a>
-        <a
-          href="/about"
-          className="text-sm font-medium no-underline hidden sm:block"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          About
-        </a>
-        <a
-          href="/creators"
-          className="text-sm font-medium no-underline hidden sm:block"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          Creators
-        </a>
         <UserMenu />
       </div>
     </nav>
