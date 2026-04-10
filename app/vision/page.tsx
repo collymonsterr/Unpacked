@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 const STATS = [
   { value: '$0.10', label: 'Average cost per article' },
-  { value: '8', label: 'AI pipeline stages' },
+  { value: '5', label: 'Core pipeline stages' },
   { value: '3', label: 'Independent fact-checkers' },
   { value: '14', label: 'Article types' },
   { value: '48,500+', label: 'Affiliate merchants via Skimlinks' },
@@ -15,14 +15,18 @@ const STATS = [
 ]
 
 const PIPELINE_STEPS = [
-  { num: '01', title: 'Plan', desc: 'Classifies the article type, decides structure, generates research queries' },
-  { num: '02', title: 'Research', desc: '10-15 web sources, Reddit threads, Twitter/X sentiment, live market data — all in parallel' },
-  { num: '03', title: 'Blueprint', desc: 'Picks a winner, maps evidence to sections, sets word budgets' },
-  { num: '04', title: 'Write', desc: 'Full article with product cards, comparison tables, charts, and a clear verdict' },
-  { num: '05', title: 'Edit', desc: 'An independent model scores the writing and rewrites weak sections' },
-  { num: '06', title: 'Images', desc: 'Editorial photography sourced from Pexels, Unsplash, and the web' },
-  { num: '07', title: 'Fact-check', desc: 'Three independent models from different providers verify every claim' },
-  { num: '08', title: 'Social', desc: 'Ready-to-post threads for Twitter/X, LinkedIn, and Reddit' },
+  { num: '01', title: 'Research', desc: 'Searches 10-15 sources, pulls Reddit threads, Twitter/X sentiment, and live market data — all in parallel' },
+  { num: '02', title: 'Blueprint', desc: 'Classifies the article type, picks a winner, maps evidence to sections, sets word budgets' },
+  { num: '03', title: 'Write', desc: 'Full article with product cards, comparison tables, data visualisations, and a clear verdict' },
+  { num: '04', title: 'Fact-check', desc: 'Three independent AI models from different providers verify every factual claim. Corrections applied automatically' },
+  { num: '05', title: 'Publish', desc: 'Editorial images sourced, social content generated, shareable link ready — all in under three minutes' },
+]
+
+const BEHIND_THE_SCENES = [
+  { icon: 'edit', title: 'Editorial pass', desc: 'An independent model scores the writing and rewrites weak sections before delivery' },
+  { icon: 'image', title: 'Smart image sourcing', desc: 'Hero and product photography from Pexels, Unsplash, and Brave — routed by article type' },
+  { icon: 'social', title: 'Social content', desc: 'Ready-to-post threads for Twitter/X, LinkedIn, and Reddit generated automatically' },
+  { icon: 'data', title: 'Live data', desc: 'Polymarket odds, Yahoo Finance prices, and Google Trends pulled when relevant' },
 ]
 
 const REVENUE_STREAMS = [
@@ -130,7 +134,7 @@ export default function VisionPage() {
           <div className="rounded-xl p-5" style={{ border: '2px solid #BA7517', backgroundColor: '#fff' }}>
             <p className="text-sm font-semibold mb-2" style={{ color: '#BA7517', fontFamily: 'var(--font-sora)' }}>Unpacked</p>
             <ul className="text-sm space-y-2" style={{ color: '#6B6966' }}>
-              <li>• 8-stage automated pipeline</li>
+              <li>• Automated research-to-publish pipeline</li>
               <li>• ~$0.10 per article</li>
               <li>• Under 3 minutes</li>
               <li>• Every category, any topic</li>
@@ -151,19 +155,36 @@ export default function VisionPage() {
           The Pipeline
         </p>
         <h2 className="text-3xl font-bold mb-3" style={{ fontFamily: 'var(--font-sora)', color: '#1A1917' }}>
-          Eight stages, under three minutes
+          Question to published article in under three minutes
         </h2>
         <p className="text-sm mb-10 leading-relaxed" style={{ color: '#6B6966', maxWidth: 600 }}>
-          A user types any question. Behind the scenes, an 8-stage pipeline researches, writes, edits, fact-checks, and packages a publication-quality article.
+          A user types any question. Behind the scenes, a multi-stage pipeline researches, writes, fact-checks, and packages a publication-quality article.
         </p>
-        <div className="space-y-4">
+
+        {/* 5 core steps — large numbered cards */}
+        <div className="space-y-4 mb-12">
           {PIPELINE_STEPS.map(step => (
-            <div key={step.num} className="flex gap-5 items-start rounded-xl px-5 py-4" style={{ backgroundColor: '#fff', border: '1px solid #E8E6E0' }}>
-              <span className="text-lg font-bold shrink-0" style={{ color: '#BA7517', fontFamily: 'var(--font-sora)', minWidth: 32 }}>{step.num}</span>
+            <div key={step.num} className="flex gap-5 items-start rounded-xl px-5 py-5" style={{ backgroundColor: '#fff', border: '1px solid #E8E6E0' }}>
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm font-bold" style={{ backgroundColor: '#BA7517', color: '#fff', fontFamily: 'var(--font-sora)' }}>
+                {step.num}
+              </div>
               <div>
                 <p className="text-sm font-semibold mb-0.5" style={{ color: '#1A1917', fontFamily: 'var(--font-sora)' }}>{step.title}</p>
-                <p className="text-sm" style={{ color: '#6B6966' }}>{step.desc}</p>
+                <p className="text-sm leading-relaxed" style={{ color: '#6B6966' }}>{step.desc}</p>
               </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Behind the scenes — 4 small cards */}
+        <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: '#94918D', letterSpacing: '0.12em' }}>
+          Also happening behind the scenes
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {BEHIND_THE_SCENES.map(item => (
+            <div key={item.title} className="rounded-lg px-4 py-3" style={{ backgroundColor: '#F5F4F2', border: '1px solid #E8E6E0' }}>
+              <p className="text-xs font-semibold mb-1" style={{ color: '#1A1917', fontFamily: 'var(--font-sora)' }}>{item.title}</p>
+              <p className="text-[11px] leading-relaxed" style={{ color: '#94918D' }}>{item.desc}</p>
             </div>
           ))}
         </div>
