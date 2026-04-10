@@ -103,15 +103,16 @@ export default async function CreatorsPage() {
             <div className="rounded-lg p-4" style={{ backgroundColor: '#FAFAF8', border: '1px solid #E8E2D9' }}>
               <p className="text-[10px] font-semibold uppercase tracking-wide mb-2" style={{ color: '#94918D' }}>Head to Head</p>
               {[{ m: 'Sound', a: 92, b: 88 }, { m: 'Comfort', a: 90, b: 85 }, { m: 'ANC', a: 88, b: 91 }].map(r => (
-                <div key={r.m} className="flex items-center gap-1.5 mb-1.5">
+                <div key={r.m} className="flex items-center gap-1.5 mb-2">
                   <span className="text-[9px] w-[40px] text-right shrink-0" style={{ color: '#94918D' }}>{r.m}</span>
                   <div className="flex-1 flex items-center">
-                    <div className="flex-1 flex justify-end"><div className="h-[5px] rounded-l" style={{ width: `${(r.a / Math.max(r.a, r.b)) * 80}%`, backgroundColor: r.a >= r.b ? '#BA7517' : '#D4C9B8' }} /></div>
-                    <div style={{ width: '1px', height: '8px', backgroundColor: '#E8E2D9', flexShrink: 0 }} />
-                    <div className="flex-1"><div className="h-[5px] rounded-r" style={{ width: `${(r.b / Math.max(r.a, r.b)) * 80}%`, backgroundColor: r.b > r.a ? '#BA7517' : '#D4C9B8' }} /></div>
+                    <div className="flex-1 flex justify-end" style={{ paddingRight: '1px' }}><div className="h-[6px] rounded-l-full" style={{ width: `${(r.a / 100) * 90}%`, backgroundColor: r.a >= r.b ? '#BA7517' : '#D4C9B8' }} /></div>
+                    <div style={{ width: '2px', height: '14px', backgroundColor: '#94918D', flexShrink: 0, borderRadius: '1px' }} />
+                    <div className="flex-1" style={{ paddingLeft: '1px' }}><div className="h-[6px] rounded-r-full" style={{ width: `${(r.b / 100) * 90}%`, backgroundColor: r.b > r.a ? '#3B82F6' : '#D4C9B8' }} /></div>
                   </div>
                 </div>
               ))}
+              <div className="flex justify-between text-[9px] mt-1" style={{ color: '#94918D', paddingLeft: '46px' }}><span style={{ color: '#BA7517' }}>Sony</span><span style={{ color: '#3B82F6' }}>Bose</span></div>
             </div>
 
             {/* Community sentiment */}

@@ -149,16 +149,16 @@ export default async function AboutPage() {
               <div className="mb-3 pt-2" style={{ borderTop: '1px solid #F5F4F1' }}>
                 <p className="text-[10px] font-semibold uppercase tracking-wide mb-2" style={{ color: '#94918D' }}>Head to Head</p>
                 {[{ m: 'Camera', i: 72, s: 88 },{ m: 'Battery', i: 78, s: 75 },{ m: 'Display', i: 82, s: 86 },{ m: 'Performance', i: 90, s: 88 },{ m: 'Value', i: 76, s: 80 }].map(r => (
-                  <div key={r.m} className="flex items-center gap-1 mb-1.5">
+                  <div key={r.m} className="flex items-center gap-1 mb-2">
                     <span className="text-[9px] w-[52px] text-right shrink-0" style={{ color: '#94918D' }}>{r.m}</span>
                     <div className="flex-1 flex items-center">
-                      <div className="flex-1 flex justify-end"><div className="h-[5px] rounded-l" style={{ width: `${(r.i / Math.max(r.i, r.s)) * 80}%`, backgroundColor: r.i >= r.s ? '#BA7517' : '#D4C9B8' }} /></div>
-                      <div style={{ width: '1px', height: '10px', backgroundColor: '#E8E2D9', flexShrink: 0 }} />
-                      <div className="flex-1"><div className="h-[5px] rounded-r" style={{ width: `${(r.s / Math.max(r.i, r.s)) * 80}%`, backgroundColor: r.s > r.i ? '#BA7517' : '#D4C9B8' }} /></div>
+                      <div className="flex-1 flex justify-end" style={{ paddingRight: '1px' }}><div className="h-[5px] rounded-l-full" style={{ width: `${(r.i / 100) * 90}%`, backgroundColor: r.i >= r.s ? '#BA7517' : '#D4C9B8' }} /></div>
+                      <div style={{ width: '2px', height: '12px', backgroundColor: '#94918D', flexShrink: 0, borderRadius: '1px' }} />
+                      <div className="flex-1" style={{ paddingLeft: '1px' }}><div className="h-[5px] rounded-r-full" style={{ width: `${(r.s / 100) * 90}%`, backgroundColor: r.s > r.i ? '#3B82F6' : '#D4C9B8' }} /></div>
                     </div>
                   </div>
                 ))}
-                <div className="flex justify-between text-[9px] mt-1" style={{ color: '#94918D', paddingLeft: '56px' }}><span>iPhone</span><span>Samsung</span></div>
+                <div className="flex justify-between text-[9px] mt-1" style={{ color: '#94918D', paddingLeft: '56px' }}><span style={{ color: '#BA7517' }}>iPhone</span><span style={{ color: '#3B82F6' }}>Samsung</span></div>
               </div>
               <table className="w-full text-[10px] mb-3" style={{ borderTop: '1px solid #F5F4F1' }}>
                 <thead><tr><th /><th className="py-1.5 text-center font-semibold" style={{ color: '#BA7517' }}>iPhone 17</th><th className="py-1.5 text-center font-semibold" style={{ color: '#94918D' }}>Galaxy S26</th></tr></thead>
@@ -324,16 +324,16 @@ export default async function AboutPage() {
               <div className="rounded-xl p-5" style={{ backgroundColor: '#fff', border: '1px solid #E8E2D9' }}>
                 <p className="text-[10px] font-semibold uppercase tracking-wide mb-3" style={{ color: '#94918D' }}>Head to Head</p>
                 {[{ m: 'Camera', a: 72, b: 88 }, { m: 'Battery', a: 85, b: 75 }, { m: 'Display', a: 82, b: 90 }, { m: 'Performance', a: 92, b: 88 }].map(r => (
-                  <div key={r.m} className="flex items-center gap-2 mb-2">
+                  <div key={r.m} className="flex items-center gap-2 mb-2.5">
                     <span className="text-[11px] w-[72px] text-right shrink-0" style={{ color: '#6B6B6B' }}>{r.m}</span>
                     <div className="flex-1 flex items-center">
-                      <div className="flex-1 flex justify-end"><div className="h-[6px] rounded-l" style={{ width: `${(r.a / Math.max(r.a, r.b)) * 85}%`, backgroundColor: r.a >= r.b ? '#BA7517' : '#D4C9B8' }} /></div>
-                      <div style={{ width: '1px', height: '12px', backgroundColor: '#E8E2D9', flexShrink: 0 }} />
-                      <div className="flex-1"><div className="h-[6px] rounded-r" style={{ width: `${(r.b / Math.max(r.a, r.b)) * 85}%`, backgroundColor: r.b > r.a ? '#BA7517' : '#D4C9B8' }} /></div>
+                      <div className="flex-1 flex justify-end" style={{ paddingRight: '1px' }}><div className="h-[7px] rounded-l-full" style={{ width: `${(r.a / 100) * 90}%`, backgroundColor: r.a >= r.b ? '#BA7517' : '#D4C9B8' }} /></div>
+                      <div style={{ width: '2px', height: '16px', backgroundColor: '#94918D', flexShrink: 0, borderRadius: '1px' }} />
+                      <div className="flex-1" style={{ paddingLeft: '1px' }}><div className="h-[7px] rounded-r-full" style={{ width: `${(r.b / 100) * 90}%`, backgroundColor: r.b > r.a ? '#3B82F6' : '#D4C9B8' }} /></div>
                     </div>
                   </div>
                 ))}
-                <div className="flex justify-between text-[10px] mt-1" style={{ color: '#94918D', paddingLeft: '76px' }}><span>Product A</span><span>Product B</span></div>
+                <div className="flex justify-between text-[10px] mt-1" style={{ color: '#94918D', paddingLeft: '76px' }}><span style={{ color: '#BA7517' }}>Product A</span><span style={{ color: '#3B82F6' }}>Product B</span></div>
               </div>
 
               {/* Spec table mock */}
