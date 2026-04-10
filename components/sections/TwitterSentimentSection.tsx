@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import type { TwitterFinding, TwitterSentimentSplit } from '@/types/article'
 
 interface Props {
@@ -10,9 +10,12 @@ interface Props {
   contextTrigger?: string | null
   postsAnalysed?: number
   articleId?: string
+  isOwner?: boolean
+  onTwitterUpdated?: (next: { findings: TwitterFinding[]; summary: string | null }) => void
 }
 
 type ViewFilter = 'all' | 'pro' | 'sceptical'
+const DISPLAY_COUNT = 4
 
 /** Truncate at sentence boundary if over 200 chars. */
 function truncateSnippet(text: string, max = 200): string {
@@ -55,25 +58,61 @@ export default function TwitterSentimentSection({
   contextTrigger,
   postsAnalysed,
   articleId,
+  isOwner = false,
+  onTwitterUpdated,
 }: Props) {
   const [filter, setFilter] = useState<ViewFilter>('all')
   const [expanded, setExpanded] = useState(false)
+  const [localFindings, setLocalFindings] = useState<TwitterFinding[]>(findings)
+  const [localSummary, setLocalSummary] = useState<string | null>(summary ?? null)
+  const [removingId, setRemovingId] = useState<string | null>(null)
 
   // Render gate
-  if (!findings || findings.length < 2) return null
+  if (!localFindings || localFindings.length < 2) return null
 
   const hasSentiment = !!sentimentSplit
 
   // Filter tweets by viewpoint
   const filteredTweets = useMemo(() => {
-    const all = findings
+    const all = localFindings
     if (filter === 'all') return all
     return all.filter(t => t.viewpoint === filter)
-  }, [findings, filter])
+  }, [localFindings, filter])
 
   // Show 4 initially, rest on expand
-  const visibleTweets = expanded ? filteredTweets : filteredTweets.slice(0, 4)
-  const hasMore = filteredTweets.length > 4 && !expanded
+  const visibleTweets = expanded ? filteredTweets : filteredTweets.slice(0, DISPLAY_COUNT)
+  const hasMore = filteredTweets.length > DISPLAY_COUNT && !expanded
+
+  const handleRemove = useCallback(async (tweetId: string) => {
+    if (!articleId) return
+
+    setRemovingId(tweetId)
+
+    setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/articles/${articleId}/remove-quote`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'twitter', id: tweetId }),
+        })
+
+        if (!res.ok) {
+          setRemovingId(null)
+          return
+        }
+
+        const data = await res.json()
+        const nextFindings = data.twitter_findings ?? localFindings.filter(t => t.id !== tweetId)
+        const nextSummary = data.twitter_summary ?? localSummary
+        setLocalFindings(nextFindings)
+        setLocalSummary(nextSummary)
+        setRemovingId(null)
+        onTwitterUpdated?.({ findings: nextFindings, summary: nextSummary })
+      } catch {
+        setRemovingId(null)
+      }
+    }, 300) // match CSS transition duration
+  }, [articleId, localFindings, localSummary, onTwitterUpdated])
 
   // Interleave pro/sceptical in "All voices" view
   const displayTweets = useMemo(() => {
@@ -230,11 +269,12 @@ export default function TwitterSentimentSection({
             : tweet.viewpoint === 'sceptical' && sentimentSplit
               ? sentimentSplit.sceptical_label
               : null
+          const isRemoving = removingId === tweet.id
 
           return (
             <div
               key={tweet.id}
-              className="rounded-xl p-4"
+              className="group relative rounded-xl p-4 transition-all duration-300"
               style={{
                 backgroundColor: 'var(--card)',
                 border: '1px solid var(--border)',
@@ -243,8 +283,22 @@ export default function TwitterSentimentSection({
                   : '1px solid var(--border)',
                 borderTopLeftRadius: tweet.viewpoint && tweet.viewpoint !== 'neutral' ? 0 : undefined,
                 borderBottomLeftRadius: tweet.viewpoint && tweet.viewpoint !== 'neutral' ? 0 : undefined,
+                opacity: isRemoving ? 0 : 1,
+                transform: isRemoving ? 'scale(0.95)' : 'scale(1)',
               }}
             >
+              {/* Remove button — owner only */}
+              {isOwner && articleId && (
+                <button
+                  onClick={() => handleRemove(tweet.id)}
+                  className="absolute top-2 right-2 w-[22px] h-[22px] flex items-center justify-center rounded-full opacity-[0.4] md:opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                  style={{ color: '#94918D', cursor: 'pointer', backgroundColor: 'transparent', border: 'none' }}
+                  aria-label="Remove tweet"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                </button>
+              )}
+
               {/* Handle row */}
               <div className="flex items-center gap-2.5 mb-2">
                 {/* Letter avatar */}
@@ -325,7 +379,7 @@ export default function TwitterSentimentSection({
 
       {/* ── Footer ── */}
       <p className="text-center text-[11px] mt-4" style={{ color: '#94918D' }}>
-        Curated from {postsAnalysed ?? findings.length} recent posts
+        Curated from {postsAnalysed ?? localFindings.length} recent posts
         {hasSentiment ? ' using deliberate viewpoint balancing' : ''}
       </p>
     </div>

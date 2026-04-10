@@ -236,6 +236,11 @@ export async function POST(request: NextRequest) {
           if (research.twitterSentimentSplit) researchUpdate.twitter_sentiment_split = research.twitterSentimentSplit
           if (research.twitterContextTrigger) researchUpdate.twitter_context_trigger = research.twitterContextTrigger
           if (research.twitterPostsAnalysed > 0) researchUpdate.twitter_posts_analysed = research.twitterPostsAnalysed
+          // Reddit threads as top-level column (full pool for remove/replace mechanic)
+          if (research.redditThreadsPool?.length > 0) researchUpdate.reddit_threads = research.redditThreadsPool
+          if (research.redditSentimentSplit) researchUpdate.reddit_sentiment_split = research.redditSentimentSplit
+          if (research.redditContextTrigger) researchUpdate.reddit_context_trigger = research.redditContextTrigger
+          if (research.redditThreadsAnalysed > 0) researchUpdate.reddit_threads_analysed = research.redditThreadsAnalysed
           if (Object.keys(researchUpdate).length > 0) {
             await db.from('articles').update(researchUpdate).eq('id', data.id)
           }
@@ -361,6 +366,11 @@ export async function POST(request: NextRequest) {
         if (research.twitterSentimentSplit) researchUpdate.twitter_sentiment_split = research.twitterSentimentSplit
         if (research.twitterContextTrigger) researchUpdate.twitter_context_trigger = research.twitterContextTrigger
         if (research.twitterPostsAnalysed > 0) researchUpdate.twitter_posts_analysed = research.twitterPostsAnalysed
+        // Reddit threads as top-level column (full pool for remove/replace mechanic)
+        if (research.redditThreadsPool?.length > 0) researchUpdate.reddit_threads = research.redditThreadsPool
+        if (research.redditSentimentSplit) researchUpdate.reddit_sentiment_split = research.redditSentimentSplit
+        if (research.redditContextTrigger) researchUpdate.reddit_context_trigger = research.redditContextTrigger
+        if (research.redditThreadsAnalysed > 0) researchUpdate.reddit_threads_analysed = research.redditThreadsAnalysed
         if (Object.keys(researchUpdate).length > 0) {
           const t3 = Date.now()
           const { error: saveErr } = await db

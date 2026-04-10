@@ -24,9 +24,10 @@ import BigStatement from './BigStatement'
 import RankedItemSection from './RankedItemSection'
 import MythRealitySection from './MythRealitySection'
 import TwitterSentimentSection from './TwitterSentimentSection'
+import RedditSentimentSection from './RedditSentimentSection'
 import InteractiveComponentSection from '../interactive/InteractiveComponentSection'
 import SectionToolbar from './SectionToolbar'
-import type { TwitterFinding, TwitterSentimentSplit, InteractiveComponentData } from '@/types/article'
+import type { TwitterFinding, TwitterSentimentSplit, RedditThread, RedditSentimentSplit, InteractiveComponentData } from '@/types/article'
 
 interface Props {
   sections: ArticleSection[]
@@ -45,6 +46,11 @@ interface Props {
   twitterPostsAnalysed?: number
   isOwner?: boolean
   onTwitterUpdated?: (next: { findings: TwitterFinding[]; summary: string | null }) => void
+  redditThreads?: RedditThread[]
+  redditSentimentSplit?: RedditSentimentSplit | null
+  redditContextTrigger?: string | null
+  redditThreadsAnalysed?: number
+  onRedditUpdated?: (next: RedditThread[]) => void
   interactiveComponent?: InteractiveComponentData | null
 }
 
@@ -96,6 +102,11 @@ export default function SectionRenderer({
   twitterPostsAnalysed,
   isOwner,
   onTwitterUpdated,
+  redditThreads,
+  redditSentimentSplit,
+  redditContextTrigger,
+  redditThreadsAnalysed,
+  onRedditUpdated,
   interactiveComponent,
 }: Props) {
   const [removingSection, setRemovingSection] = useState<number | null>(null)
@@ -172,8 +183,10 @@ export default function SectionRenderer({
   const elements: React.ReactNode[] = []
   let i = 0
   let twitterInjected = false
+  let redditInjected = false
   let interactiveInjected = false
   const hasTwitterData = twitterFindings && twitterFindings.length >= 2
+  const hasRedditData = redditThreads && redditThreads.length >= 1
   const hasInteractive = !!interactiveComponent
 
   while (i < sections.length) {
@@ -420,7 +433,25 @@ export default function SectionRenderer({
         </div>
       )
 
-      // Inject interactive component after community_insights (before Twitter)
+      // Inject Reddit sentiment immediately after community_insights
+      if (section.type === 'community_insights' && hasRedditData && !redditInjected) {
+        redditInjected = true
+        elements.push(
+          <div key="reddit-sentiment" className={animated ? 'fade-in-up' : ''} style={style}>
+            <RedditSentimentSection
+              threads={redditThreads!}
+              sentimentSplit={redditSentimentSplit}
+              contextTrigger={redditContextTrigger}
+              threadsAnalysed={redditThreadsAnalysed}
+              articleId={articleId}
+              isOwner={isOwner}
+              onThreadsUpdated={onRedditUpdated}
+            />
+          </div>
+        )
+      }
+
+      // Inject interactive component after community_insights + Reddit (before Twitter)
       if (section.type === 'community_insights' && hasInteractive && !interactiveInjected) {
         interactiveInjected = true
         elements.push(
@@ -430,18 +461,38 @@ export default function SectionRenderer({
         )
       }
 
-      // Inject Twitter/X sentiment immediately after community_insights
+      // Inject Twitter/X sentiment after community_insights + Reddit + interactive
       if (section.type === 'community_insights' && hasTwitterData) {
         twitterInjected = true
         elements.push(
           <div key="twitter-sentiment" className={animated ? 'fade-in-up' : ''} style={style}>
             <TwitterSentimentSection
-              findings={twitterFindings}
+              findings={twitterFindings!}
               summary={twitterSummary ?? null}
               sentimentSplit={twitterSentimentSplit}
               contextTrigger={twitterContextTrigger}
               postsAnalysed={twitterPostsAnalysed}
               articleId={articleId}
+              isOwner={isOwner}
+              onTwitterUpdated={onTwitterUpdated}
+            />
+          </div>
+        )
+      }
+
+      // Fallback: if no community_insights, inject Reddit before sources/further_reading
+      if (!redditInjected && hasRedditData && (section.type === 'sources' || section.type === 'further_reading')) {
+        redditInjected = true
+        elements.splice(elements.length - 1, 0,
+          <div key="reddit-sentiment" className={animated ? 'fade-in-up' : ''}>
+            <RedditSentimentSection
+              threads={redditThreads!}
+              sentimentSplit={redditSentimentSplit}
+              contextTrigger={redditContextTrigger}
+              threadsAnalysed={redditThreadsAnalysed}
+              articleId={articleId}
+              isOwner={isOwner}
+              onThreadsUpdated={onRedditUpdated}
             />
           </div>
         )
@@ -463,12 +514,14 @@ export default function SectionRenderer({
         elements.splice(elements.length - 1, 0,
           <div key="twitter-sentiment" className={animated ? 'fade-in-up' : ''}>
             <TwitterSentimentSection
-              findings={twitterFindings}
+              findings={twitterFindings!}
               summary={twitterSummary ?? null}
               sentimentSplit={twitterSentimentSplit}
               contextTrigger={twitterContextTrigger}
               postsAnalysed={twitterPostsAnalysed}
               articleId={articleId}
+              isOwner={isOwner}
+              onTwitterUpdated={onTwitterUpdated}
             />
           </div>
         )
@@ -476,6 +529,23 @@ export default function SectionRenderer({
     }
 
     i++
+  }
+
+  // Final fallback: no community_insights or sources — append Reddit at end
+  if (!redditInjected && hasRedditData) {
+    elements.push(
+      <div key="reddit-sentiment" className={animated ? 'fade-in-up' : ''}>
+        <RedditSentimentSection
+          threads={redditThreads!}
+          sentimentSplit={redditSentimentSplit}
+          contextTrigger={redditContextTrigger}
+          threadsAnalysed={redditThreadsAnalysed}
+          articleId={articleId}
+          isOwner={isOwner}
+          onThreadsUpdated={onRedditUpdated}
+        />
+      </div>
+    )
   }
 
   // Final fallback: no community_insights or sources — append interactive at end
@@ -492,12 +562,14 @@ export default function SectionRenderer({
     elements.push(
       <div key="twitter-sentiment" className={animated ? 'fade-in-up' : ''}>
         <TwitterSentimentSection
-          findings={twitterFindings}
+          findings={twitterFindings!}
           summary={twitterSummary ?? null}
           sentimentSplit={twitterSentimentSplit}
           contextTrigger={twitterContextTrigger}
           postsAnalysed={twitterPostsAnalysed}
           articleId={articleId}
+          isOwner={isOwner}
+          onTwitterUpdated={onTwitterUpdated}
         />
       </div>
     )

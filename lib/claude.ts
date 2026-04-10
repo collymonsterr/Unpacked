@@ -337,7 +337,7 @@ For reddit_queries: generate 1-3 Reddit search queries with targeted subreddits.
 - For explainers/how_to: use subreddits where people ask and answer questions
 - For product articles: use enthusiast subreddits where users share real experiences
 
-For twitter_queries: generate 2-3 Twitter/X search queries that surface REACTIONS, OPINIONS, and DEBATE — not official announcements or press releases. We want journalists, analysts, critics, and enthusiasts discussing the topic, NOT the subject's own account posting marketing.
+For twitter_queries: generate 3-5 Twitter/X search queries that surface REACTIONS, OPINIONS, and DEBATE — not official announcements or press releases. We want journalists, analysts, critics, and enthusiasts discussing the topic, NOT the subject's own account posting marketing.
 
 TARGETING RULES — critical for useful results:
 - Target the CONTROVERSY, COST, CRITICISM, or COMPARISON angle. These get commentary from diverse voices.

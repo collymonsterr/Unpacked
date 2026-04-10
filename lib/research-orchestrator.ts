@@ -13,7 +13,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
-import type { ArticlePlan, ResearchManifest, EntityCard, ResearchSynthesis, PlanEntity, LiveDataQuery, TwitterFinding, TwitterSentimentSplit } from '@/types/article'
+import type { ArticlePlan, ResearchManifest, EntityCard, ResearchSynthesis, PlanEntity, LiveDataQuery, TwitterFinding, TwitterSentimentSplit, RedditSentimentSplit, RedditThread } from '@/types/article'
 import {
   executeBraveQueries,
   compileResearch,
@@ -68,6 +68,16 @@ export interface OrchestratedResearchResult {
   twitterContextTrigger: string | null
   /** Total raw results analysed before filtering to final findings */
   twitterPostsAnalysed: number
+  /** Reddit threads as top-level data (full pool for remove/replace mechanic) */
+  redditThreadsPool: RedditThread[]
+  /** Haiku-generated summary of Reddit discussion, or null */
+  redditSummary: string | null
+  /** Reddit sentiment split from Haiku classification */
+  redditSentimentSplit: RedditSentimentSplit | null
+  /** Reddit context trigger — "Trending after [event]" — from Haiku, or null */
+  redditContextTrigger: string | null
+  /** Total Reddit threads analysed */
+  redditThreadsAnalysed: number
 }
 
 /**
@@ -125,9 +135,22 @@ export async function executeResearch(
   }
   const entityMs = Date.now() - entityStart
 
-  // ── Step 4: Build synthesis (Haiku) + Twitter summary (Haiku) in parallel ──
+  // ── Step 4: Build synthesis (Haiku) + Twitter summary (Haiku) + Reddit summary (Haiku) in parallel ──
   const synthStart = Date.now()
-  const [synthesisResult, twitterSynthesis] = await Promise.all([
+
+  // Build enriched reddit threads with snippets from findings for the sentiment call
+  const redditThreadsForSynthesis = compiled.redditThreads.map(t => {
+    // Try to find a matching finding that has content for this thread
+    const matchingFinding = compiled.findings.find(f =>
+      f.url === t.url || (f.source_type === 'reddit' && f.url.includes(t.subreddit.replace('r/', '')))
+    )
+    return {
+      ...t,
+      snippet: matchingFinding?.content?.slice(0, 200) ?? undefined,
+    }
+  })
+
+  const [synthesisResult, twitterSynthesis, redditSynthesis] = await Promise.all([
     buildSynthesis(entityCards, compiled.findings, plan).catch(err => {
       console.warn('[research] Synthesis failed — using default:', (err as Error).message)
       return buildDefaultSynthesis(entityCards, plan)
@@ -136,20 +159,31 @@ export async function executeResearch(
       console.warn('[research] Twitter summary failed:', (err as Error).message)
       return null
     }),
+    summariseRedditFindings(redditThreadsForSynthesis, plan).catch(err => {
+      console.warn('[research] Reddit summary failed:', (err as Error).message)
+      return null
+    }),
   ])
   const synthesis: ResearchSynthesis = synthesisResult
   const synthMs = Date.now() - synthStart
 
-  // Apply viewpoint tags from Haiku classification back to findings
+  // Apply viewpoint tags from Haiku classification back to Twitter findings
   if (twitterSynthesis?.viewpoints?.length) {
     for (let vi = 0; vi < twitterSynthesis.viewpoints.length && vi < twitterFindings.length; vi++) {
       twitterFindings[vi].viewpoint = twitterSynthesis.viewpoints[vi]
     }
   }
 
+  // Apply viewpoint tags from Haiku classification back to Reddit threads
+  const redditThreadsPool: RedditThread[] = compiled.redditThreads.map((t, i) => ({
+    ...t,
+    snippet: redditThreadsForSynthesis[i]?.snippet,
+    viewpoint: redditSynthesis?.viewpoints?.[i] ?? undefined,
+  }))
+
   const totalElapsed = Date.now() - startTime
   console.log(
-    `[research] Complete in ${totalElapsed}ms: search=${searchMs}ms entity=${entityMs}ms synthesis=${synthMs}ms | ${compiled.searchCount} searches, ${entityCards.length} entities, ${liveData.length} live data, ${twitterFindings.length} tweets (${twitterPostsAnalysed} analysed)`
+    `[research] Complete in ${totalElapsed}ms: search=${searchMs}ms entity=${entityMs}ms synthesis=${synthMs}ms | ${compiled.searchCount} searches, ${entityCards.length} entities, ${liveData.length} live data, ${twitterFindings.length} tweets (${twitterPostsAnalysed} analysed), ${redditThreadsPool.length} reddit threads`
   )
 
   return {
@@ -167,6 +201,11 @@ export async function executeResearch(
     twitterSentimentSplit: twitterSynthesis?.sentimentSplit ?? null,
     twitterContextTrigger: twitterSynthesis?.contextTrigger ?? null,
     twitterPostsAnalysed,
+    redditThreadsPool,
+    redditSummary: redditSynthesis?.summary ?? null,
+    redditSentimentSplit: redditSynthesis?.sentimentSplit ?? null,
+    redditContextTrigger: redditSynthesis?.contextTrigger ?? null,
+    redditThreadsAnalysed: compiled.redditThreads.length,
   }
 }
 
@@ -527,6 +566,22 @@ function normaliseRedditQuery(raw: unknown): { query: string; subreddits: string
  * as a per-query time filter — set by the planner based on what each query is
  * actually trying to find. See planning prompt in lib/claude.ts.
  */
+/**
+ * FUTURE: Reddit native API swap (clean swap when env var / feature flag is set)
+ * ────────────────────────────────────────────────────────────────────────────────
+ * Endpoint: GET https://www.reddit.com/search.json
+ * Auth: none required (free public endpoint)
+ * Params: q (query), sort (new/top/relevance), t (hour/day/week/month/year/all),
+ *   limit (up to 100), restrict_sr (true to limit to specific subreddit)
+ * Per-subreddit: GET https://www.reddit.com/r/{subreddit}/search.json
+ * Response includes: title, url, selftext, score, num_comments, created_utc,
+ *   subreddit, author, permalink
+ * When active: fetch from Reddit directly for fresher results and richer metadata.
+ *   Sort by 'top' with time filter mapped from freshness (pd→day, pw→week, pm→month).
+ *   No need for Brave intermediary. Increase fetch to 15-20 threads per article.
+ * Implementation: add if (process.env.REDDIT_NATIVE_API) branch at top of
+ *   this function, return same Map<string, SearchResult[]> shape.
+ */
 async function executeRedditQueries(
   redditQueries: ResearchManifest['reddit_queries'],
   resultsPerQuery: number,
@@ -555,7 +610,7 @@ async function executeRedditQueries(
 
 const TWITTER_URL_PATTERN = /(?:^|\/)x\.com\/([A-Za-z0-9_]{1,15})\/status\/(\d+)/i
 const MIN_TWEET_SNIPPET = 50
-const MAX_TWITTER_FINDINGS = 8
+const MAX_TWITTER_FINDINGS = 12
 
 /** Decode HTML entities that Brave Search returns in snippets. */
 function decodeHtmlEntities(text: string): string {
@@ -655,6 +710,21 @@ function extractFindings(
 /** Contested article types get two-pass balanced search. */
 const CONTESTED_TYPES = new Set(['news_analysis', 'breaking_news', 'trend_analysis', 'deep_dive'])
 
+/**
+ * FUTURE: TwitterAPI.io integration (clean swap when env var is set)
+ * ─────────────────────────────────────────────────────────────────
+ * Endpoint: GET https://api.twitterapi.io/twitter/tweet/advanced_search
+ * Auth: X-API-Key header (env: TWITTER_API_KEY)
+ * Query format: same keywords but without site:x.com prefix
+ * Response includes: full tweet text, author handle, display name,
+ *   follower count, likes, retweets, reply count, exact timestamp, tweet URL
+ * When active: populate TwitterFinding with real engagement data instead
+ *   of Brave-inferred approximations. Sort by engagement (likes + retweets)
+ *   to surface important voices. Increase fetch to 50-60 tweets per article
+ *   since the API is fast and flat rate.
+ * Implementation: add if (process.env.TWITTER_API_KEY) branch at top of
+ *   this function, return same TwitterSearchResult shape.
+ */
 async function executeTwitterQueries(
   twitterQueries: ResearchManifest['twitter_queries'],
   resultsPerQuery: number,
@@ -822,6 +892,114 @@ Return the JSON now.`
     return { summary, sentimentSplit, contextTrigger, viewpoints }
   } catch {
     // Fallback: treat entire response as plain summary text (backwards compat)
+    const cleaned = text.trim()
+    return cleaned.length > 0
+      ? { summary: cleaned, sentimentSplit: null, contextTrigger: null, viewpoints: [] }
+      : null
+  }
+}
+
+// ── Reddit sentiment summary (Haiku) ────────────────────────────────────────
+
+const REDDIT_SUMMARY_SYSTEM = `You are analysing what people are actually saying on Reddit about a topic. You will be given a small set of Reddit thread summaries with subreddit names, scores, and comment counts. Return a JSON object with the following fields:
+
+1. "summary": ONE short paragraph (3-4 sentences, max ~80 words) capturing the prevailing sentiment, the main camps if there is disagreement, and any standout community reactions. Be specific — reference actual subreddit communities and their stances.
+2. "viewpoints": an array with one entry per thread (same order as input). Each entry is one of "pro", "sceptical", or "neutral" — classifying whether that thread/community supports the main thesis/topic, opposes/criticises it, or takes no clear side.
+3. "sentiment_split": an object with:
+   - "pro_label": a short label (2-5 words) for the supporting position (e.g. "Expecting prolonged hold", "Bullish on outcome")
+   - "sceptical_label": a short label (2-5 words) for the opposing position (e.g. "Frustrated with pace", "Calling it overhyped")
+   - "pro_pct": integer percentage of threads that are pro
+   - "sceptical_pct": integer percentage that are sceptical
+   - "neutral_pct": integer percentage that are neutral
+   - "summary": one plain-English sentence describing the split (e.g. "r/economics leans cautiously optimistic while r/personalfinance voices practical frustration.")
+   The three percentages MUST sum to 100.
+4. "context_trigger": a short string like "Surge in discussion after Fed announcement" if the threads reference a specific triggering event, or null if no clear trigger.
+
+HARD RULES for the summary paragraph:
+- NEVER use generic phrases like "opinions are mixed", "the community is divided", "redditors are talking about", "there's a lot of discussion".
+- Be specific: name subreddits, reference actual stances, describe the tension.
+- Never invent quotes or attributions.
+- Do NOT use hashtags or emoji.
+- If the subreddits contradict each other, say so directly with subreddit names.
+- Write in the voice of an editor describing the conversation, not a marketer.
+
+Return ONLY valid JSON. No markdown, no backticks, no preamble.`
+
+interface RedditSynthesisResult {
+  summary: string
+  sentimentSplit: RedditSentimentSplit | null
+  contextTrigger: string | null
+  viewpoints: Array<'pro' | 'sceptical' | 'neutral'>
+}
+
+async function summariseRedditFindings(
+  threads: Array<{ title: string; url: string; subreddit: string; num_comments?: number; score?: number; snippet?: string }>,
+  plan: ArticlePlan,
+): Promise<RedditSynthesisResult | null> {
+  if (!threads || threads.length < 2) return null
+
+  const threadList = threads
+    .map((t, i) => {
+      const meta = [t.subreddit]
+      if (t.score) meta.push(`${t.score} upvotes`)
+      if (t.num_comments) meta.push(`${t.num_comments} comments`)
+      const snippet = t.snippet ? ` — ${t.snippet.slice(0, 200)}` : ''
+      return `${i + 1}. [${meta.join(', ')}] ${t.title}${snippet}`
+    })
+    .join('\n')
+
+  const userMessage = `Topic: "${plan.title}"
+Article type: ${plan.article_type}
+
+REDDIT THREADS:
+${threadList}
+
+Return the JSON now.`
+
+  const model = 'claude-haiku-4-5-20251001'
+  const message = await getAnthropic().messages.create({
+    model,
+    max_tokens: 512,
+    system: REDDIT_SUMMARY_SYSTEM,
+    messages: [{ role: 'user', content: userMessage }],
+  })
+
+  logApiCall({
+    callType: 'reddit_summary',
+    model,
+    inputTokens: message.usage?.input_tokens,
+    outputTokens: message.usage?.output_tokens,
+  })
+
+  const text = message.content.find(b => b.type === 'text')?.text ?? ''
+
+  try {
+    const parsed = JSON.parse(extractJSON(text) || text)
+    const summary = (parsed.summary ?? '').trim()
+    if (!summary) return null
+
+    const split = parsed.sentiment_split
+    let sentimentSplit: RedditSentimentSplit | null = null
+    if (split && typeof split.pro_pct === 'number') {
+      sentimentSplit = {
+        pro_label: split.pro_label ?? 'Supporting',
+        sceptical_label: split.sceptical_label ?? 'Sceptical',
+        pro_pct: split.pro_pct,
+        sceptical_pct: split.sceptical_pct ?? (100 - split.pro_pct),
+        neutral_pct: split.neutral_pct ?? 0,
+        summary: split.summary ?? '',
+      }
+    }
+
+    const viewpoints: Array<'pro' | 'sceptical' | 'neutral'> = (parsed.viewpoints ?? []).map((v: string) => {
+      if (v === 'pro' || v === 'sceptical' || v === 'neutral') return v
+      return 'neutral'
+    })
+
+    const contextTrigger = typeof parsed.context_trigger === 'string' ? parsed.context_trigger : null
+
+    return { summary, sentimentSplit, contextTrigger, viewpoints }
+  } catch {
     const cleaned = text.trim()
     return cleaned.length > 0
       ? { summary: cleaned, sentimentSplit: null, contextTrigger: null, viewpoints: [] }

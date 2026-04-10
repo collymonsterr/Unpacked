@@ -55,6 +55,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
   const [chips, setChips] = useState(articleRow.suggestion_chips)
   const [twitterFindings, setTwitterFindings] = useState(() => articleRow.twitter_findings ?? [])
   const [twitterSummary, setTwitterSummary] = useState<string | null>(() => articleRow.twitter_summary ?? null)
+  const [redditThreads, setRedditThreads] = useState(() => articleRow.reddit_threads ?? [])
   const [isRefining, setIsRefining] = useState(false)
   const [refineError, setRefineError] = useState<string | null>(null)
   const [refineSuccess, setRefineSuccess] = useState(false)
@@ -536,11 +537,18 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           twitterSentimentSplit={articleRow.twitter_sentiment_split ?? undefined}
           twitterContextTrigger={articleRow.twitter_context_trigger ?? undefined}
           twitterPostsAnalysed={articleRow.twitter_posts_analysed ?? undefined}
+          redditThreads={redditThreads}
+          redditSentimentSplit={articleRow.reddit_sentiment_split ?? undefined}
+          redditContextTrigger={articleRow.reddit_context_trigger ?? undefined}
+          redditThreadsAnalysed={articleRow.reddit_threads_analysed ?? undefined}
           interactiveComponent={articleRow.interactive_component ?? null}
           isOwner={isOwner}
           onTwitterUpdated={(next) => {
             setTwitterFindings(next.findings)
             setTwitterSummary(next.summary)
+          }}
+          onRedditUpdated={(next) => {
+            setRedditThreads(next)
           }}
         />
       )}

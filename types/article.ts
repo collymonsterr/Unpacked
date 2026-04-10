@@ -88,6 +88,37 @@ export interface TwitterSentimentSplit {
   summary: string
 }
 
+/** Sentiment split data for Reddit discussion. Set by Haiku synthesis. */
+export interface RedditSentimentSplit {
+  /** Label for the pro/supporting position */
+  pro_label: string
+  /** Label for the sceptical/opposing position */
+  sceptical_label: string
+  /** Percentage of threads supporting the pro position */
+  pro_pct: number
+  /** Percentage of threads in the sceptical position */
+  sceptical_pct: number
+  /** Percentage of neutral threads */
+  neutral_pct: number
+  /** One-sentence plain English summary of the split */
+  summary: string
+}
+
+/** A single Reddit thread surfaced through Brave site:reddit.com search and enriched with metadata. */
+export interface RedditThread {
+  title: string
+  url: string
+  subreddit: string
+  num_comments?: number
+  score?: number
+  /** Snippet/summary text from Brave or Reddit metadata */
+  snippet?: string
+  /** Viewpoint classification set by Haiku synthesis */
+  viewpoint?: 'pro' | 'sceptical' | 'neutral'
+  /** Relative timestamp string (e.g. "14h ago") */
+  time_label?: string
+}
+
 export interface ImageQueries {
   hero: { query: string; style: 'editorial_photo' | 'news_photo' | 'product_photo' | 'abstract' }
   products: Array<{ entity_name: string; query: string }>
@@ -766,6 +797,10 @@ export interface ArticleRow {
   twitter_sentiment_split?: TwitterSentimentSplit | null
   twitter_context_trigger?: string | null
   twitter_posts_analysed?: number | null
+  reddit_threads?: RedditThread[] | null
+  reddit_sentiment_split?: RedditSentimentSplit | null
+  reddit_context_trigger?: string | null
+  reddit_threads_analysed?: number | null
   social_content?: Record<string, unknown> | null
   interactive_component?: InteractiveComponentData | null
   category?: string | null

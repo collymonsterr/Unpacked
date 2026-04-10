@@ -366,7 +366,7 @@ export async function compileResearch(
     const rawThreads: RedditThread[] = []
     for (const s of sources) {
       if (!s.url.includes('reddit.com')) continue
-      if (rawThreads.length >= 5) break
+      if (rawThreads.length >= 8) break
 
       // Extract subreddit from URL: /r/subreddit/
       const subMatch = s.url.match(/\/r\/([^/]+)/)
