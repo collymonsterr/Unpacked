@@ -209,20 +209,17 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* ═══ 5. WHAT'S INSIDE ═══ */}
+      {/* ═══ 5. YOU'RE IN CONTROL ═══ */}
       <section className="w-full py-20" style={{ backgroundColor: '#1A1714' }}>
-        <div className="max-w-[1060px] mx-auto px-4 md:px-6">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-center" style={{ color: '#BA7517', letterSpacing: '0.1em' }}>What&apos;s inside every article</p>
+        <div className="max-w-[900px] mx-auto px-4 md:px-6">
+          <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-center" style={{ color: '#BA7517', letterSpacing: '0.1em' }}>You&apos;re in control</p>
           <h2 className="text-2xl md:text-3xl font-bold mb-3 text-center" style={{ fontFamily: 'var(--font-sora)', color: '#fff' }}>The AI builds the draft. You decide what it becomes.</h2>
           <p className="text-base mb-10 text-center max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.45)' }}>Most AI gives you output and walks away. Unpacked hands you a first draft and gives you the tools to make it yours.</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { title: 'Your tone, your voice', desc: 'Casual, formal, or opinionated. One instruction rewrites the whole article to match.', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> },
-              { title: 'Your question, your focus', desc: 'Narrow it, broaden it, or take it somewhere new. The article reshapes itself around whatever you ask.', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> },
+              { title: 'Your tone, your voice', desc: 'Casual, formal, or opinionated. One instruction rewrites the whole article to match your style.', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> },
               { title: 'Your article, your name', desc: 'Refine it, publish it under your name, and share a link that looks like a journalist spent a day on it.', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> },
-              { title: 'Triple-verified facts', desc: 'Three independent AI systems check every claim. Corrections are applied automatically. A Verified badge shows readers the article has been checked.', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
-              { title: 'Real voices from Reddit and X', desc: 'Every article includes what people are actually saying — real threads, real viewpoints, classified by stance. Community sentiment, not generated opinions.', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
-              { title: 'Live data, not stale training', desc: 'Polymarket prediction odds, real-time stock prices, Google Trends — current data woven into every article where it matters.', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> },
+              { title: 'Triple-verified facts', desc: 'Three independent AI systems check every claim. Corrections applied automatically. A Verified badge proves it.', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#BA7517" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
             ].map(tile => (
               <div key={tile.title} className="rounded-xl p-5" style={{ backgroundColor: '#231F1B', border: '1px solid #2E2925' }}>
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: 'rgba(186,117,23,0.12)' }}>{tile.icon}</div>
@@ -234,7 +231,180 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* ═══ 6. FINAL CTA ═══ */}
+      {/* ═══ 6. REAL COMMUNITY OPINIONS ═══ */}
+      <section className="max-w-[1060px] mx-auto px-4 md:px-6 py-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          {/* Left — explanation */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#FF4500', letterSpacing: '0.1em' }}>Real opinions included</p>
+            <h2 className="text-2xl md:text-3xl font-bold mb-4" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
+              What people are<br />actually saying
+            </h2>
+            <p className="text-sm leading-relaxed mb-4" style={{ color: '#6B6B6B' }}>
+              Every article searches Reddit and X for real discussions about your topic. Not summaries of nothing — actual threads from actual people, with their viewpoints classified automatically.
+            </p>
+            <p className="text-sm leading-relaxed mb-6" style={{ color: '#6B6B6B' }}>
+              You see the community split at a glance: who&apos;s for, who&apos;s against, and what the strongest arguments are on each side.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <span className="text-[11px] font-semibold px-3 py-1.5 rounded-full" style={{ backgroundColor: '#FFF0E6', color: '#FF4500' }}>Reddit threads</span>
+              <span className="text-[11px] font-semibold px-3 py-1.5 rounded-full" style={{ backgroundColor: '#E8F4FD', color: '#1DA1F2' }}>X / Twitter posts</span>
+              <span className="text-[11px] font-semibold px-3 py-1.5 rounded-full" style={{ backgroundColor: '#F0FDF4', color: '#059669' }}>Sentiment analysis</span>
+            </div>
+          </div>
+
+          {/* Right — visual mock of Reddit + X sections */}
+          <div className="space-y-3">
+            {/* Sentiment meter mock */}
+            <div className="rounded-xl p-4" style={{ backgroundColor: '#FFF0E6', border: '1px solid #FFD6B8' }}>
+              <div className="flex items-center gap-2 mb-3">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#FF4500"><circle cx="12" cy="12" r="10"/><circle cx="8.5" cy="10" r="1.5" fill="#fff"/><circle cx="15.5" cy="10" r="1.5" fill="#fff"/><path d="M8 15.5c0-1 1.8-2 4-2s4 1 4 2" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                <span className="text-xs font-bold" style={{ color: '#FF4500' }}>Community Sentiment</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="flex rounded-full overflow-hidden h-2.5" style={{ backgroundColor: '#FFD6B8' }}>
+                    <div style={{ width: '55%', backgroundColor: '#22C55E' }} className="rounded-l-full" />
+                    <div style={{ width: '30%', backgroundColor: '#EAB308' }} />
+                    <div style={{ width: '15%', backgroundColor: '#EF4444' }} className="rounded-r-full" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-4 mt-2">
+                <span className="text-[10px] font-semibold" style={{ color: '#22C55E' }}>55% Positive</span>
+                <span className="text-[10px] font-semibold" style={{ color: '#EAB308' }}>30% Mixed</span>
+                <span className="text-[10px] font-semibold" style={{ color: '#EF4444' }}>15% Critical</span>
+              </div>
+            </div>
+
+            {/* Mock thread cards */}
+            {[
+              { sub: 'r/smartphones', votes: '847', viewpoint: 'Recommends', vpColor: '#22C55E', text: 'Switched last month. The ecosystem integration alone makes it worth it.' },
+              { sub: 'r/Android', votes: '412', viewpoint: 'Disagrees', vpColor: '#EF4444', text: 'Camera zoom comparison is no contest. Samsung wins every low-light test.' },
+            ].map((thread, i) => (
+              <div key={i} className="rounded-xl p-4 flex gap-3" style={{ backgroundColor: '#fff', border: '1px solid #E8E2D9' }}>
+                <div className="shrink-0">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#FF4500"><circle cx="12" cy="12" r="10"/><circle cx="8.5" cy="10" r="1.5" fill="#fff"/><circle cx="15.5" cy="10" r="1.5" fill="#fff"/><path d="M8 15.5c0-1 1.8-2 4-2s4 1 4 2" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[11px] font-bold" style={{ color: '#FF4500' }}>{thread.sub}</span>
+                    <span className="text-[10px]" style={{ color: '#9E948A' }}>{thread.votes} upvotes</span>
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full ml-auto" style={{ backgroundColor: `${thread.vpColor}15`, color: thread.vpColor }}>{thread.viewpoint}</span>
+                  </div>
+                  <p className="text-xs leading-relaxed" style={{ color: '#6B6B6B' }}>&ldquo;{thread.text}&rdquo;</p>
+                </div>
+              </div>
+            ))}
+
+            {/* X/Twitter mock */}
+            <div className="rounded-xl p-4 flex gap-3" style={{ backgroundColor: '#fff', border: '1px solid #E8E2D9' }}>
+              <div className="shrink-0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#1DA1F2"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[11px] font-bold" style={{ color: '#1DA1F2' }}>@techreviewer</span>
+                  <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full ml-auto" style={{ backgroundColor: '#E8F4FD', color: '#1DA1F2' }}>Supports</span>
+                </div>
+                <p className="text-xs leading-relaxed" style={{ color: '#6B6B6B' }}>&ldquo;Build quality is insane this year. Night and day difference holding both.&rdquo;</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 7. INTERACTIVE CHARTS ═══ */}
+      <section className="w-full py-20" style={{ backgroundColor: '#F5F3EF' }}>
+        <div className="max-w-[1060px] mx-auto px-4 md:px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            {/* Left — visual mocks of chart components */}
+            <div className="space-y-4">
+              {/* Head-to-head comparison bars */}
+              <div className="rounded-xl p-5" style={{ backgroundColor: '#fff', border: '1px solid #E8E2D9' }}>
+                <p className="text-[10px] font-semibold uppercase tracking-wide mb-3" style={{ color: '#94918D' }}>Head to Head</p>
+                {[{ m: 'Camera', a: 72, b: 88 }, { m: 'Battery', a: 85, b: 75 }, { m: 'Display', a: 82, b: 90 }, { m: 'Performance', a: 92, b: 88 }].map(r => (
+                  <div key={r.m} className="flex items-center gap-2 mb-2">
+                    <span className="text-[11px] w-[72px] text-right shrink-0" style={{ color: '#6B6B6B' }}>{r.m}</span>
+                    <div className="flex-1 flex items-center">
+                      <div className="flex-1 flex justify-end"><div className="h-[6px] rounded-l" style={{ width: `${(r.a / Math.max(r.a, r.b)) * 85}%`, backgroundColor: r.a >= r.b ? '#BA7517' : '#D4C9B8' }} /></div>
+                      <div style={{ width: '1px', height: '12px', backgroundColor: '#E8E2D9', flexShrink: 0 }} />
+                      <div className="flex-1"><div className="h-[6px] rounded-r" style={{ width: `${(r.b / Math.max(r.a, r.b)) * 85}%`, backgroundColor: r.b > r.a ? '#BA7517' : '#D4C9B8' }} /></div>
+                    </div>
+                  </div>
+                ))}
+                <div className="flex justify-between text-[10px] mt-1" style={{ color: '#94918D', paddingLeft: '76px' }}><span>Product A</span><span>Product B</span></div>
+              </div>
+
+              {/* Spec table mock */}
+              <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#fff', border: '1px solid #E8E2D9' }}>
+                <table className="w-full text-[11px]">
+                  <thead>
+                    <tr style={{ backgroundColor: '#FAFAF8' }}>
+                      <th className="py-2.5 px-4 text-left font-semibold" style={{ color: '#94918D' }}>Spec</th>
+                      <th className="py-2.5 px-4 text-center font-semibold" style={{ color: '#BA7517' }}>Winner</th>
+                      <th className="py-2.5 px-4 text-center font-semibold" style={{ color: '#94918D' }}>Runner-up</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[['Price', '$799', '$849'], ['Battery', '22 hours', '19 hours'], ['Weight', '187g', '204g']].map(([l, a, b]) => (
+                      <tr key={l} style={{ borderTop: '1px solid #F0EFED' }}>
+                        <td className="py-2 px-4" style={{ color: '#6B6B6B' }}>{l}</td>
+                        <td className="py-2 px-4 text-center font-semibold" style={{ color: '#1A1714' }}>{a}</td>
+                        <td className="py-2 px-4 text-center" style={{ color: '#6B6B6B' }}>{b}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Donut chart + live data mock */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl p-4 text-center" style={{ backgroundColor: '#fff', border: '1px solid #E8E2D9' }}>
+                  <svg width="56" height="56" viewBox="0 0 36 36" className="mx-auto mb-2">
+                    <circle cx="18" cy="18" r="14" fill="none" stroke="#E8E3DC" strokeWidth="4" />
+                    <circle cx="18" cy="18" r="14" fill="none" stroke="#BA7517" strokeWidth="4" strokeDasharray="52 87.96" strokeDashoffset="22" />
+                    <circle cx="18" cy="18" r="14" fill="none" stroke="#059669" strokeWidth="4" strokeDasharray="28 87.96" strokeDashoffset="-30" />
+                  </svg>
+                  <p className="text-[10px] font-semibold" style={{ color: '#94918D' }}>Community split</p>
+                </div>
+                <div className="rounded-xl p-4" style={{ backgroundColor: '#fff', border: '1px solid #E8E2D9' }}>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#94918D' }}>Live data</p>
+                  <p className="text-lg font-bold" style={{ color: '#059669' }}>72%</p>
+                  <p className="text-[10px]" style={{ color: '#6B6B6B' }}>Polymarket odds</p>
+                  <div className="flex items-end gap-[2px] mt-2">
+                    {[14, 18, 16, 22, 20, 25, 24, 28, 26, 30].map((h, i) => (
+                      <div key={i} className="flex-1 rounded-sm" style={{ height: h, backgroundColor: i >= 8 ? '#059669' : '#E8E2D9' }} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right — explanation */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#BA7517', letterSpacing: '0.1em' }}>Not just text</p>
+              <h2 className="text-2xl md:text-3xl font-bold mb-4" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
+                Interactive charts.<br />Live data.<br />Real comparisons.
+              </h2>
+              <p className="text-sm leading-relaxed mb-4" style={{ color: '#6B6B6B' }}>
+                Every article is built with visual components — head-to-head comparison bars, spec tables, community sentiment charts, and live data from Polymarket, stock markets, and Google Trends.
+              </p>
+              <p className="text-sm leading-relaxed mb-6" style={{ color: '#6B6B6B' }}>
+                This isn&apos;t a wall of text with a thumbnail at the top. It&apos;s a designed, structured, visual article that looks like a newsroom produced it.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="text-[11px] font-semibold px-3 py-1.5 rounded-full" style={{ backgroundColor: '#FDF6E9', color: '#BA7517' }}>Comparison bars</span>
+                <span className="text-[11px] font-semibold px-3 py-1.5 rounded-full" style={{ backgroundColor: '#FDF6E9', color: '#BA7517' }}>Spec tables</span>
+                <span className="text-[11px] font-semibold px-3 py-1.5 rounded-full" style={{ backgroundColor: '#FDF6E9', color: '#BA7517' }}>Live market data</span>
+                <span className="text-[11px] font-semibold px-3 py-1.5 rounded-full" style={{ backgroundColor: '#FDF6E9', color: '#BA7517' }}>Trend charts</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 8. FINAL CTA ═══ */}
       <section className="max-w-[600px] mx-auto px-4 py-20 text-center">
         <h2 className="text-3xl md:text-4xl font-extrabold mb-4" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
           Your question.<br />The best answer on the internet.<br /><span style={{ color: '#BA7517' }}>Three minutes.</span>
@@ -244,7 +414,7 @@ export default async function AboutPage() {
         <p className="text-sm mt-4" style={{ color: '#9E948A' }}>Give it a try now — it takes three minutes.</p>
       </section>
 
-      {/* ═══ 7. FEATURED ARTICLES ═══ */}
+      {/* ═══ 9. FEATURED ARTICLES ═══ */}
       {featuredArticles.length > 0 && (
         <section className="max-w-[1060px] mx-auto px-4 md:px-6 pb-20">
           <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-center" style={{ color: '#BA7517', letterSpacing: '0.1em' }}>From the platform</p>
