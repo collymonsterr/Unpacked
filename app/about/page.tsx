@@ -404,7 +404,82 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* ═══ 8. FINAL CTA ═══ */}
+      {/* ═══ 8. TRIPLE FACT-CHECK ═══ */}
+      <section className="w-full py-20" style={{ backgroundColor: '#1A1714' }}>
+        <div className="max-w-[640px] mx-auto px-4 text-center">
+          {/* Shield icon */}
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-6" style={{ backgroundColor: 'rgba(5,150,105,0.15)' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+
+          <h2 className="text-2xl md:text-3xl font-bold mb-3" style={{ fontFamily: 'var(--font-sora)', color: '#fff' }}>
+            Every claim. Triple-checked.
+          </h2>
+          <p className="text-sm mb-12" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            Three independent AI systems verify every article before it earns the badge.
+          </p>
+
+          {/* Three stages — horizontal pipeline */}
+          <div className="flex items-center justify-center gap-0">
+            {/* Stage 1: Gemini */}
+            <div className="flex-1 max-w-[160px]">
+              <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl mb-3" style={{ backgroundColor: '#1E1B18', border: '1px solid #2E2925' }}>
+                {/* Gemini sparkle */}
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2C12 2 12 8.5 7 12C12 15.5 12 22 12 22C12 22 12 15.5 17 12C12 8.5 12 2 12 2Z" fill="#4285F4" opacity="0.9"/>
+                </svg>
+              </div>
+              <p className="text-[11px] font-semibold mb-0.5" style={{ color: '#fff' }}>Gemini</p>
+              <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Verifies</p>
+            </div>
+
+            {/* Connector */}
+            <div className="flex items-center pb-8">
+              <div style={{ width: '32px', height: '1px', backgroundColor: '#2E2925' }} />
+              <svg width="6" height="10" viewBox="0 0 6 10" fill="none"><path d="M1 1l4 4-4 4" stroke="#2E2925" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+
+            {/* Stage 2: Claude */}
+            <div className="flex-1 max-w-[160px]">
+              <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl mb-3" style={{ backgroundColor: '#1E1B18', border: '1px solid #2E2925' }}>
+                {/* Claude/Anthropic mark */}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M13.8 3L21 17.4H15.5L13.8 14.1L8.3 3H13.8Z" fill="#D97757"/>
+                  <path d="M10.2 3L3 17.4H8.5L10.2 14.1L15.7 3H10.2Z" fill="#D97757" opacity="0.6"/>
+                </svg>
+              </div>
+              <p className="text-[11px] font-semibold mb-0.5" style={{ color: '#fff' }}>Claude</p>
+              <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Reviews</p>
+            </div>
+
+            {/* Connector */}
+            <div className="flex items-center pb-8">
+              <div style={{ width: '32px', height: '1px', backgroundColor: '#2E2925' }} />
+              <svg width="6" height="10" viewBox="0 0 6 10" fill="none"><path d="M1 1l4 4-4 4" stroke="#2E2925" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+
+            {/* Stage 3: Grok */}
+            <div className="flex-1 max-w-[160px]">
+              <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl mb-3" style={{ backgroundColor: '#1E1B18', border: '1px solid #2E2925' }}>
+                {/* Grok/xAI mark */}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 4L12 12M12 12L20 4M12 12L4 20M12 12L20 20" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <p className="text-[11px] font-semibold mb-0.5" style={{ color: '#fff' }}>Grok</p>
+              <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Arbitrates</p>
+            </div>
+          </div>
+
+          {/* Verified badge */}
+          <div className="inline-flex items-center gap-2 mt-10 px-4 py-2 rounded-full" style={{ backgroundColor: 'rgba(5,150,105,0.1)', border: '1px solid rgba(5,150,105,0.2)' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span className="text-xs font-semibold" style={{ color: '#059669' }}>Verified</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 9. FINAL CTA ═══ */}
       <section className="max-w-[600px] mx-auto px-4 py-20 text-center">
         <h2 className="text-3xl md:text-4xl font-extrabold mb-4" style={{ fontFamily: 'var(--font-sora)', color: '#1A1714' }}>
           Your question.<br />The best answer on the internet.<br /><span style={{ color: '#BA7517' }}>Three minutes.</span>
@@ -414,7 +489,7 @@ export default async function AboutPage() {
         <p className="text-sm mt-4" style={{ color: '#9E948A' }}>Give it a try now — it takes three minutes.</p>
       </section>
 
-      {/* ═══ 9. FEATURED ARTICLES ═══ */}
+      {/* ═══ 10. FEATURED ARTICLES ═══ */}
       {featuredArticles.length > 0 && (
         <section className="max-w-[1060px] mx-auto px-4 md:px-6 pb-20">
           <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-center" style={{ color: '#BA7517', letterSpacing: '0.1em' }}>From the platform</p>
