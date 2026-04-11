@@ -9,6 +9,26 @@ import type { ArticleType } from '@/lib/article-types'
 const BRAVE_API = 'https://api.search.brave.com/res/v1/web/search'
 const BRAVE_IMAGE_API = 'https://api.search.brave.com/res/v1/images/search'
 
+/**
+ * Normalize a Reddit URL to a canonical form for deduplication.
+ * Strips www, trailing slashes, query params, and hash fragments.
+ * e.g. "https://www.reddit.com/r/foo/comments/abc123/title/?utm_source=share"
+ *    → "https://reddit.com/r/foo/comments/abc123/title"
+ */
+export function normalizeRedditUrl(url: string): string {
+  try {
+    const u = new URL(url)
+    u.hostname = u.hostname.replace(/^www\./, '')
+    u.search = ''
+    u.hash = ''
+    // Remove trailing slashes from pathname
+    u.pathname = u.pathname.replace(/\/+$/, '')
+    return u.toString()
+  } catch {
+    return url
+  }
+}
+
 interface SearchResult {
   title: string
   url: string
@@ -230,9 +250,10 @@ export async function compileResearch(
     const isTwitter = searchQuery.includes('twitter') || searchQuery.includes('X ')
 
     for (const r of results) {
-      // Track sources (deduplicated)
-      if (!seenUrls.has(r.url)) {
-        seenUrls.add(r.url)
+      // Track sources (deduplicated — normalise Reddit URLs to catch www/trailing-slash variants)
+      const dedupUrl = r.url.includes('reddit.com') ? normalizeRedditUrl(r.url) : r.url
+      if (!seenUrls.has(dedupUrl)) {
+        seenUrls.add(dedupUrl)
         sources.push({ title: r.title, url: r.url })
       }
 
@@ -364,8 +385,12 @@ export async function compileResearch(
   let redditThreads: RedditThread[] = []
   try {
     const rawThreads: RedditThread[] = []
+    const seenThreadUrls = new Set<string>()
     for (const s of sources) {
       if (!s.url.includes('reddit.com')) continue
+      const normUrl = normalizeRedditUrl(s.url)
+      if (seenThreadUrls.has(normUrl)) continue
+      seenThreadUrls.add(normUrl)
       if (rawThreads.length >= 8) break
 
       // Extract subreddit from URL: /r/subreddit/

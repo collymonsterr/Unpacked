@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { createServerSupabase, getSupabaseAdmin } from '@/lib/supabase'
 import { isValidUUID } from '@/lib/validate'
+import { normalizeRedditUrl } from '@/lib/brave-research'
 
 /**
  * POST /api/articles/[id]/remove-quote
@@ -115,14 +116,23 @@ export async function POST(
       const next = [...current]
       next.splice(index, 1)
 
+      // Deduplicate remaining threads by normalised URL to prevent duplicate replacements
+      const seenNorm = new Set<string>()
+      const deduped = next.filter(t => {
+        const norm = normalizeRedditUrl(t.url ?? '')
+        if (seenNorm.has(norm)) return false
+        seenNorm.add(norm)
+        return true
+      })
+
       // Replacement: if removed from display set and reserves exist
-      const replacement = index < DISPLAY_COUNT && next.length >= DISPLAY_COUNT
-        ? next[DISPLAY_COUNT - 1]
+      const replacement = index < DISPLAY_COUNT && deduped.length >= DISPLAY_COUNT
+        ? deduped[DISPLAY_COUNT - 1]
         : null
 
       const { error: updateErr } = await db
         .from('articles')
-        .update({ reddit_threads: next })
+        .update({ reddit_threads: deduped })
         .eq('id', id)
 
       if (updateErr) {
@@ -132,9 +142,9 @@ export async function POST(
 
       return Response.json({
         success: true,
-        reddit_threads: next,
+        reddit_threads: deduped,
         replacement,
-        remaining_reserves: Math.max(0, next.length - DISPLAY_COUNT),
+        remaining_reserves: Math.max(0, deduped.length - DISPLAY_COUNT),
       })
     }
 

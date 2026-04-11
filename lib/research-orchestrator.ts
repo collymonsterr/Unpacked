@@ -17,6 +17,7 @@ import type { ArticlePlan, ResearchManifest, EntityCard, ResearchSynthesis, Plan
 import {
   executeBraveQueries,
   compileResearch,
+  normalizeRedditUrl,
   type SearchResult,
   type ResearchFinding,
 } from '@/lib/brave-research'
@@ -135,11 +136,20 @@ export async function executeResearch(
   }
   const entityMs = Date.now() - entityStart
 
+  // ── Step 3b: Deduplicate Reddit threads by normalised URL ──
+  const seenRedditUrls = new Set<string>()
+  const dedupedRedditThreads = (compiled.redditThreads ?? []).filter(t => {
+    const norm = normalizeRedditUrl(t.url)
+    if (seenRedditUrls.has(norm)) return false
+    seenRedditUrls.add(norm)
+    return true
+  })
+
   // ── Step 4: Build synthesis (Haiku) + Twitter summary (Haiku) + Reddit summary (Haiku) in parallel ──
   const synthStart = Date.now()
 
   // Build enriched reddit threads with snippets from findings for the sentiment call
-  const redditThreadsForSynthesis = compiled.redditThreads.map(t => {
+  const redditThreadsForSynthesis = dedupedRedditThreads.map(t => {
     // Try to find a matching finding that has content for this thread
     const matchingFinding = compiled.findings.find(f =>
       f.url === t.url || (f.source_type === 'reddit' && f.url.includes(t.subreddit.replace('r/', '')))
@@ -175,7 +185,7 @@ export async function executeResearch(
   }
 
   // Apply viewpoint tags from Haiku classification back to Reddit threads
-  const redditThreadsPool: RedditThread[] = compiled.redditThreads.map((t, i) => ({
+  const redditThreadsPool: RedditThread[] = dedupedRedditThreads.map((t, i) => ({
     ...t,
     snippet: redditThreadsForSynthesis[i]?.snippet,
     viewpoint: redditSynthesis?.viewpoints?.[i] ?? undefined,
@@ -191,7 +201,7 @@ export async function executeResearch(
     tokenEstimate: compiled.tokenEstimate,
     searchCount: compiled.searchCount,
     sources: compiled.sources,
-    redditThreads: compiled.redditThreads,
+    redditThreads: dedupedRedditThreads,
     findings: compiled.findings,
     entityCards,
     synthesis,
@@ -205,7 +215,7 @@ export async function executeResearch(
     redditSummary: redditSynthesis?.summary ?? null,
     redditSentimentSplit: redditSynthesis?.sentimentSplit ?? null,
     redditContextTrigger: redditSynthesis?.contextTrigger ?? null,
-    redditThreadsAnalysed: compiled.redditThreads.length,
+    redditThreadsAnalysed: dedupedRedditThreads.length,
   }
 }
 
