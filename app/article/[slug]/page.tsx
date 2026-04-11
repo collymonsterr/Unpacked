@@ -51,21 +51,15 @@ async function getArticle(slug: string): Promise<ArticleRow | null> {
     return (data as ArticleRow) ?? null
   }
 
-  // Try exact slug match first
-  const { data } = await db.from('articles').select('*').eq('slug', slug).single()
-  if (data) return data as ArticleRow
-
-  // Fallback: the slug might have been updated after the client navigated
-  // Search by the query-based slug pattern in case the article was renamed
-  const { data: fuzzy } = await db
+  // Exact slug match — use .limit(1) to handle potential duplicate slugs gracefully
+  const { data } = await db
     .from('articles')
     .select('*')
-    .ilike('slug', `${slug.slice(0, 30)}%`)
+    .eq('slug', slug)
     .order('created_at', { ascending: false })
     .limit(1)
-    .single()
-
-  return (fuzzy as ArticleRow) ?? null
+    .maybeSingle()
+  return (data as ArticleRow) ?? null
 }
 
 export default async function ArticlePage({ params }: Props) {
@@ -172,6 +166,21 @@ export async function generateMetadata({ params }: Props) {
   const row = await getArticle(slug)
 
   if (!row) return {}
+
+  // Don't leak metadata for private articles to unauthenticated users
+  if (row.visibility === 'private') {
+    try {
+      const { createServerSupabase } = await import('@/lib/supabase')
+      const supabase = await createServerSupabase()
+      const { data: { user } } = await supabase.auth.getUser()
+      const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
+      const isAdmin = !!(user?.email && adminEmail && user.email.toLowerCase() === adminEmail.toLowerCase())
+      const isOwner = user && user.id === row.user_id
+      if (!isOwner && !isAdmin) return {}
+    } catch {
+      return {}
+    }
+  }
 
   const title = row.article?.title ?? row.plan?.title ?? row.query
   const rawDesc = row.article?.quick_verdict?.one_liner ?? row.plan?.quick_verdict_preview ?? ''

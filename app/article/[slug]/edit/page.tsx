@@ -18,18 +18,15 @@ async function getArticle(slug: string): Promise<ArticleRow | null> {
     return (data as ArticleRow) ?? null
   }
 
-  const { data } = await db.from('articles').select('*').eq('slug', slug).single()
-  if (data) return data as ArticleRow
-
-  const { data: fuzzy } = await db
+  // Exact slug match — use maybeSingle to handle potential duplicate slugs
+  const { data } = await db
     .from('articles')
     .select('*')
-    .ilike('slug', `${slug.slice(0, 30)}%`)
+    .eq('slug', slug)
     .order('created_at', { ascending: false })
     .limit(1)
-    .single()
-
-  return (fuzzy as ArticleRow) ?? null
+    .maybeSingle()
+  return (data as ArticleRow) ?? null
 }
 
 export default async function ArticleEditPage({ params }: Props) {

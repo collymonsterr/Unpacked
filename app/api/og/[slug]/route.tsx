@@ -17,10 +17,16 @@ export async function GET(
 
   try {
     const isUUID = /^[0-9a-f-]{36}$/i.test(slug)
-    const query = getSupabaseAdmin().from('articles').select('article, plan, query')
-    const { data } = isUUID
-      ? await query.eq('id', slug).single()
-      : await query.eq('slug', slug).single()
+    const db = getSupabaseAdmin()
+    let data
+    if (isUUID) {
+      const res = await db.from('articles').select('article, plan, query').eq('id', slug).single()
+      data = res.data
+    } else {
+      const res = await db.from('articles').select('article, plan, query').eq('slug', slug)
+        .order('created_at', { ascending: false }).limit(1).maybeSingle()
+      data = res.data
+    }
 
     if (data) {
       title = data.article?.title ?? data.plan?.title ?? data.query ?? 'Unpacked'

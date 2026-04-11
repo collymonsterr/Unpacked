@@ -10,12 +10,19 @@ export async function GET(
   // Support both UUID id and slug lookup
   const isUUID = /^[0-9a-f-]{36}$/i.test(id)
 
-  const query = getSupabaseAdmin().from('articles').select('*')
-  const { data, error } = isUUID
-    ? await query.eq('id', id).single()
-    : await query.eq('slug', id).single()
+  const db = getSupabaseAdmin()
+  let data
+  if (isUUID) {
+    const res = await db.from('articles').select('*').eq('id', id).single()
+    data = res.data
+  } else {
+    // Use maybeSingle to handle potential duplicate slugs gracefully
+    const res = await db.from('articles').select('*').eq('slug', id)
+      .order('created_at', { ascending: false }).limit(1).maybeSingle()
+    data = res.data
+  }
 
-  if (error || !data) {
+  if (!data) {
     return Response.json({ error: 'Article not found' }, { status: 404 })
   }
 
