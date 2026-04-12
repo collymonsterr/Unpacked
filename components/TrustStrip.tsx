@@ -29,6 +29,9 @@ export default function TrustStrip() {
               <span style={{ fontSize: '10px', fontWeight: 500, padding: '2px 8px', borderRadius: '4px', backgroundColor: 'var(--card, #f0efed)', color: 'var(--text-primary)' }}>
                 X
               </span>
+              <span style={{ fontSize: '10px', fontWeight: 500, padding: '2px 8px', borderRadius: '4px', backgroundColor: 'var(--card, #f0efed)', color: 'var(--text-primary)' }}>
+                Expert reviews
+              </span>
             </div>
           </div>
 
@@ -104,6 +107,9 @@ export default function TrustStrip() {
               </span>
               <span style={{ fontSize: '10px', fontWeight: 500, padding: '2px 8px', borderRadius: '4px', backgroundColor: 'var(--card, #f0efed)', color: 'var(--text-primary)' }}>
                 X
+              </span>
+              <span style={{ fontSize: '10px', fontWeight: 500, padding: '2px 8px', borderRadius: '4px', backgroundColor: 'var(--card, #f0efed)', color: 'var(--text-primary)' }}>
+                Expert reviews
               </span>
             </div>
           </div>

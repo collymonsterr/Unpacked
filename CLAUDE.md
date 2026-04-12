@@ -178,9 +178,9 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - Yahoo Finance cache in `lib/data-sources/yahoo-finance.ts` — in-memory (5-min)
 - These work within a single serverless instance but don't coordinate across instances
 
-### Missing Features (documented but not built)
-- **Account deletion** — privacy policy promises it, no endpoint or UI exists
-- **Sign-in gate terms acceptance** — legal pages exist, but no acceptance step in auth flow
+### Previously Missing — Now Built
+- ~~**Account deletion**~~ — built April 2026 (`POST /api/profile/delete` + settings UI)
+- ~~**Sign-in gate terms acceptance**~~ — built April 2026 (terms line below Google sign-in button)
 
 ---
 
@@ -291,9 +291,9 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 ## Homepage Structure
 
 1. **PendingArticleRecovery** — recovers in-progress articles
-2. **Navbar** (no search on homepage)
-3. **HomepageHero** — main search/generate form
-4. **TrustStrip** — social proof
+2. **Navbar** (no search on homepage) — menu order: About, Pricing, Creators, Explore
+3. **HomepageHero** — headline: "Ask Anything. Get the Best Answer on the Internet." (amber accent), subline about 3-minute articles, search form, example chips
+4. **TrustStrip** — 3-column layout: "Real opinions. Clear verdict." (Reddit/X/Expert reviews) | "Triple fact-checked" (Gemini/Claude/Grok) | "Live data. Not training data." (Polymarket/Yahoo Finance/Google Trends)
 5. **Featured** — 1 hero card left (2fr) + 2×2 small cards right (3fr), 540px height, pool-based rotation
 6. **Trending Today** — exactly 3 dark-style cards (manual admin toggle, pool-based)
 7. **Most Popular** — top 4 by `view_count` with rank badges

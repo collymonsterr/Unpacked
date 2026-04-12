@@ -239,7 +239,7 @@ Bespoke interactive tools generated per article — decision trees, scenario sim
 
 ---
 
-## Homepage (built)
+## Homepage (built, updated April 2026)
 
 1. PendingArticleRecovery → Navbar (no search) → HomepageHero → TrustStrip
 2. Featured: 1 hero (2fr) + 2×2 small cards (3fr), 540px, pool-based rotation
@@ -250,6 +250,26 @@ Bespoke interactive tools generated per article — decision trees, scenario sim
 7. Footer
 
 Deduplicates article chains via `root_article_id`.
+
+### Hero (updated April 2026)
+- **Logged-out headline:** "Ask Anything. Get the / Best Answer on the Internet." — second line in amber `#BA7517`
+- **Logged-out subline:** "A complete visual article — researched, fact-checked, and ready in three minutes."
+- **Logged-in returning:** "Welcome back, [name]. What do you want to know today?"
+- **First-time onboarding:** "Welcome to Unpacked, [name]" with 6 example prompt cards
+- Three feature boxes ("Visual, not walls of text" / "Researched, not generated" / "Verified, not guessed") **removed** — replaced by the trust strip below
+
+### Trust Strip (rebuilt April 2026)
+Three-column layout with thin vertical dividers (desktop) / stacked with horizontal dividers (mobile). Each column: icon + claim text (13px) + proof pills (10px, 4px radius, font-weight 500).
+
+| Column | Icon | Claim | Pills |
+|--------|------|-------|-------|
+| 1 | Speech bubble (muted) | Real opinions. Clear verdict. | `Reddit` `X` `Expert reviews` — neutral grey bg |
+| 2 | Green checkmark | Triple fact-checked | `Gemini` (green) `Claude` (purple) `Grok` (blue) |
+| 3 | Pulse/chart (amber) | Live data. Not training data. | `Polymarket` `Yahoo Finance` `Google Trends` — amber tint |
+
+Top/bottom borders, 18px padding. Component: `components/TrustStrip.tsx`.
+
+**Note:** Trust strip says "Grok" but actual fact-check pipeline uses GPT-4o-mini for arbitration. Intentional — Grok is a stronger consumer brand name.
 
 ---
 
@@ -274,7 +294,7 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 - **Per-model breakdown** — verification report shows progress bars for each model (branded as Gemini/Grok/Perplexity — consumer-facing names). Confirmed/flagged counts. Only shows models that actually ran.
 - **Disputed claims callout** — amber-highlighted section in both the bottom panel and claims panel. Shows claim text, plain-English explanation, and correction (if any). Only appears when claims were corrected or softened.
 - **Card badges** — Small green shield icon (16px hero, 14px small cards) inline next to article title on all homepage cards (Featured, Trending, Popular, Recent) when `fact_check` data exists. NOT an image overlay — sits next to the title text. TripleCheckBadge component exists but is unused (dead code).
-- **Trust strip upgrade** — homepage trust strip now shows green shield + "Triple fact-checked" with Gemini/Grok/Perplexity pills (green/blue/purple) instead of generic "Independent fact-checking" text.
+- **Trust strip upgrade** — homepage trust strip rebuilt April 2026 as a 3-column layout: real opinions (Reddit/X/Expert reviews), triple fact-checked (Gemini/Claude/Grok), live data (Polymarket/Yahoo Finance/Google Trends). See Homepage section for details.
 - **Fact-check explainer** — green info box at top of both the bottom-bar expanded panel and inline ClaimsPanel. Mentions Google Gemini and Claude by name. Text: "Every factual claim was extracted and checked by Google Gemini with live web search, then reviewed by Claude for credibility. Corrections are applied automatically."
 - Verified badge (green shield, "Verified" label) — now clickable with chevron when claims data exists
 - Internal linking (client-side injection, zero DB writes, cached 1 hour)
@@ -314,13 +334,13 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 | Path | File | Notes |
 |------|------|-------|
 | `/` | `app/page.tsx` | Homepage, server component |
-| `/article/[slug]` | `app/article/[slug]/page.tsx` | Article page, UUID or slug lookup |
+| `/article/[slug]` | `app/article/[slug]/page.tsx` | Article page, UUID or exact slug lookup. Custom branded not-found page (`not-found.tsx`). |
 | `/admin` | `app/admin/page.tsx` | Admin dashboard, 4 tabs |
-| `/about` | `app/about/page.tsx` | 8 sections, typewriter hero |
+| `/about` | `app/about/page.tsx` | Rebuilt April 2026: Hero → Challenger → Comparison → How it works → 3 dark tiles → Reddit/X section → Interactive charts → Triple fact-check → CTA → Featured articles |
 | `/how-it-works` | `app/how-it-works/page.tsx` | Explanation page |
 | `/updates` | `app/updates/page.tsx` | Changelog |
 | `/dashboard` | `app/dashboard/page.tsx` | User dashboard |
-| `/creators` | `app/creators/page.tsx` | Creator listing |
+| `/creators` | `app/creators/page.tsx` | Rebuilt April 2026: server component, visual mock article, How it works, feature cards, honest monetisation ("coming soon"), featured articles from DB, founding creators callout |
 | `/creator/[id]` | `app/creator/[id]/page.tsx` | Creator profile |
 | `/settings` | `app/settings/page.tsx` | User settings |
 | `/recent` | `app/recent/page.tsx` | Recent articles |
@@ -496,7 +516,10 @@ Technical tone: "Write for an expert audience. Assume domain knowledge. Skip int
 5. ~~**Refine degradation — articles get worse with each refinement**~~ — **FIXED April 2026.** Root causes: refine prompt had no preservation instructions (model rewrote everything), no research context passed (model hallucinated replacements), no title/type safeguards (model changed titles on scope edits). Fix: surgical refine prompts, research context injection, title mutation safeguard, article_type preservation, structural drift logging.
 6. ~~**"Twitte r/X" subreddit link bug**~~ — **FIXED April 2026.** Regex `/r\/(\w+)/i` in CommunityInsights.tsx matched "r/X" inside "Twitter/X" (the `r` at end of "Twitter" + `/X`). Fixed with word boundary `\b` prefix on both instances (pull quotes + insight cards).
 7. ~~**Refined articles lose Twitter sentiment data**~~ — **FIXED April 2026.** Both refine paths (co-pilot rewrite + standard text refine) in `app/api/articles/[id]/refine/route.ts` copied research_findings/entity_cards/synthesis/live_data from parent but not `twitter_findings` or `twitter_summary`. Child articles always showed null. Fixed by adding both columns to both insert blocks.
-8. ~~**News articles generate with almost no images**~~ — **FIXED April 2026.** Writer prompt only suggested "1-2 if relevant" for news_analysis/deep_dive and "hero only" for breaking_news. Enrichment fallback only injected images for product articles. Fix: writer prompt now mandates 3-5 editorial image_sections for news/analysis and 2-3 for breaking_news. Planner prompt generates `editorial_sections` image queries. `enrichArticleWithImages()` injects editorial images for news/analysis/deep_dive articles when the writer doesn't include enough (uses content_section headings as search queries).
+8. ~~**News articles generate with almost no images**~~ — **FIXED April 2026.**  Writer prompt only suggested "1-2 if relevant" for news_analysis/deep_dive and "hero only" for breaking_news. Enrichment fallback only injected images for product articles. Fix: writer prompt now mandates 3-5 editorial image_sections for news/analysis and 2-3 for breaking_news. Planner prompt generates `editorial_sections` image queries. `enrichArticleWithImages()` injects editorial images for news/analysis/deep_dive articles when the writer doesn't include enough (uses content_section headings as search queries).
+9. ~~**Duplicate Reddit threads in articles**~~ — **FIXED April 2026.** Reddit URLs vary (www vs non-www, trailing slashes, query params), bypassing exact-string dedup. Fix: `normalizeRedditUrl()` in `lib/brave-research.ts` strips www prefix, query params, hash, trailing slashes via URL API. Applied at 3 layers: source level (compileResearch seenUrls), extraction level (secondary seenThreadUrls), orchestrator level (post-compilation dedup). Also applied in remove-quote API to prevent re-introduction on dismiss.
+10. ~~**Article slug fuzzy match returning wrong articles**~~ — **FIXED April 2026.** `getArticle()` had a fuzzy fallback (`ilike('slug', '${slug.slice(0,30)}%')`) that could match unrelated articles. Also, `.single()` errored on duplicate slugs. Fix: removed fuzzy fallback entirely, switched to `.maybeSingle()` with exact match + ordering. Applied to: `app/article/[slug]/page.tsx`, `app/article/[slug]/edit/page.tsx`, `app/api/articles/[id]/route.ts`, `app/api/og/[slug]/route.tsx`.
+11. ~~**Private article metadata leaked in 404 responses**~~ — **FIXED April 2026.** `generateMetadata()` returned full title/description/OG data for private articles even when unauthenticated. Fix: added visibility gate check to `generateMetadata()` in `app/article/[slug]/page.tsx`.
 
 ---
 
@@ -504,7 +527,7 @@ Technical tone: "Write for an expert audience. Assume domain knowledge. Skip int
 
 Verified absent from codebase as of April 2026:
 
-- **Stripe / payment processing** — tier infrastructure built, but no Stripe checkout/webhooks/billing. Paid tiers are waitlist-only.
+- ~~**Stripe / payment processing**~~ — **BUILT April 2026.** Full Stripe Checkout + webhooks + billing portal. See Tier System section.
 - **Affiliate infrastructure** — no `affiliate_url` field, no link routing, no revenue tracking
 - ~~**Category pages**~~ — **BUILT April 2026.** 12 category pages at `/category/[slug]` with SEO, pagination, sort.
 - **Creator analytics dashboard** — not built (basic dashboard exists but no per-article analytics)

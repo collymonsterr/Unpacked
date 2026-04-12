@@ -106,3 +106,23 @@ Anthropic, OpenAI, and Google billing dashboards should all have monthly spendin
 
 **Decision: Log every API call to api_usage_log**
 Every Anthropic and Gemini API call is logged with token counts. Any change that increases API calls or token usage must be flagged before implementation.
+
+---
+
+## URL & Slug Handling
+
+**Decision: No fuzzy slug matching — exact match only (April 2026)**
+`getArticle()` previously had a fuzzy fallback (`ilike('slug', '${slug.slice(0,30)}%')`) intended to handle renamed slugs. This caused wrong articles to load and metadata leaks for private articles. Removed entirely. All slug lookups are now exact match with `.maybeSingle()` to handle potential duplicate slugs gracefully. Applied across page, edit page, API route, and OG route.
+
+**Decision: Use Grok branding in trust strip despite using GPT-4o-mini (April 2026)**
+The fact-check pipeline uses GPT-4o-mini for the third-stage arbitration, but the consumer-facing trust strip and about page say "Grok". Intentional — Grok is a stronger, more recognisable brand name for the target audience. The specific model used is an implementation detail.
+
+---
+
+## Navigation & Information Architecture
+
+**Decision: Navbar order is About, Pricing, Creators, Explore (April 2026)**
+Explore dropdown moved to last position. About first because the journey is: homepage → about → impressed. Pricing and Creators before Explore because they're higher-intent pages.
+
+**Decision: Homepage hero says "three minutes" not "two minutes" (April 2026)**
+Generation typically takes 2–3 minutes. Saying "two minutes" sets an expectation that's frequently missed. "Three minutes" is honest and still fast enough to be impressive.
