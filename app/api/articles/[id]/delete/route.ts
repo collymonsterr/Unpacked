@@ -7,21 +7,26 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params
-  if (!isValidUUID(id)) return Response.json({ error: 'Invalid article ID' }, { status: 400 })
+  try {
+    const { id } = await params
+    if (!isValidUUID(id)) return Response.json({ error: 'Invalid article ID' }, { status: 400 })
 
-  const auth = await requireAdmin()
-  if (!auth.authorized) return auth.error!
+    const auth = await requireAdmin()
+    if (!auth.authorized) return auth.error!
 
-  const db = getSupabaseAdmin()
-  const { error } = await db
-    .from('articles')
-    .delete()
-    .eq('id', id)
+    const db = getSupabaseAdmin()
+    const { error } = await db
+      .from('articles')
+      .delete()
+      .eq('id', id)
 
-  if (error) {
-    return Response.json({ error: 'Failed to delete article' }, { status: 500 })
+    if (error) {
+      return Response.json({ error: 'Failed to delete article' }, { status: 500 })
+    }
+
+    return Response.json({ deleted: true })
+  } catch (err) {
+    console.error('[article-delete]', err)
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
-
-  return Response.json({ deleted: true })
 }

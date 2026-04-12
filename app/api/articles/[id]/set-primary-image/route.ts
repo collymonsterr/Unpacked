@@ -8,6 +8,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  try {
   const { id } = await params
   if (!isValidUUID(id)) return Response.json({ error: 'Invalid article ID' }, { status: 400 })
 
@@ -57,4 +58,8 @@ export async function POST(
   await db.from('articles').update({ article }).eq('id', id)
 
   return Response.json({ article })
+  } catch (err) {
+    console.error('[set-primary-image]', err)
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }

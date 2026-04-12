@@ -180,8 +180,8 @@ export async function POST(
         enriched.hero_attribution = row.article.hero_attribution
       }
 
-      // Save as child article
-      const newSlug = await generateUniqueSlug(enriched.title ?? row.article.title)
+      // Save as child article — reuse parent slug for URL continuity
+      const newSlug = await generateUniqueSlug(row.slug ?? enriched.title ?? row.article.title)
       const { data: newArticle, error: insertError } = await db
         .from('articles')
         .insert({
@@ -342,8 +342,8 @@ export async function POST(
       enriched.thumbnail_url = row.article.thumbnail_url
     }
 
-    // Create a new child article instead of modifying in-place
-    const newSlug = await generateUniqueSlug(enriched.title ?? row.article.title)
+    // Create a new child article — reuse parent slug for URL continuity
+    const newSlug = await generateUniqueSlug(row.slug ?? enriched.title ?? row.article.title)
     const { data: newArticle, error: insertError } = await db
       .from('articles')
       .insert({

@@ -260,8 +260,8 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!plan, plan?.article_type])
 
-  // Tick messages: 14s for main sequence, then 20s for tail messages
-  // With 16 main msgs at 14s + 3 tail at 20s = ~224s + 60s = ~4.7 min coverage
+  // Graduated message pacing: fast early → slower mid → long tail
+  // Builds excitement in the first 30s, then slows down to cover the full ~3 min generation
   useEffect(() => {
     if (!plan || messages.length === 0) return
     if (messageIntervalRef.current) return
@@ -272,42 +272,40 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
     const mainCount = messages.length - TAIL_MESSAGES.length
     const totalMsgs = messages.length
 
-    // Start with 14s interval for main messages
-    messageIntervalRef.current = setInterval(() => {
-      setCompletedMsgs(prev => {
-        const next = prev + 1
+    // Interval schedule: message index → delay before showing the NEXT message
+    // First 4 messages: 5s each (fast, builds excitement) = 20s
+    // Messages 5-8: 10s each (moderate, research phase) = 40s → cumulative 60s
+    // Messages 9-12: 15s each (slower, writing phase) = 60s → cumulative 120s
+    // Messages 13+: 18s each (slow, editorial/fact-check) → cumulative ~170s+
+    // Tail messages: 25s each (reassurance) → covers up to ~245s total
+    const getInterval = (msgIndex: number): number => {
+      if (msgIndex < 4) return 5000
+      if (msgIndex < 8) return 10000
+      if (msgIndex < 12) return 15000
+      if (msgIndex < mainCount) return 18000
+      return 25000 // tail messages
+    }
 
-        // Switch to 20s interval when entering the tail messages
-        if (next === mainCount && messageIntervalRef.current) {
-          clearInterval(messageIntervalRef.current)
-          messageIntervalRef.current = setInterval(() => {
-            setCompletedMsgs(p => {
-              const n = p + 1
-              if (n >= totalMsgs) {
-                if (messageIntervalRef.current) {
-                  clearInterval(messageIntervalRef.current)
-                  messageIntervalRef.current = null
-                }
-              }
-              return n
-            })
-          }, 20000)
-        }
+    let currentIndex = 1
 
-        // Stop if we somehow exceed total
-        if (next >= totalMsgs) {
-          if (messageIntervalRef.current) {
-            clearInterval(messageIntervalRef.current)
-            messageIntervalRef.current = null
-          }
-        }
-        return next
-      })
-    }, 14000)
+    const scheduleNext = () => {
+      if (currentIndex >= totalMsgs) {
+        messageIntervalRef.current = null
+        return
+      }
+      const delay = getInterval(currentIndex)
+      messageIntervalRef.current = setTimeout(() => {
+        currentIndex++
+        setCompletedMsgs(currentIndex)
+        scheduleNext()
+      }, delay)
+    }
+
+    scheduleNext()
 
     return () => {
       if (messageIntervalRef.current) {
-        clearInterval(messageIntervalRef.current)
+        clearTimeout(messageIntervalRef.current)
         messageIntervalRef.current = null
       }
     }
@@ -319,9 +317,9 @@ export default function ArticleGenerating({ row, onReady, timedOut, onRetry, onS
     if (readyFired.current) return
     readyFired.current = true
 
-    // Clear the normal interval
+    // Clear the scheduled timeout
     if (messageIntervalRef.current) {
-      clearInterval(messageIntervalRef.current)
+      clearTimeout(messageIntervalRef.current)
       messageIntervalRef.current = null
     }
 

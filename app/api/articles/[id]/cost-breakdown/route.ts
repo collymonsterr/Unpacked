@@ -56,84 +56,89 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params
-  if (!isValidUUID(id)) return Response.json({ error: 'Invalid article ID' }, { status: 400 })
+  try {
+    const { id } = await params
+    if (!isValidUUID(id)) return Response.json({ error: 'Invalid article ID' }, { status: 400 })
 
-  const auth = await requireAdmin()
-  if (!auth.authorized) return auth.error!
+    const auth = await requireAdmin()
+    if (!auth.authorized) return auth.error!
 
-  const db = getSupabaseAdmin()
+    const db = getSupabaseAdmin()
 
-  // Fetch usage logs and article timings in parallel
-  const [logsResult, articleResult] = await Promise.all([
-    db.from('api_usage_log')
-      .select('call_type, model, input_tokens, output_tokens, created_at')
-      .eq('article_id', id)
-      .order('created_at', { ascending: true }),
-    db.from('articles')
-      .select('total_cost, generation_options, created_at, status')
-      .eq('id', id)
-      .single(),
-  ])
+    // Fetch usage logs and article timings in parallel
+    const [logsResult, articleResult] = await Promise.all([
+      db.from('api_usage_log')
+        .select('call_type, model, input_tokens, output_tokens, created_at')
+        .eq('article_id', id)
+        .order('created_at', { ascending: true }),
+      db.from('articles')
+        .select('total_cost, generation_options, created_at, status')
+        .eq('id', id)
+        .single(),
+    ])
 
-  if (logsResult.error) {
-    return Response.json({ error: 'Failed to fetch usage data' }, { status: 500 })
+    if (logsResult.error) {
+      return Response.json({ error: 'Failed to fetch usage data' }, { status: 500 })
+    }
+
+    const logs = logsResult.data ?? []
+    const article = articleResult.data
+
+    // ── Per-call detail ──
+    const calls = logs.map(log => {
+      const cost = estimateCost(log.model, log.input_tokens, log.output_tokens)
+      return {
+        call_type: log.call_type,
+        label: CALL_TYPE_LABELS[log.call_type] ?? log.call_type,
+        model: log.model,
+        input_tokens: log.input_tokens,
+        output_tokens: log.output_tokens,
+        cost,
+        timestamp: log.created_at,
+      }
+    })
+
+    // ── Grouped summary by call_type ──
+    const grouped: Record<string, { total_cost: number; call_count: number; models: string[] }> = {}
+    for (const call of calls) {
+      if (!grouped[call.call_type]) {
+        grouped[call.call_type] = { total_cost: 0, call_count: 0, models: [] }
+      }
+      grouped[call.call_type].total_cost += call.cost
+      grouped[call.call_type].call_count += 1
+      if (!grouped[call.call_type].models.includes(call.model)) {
+        grouped[call.call_type].models.push(call.model)
+      }
+    }
+
+    const breakdown = Object.entries(grouped)
+      .map(([call_type, data]) => ({
+        call_type,
+        label: CALL_TYPE_LABELS[call_type] ?? call_type,
+        ...data,
+      }))
+      .sort((a, b) => b.total_cost - a.total_cost)
+
+    // ── Timings from generation_options ──
+    const genOpts = article?.generation_options as Record<string, unknown> | null
+    const timings = (genOpts?.timings ?? null) as Record<string, number> | null
+
+    // ── Total cost ──
+    const totalCostFromLogs = calls.reduce((sum, c) => sum + c.cost, 0)
+    const totalCostFromArticle = article?.total_cost ? Number(article.total_cost) : null
+
+    return Response.json({
+      article_id: id,
+      status: article?.status ?? 'unknown',
+      created_at: article?.created_at ?? null,
+      total_cost: totalCostFromArticle ?? totalCostFromLogs,
+      total_calls: calls.length,
+      breakdown,
+      calls,
+      timings,
+    })
+  } catch (err) {
+    console.error('[cost-breakdown]', err)
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
-
-  const logs = logsResult.data ?? []
-  const article = articleResult.data
-
-  // ── Per-call detail ──
-  const calls = logs.map(log => {
-    const cost = estimateCost(log.model, log.input_tokens, log.output_tokens)
-    return {
-      call_type: log.call_type,
-      label: CALL_TYPE_LABELS[log.call_type] ?? log.call_type,
-      model: log.model,
-      input_tokens: log.input_tokens,
-      output_tokens: log.output_tokens,
-      cost,
-      timestamp: log.created_at,
-    }
-  })
-
-  // ── Grouped summary by call_type ──
-  const grouped: Record<string, { total_cost: number; call_count: number; models: string[] }> = {}
-  for (const call of calls) {
-    if (!grouped[call.call_type]) {
-      grouped[call.call_type] = { total_cost: 0, call_count: 0, models: [] }
-    }
-    grouped[call.call_type].total_cost += call.cost
-    grouped[call.call_type].call_count += 1
-    if (!grouped[call.call_type].models.includes(call.model)) {
-      grouped[call.call_type].models.push(call.model)
-    }
-  }
-
-  const breakdown = Object.entries(grouped)
-    .map(([call_type, data]) => ({
-      call_type,
-      label: CALL_TYPE_LABELS[call_type] ?? call_type,
-      ...data,
-    }))
-    .sort((a, b) => b.total_cost - a.total_cost)
-
-  // ── Timings from generation_options ──
-  const genOpts = article?.generation_options as Record<string, unknown> | null
-  const timings = (genOpts?.timings ?? null) as Record<string, number> | null
-
-  // ── Total cost ──
-  const totalCostFromLogs = calls.reduce((sum, c) => sum + c.cost, 0)
-  const totalCostFromArticle = article?.total_cost ? Number(article.total_cost) : null
-
-  return Response.json({
-    article_id: id,
-    status: article?.status ?? 'unknown',
-    created_at: article?.created_at ?? null,
-    total_cost: totalCostFromArticle ?? totalCostFromLogs,
-    total_calls: calls.length,
-    breakdown,
-    calls,
-    timings,
-  })
 }

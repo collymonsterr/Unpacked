@@ -316,7 +316,7 @@ export default function SectionRenderer({
         case 'price_tier_breakdown':
           return <PriceTierBreakdown section={section} />
         case 'community_insights':
-          return <CommunityInsights section={section} isOwner={isAdmin} articleId={articleId} onArticleUpdated={onArticleUpdated} />
+          return <CommunityInsights section={section} isOwner={isAdmin} articleId={articleId} onArticleUpdated={onArticleUpdated} hideThreads={!!hasRedditData} />
         case 'sources':
           return <Sources section={section} />
         case 'further_reading':

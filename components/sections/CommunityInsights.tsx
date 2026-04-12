@@ -20,9 +20,11 @@ interface Props {
   isOwner?: boolean
   articleId?: string
   onArticleUpdated?: (article: ArticleContent) => void
+  /** Hide the "Related discussions" thread cards when RedditSentimentSection handles that data */
+  hideThreads?: boolean
 }
 
-export default function CommunityInsights({ section, isOwner = false, articleId, onArticleUpdated }: Props) {
+export default function CommunityInsights({ section, isOwner = false, articleId, onArticleUpdated, hideThreads = false }: Props) {
   const cfg = consensusConfig[section.consensus] ?? consensusConfig.mixed
   const quotes = section.quotes?.slice(0, 2) ?? []
   const threads = section.reddit_threads?.slice(0, 5) ?? []
@@ -253,8 +255,8 @@ export default function CommunityInsights({ section, isOwner = false, articleId,
         })}
       </div>
 
-      {/* Reddit thread cards */}
-      {threads.length > 0 && (
+      {/* Reddit thread cards — hidden when RedditSentimentSection is rendering */}
+      {threads.length > 0 && !hideThreads && (
         <div className="mt-5">
           <p
             className="text-xs font-semibold uppercase tracking-widest mb-3"
