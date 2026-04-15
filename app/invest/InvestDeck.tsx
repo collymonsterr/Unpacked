@@ -529,87 +529,171 @@ function SlideBuiltOnGoogle() {
    SLIDE 5 — THE PRODUCT
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-function SlideProduct() {
-  const cards = [
-    { label: 'Buyer guide with product cards and verdict', color: '#2D3A4A' },
-    { label: 'Live data: Google Trends + Polymarket + Yahoo Finance', color: '#2D4A3E' },
-    { label: 'Triple fact-check verification panel', color: '#3A2D4A' },
-  ]
-
+function BrowserFrame({ url, label, children }: { url: string; label: string; children: React.ReactNode }) {
   return (
-    <div style={{ textAlign: 'center' }}>
+    <div>
+      <div style={{ backgroundColor: C.white, borderRadius: 12, border: `1px solid ${C.border}`, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
+        <div style={{ padding: '6px 10px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#FF5F57' }} />
+            <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#FFBD2E' }} />
+            <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#27C93F' }} />
+          </div>
+          <div style={{ flex: 1, backgroundColor: '#f5f4f2', borderRadius: 5, padding: '3px 8px', fontSize: 9, color: C.inkFaint, fontFamily: 'var(--font-outfit)' }}>
+            {url}
+          </div>
+        </div>
+        <div style={{ padding: '12px 14px', backgroundColor: C.white }}>{children}</div>
+      </div>
+      <p style={{ fontFamily: 'var(--font-outfit)', fontSize: 12, color: C.inkLight, marginTop: 10, textAlign: 'center' }}>{label}</p>
+    </div>
+  )
+}
+
+function SlideProduct() {
+  return (
+    <div>
       <SectionLabel>In action</SectionLabel>
       <Headline style={{ textAlign: 'center' }}>See it in action.</Headline>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: 24,
-          marginTop: 40,
-        }}
-      >
-        {cards.map((c) => (
-          <div key={c.label}>
-            {/* Browser frame */}
-            <div
-              style={{
-                backgroundColor: C.white,
-                borderRadius: 12,
-                border: `1px solid ${C.border}`,
-                overflow: 'hidden',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
-              }}
-            >
-              {/* URL bar */}
-              <div
-                style={{
-                  padding: '8px 12px',
-                  borderBottom: `1px solid ${C.border}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#FF5F57' }} />
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#FFBD2E' }} />
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#27C93F' }} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, marginTop: 36 }}>
+
+        {/* Card 1 — Buyer guide */}
+        <BrowserFrame url="unpacked.fyi/article/iphone-17-vs-galaxy-s26" label="Buyer guide with product cards and verdict">
+          <span style={{ display: 'inline-block', fontSize: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '2px 6px', borderRadius: 3, backgroundColor: C.amber, color: C.white, marginBottom: 6 }}>Comparison</span>
+          <p style={{ fontFamily: 'var(--font-sora)', fontSize: 12, fontWeight: 700, color: C.ink, margin: '0 0 8px 0' }}>iPhone 17 vs Samsung Galaxy S26</p>
+          {/* Verdict */}
+          <div style={{ backgroundColor: '#FEF3EC', borderLeft: `3px solid ${C.amber}`, borderRadius: 6, padding: '8px 10px', marginBottom: 10 }}>
+            <p style={{ fontSize: 8, fontWeight: 700, textTransform: 'uppercase', color: C.amber, margin: 0 }}>Verdict</p>
+            <p style={{ fontFamily: 'var(--font-sora)', fontSize: 11, fontWeight: 700, color: C.ink, margin: '2px 0 0 0' }}>Get the iPhone 17</p>
+            <p style={{ fontSize: 9, color: C.inkLight, margin: '2px 0 0 0' }}>Unless you want the best camera zoom.</p>
+          </div>
+          {/* Product cards */}
+          {[
+            { name: 'iPhone 17', badge: 'WINNER', badgeColor: C.amber, price: 'From $799' },
+            { name: 'Galaxy S26', badge: 'BEST ZOOM', badgeColor: C.inkFaint, price: 'From $799' },
+          ].map(p => (
+            <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 8, border: `1px solid ${C.border}`, borderRadius: 8, padding: 8, marginBottom: 6 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 6, backgroundColor: '#f0efed', flexShrink: 0 }} />
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: C.ink }}>{p.name}</span>
+                  <span style={{ fontSize: 7, fontWeight: 700, textTransform: 'uppercase', padding: '1px 4px', borderRadius: 3, backgroundColor: p.badgeColor, color: C.white }}>{p.badge}</span>
                 </div>
-                <div
-                  style={{
-                    flex: 1,
-                    backgroundColor: '#f5f4f2',
-                    borderRadius: 6,
-                    padding: '4px 10px',
-                    fontSize: 10,
-                    color: C.inkFaint,
-                    fontFamily: 'var(--font-outfit)',
-                  }}
-                >
-                  unpacked.fyi/article/...
-                </div>
-              </div>
-              {/* Screenshot placeholder */}
-              <div
-                style={{
-                  height: 220,
-                  background: `linear-gradient(135deg, ${c.color}, ${c.color}dd)`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <p style={{ fontFamily: 'var(--font-outfit)', fontSize: 13, color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-                  Screenshot placeholder
-                </p>
+                <span style={{ fontSize: 9, fontWeight: 600, color: C.amber }}>{p.price}</span>
               </div>
             </div>
-            <p style={{ fontFamily: 'var(--font-outfit)', fontSize: 13, color: C.inkLight, marginTop: 12 }}>
-              {c.label}
-            </p>
+          ))}
+          {/* Head to head mini */}
+          <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid #f5f4f1` }}>
+            <p style={{ fontSize: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: C.inkFaint, marginBottom: 6 }}>Head to Head</p>
+            {[{ m: 'Camera', i: 72, s: 88 }, { m: 'Battery', i: 78, s: 75 }, { m: 'Performance', i: 90, s: 88 }].map(r => (
+              <div key={r.m} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                <span style={{ fontSize: 8, width: 52, textAlign: 'right', color: C.inkFaint, flexShrink: 0 }}>{r.m}</span>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                  <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', paddingRight: 1 }}><div style={{ height: 4, borderRadius: '2px 0 0 2px', width: `${(r.i / 100) * 90}%`, backgroundColor: r.i >= r.s ? C.amber : '#D4C9B8' }} /></div>
+                  <div style={{ width: 1.5, height: 10, backgroundColor: C.inkFaint, flexShrink: 0 }} />
+                  <div style={{ flex: 1, paddingLeft: 1 }}><div style={{ height: 4, borderRadius: '0 2px 2px 0', width: `${(r.s / 100) * 90}%`, backgroundColor: r.s > r.i ? '#3B82F6' : '#D4C9B8' }} /></div>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        </BrowserFrame>
+
+        {/* Card 2 — Live data */}
+        <BrowserFrame url="unpacked.fyi/article/will-bitcoin-hit-200k" label="Live data: Google Trends + Polymarket + Yahoo Finance">
+          <span style={{ display: 'inline-block', fontSize: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '2px 6px', borderRadius: 3, backgroundColor: '#2563EB', color: C.white, marginBottom: 6 }}>Decision Guide</span>
+          <p style={{ fontFamily: 'var(--font-sora)', fontSize: 12, fontWeight: 700, color: C.ink, margin: '0 0 10px 0' }}>Will Bitcoin Hit $200K in 2026?</p>
+
+          {/* Polymarket odds */}
+          <div style={{ backgroundColor: '#f8f7f5', borderRadius: 8, padding: '10px 12px', marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+              <div style={{ width: 14, height: 14, borderRadius: '50%', backgroundColor: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 7, fontWeight: 700, color: C.white }}>P</span>
+              </div>
+              <span style={{ fontSize: 9, fontWeight: 600, color: C.inkMid }}>Polymarket — Live Odds</span>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ flex: 1, textAlign: 'center' }}>
+                <p style={{ fontFamily: 'var(--font-sora)', fontSize: 20, fontWeight: 800, color: '#16a34a', margin: 0 }}>68%</p>
+                <p style={{ fontSize: 8, color: C.inkFaint, margin: 0 }}>Yes</p>
+              </div>
+              <div style={{ flex: 1, textAlign: 'center' }}>
+                <p style={{ fontFamily: 'var(--font-sora)', fontSize: 20, fontWeight: 800, color: '#dc2626', margin: 0 }}>32%</p>
+                <p style={{ fontSize: 8, color: C.inkFaint, margin: 0 }}>No</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Stock sparkline mockup */}
+          <div style={{ backgroundColor: '#f8f7f5', borderRadius: 8, padding: '10px 12px', marginBottom: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <span style={{ fontSize: 9, fontWeight: 600, color: C.inkMid }}>BTC-USD</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#16a34a' }}>$104,230</span>
+            </div>
+            {/* Mini sparkline */}
+            <svg width="100%" height="28" viewBox="0 0 200 28" preserveAspectRatio="none" style={{ display: 'block' }}>
+              <polyline points="0,22 20,20 40,18 60,24 80,16 100,14 120,18 140,10 160,8 180,6 200,4" fill="none" stroke="#16a34a" strokeWidth="1.5" />
+            </svg>
+          </div>
+
+          {/* Google Trends mockup */}
+          <div style={{ backgroundColor: '#f8f7f5', borderRadius: 8, padding: '10px 12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <span style={{ fontSize: 9, fontWeight: 600, color: C.inkMid }}>Google Trends</span>
+              <span style={{ fontSize: 8, fontWeight: 600, color: '#16a34a', backgroundColor: '#f0fdf4', padding: '1px 5px', borderRadius: 3 }}>Rising</span>
+            </div>
+            <svg width="100%" height="24" viewBox="0 0 200 24" preserveAspectRatio="none" style={{ display: 'block' }}>
+              <polyline points="0,20 25,18 50,16 75,19 100,12 125,10 150,14 175,6 200,2" fill="none" stroke="#4285F4" strokeWidth="1.5" />
+            </svg>
+          </div>
+        </BrowserFrame>
+
+        {/* Card 3 — Fact-check */}
+        <BrowserFrame url="unpacked.fyi/article/best-robot-vacuums" label="Triple fact-check verification panel">
+          <span style={{ display: 'inline-block', fontSize: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '2px 6px', borderRadius: 3, backgroundColor: C.amber, color: C.white, marginBottom: 6 }}>Buyer&apos;s Guide</span>
+          <p style={{ fontFamily: 'var(--font-sora)', fontSize: 12, fontWeight: 700, color: C.ink, margin: '0 0 10px 0' }}>Best Robot Vacuums Under $400</p>
+
+          {/* Verified badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, backgroundColor: '#f0fdf4', borderRadius: 8, padding: '8px 10px', marginBottom: 10 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <polyline points="9 12 11 14 15 10" />
+            </svg>
+            <div>
+              <p style={{ fontFamily: 'var(--font-sora)', fontSize: 10, fontWeight: 700, color: '#16a34a', margin: 0 }}>Verified</p>
+              <p style={{ fontSize: 8, color: '#6B7280', margin: 0 }}>All claims checked by 3 independent models</p>
+            </div>
+          </div>
+
+          {/* Claims */}
+          <p style={{ fontSize: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: C.inkFaint, marginBottom: 6 }}>Verified Claims</p>
+          {[
+            { claim: 'Roborock S8 MaxV has 10,000Pa suction', status: 'Confirmed' },
+            { claim: 'iRobot Roomba j9+ maps rooms in a single pass', status: 'Confirmed' },
+            { claim: 'Ecovacs X2 has LiDAR + 3D structured light', status: 'Confirmed' },
+            { claim: 'Roborock retails from $349', status: 'Corrected to $399' },
+          ].map((c, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginBottom: 6, paddingBottom: 6, borderBottom: i < 3 ? `1px solid #f5f4f1` : 'none' }}>
+              {c.status === 'Confirmed' ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}><polyline points="20 6 9 17 4 12" /></svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.amber} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}><path d="M12 9v4" /><circle cx="12" cy="17" r="1" fill={C.amber} /></svg>
+              )}
+              <div>
+                <p style={{ fontSize: 9, color: C.ink, margin: 0, lineHeight: 1.35 }}>{c.claim}</p>
+                <p style={{ fontSize: 8, color: c.status === 'Confirmed' ? '#16a34a' : C.amber, margin: '1px 0 0 0', fontWeight: 600 }}>{c.status}</p>
+              </div>
+            </div>
+          ))}
+
+          {/* Models used */}
+          <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+            {['Gemini + Google Search', 'Claude Haiku', 'GPT-4o-mini'].map(m => (
+              <span key={m} style={{ fontSize: 7, fontWeight: 600, color: C.inkFaint, backgroundColor: '#f5f4f2', padding: '2px 6px', borderRadius: 3 }}>{m}</span>
+            ))}
+          </div>
+        </BrowserFrame>
       </div>
     </div>
   )
