@@ -40,6 +40,8 @@ const URL_INDICATOR_TEXT: Record<string, string> = {
   article: "Article detected \u2014 we'll extract the content and build an article from it",
 }
 
+const DRAFT_QUERY_KEY = 'unpacked_draft_query'
+
 export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean } = {}) {
   const [query, setQuery] = useState('')
   const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0])
@@ -52,6 +54,26 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
   const [pendingSlug, setPendingSlug] = useState<string | null>(null)
   const [limitModal, setLimitModal] = useState<{ limit: number; nextReset: string } | null>(null)
   const [improveState, setImproveState] = useState<'idle' | 'chip' | 'loading' | 'showing'>('idle')
+
+  // Restore draft query after sign-in redirect: check ?q= param first, then localStorage
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const urlQuery = params.get('q')
+      if (urlQuery) {
+        setQuery(urlQuery)
+        localStorage.removeItem(DRAFT_QUERY_KEY)
+        // Clean URL without reload
+        window.history.replaceState({}, '', window.location.pathname)
+        return
+      }
+      const draft = localStorage.getItem(DRAFT_QUERY_KEY)
+      if (draft) {
+        setQuery(draft)
+        localStorage.removeItem(DRAFT_QUERY_KEY)
+      }
+    } catch { /* SSR or private browsing */ }
+  }, [])
   const [alternatives, setAlternatives] = useState<string[]>([])
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -120,6 +142,7 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
 
   function handleSelectAlternative(alt: string) {
     setQuery(alt)
+    try { localStorage.setItem(DRAFT_QUERY_KEY, alt.trim()) } catch {}
     setAlternatives([])
     setImproveState('idle')
   }
@@ -233,6 +256,10 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
       }
 
       const { id, slug } = await res.json()
+
+      // Clear draft query — article created successfully
+      try { localStorage.removeItem(DRAFT_QUERY_KEY) } catch {}
+
       setPendingArticle(id, slug)
 
       try {
@@ -289,6 +316,9 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
       }
 
       const { id, slug } = data
+
+      // Clear draft query — article created successfully
+      try { localStorage.removeItem(DRAFT_QUERY_KEY) } catch {}
 
       // Save pending article for recovery
       setPendingArticle(id, slug)
@@ -421,7 +451,10 @@ export default function SearchForm({ autoFocus = true }: { autoFocus?: boolean }
           <textarea
             value={query}
             onChange={(e) => {
-              setQuery(e.target.value)
+              const val = e.target.value
+              setQuery(val)
+              // Persist draft so it survives sign-in redirects
+              try { if (val.trim()) localStorage.setItem(DRAFT_QUERY_KEY, val.trim()); else localStorage.removeItem(DRAFT_QUERY_KEY) } catch {}
               e.target.style.height = 'auto'
               e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px'
               // Reset improve state on typing

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import type { InteractiveMapData } from '@/types/article'
 
 interface Props {
@@ -21,13 +21,33 @@ declare global {
   }
 }
 
+/** Check a coordinate value is a valid finite number within lat/lng range */
+function isValidCoord(lat: unknown, lng: unknown): boolean {
+  return typeof lat === 'number' && typeof lng === 'number'
+    && isFinite(lat) && isFinite(lng)
+    && Math.abs(lat) <= 90 && Math.abs(lng) <= 180
+}
+
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
 export default function InteractiveMap({ data }: Props) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<unknown>(null)
   const [isLoaded, setIsLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Pre-validate data — filter to valid markers, check center
+  const hasValidCenter = data.center && isValidCoord(data.center.lat, data.center.lng)
+  const validMarkers = useMemo(
+    () => (data.markers ?? []).filter(m => isValidCoord(m.lat, m.lng)),
+    [data.markers],
+  )
+  const isDataValid = hasValidCenter && validMarkers.length > 0
+
   useEffect(() => {
+    if (!isDataValid) return
     if (!mapRef.current || mapInstanceRef.current) return
 
     // Load Leaflet CSS
@@ -55,9 +75,12 @@ export default function InteractiveMap({ data }: Props) {
         const L = window.L
         if (!L || !mapRef.current) return
 
+        // Clamp zoom to valid Leaflet range
+        const zoom = Math.max(1, Math.min(18, data.zoom ?? 4))
+
         const map = L.map(mapRef.current, {
           scrollWheelZoom: false,
-        }).setView([data.center.lat, data.center.lng], data.zoom)
+        }).setView([data.center.lat, data.center.lng], zoom)
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; OpenStreetMap contributors',
@@ -77,23 +100,27 @@ export default function InteractiveMap({ data }: Props) {
           popupAnchor: [0, -14],
         })
 
-        // Add markers
-        for (const marker of data.markers) {
+        // Add only validated markers — escape HTML to prevent injection
+        for (const marker of validMarkers) {
           const color = MARKER_COLORS[marker.color ?? 'amber'] ?? MARKER_COLORS.amber
+          const title = escapeHtml(marker.title ?? 'Location')
+          const desc = escapeHtml(marker.description ?? '')
           L.marker([marker.lat, marker.lng], { icon: makeIcon(color) })
             .addTo(map)
             .bindPopup(`
               <div style="font-family: system-ui, sans-serif; max-width: 200px;">
-                <strong style="color: #1A1714; font-size: 13px;">${marker.title}</strong>
-                <p style="color: #6B6259; font-size: 12px; margin: 4px 0 0 0; line-height: 1.4;">${marker.description}</p>
+                <strong style="color: #1A1714; font-size: 13px;">${title}</strong>
+                <p style="color: #6B6259; font-size: 12px; margin: 4px 0 0 0; line-height: 1.4;">${desc}</p>
               </div>
             `)
         }
 
-        // Add routes
+        // Add routes — only valid coordinates
         if (data.routes) {
           for (const route of data.routes) {
-            const latlngs = route.points.map(p => [p.lat, p.lng] as [number, number])
+            const pts = (route.points ?? []).filter(p => isValidCoord(p.lat, p.lng))
+            if (pts.length < 2) continue
+            const latlngs = pts.map(p => [p.lat, p.lng] as [number, number])
             L.polyline(latlngs, {
               color: route.color ?? '#BA7517',
               weight: 3,
@@ -103,10 +130,12 @@ export default function InteractiveMap({ data }: Props) {
           }
         }
 
-        // Add zones
+        // Add zones — only valid coordinates
         if (data.zones) {
           for (const zone of data.zones) {
-            const latlngs = zone.points.map(p => [p.lat, p.lng] as [number, number])
+            const pts = (zone.points ?? []).filter(p => isValidCoord(p.lat, p.lng))
+            if (pts.length < 3) continue
+            const latlngs = pts.map(p => [p.lat, p.lng] as [number, number])
             L.polygon(latlngs, {
               color: zone.color ?? '#BA7517',
               fillOpacity: 0.15,
@@ -134,7 +163,19 @@ export default function InteractiveMap({ data }: Props) {
         mapInstanceRef.current = null
       }
     }
-  }, [data])
+  }, [data, isDataValid, validMarkers])
+
+  // Invalid data — show fallback
+  if (!isDataValid) {
+    return (
+      <div
+        className="flex items-center justify-center rounded-xl"
+        style={{ height: 300, backgroundColor: '#F5F4F2', color: '#94918D' }}
+      >
+        <p className="text-sm">Map data unavailable</p>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -164,9 +205,9 @@ export default function InteractiveMap({ data }: Props) {
       )}
 
       {/* Legend */}
-      {data.markers.length > 0 && (
+      {validMarkers.length > 0 && (
         <div className="flex flex-wrap gap-3 mt-3">
-          {data.markers.slice(0, 6).map((marker, i) => (
+          {validMarkers.slice(0, 6).map((marker, i) => (
             <div key={i} className="flex items-center gap-1.5">
               <div
                 className="rounded-full shrink-0"
@@ -177,7 +218,7 @@ export default function InteractiveMap({ data }: Props) {
                 }}
               />
               <span className="text-[11px]" style={{ color: '#6B6259' }}>
-                {marker.title}
+                {marker.title ?? 'Location'}
               </span>
             </div>
           ))}

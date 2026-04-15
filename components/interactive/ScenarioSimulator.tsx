@@ -16,6 +16,9 @@ const IMPACT_COLORS = {
 export default function ScenarioSimulator({ data }: Props) {
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null)
 
+  // Guard: bail out if no scenarios
+  if (!data.scenarios?.length) return null
+
   const activeScenario = data.scenarios.find(s => s.id === activeScenarioId)
 
   return (
@@ -45,21 +48,24 @@ export default function ScenarioSimulator({ data }: Props) {
                 {scenario.name}
               </p>
               <div className="flex items-center gap-1.5">
-                <div
-                  className="rounded-full"
-                  style={{
-                    width: 6,
-                    height: 6,
-                    backgroundColor: scenario.probability >= 50
-                      ? '#3B6D11'
-                      : scenario.probability >= 20
-                        ? '#BA7517'
-                        : '#A32D2D',
-                  }}
-                />
-                <span className="text-xs font-bold" style={{ color: '#6B6259' }}>
-                  {scenario.probability}%
-                </span>
+                {(() => {
+                  const prob = Math.max(0, Math.min(100, scenario.probability ?? 0))
+                  return (
+                    <>
+                      <div
+                        className="rounded-full"
+                        style={{
+                          width: 6,
+                          height: 6,
+                          backgroundColor: prob >= 50 ? '#3B6D11' : prob >= 20 ? '#BA7517' : '#A32D2D',
+                        }}
+                      />
+                      <span className="text-xs font-bold" style={{ color: '#6B6259' }}>
+                        {Math.round(prob)}%
+                      </span>
+                    </>
+                  )
+                })()}
                 {scenario.probability_source && (
                   <span className="text-[10px]" style={{ color: '#94918D' }}>
                     {scenario.probability_source}
@@ -98,12 +104,13 @@ export default function ScenarioSimulator({ data }: Props) {
 
           {/* Impact bars */}
           <div className="space-y-3 mb-4">
-            {activeScenario.impacts.map((impact, i) => {
-              const isPositive = impact.value >= 0
-              const absValue = Math.min(Math.abs(impact.value), 100)
-              const color = impact.value > 5
+            {(activeScenario.impacts ?? []).map((impact, i) => {
+              const val = typeof impact.value === 'number' && isFinite(impact.value) ? impact.value : 0
+              const isPositive = val >= 0
+              const absValue = Math.min(Math.abs(val), 100)
+              const color = val > 5
                 ? IMPACT_COLORS.positive
-                : impact.value < -5
+                : val < -5
                   ? IMPACT_COLORS.negative
                   : IMPACT_COLORS.neutral
 
@@ -111,10 +118,10 @@ export default function ScenarioSimulator({ data }: Props) {
                 <div key={i}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-medium" style={{ color: '#1A1714' }}>
-                      {impact.dimension}
+                      {impact.dimension ?? 'Impact'}
                     </span>
                     <span className="text-xs font-bold" style={{ color }}>
-                      {impact.label}
+                      {impact.label ?? `${val > 0 ? '+' : ''}${val}`}
                     </span>
                   </div>
                   <div

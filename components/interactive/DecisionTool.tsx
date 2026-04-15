@@ -8,9 +8,14 @@ interface Props {
 }
 
 export default function DecisionTool({ data }: Props) {
-  const [currentQuestionId, setCurrentQuestionId] = useState(data.questions[0]?.id ?? '')
+  const [currentQuestionId, setCurrentQuestionId] = useState(data.questions?.[0]?.id ?? '')
   const [selectedPath, setSelectedPath] = useState<string[]>([])
   const [recommendationId, setRecommendationId] = useState<string | null>(null)
+
+  // Guard: bail out if data is structurally invalid
+  if (!data.questions?.length || !data.recommendations?.length) {
+    return null
+  }
 
   const currentQuestion = data.questions.find(q => q.id === currentQuestionId)
   const recommendation = recommendationId
@@ -19,18 +24,22 @@ export default function DecisionTool({ data }: Props) {
 
   const progress = recommendation
     ? 100
-    : data.questions.length > 0
-      ? (selectedPath.length / data.questions.length) * 100
-      : 0
+    : (selectedPath.length / data.questions.length) * 100
 
   const handleSelect = useCallback((option: { label: string; next: string | null; recommendation_id?: string }) => {
     setSelectedPath(prev => [...prev, option.label])
     if (option.next === null || option.recommendation_id) {
       setRecommendationId(option.recommendation_id ?? data.recommendations[0]?.id ?? null)
     } else {
-      setCurrentQuestionId(option.next)
+      // Verify the target question exists — if not, fall back to first recommendation
+      const nextExists = data.questions.some(q => q.id === option.next)
+      if (nextExists) {
+        setCurrentQuestionId(option.next!)
+      } else {
+        setRecommendationId(data.recommendations[0]?.id ?? null)
+      }
     }
-  }, [data.recommendations])
+  }, [data.recommendations, data.questions])
 
   const handleRestart = useCallback(() => {
     setCurrentQuestionId(data.questions[0]?.id ?? '')
@@ -55,7 +64,26 @@ export default function DecisionTool({ data }: Props) {
         />
       </div>
 
-      {/* Question flow */}
+      {/* Question flow — if currentQuestion is null (orphaned ID), show fallback */}
+      {!recommendation && !currentQuestion && (
+        <div className="text-center">
+          <p className="text-sm mb-3" style={{ color: '#6B6259' }}>
+            {data.recommendations[0]?.name
+              ? `Based on the article's analysis, we recommend: ${data.recommendations[0].name}`
+              : 'See the article above for our recommendation.'}
+          </p>
+          {selectedPath.length > 0 && (
+            <button
+              onClick={handleRestart}
+              className="text-xs font-semibold px-4 py-2 rounded-full"
+              style={{ color: '#BA7517', border: '1px solid #E8E2D9', cursor: 'pointer', backgroundColor: 'transparent' }}
+            >
+              Start over
+            </button>
+          )}
+        </div>
+      )}
+
       {!recommendation && currentQuestion && (
         <div>
           <p

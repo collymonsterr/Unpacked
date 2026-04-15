@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
+import Logo from '@/components/ui/Logo'
 import { getSupabaseAdmin } from '@/lib/supabase'
 
 export const metadata: Metadata = {
@@ -64,9 +66,7 @@ export default async function VisionPage() {
     <div style={{ backgroundColor: '#FAFAF8', minHeight: '100vh' }}>
       {/* ── Minimal nav ── */}
       <nav className="flex items-center justify-between px-6 py-5" style={{ maxWidth: 900, margin: '0 auto' }}>
-        <a href="https://unpacked.fyi" className="no-underline" style={{ fontFamily: 'var(--font-sora)', fontWeight: 700, fontSize: 20, color: '#1A1917', letterSpacing: '-0.02em' }}>
-          unpacked
-        </a>
+        <Logo size="md" />
       </nav>
 
       {/* ── Hero ── */}
@@ -81,14 +81,14 @@ export default async function VisionPage() {
         <p className="text-sm leading-relaxed mb-8" style={{ color: '#94918D', maxWidth: 640 }}>
           Think Wirecutter — but for any topic, produced in minutes instead of weeks, and open to anyone.
         </p>
-        <a
-          href="https://unpacked.fyi"
+        <Link
+          href="/"
           className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold no-underline transition-opacity hover:opacity-80"
           style={{ backgroundColor: '#1A1917', color: '#fff' }}
         >
           Try it now
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg>
-        </a>
+        </Link>
       </section>
 
       {/* ── See for yourself — real articles ── */}
@@ -101,7 +101,7 @@ export default async function VisionPage() {
             {articles.map(a => (
               <a
                 key={a.slug}
-                href={`https://unpacked.fyi/article/${a.slug}`}
+                href={`/article/${a.slug}`}
                 className="group rounded-xl overflow-hidden no-underline transition-shadow hover:shadow-lg"
                 style={{ backgroundColor: '#fff', border: '1px solid #E8E6E0' }}
               >
@@ -240,14 +240,14 @@ export default async function VisionPage() {
           <p className="text-sm leading-relaxed mb-6" style={{ color: '#94918D', maxWidth: 440, margin: '0 auto' }}>
             Type any question. Get a researched, fact-checked article. Edit it, publish it, share it.
           </p>
-          <a
-            href="https://unpacked.fyi"
+          <Link
+            href="/"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold no-underline transition-opacity hover:opacity-80"
             style={{ backgroundColor: '#BA7517', color: '#fff' }}
           >
             Try Unpacked
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg>
-          </a>
+          </Link>
         </div>
       </section>
 

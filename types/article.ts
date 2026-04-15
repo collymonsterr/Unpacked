@@ -39,6 +39,7 @@ export interface SuggestionChips {
 export interface BraveQuery {
   query: string
   purpose: 'core_facts' | 'economic_impact' | 'background' | 'wider_context' | 'product_review' | 'pricing' | 'specs' | 'community' | 'expert_opinion' | 'comparison' | 'how_to' | 'alternatives' | 'fact_check_sources' | 'official_data' | 'expert_analysis'
+  freshness?: 'pd' | 'pw' | 'pm'
 }
 
 /** Brave Search freshness parameter — controls how recent results must be.

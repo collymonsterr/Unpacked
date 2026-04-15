@@ -313,7 +313,7 @@ STEP 6: BUILD THE RESEARCH MANIFEST
 
 The research_manifest tells the research engine exactly what to search for. Be specific and targeted — generic queries waste API calls.
 
-For brave_queries: generate 4-8 specific search queries. Each has a "purpose" tag from: core_facts, economic_impact, background, wider_context, product_review, pricing, specs, community, expert_opinion, comparison, how_to, alternatives.
+For brave_queries: generate 8-12 specific search queries. More queries = more source material = better articles. Each has a "purpose" tag from: core_facts, economic_impact, background, wider_context, product_review, pricing, specs, community, expert_opinion, comparison, how_to, alternatives.
 - buyer_guide/comparison/roundup: focus on product_review, pricing, specs, community queries
 - explainer/how_to: focus on core_facts, expert_opinion, how_to queries
 - news_analysis/breaking_news: focus on core_facts, background, wider_context queries
@@ -330,7 +330,7 @@ For articles categorised as 'current_affairs' or with article types 'news_analys
 3. EXPERT ANALYSIS query (purpose: 'expert_analysis'): "[core topic] analysis expert criticism" — finds think tank papers, economist commentary, opposing viewpoints for tension and depth.
 Do NOT add these for buyer guides, how-to, comparisons, or product-focused content.
 
-For reddit_queries: generate 1-3 Reddit search queries with targeted subreddits. Target specific active subreddits where possible — instead of generic queries like "best macro keyboards reddit", use targeted queries like "macro keyboard recommendations" with subreddits: ["MechanicalKeyboards"] or "macro pad vs stream deck" with subreddits: ["productivity"]. Reference subreddits known to be active for the article's category. Prefer large, active subreddits (50k+ members) for higher-quality threads with real discussion. Examples:
+For reddit_queries: generate 3-5 Reddit search queries with targeted subreddits. More reddit queries surface real user experiences and opinions that make articles authentic. Target specific active subreddits where possible — instead of generic queries like "best macro keyboards reddit", use targeted queries like "macro keyboard recommendations" with subreddits: ["MechanicalKeyboards"] or "macro pad vs stream deck" with subreddits: ["productivity"]. Reference subreddits known to be active for the article's category. Prefer large, active subreddits (50k+ members) for higher-quality threads with real discussion. Examples:
 - "best wireless earbuds" → subreddits: ["headphones", "audiophile", "BudgetAudiophile"]
 - "should I buy or lease a car" → subreddits: ["personalfinance", "askcarsales", "whatcarshouldIbuy"]
 - "Iran Strait of Hormuz" → subreddits: ["worldnews", "geopolitics", "economics"]
@@ -496,7 +496,7 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
   "sections_outline": ["string"],
   "sections": [{ "heading": "string", "purpose": "string — what this section covers" }],
   "research_manifest": {
-    "brave_queries": [{ "query": "string — specific search query", "purpose": "core_facts | product_review | pricing | specs | community | expert_opinion | comparison | how_to | alternatives | economic_impact | background | wider_context | fact_check_sources | official_data | expert_analysis" }],
+    "brave_queries": [{ "query": "string — specific search query", "purpose": "core_facts | product_review | pricing | specs | community | expert_opinion | comparison | how_to | alternatives | economic_impact | background | wider_context | fact_check_sources | official_data | expert_analysis", "freshness": "pd | pw | pm | omit — per-query time filter. Use pd for breaking news, pw for recent events, pm for current-year topics, omit for evergreen" }],
     "reddit_queries": [{ "query": "string", "subreddits": ["string — 2-4 relevant subreddits"], "freshness": "pd | pw | pm | none — per-query time filter, see freshness rules below" }],
     "twitter_queries": [{ "query": "string — 2-4 words, no site:x.com prefix, no years, no filler (see twitter_queries rules)", "freshness": "pd | pw | pm | none — per-query time filter, see freshness rules below" }],
     "image_queries": {
@@ -509,7 +509,7 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
   "research_queries": ["string"],
   "hero_image_query": "string",
   "hero_image_subject": "string",
-  "interactive_component_type": "decision_tool | scenario_simulator | interactive_map | comparison_calculator | null — MANDATORY for most article types. Rules: (1) buyer_guide, comparison, decision_guide → ALWAYS decision_tool. (2) news_analysis, breaking_news, trend_analysis → ALWAYS scenario_simulator (show 3-4 scenarios like 'ceasefire holds / collapses / escalates' or 'bull case / bear case / base case' with probability estimates). (3) Articles where geography is central (geopolitical conflict, travel, location rankings) → interactive_map. (4) Financial decision articles where readers input their own numbers → comparison_calculator. (5) Set null ONLY for myth_buster, ranked_list, visual_list, how_to, and simple explainers. When in doubt, assign one — an interactive component is one of the platform's key differentiators.",
+  "interactive_component_type": "decision_tool | scenario_simulator | interactive_map | comparison_calculator | null — MANDATORY for most article types. Rules: (1) buyer_guide, comparison, decision_guide → ALWAYS decision_tool. (2) news_analysis, breaking_news, trend_analysis → ALWAYS scenario_simulator (show 3-4 scenarios like 'ceasefire holds / collapses / escalates' or 'bull case / bear case / base case' with probability estimates). (3) Articles where geography is central (geopolitical conflict, travel, location rankings) → interactive_map. (4) Financial decision articles where readers input their own numbers → comparison_calculator. (5) timeline_article → scenario_simulator (model future scenarios) or interactive_map (if geography-centric). (6) deep_dive → scenario_simulator (model outcomes) or comparison_calculator (if the topic involves numbers readers can personalise). (7) explainer → comparison_calculator (if the topic involves numbers/costs) or scenario_simulator (if the topic involves future outcomes), otherwise null. (8) roundup → decision_tool (help readers pick from the list). (9) Set null ONLY for myth_buster, ranked_list, visual_list, and how_to. When in doubt, assign one — an interactive component is one of the platform's key differentiators.",
   "forbidden_components": ["string — list every section type FORBIDDEN for this article type. The writing step will hard-block these."],
   "loading_messages": ["string"],
   "suggestion_chips": {

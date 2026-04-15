@@ -42,18 +42,59 @@ COMPONENT TYPES:
    - Include units (currency symbols, %) and clear labels
    - Data source attribution
 
+STRUCTURAL REQUIREMENTS (validation will reject non-conforming output):
+
+decision_tool JSON shape:
+  { "type": "decision_tool", "title": "string", "subtitle": "string",
+    "questions": [{ "id": "q1", "text": "string", "options": [{ "label": "string", "next": "q2" | null, "recommendation_id": "rec1" (only on terminal options) }] }],
+    "recommendations": [{ "id": "rec1", "name": "string", "reason": "string" }] }
+  - Every option must have "next" pointing to a valid question id OR "recommendation_id" pointing to a valid recommendation id (never both null)
+  - At least 2 questions, at least 2 recommendations, at least 2 options per question
+
+scenario_simulator JSON shape:
+  { "type": "scenario_simulator", "title": "string", "subtitle": "string",
+    "scenarios": [{ "id": "s1", "name": "string", "probability": 35, "probability_source": "Polymarket" | "Research estimate",
+      "impacts": [{ "dimension": "string", "value": -50 to +100, "label": "+40%", "description": "string" }],
+      "verdict": "string" }] }
+  - At least 2 scenarios, probabilities must be numbers 0-100, impact values must be numbers -100 to +100
+  - Each scenario needs at least 1 impact dimension
+
+interactive_map JSON shape:
+  { "type": "interactive_map", "title": "string", "subtitle": "string",
+    "center": { "lat": number, "lng": number }, "zoom": 1-18,
+    "markers": [{ "lat": number, "lng": number, "title": "string", "description": "string", "color": "amber" | "green" | "red" | "blue" }],
+    "routes": [{ "points": [{ "lat": number, "lng": number }], "color": "#hex", "label": "string" }],
+    "zones": [{ "points": [{ "lat": number, "lng": number }], "color": "#hex", "label": "string" }] }
+  - lat must be -90 to 90, lng must be -180 to 180 — REAL coordinates only
+  - At least 2 markers required, routes need ≥2 points, zones need ≥3 points
+
+comparison_calculator JSON shape:
+  { "type": "comparison_calculator", "title": "string", "subtitle": "string",
+    "inputs": [{ "id": "budget", "label": "string", "min": number, "max": number, "step": number, "default": number, "unit": "$" | "%" | "years" }],
+    "outputs": [{ "id": "result1", "label": "string", "formula": "budget * 0.07", "unit": "$", "description": "string" }],
+    "source": "string" }
+  - Formulas reference input IDs only, use basic arithmetic only
+  - min must be < max, step must be > 0, default must be between min and max
+
 RULES:
 - Use ONLY data that exists in the provided article or research
-- All coordinates must be real and accurate
+- All coordinates must be real and accurate — never approximate or round to whole degrees
 - All formulas must be valid JavaScript expressions
 - Keep question text concise (under 60 characters)
 - Keep recommendation reasons under 100 words
 - Keep scenario verdicts under 80 words
-- Keep marker descriptions under 50 words`
+- Keep marker descriptions under 50 words
+- Every id field must be a unique, non-empty string
+- Never use null for required string fields — use an empty string if needed`
 
 /**
  * Schema definitions for validation
  */
+/** Check a value is a finite number (not NaN, not Infinity) */
+function isNum(v: unknown): v is number {
+  return typeof v === 'number' && isFinite(v)
+}
+
 function validateComponentData(data: unknown, type: InteractiveComponentType): data is InteractiveComponentData {
   if (!data || typeof data !== 'object') return false
   const d = data as Record<string, unknown>
@@ -66,23 +107,89 @@ function validateComponentData(data: unknown, type: InteractiveComponentType): d
       const dt = d as Record<string, unknown>
       if (!Array.isArray(dt.questions) || dt.questions.length < 2) return false
       if (!Array.isArray(dt.recommendations) || dt.recommendations.length < 2) return false
+      // Verify every question has an id, text, and at least 2 options
+      const qs = dt.questions as Array<Record<string, unknown>>
+      for (const q of qs) {
+        if (typeof q.id !== 'string' || !q.id) return false
+        if (typeof q.text !== 'string' || !q.text) return false
+        if (!Array.isArray(q.options) || q.options.length < 2) return false
+      }
+      // Verify every recommendation has id + name + reason
+      const recs = dt.recommendations as Array<Record<string, unknown>>
+      for (const r of recs) {
+        if (typeof r.id !== 'string' || !r.id) return false
+        if (typeof r.name !== 'string' || !r.name) return false
+        if (typeof r.reason !== 'string') return false
+      }
       return true
     }
     case 'scenario_simulator': {
       const ss = d as Record<string, unknown>
       if (!Array.isArray(ss.scenarios) || ss.scenarios.length < 2) return false
+      const scenarios = ss.scenarios as Array<Record<string, unknown>>
+      for (const s of scenarios) {
+        if (typeof s.id !== 'string' || !s.id) return false
+        if (typeof s.name !== 'string' || !s.name) return false
+        // Clamp probability to 0-100
+        if (!isNum(s.probability)) return false
+        s.probability = Math.max(0, Math.min(100, s.probability as number))
+        if (!Array.isArray(s.impacts) || s.impacts.length < 1) return false
+        const impacts = s.impacts as Array<Record<string, unknown>>
+        for (const imp of impacts) {
+          if (typeof imp.dimension !== 'string') return false
+          if (!isNum(imp.value)) return false
+          // Clamp impact value to -100..+100
+          const clampedVal = Math.max(-100, Math.min(100, imp.value as number))
+          imp.value = clampedVal
+          if (typeof imp.label !== 'string') imp.label = `${clampedVal > 0 ? '+' : ''}${clampedVal}`
+          if (typeof imp.description !== 'string') imp.description = ''
+        }
+        if (typeof s.verdict !== 'string') s.verdict = ''
+      }
       return true
     }
     case 'interactive_map': {
       const im = d as Record<string, unknown>
-      if (!im.center || typeof im.zoom !== 'number') return false
+      const center = im.center as Record<string, unknown> | undefined
+      if (!center || !isNum(center.lat) || !isNum(center.lng)) return false
+      // Validate lat/lng ranges
+      if (Math.abs(center.lat as number) > 90 || Math.abs(center.lng as number) > 180) return false
+      if (!isNum(im.zoom) || (im.zoom as number) < 1 || (im.zoom as number) > 18) return false
       if (!Array.isArray(im.markers) || im.markers.length < 2) return false
+      const markers = im.markers as Array<Record<string, unknown>>
+      for (const m of markers) {
+        if (!isNum(m.lat) || !isNum(m.lng)) return false
+        if (Math.abs(m.lat as number) > 90 || Math.abs(m.lng as number) > 180) return false
+        if (typeof m.title !== 'string') m.title = 'Location'
+        if (typeof m.description !== 'string') m.description = ''
+      }
+      // Validate route/zone coordinates if present
+      if (Array.isArray(im.routes)) {
+        for (const route of im.routes as Array<Record<string, unknown>>) {
+          const pts = route.points as Array<Record<string, unknown>> | undefined
+          if (!Array.isArray(pts) || pts.length < 2) continue
+          for (const p of pts) {
+            if (!isNum(p.lat) || !isNum(p.lng)) return false
+            if (Math.abs(p.lat as number) > 90 || Math.abs(p.lng as number) > 180) return false
+          }
+        }
+      }
       return true
     }
     case 'comparison_calculator': {
       const cc = d as Record<string, unknown>
       if (!Array.isArray(cc.inputs) || cc.inputs.length < 2) return false
       if (!Array.isArray(cc.outputs) || cc.outputs.length < 1) return false
+      const inputs = cc.inputs as Array<Record<string, unknown>>
+      for (const inp of inputs) {
+        if (typeof inp.id !== 'string' || !inp.id) return false
+        if (!isNum(inp.min) || !isNum(inp.max) || !isNum(inp.step) || !isNum(inp.default)) return false
+        // Fix inverted ranges
+        if ((inp.min as number) >= (inp.max as number)) return false
+        if ((inp.step as number) <= 0) return false
+        // Clamp default to valid range
+        inp.default = Math.max(inp.min as number, Math.min(inp.max as number, inp.default as number))
+      }
       return true
     }
     default:

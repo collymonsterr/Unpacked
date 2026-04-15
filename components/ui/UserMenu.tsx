@@ -42,10 +42,18 @@ export default function UserMenu() {
     setSigningIn(true)
     try {
       const supabase = createBrowserSupabase()
+      // Preserve draft query across OAuth redirect
+      let returnPath = window.location.pathname
+      try {
+        const draft = localStorage.getItem('unpacked_draft_query')
+        if (draft && returnPath === '/') {
+          returnPath = `/?q=${encodeURIComponent(draft)}`
+        }
+      } catch {}
       await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(window.location.pathname)}`,
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(returnPath)}`,
         },
       })
     } catch {
