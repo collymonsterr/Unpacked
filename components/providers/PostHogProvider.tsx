@@ -7,33 +7,37 @@ import { PostHogProvider as PHProvider } from 'posthog-js/react'
 import { useUser } from '@/hooks/useUser'
 
 /**
+ * Initialise PostHog at module load (client-side only).
+ *
+ * Doing this at module scope — not inside a useEffect — guarantees that
+ * posthog.__loaded is true by the time any child component's effects run.
+ * Child effects run before parent effects in React, so a useEffect-based
+ * init would race the identify effect and never fire for already-signed-in
+ * users whose session resolves synchronously from cache.
+ */
+if (typeof window !== 'undefined') {
+  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY
+  if (key && !posthog.__loaded) {
+    posthog.init(key, {
+      api_host: '/ingest', // Reverse-proxied via next.config.ts rewrites
+      ui_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.posthog.com',
+      capture_pageview: false, // We fire manually on route change below
+      capture_pageleave: true,
+      persistence: 'localStorage+cookie',
+      person_profiles: 'identified_only', // Only create profiles for signed-in users
+    })
+  }
+}
+
+/**
  * PostHog provider for client-side product analytics.
  *
- * - Initialises once on mount.
  * - Captures pageviews on route changes (App Router doesn't auto-fire).
  * - Identifies the user by Supabase user.id when they sign in.
  * - Routes ingestion through /ingest (see next.config.ts rewrites)
  *   to sidestep ad blockers.
  */
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
-    const key = process.env.NEXT_PUBLIC_POSTHOG_KEY
-    if (!key) return // Silently no-op in environments without the key set
-    if (posthog.__loaded) return // Hot-reload safety
-
-    posthog.init(key, {
-      api_host: '/ingest', // Reverse-proxied via next.config.ts
-      ui_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.posthog.com',
-      capture_pageview: false, // We fire manually on route change below
-      capture_pageleave: true,
-      persistence: 'localStorage+cookie',
-      person_profiles: 'identified_only', // Only create profiles for signed-in users
-      loaded: (ph) => {
-        if (process.env.NODE_ENV === 'development') ph.debug(false)
-      },
-    })
-  }, [])
-
   return (
     <PHProvider client={posthog}>
       <Suspense fallback={null}>
