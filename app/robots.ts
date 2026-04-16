@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/api/', '/admin/', '/vision/'],
+      disallow: ['/api/', '/admin/'],
     },
     sitemap: 'https://unpacked.fyi/sitemap.xml',
   }

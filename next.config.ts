@@ -68,6 +68,13 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  // Permanent redirects for consolidated pages.
+  // /vision was folded into /how-it-works (Apr 2026) — one consolidated investor/partner page.
+  async redirects() {
+    return [
+      { source: '/vision', destination: '/how-it-works', permanent: true },
+    ]
+  },
   // Reverse-proxy PostHog through our own domain so ad blockers don't eat events.
   // The SDK is configured with api_host: '/ingest'.
   async rewrites() {

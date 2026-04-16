@@ -126,3 +126,25 @@ Explore dropdown moved to last position. About first because the journey is: hom
 
 **Decision: Homepage hero says "three minutes" not "two minutes" (April 2026)**
 Generation typically takes 2–3 minutes. Saying "two minutes" sets an expectation that's frequently missed. "Three minutes" is honest and still fast enough to be impressive.
+
+---
+
+## Page Consolidation — /vision folded into /how-it-works (April 2026)
+
+**Decision: Consolidate /about + /vision + /how-it-works from three pages to two (/about stays, /vision deleted, /how-it-works rebuilt as the single investor/partner page)**
+Three pages was one too many — /vision and /how-it-works were both trying to be the "serious" explanation page and overlapped in scope (mission, pipeline, why-now, business model). Folding them into one consolidated /how-it-works gives investors and partners a single canonical destination and removes the choice paralysis for the founder about which link to share. /about stays as the consumer-facing story.
+
+**Decision: Public pipeline framing shows 5 stages, not the real 8**
+The real pipeline is Plan → Research → Blueprint → Write → Editorial → Images → Fact-check → Social. Public framing collapses this to Plan → Research → Blueprint → Write → Fact-check with Editorial/Images/Social tucked into a "behind the scenes" panel. The 5-stage version reads more cleanly to non-technical readers and matches the user-facing three steps (ask → watch research → get article). The architecture isn't the moat anyway — the prompts, forbidden-phrase lists, rewrite thresholds, and fact-check arbitration logic are.
+
+**Decision: Real model names (Claude Haiku, Gemini Flash, Claude Sonnet, GPT-4o-mini) are disclosed on /how-it-works**
+The page has `robots: { index: false, follow: false }` and is explicitly a link-only investor/partner destination, so disclosure risk is minimal. Investors want specifics; generic "frontier models" language reads as evasive. Model names get re-tendered whenever pricing or capability shifts — they're not a durable moat. The durable asset is the orchestration: which model runs which stage, fallback thresholds, and editorial rule sets.
+
+**Decision: BlockSol LLC / SHAMS free zone entity detail dropped from /how-it-works founder section**
+Entity detail belongs in the investor deck (/invest), not on a page designed to read like a founder letter. It adds corporate texture that contradicts the "founder talking to a smart investor over coffee" tone. Anyone doing diligence will get the entity on a call.
+
+**Decision: Three of five distribution engines kept (Tweet-to-Article, Creator Acquisition, Viral → Buyer Guide Funnel)**
+Five distribution engines across a single section read as a wishlist; three read as a plan. The three kept are the ones with concrete mechanics already described elsewhere in the product (URL prefetch for Tweet-to-Article, founding creators programme for Creator Acquisition, the 12-category tiered grid for Viral → Buyer Guide). The other two weren't carrying weight.
+
+**Decision: /vision returns a 301 redirect to /how-it-works via next.config.ts (not a deleted 404)**
+Any existing inbound links (email signatures, DMs, decks already shared) should land on the replacement, not break. A 301 is also the SEO-correct signal if /vision was ever indexed despite the prior robots.txt block. The redirect lives in next.config.ts `redirects()` — source-controlled, reviewable in diffs, and colocated with the rest of the routing config.

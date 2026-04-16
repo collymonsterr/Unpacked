@@ -337,7 +337,7 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 | `/article/[slug]` | `app/article/[slug]/page.tsx` | Article page, UUID or exact slug lookup. Custom branded not-found page (`not-found.tsx`). |
 | `/admin` | `app/admin/page.tsx` | Admin dashboard, 4 tabs |
 | `/about` | `app/about/page.tsx` | Rebuilt April 2026: Hero → Challenger → Comparison → How it works → 3 dark tiles → Reddit/X section → Interactive charts → Triple fact-check → CTA → Featured articles |
-| `/how-it-works` | `app/how-it-works/page.tsx` | Explanation page |
+| `/how-it-works` | `app/how-it-works/page.tsx` | Rebuilt April 2026 as the consolidated investor/partner page (noindex). 10 sections: Hero+Problem → Stats strip → ChatGPT comparison + 6-point differentiation → Any topic/any format + live data sources → 5-stage pipeline (public framing) → Why now → The gap → Wirecutter + automation → Business (who pays, creators as distribution, flywheel, numbers + Calculator) → Founder + tech stack. `/vision` folded in here — 301 redirect lives in `next.config.ts`. |
 | `/updates` | `app/updates/page.tsx` | Changelog |
 | `/dashboard` | `app/dashboard/page.tsx` | User dashboard |
 | `/creators` | `app/creators/page.tsx` | Rebuilt April 2026: server component, visual mock article, How it works, feature cards, honest monetisation ("coming soon"), featured articles from DB, founding creators callout |
