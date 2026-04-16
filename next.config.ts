@@ -68,6 +68,20 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  // Reverse-proxy PostHog through our own domain so ad blockers don't eat events.
+  // The SDK is configured with api_host: '/ingest'.
+  async rewrites() {
+    const phHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com'
+    // Derive the static asset host from the ingest host (us.i -> us-assets.i, eu.i -> eu-assets.i)
+    const phAssetHost = phHost.replace('i.posthog.com', 'assets.i.posthog.com')
+    return [
+      { source: '/ingest/static/:path*', destination: `${phAssetHost}/static/:path*` },
+      { source: '/ingest/:path*', destination: `${phHost}/:path*` },
+      { source: '/ingest/decide', destination: `${phHost}/decide` },
+    ]
+  },
+  // PostHog SDK sends custom headers — don't strip the trailing slash during rewrite.
+  skipTrailingSlashRedirect: true,
 }
 
 export default nextConfig

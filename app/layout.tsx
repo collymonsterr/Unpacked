@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Sora, Outfit } from 'next/font/google'
 import { GoogleAnalytics } from '@next/third-parties/google'
+import { PostHogProvider } from '@/components/providers/PostHogProvider'
 import './globals.css'
 
 const sora = Sora({
@@ -65,7 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${sora.variable} ${outfit.variable}`}>
       <body className="antialiased">
-        {children}
+        <PostHogProvider>{children}</PostHogProvider>
         <GoogleAnalytics gaId="G-FQJWVZ1TNG" />
       </body>
     </html>
