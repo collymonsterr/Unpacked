@@ -40,6 +40,17 @@ function getAnthropic(): Anthropic {
   return _anthropic
 }
 
+/**
+ * Strip leading emoji-tally markers from Reddit snippets.
+ * Some Reddit users format their posts with sentiment tallies like
+ * "✅131 😐10 ❌17 | TL;DR: ..." which look garbled when rendered as
+ * a plain snippet. This strips the tally prefix and leading separators.
+ */
+function sanitizeRedditSnippet(snippet: string): string {
+  // Match runs of emoji + number pairs (at least 2), followed by optional separators
+  return snippet.replace(/^[\s]*(?:[✅❌😐⚠️👍👎⭐🔥💀🏆⬆️⬇️🟢🔴🟡]\s*\d+\s*){2,}[|·:—\-–\s]*/u, '').trim()
+}
+
 export interface OrchestratedResearchResult {
   /** Condensed summary string for the writing model (backwards compatible) */
   summary: string
@@ -136,27 +147,33 @@ export async function executeResearch(
   }
   const entityMs = Date.now() - entityStart
 
-  // ── Step 3b: Deduplicate Reddit threads by normalised URL ──
+  // ── Step 3b: Deduplicate Reddit threads by normalised URL + content similarity ──
   const seenRedditUrls = new Set<string>()
+  const seenRedditSnippets = new Set<string>()
   const dedupedRedditThreads = (compiled.redditThreads ?? []).filter(t => {
     const norm = normalizeRedditUrl(t.url)
     if (seenRedditUrls.has(norm)) return false
     seenRedditUrls.add(norm)
+    // Also dedupe by title prefix (first 80 chars) to catch same thread surfaced via different URLs
+    const titleKey = t.title?.slice(0, 80).toLowerCase().trim()
+    if (titleKey && seenRedditSnippets.has(titleKey)) return false
+    if (titleKey) seenRedditSnippets.add(titleKey)
     return true
   })
 
   // ── Step 4: Build synthesis (Haiku) + Twitter summary (Haiku) + Reddit summary (Haiku) in parallel ──
   const synthStart = Date.now()
 
-  // Build enriched reddit threads with snippets from findings for the sentiment call
+  // Build enriched reddit threads with snippets from findings for the sentiment call.
+  // IMPORTANT: Only match by exact URL. The old fallback (any finding from the same
+  // subreddit) caused duplicate-looking cards when two threads from the same subreddit
+  // both got the same finding's content as their snippet.
   const redditThreadsForSynthesis = dedupedRedditThreads.map(t => {
-    // Try to find a matching finding that has content for this thread
-    const matchingFinding = compiled.findings.find(f =>
-      f.url === t.url || (f.source_type === 'reddit' && f.url.includes(t.subreddit.replace('r/', '')))
-    )
+    const matchingFinding = compiled.findings.find(f => f.url === t.url)
+    const rawSnippet = matchingFinding?.content?.slice(0, 200) ?? undefined
     return {
       ...t,
-      snippet: matchingFinding?.content?.slice(0, 200) ?? undefined,
+      snippet: rawSnippet ? sanitizeRedditSnippet(rawSnippet) : undefined,
     }
   })
 
