@@ -225,6 +225,7 @@ export interface ArticleBlueprint {
   forbidden_phrases: string[]
   tone_notes: string
   target_word_count: number
+  target_length_rationale?: string
 }
 
 export interface EditorIssue {
@@ -266,6 +267,12 @@ export interface ArticlePlan {
   category?: ArticleCategory
   sections?: PlanSection[]
   interactive_component_type?: InteractiveComponentType | null
+  // Dynamic length based on query complexity (planner assessment)
+  target_length?: {
+    min_words: number
+    max_words: number
+    rationale: string
+  }
 }
 
 // ── Interactive Component (standalone tool per article) ──────────────────────

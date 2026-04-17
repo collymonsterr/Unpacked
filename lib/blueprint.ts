@@ -53,7 +53,7 @@ async function callBlueprintModel(
   const typeConfig = ARTICLE_TYPES[plan.article_type as ArticleType]
   const lengthOption = (options?.length as string) ?? 'standard'
   const toneOption = (options?.tone as string) ?? 'opinionated'
-  const targetWords = getTargetWordCount(plan.article_type as ArticleType, lengthOption)
+  const targetWords = getTargetWordCount(plan.article_type as ArticleType, lengthOption, plan.target_length)
   const toneDesc = getToneDescription(typeConfig?.tone ?? '')
 
   // Build compact entity summaries (top 3 facts each)
@@ -69,7 +69,7 @@ ARTICLE TYPE: ${plan.article_type} — ${typeConfig?.description ?? ''}
 TONE: ${toneDesc}
 ${toneOption === 'balanced' ? 'NOTE: The reader chose "balanced" tone — still take positions but acknowledge counter-arguments more.' : ''}
 ${toneOption === 'technical' ? 'NOTE: The reader chose "technical" tone — write for an expert audience, assume domain knowledge, skip introductory explanations, go deeper on specifics and methodology.' : ''}
-TARGET LENGTH: ~${targetWords} words total
+TARGET LENGTH: ~${targetWords} words total${plan.target_length?.rationale ? ` (${plan.target_length.rationale})` : ''}
 ${(options as Record<string, unknown>)?._userFeedback ? `\nREADER FEEDBACK (incorporate this direction into your blueprint):\n"${(options as Record<string, unknown>)._userFeedback}"\n` : ''}
 
 PLANNED SECTIONS:
@@ -314,6 +314,7 @@ function normaliseBlueprint(
     forbidden_phrases: allForbidden,
     tone_notes: raw.tone_notes || '',
     target_word_count: typeof raw.target_word_count === 'number' ? raw.target_word_count : targetWords,
+    target_length_rationale: plan.target_length?.rationale,
   }
 }
 
@@ -328,7 +329,7 @@ function buildFallbackBlueprint(
 ): ArticleBlueprint {
   const typeConfig = ARTICLE_TYPES[plan.article_type as ArticleType]
   const lengthOption = (options?.length as string) ?? 'standard'
-  const targetWords = getTargetWordCount(plan.article_type as ArticleType, lengthOption)
+  const targetWords = getTargetWordCount(plan.article_type as ArticleType, lengthOption, plan.target_length)
   const sectionSources = plan.sections ?? plan.sections_outline.map(h => ({ heading: h, purpose: '' }))
 
   const sections: BlueprintSection[] = sectionSources.map((s, i) => {
@@ -355,21 +356,54 @@ function buildFallbackBlueprint(
     forbidden_phrases: [...FORBIDDEN_PHRASES],
     tone_notes: getToneDescription(typeConfig?.tone ?? ''),
     target_word_count: targetWords,
+    target_length_rationale: plan.target_length?.rationale,
   }
 }
 
 /**
- * Calculate target word count from article type and length option.
+ * Calculate target word count from article type, length option, and
+ * optional planner-assessed target_length.
+ *
+ * When the planner provides a target_length, it narrows the type's
+ * default range based on query complexity (e.g. a simple buyer guide
+ * gets fewer words than a complex one). The user's Quick/Standard/Deep
+ * toggle then picks within that narrowed range:
+ *   Quick   → planner min (or type min if no planner data)
+ *   Standard → midpoint of planner range
+ *   Deep    → planner max (or type max if no planner data)
+ *
+ * The type's lengthRange is always the absolute floor/ceiling.
  */
-function getTargetWordCount(articleType: ArticleType, lengthOption: string): number {
+function getTargetWordCount(
+  articleType: ArticleType,
+  lengthOption: string,
+  plannerTarget?: { min_words: number; max_words: number; rationale: string },
+): number {
   const config = ARTICLE_TYPES[articleType]
   if (!config) return 1200
 
-  const { min, max } = config.lengthRange
+  const { min: typeMin, max: typeMax } = config.lengthRange
+
+  if (!plannerTarget) {
+    // No planner data — fall back to existing behaviour
+    switch (lengthOption) {
+      case 'quick': return typeMin
+      case 'deep': return typeMax
+      default: return Math.round((typeMin + typeMax) / 2)
+    }
+  }
+
+  // Clamp planner range to type guardrails
+  const clampedMin = Math.max(plannerTarget.min_words, typeMin)
+  const clampedMax = Math.min(plannerTarget.max_words, typeMax)
+  // Ensure min doesn't exceed max after clamping
+  const effectiveMin = Math.min(clampedMin, clampedMax)
+  const effectiveMax = Math.max(clampedMin, clampedMax)
+
   switch (lengthOption) {
-    case 'quick': return min
-    case 'deep': return max
-    default: return Math.round((min + max) / 2)
+    case 'quick': return effectiveMin
+    case 'deep': return effectiveMax
+    default: return Math.round((effectiveMin + effectiveMax) / 2)
   }
 }
 
@@ -432,7 +466,7 @@ export function formatBlueprintForPrompt(blueprint: ArticleBlueprint): string {
   if (blueprint.tone_notes) {
     parts.push(`TONE: ${blueprint.tone_notes}`)
   }
-  parts.push(`TARGET TOTAL: ~${blueprint.target_word_count} words`)
+  parts.push(`TARGET TOTAL: ~${blueprint.target_word_count} words${blueprint.target_length_rationale ? ` — ${blueprint.target_length_rationale}` : ''}`)
   parts.push('')
   parts.push('=== END BLUEPRINT ===')
 

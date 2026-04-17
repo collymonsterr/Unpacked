@@ -308,6 +308,35 @@ VISUALISATION RULES BY TYPE:
 For research_queries: generate 3-4 short, natural-sounding descriptions of what the system will research. These are shown to the user during loading.
 
 ═══════════════════════════════════════════════════════════════
+STEP 5B: ASSESS DYNAMIC ARTICLE LENGTH
+═══════════════════════════════════════════════════════════════
+
+The LENGTH ranges listed per article type above are guardrails, not targets. A buyer guide about USB-C cables should NOT get the same word budget as one about mirrorless cameras for wildlife photography. Assess how much depth THIS SPECIFIC QUERY needs and output a target_length.
+
+FACTORS TO CONSIDER:
+- Scope: broad market surveys need more words than narrow comparisons
+- Entity count: 10 products need more space than 2
+- Topic complexity: layered subjects with multiple causes/perspectives need more depth
+- Factual density: data-heavy topics justify longer articles, speculative topics should be tighter
+- Article type baseline: each type has a default range, but the query can push within it
+
+CALIBRATION EXAMPLES:
+- "Best USB-C cable" (buyer_guide) → min: 1000, max: 1400 — simple product, limited differentiation
+- "Best mirrorless camera under $2,500 for wildlife photography" (buyer_guide) → min: 1800, max: 2000 — complex market, many contenders, specific use case
+- "iPhone 17 vs Galaxy S26" (comparison) → min: 1000, max: 1500 — two products, head-to-head, moderate depth
+- "Best standing desks for home office" (buyer_guide) → min: 1600, max: 2000 — several products, ergonomic considerations, setup advice
+- "What is compound interest?" (explainer) → min: 600, max: 1000 — single concept, straightforward
+- "How does the global financial system work?" (explainer) → min: 2500, max: 3500 — layered topic, many interconnections
+- "Trump announces new tariffs" (breaking_news) → min: 300, max: 500 — speed over depth
+- "What happened with the 2008 financial crisis" (deep_dive) → min: 3000, max: 4000 — layered topic, multiple causes
+- "Top 10 budget travel destinations" (roundup) → min: 1200, max: 1800 — 10 items, each needs brief coverage
+
+RULES:
+- Your target_length min/max will be clamped to the article type's LENGTH range (listed in Step 2) as absolute guardrails. Stay within those bounds.
+- Write a short rationale explaining why this query needs this depth.
+- If unsure, default to the midpoint of the type's range.
+
+═══════════════════════════════════════════════════════════════
 STEP 6: BUILD THE RESEARCH MANIFEST
 ═══════════════════════════════════════════════════════════════
 
@@ -511,6 +540,11 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
   "hero_image_subject": "string",
   "interactive_component_type": "decision_tool | scenario_simulator | interactive_map | comparison_calculator | null — MANDATORY for most article types. Rules: (1) buyer_guide, comparison, decision_guide → ALWAYS decision_tool. (2) news_analysis, breaking_news, trend_analysis → ALWAYS scenario_simulator (show 3-4 scenarios like 'ceasefire holds / collapses / escalates' or 'bull case / bear case / base case' with probability estimates). (3) Articles where geography is central (geopolitical conflict, travel, location rankings) → interactive_map. (4) Financial decision articles where readers input their own numbers → comparison_calculator. (5) timeline_article → scenario_simulator (model future scenarios) or interactive_map (if geography-centric). (6) deep_dive → scenario_simulator (model outcomes) or comparison_calculator (if the topic involves numbers readers can personalise). (7) explainer → comparison_calculator (if the topic involves numbers/costs) or scenario_simulator (if the topic involves future outcomes), otherwise null. (8) roundup → decision_tool (help readers pick from the list). (9) Set null ONLY for myth_buster, ranked_list, visual_list, and how_to. When in doubt, assign one — an interactive component is one of the platform's key differentiators.",
   "forbidden_components": ["string — list every section type FORBIDDEN for this article type. The writing step will hard-block these."],
+  "target_length": {
+    "min_words": 1200,
+    "max_words": 2000,
+    "rationale": "string — one sentence explaining why this query needs this depth"
+  },
   "loading_messages": ["string"],
   "suggestion_chips": {
     "refinements": ["string — 3 ways to modify THIS article"],
