@@ -190,6 +190,7 @@ function SingleImage({
         articleId={articleId}
         target={{ type: 'section', sectionIndex, imageIndex }}
         onSwapped={handleSwapped}
+        onAIReplace={onReplace ? () => onReplace(imageIndex) : undefined}
       >
         {imageContent}
       </ImageSwapOverlay>
@@ -334,6 +335,7 @@ function GalleryItem({
         articleId={articleId}
         target={{ type: 'section', sectionIndex, imageIndex }}
         onSwapped={handleSwapped}
+        onAIReplace={onReplace ? () => onReplace(imageIndex) : undefined}
       >
         {imageContent}
       </ImageSwapOverlay>

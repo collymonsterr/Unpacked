@@ -13,15 +13,17 @@ interface Props {
   articleId: string
   target: Target
   onSwapped?: (newUrl: string | null) => void
+  /** When provided, shows a "New photo" button that triggers AI-powered image replacement */
+  onAIReplace?: () => Promise<void>
   children: React.ReactNode
 }
 
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 const MAX_SIZE = 5 * 1024 * 1024
 
-type OverlayState = 'idle' | 'hover' | 'uploading' | 'confirm-remove' | 'success'
+type OverlayState = 'idle' | 'hover' | 'uploading' | 'ai-replacing' | 'confirm-remove' | 'success'
 
-export default function ImageSwapOverlay({ articleId, target, onSwapped, children }: Props) {
+export default function ImageSwapOverlay({ articleId, target, onSwapped, onAIReplace, children }: Props) {
   const [state, setState] = useState<OverlayState>('idle')
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -55,6 +57,21 @@ export default function ImageSwapOverlay({ articleId, target, onSwapped, childre
   const handleOverlayClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
   }, [])
+
+  async function handleAIReplace() {
+    if (!onAIReplace) return
+    setState('ai-replacing')
+    setError(null)
+    try {
+      await onAIReplace()
+      setState('success')
+      setTimeout(() => setState('idle'), 2000)
+    } catch (err) {
+      setError((err as Error).message || 'No replacement found. Try again.')
+      setState('hover')
+      setTimeout(() => setError(null), 4000)
+    }
+  }
 
   async function uploadAndSwap(file: File) {
     if (!ALLOWED_TYPES.has(file.type)) {
@@ -149,6 +166,7 @@ export default function ImageSwapOverlay({ articleId, target, onSwapped, childre
 
   const showOverlay = state !== 'idle'
   const isUploading = state === 'uploading'
+  const isAIReplacing = state === 'ai-replacing'
   const isConfirming = state === 'confirm-remove'
   const isSuccess = state === 'success'
 
@@ -166,8 +184,8 @@ export default function ImageSwapOverlay({ articleId, target, onSwapped, childre
       <div
         style={{
           transition: 'filter 0.2s, opacity 0.2s',
-          filter: isUploading ? 'blur(2px)' : 'none',
-          opacity: isUploading ? 0.4 : isConfirming ? 0.3 : 1,
+          filter: (isUploading || isAIReplacing) ? 'blur(2px)' : 'none',
+          opacity: (isUploading || isAIReplacing) ? 0.4 : isConfirming ? 0.3 : 1,
         }}
       >
         {children}
@@ -189,7 +207,7 @@ export default function ImageSwapOverlay({ articleId, target, onSwapped, childre
         <div
           className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl transition-opacity duration-200"
           style={{
-            backgroundColor: isConfirming ? 'rgba(0,0,0,0.7)' : isUploading ? 'rgba(0,0,0,0.5)' : isSuccess ? 'transparent' : 'rgba(0,0,0,0.5)',
+            backgroundColor: isConfirming ? 'rgba(0,0,0,0.7)' : (isUploading || isAIReplacing) ? 'rgba(0,0,0,0.5)' : isSuccess ? 'transparent' : 'rgba(0,0,0,0.5)',
             opacity: isSuccess ? 0 : 1,
             pointerEvents: isSuccess ? 'none' : 'auto',
           }}
@@ -200,6 +218,14 @@ export default function ImageSwapOverlay({ articleId, target, onSwapped, childre
             <div className="flex flex-col items-center gap-2">
               <div className="w-7 h-7 rounded-full border-2 border-white border-t-transparent animate-spin" />
               <span className="text-xs text-white">Uploading...</span>
+            </div>
+          )}
+
+          {/* AI replacing state */}
+          {isAIReplacing && (
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-7 h-7 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              <span className="text-xs text-white">Finding a better photo...</span>
             </div>
           )}
 
@@ -230,9 +256,20 @@ export default function ImageSwapOverlay({ articleId, target, onSwapped, childre
             </div>
           )}
 
-          {/* Normal hover state — replace + remove buttons */}
+          {/* Normal hover state — new photo (AI) + replace (upload) + remove */}
           {state === 'hover' && (
             <div className="flex flex-col items-center gap-2">
+              {onAIReplace && (
+                <button
+                  onClick={handleAIReplace}
+                  className="px-5 py-2.5 rounded-lg text-[13px] font-medium text-white transition-colors cursor-pointer"
+                  style={{ backgroundColor: '#BA7517', minHeight: 44 }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#9A6213' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#BA7517' }}
+                >
+                  New photo
+                </button>
+              )}
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="px-5 py-2.5 rounded-lg text-[13px] font-medium text-white transition-colors cursor-pointer"
@@ -240,7 +277,7 @@ export default function ImageSwapOverlay({ articleId, target, onSwapped, childre
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)' }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
               >
-                Replace image
+                Upload image
               </button>
               <button
                 onClick={() => setState('confirm-remove')}
