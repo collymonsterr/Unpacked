@@ -1,15 +1,22 @@
 import type { ExecutiveSummary as ExecutiveSummaryType } from '@/types/article'
 
 export default function ExecutiveSummary({ data }: { data: ExecutiveSummaryType }) {
+  const hasShortAnswer = !!data.short_answer?.trim()
   const hasTakeaways = data.key_takeaways.length > 0
   const hasWarnings = data.watch_out_for.length > 0
   const showSideBySide = hasTakeaways && hasWarnings
 
+  // If nothing to render, collapse entirely — prevents an empty block
+  // for knowledge/news types that suppress short_answer and takeaways.
+  if (!hasShortAnswer && !hasTakeaways && !hasWarnings) return null
+
   return (
     <div className="mb-8">
-      <p className="text-lg leading-relaxed mb-5" style={{ color: 'var(--text-primary)' }}>
-        {data.short_answer}
-      </p>
+      {hasShortAnswer && (
+        <p className="text-lg leading-relaxed mb-5" style={{ color: 'var(--text-primary)' }}>
+          {data.short_answer}
+        </p>
+      )}
 
       {(hasTakeaways || hasWarnings) && (
         <div className={showSideBySide ? 'grid md:grid-cols-2 gap-4' : ''}>

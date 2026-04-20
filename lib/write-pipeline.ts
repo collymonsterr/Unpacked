@@ -36,6 +36,14 @@ const NO_EXEC_SUMMARY_TYPES = new Set([
 // Types that get key_takeaways only (no watch_out_for)
 const TAKEAWAYS_ONLY_TYPES = new Set(['comparison', 'explainer', 'deep_dive'])
 
+// Types where executive_summary.short_answer duplicates the verdict box —
+// suppress it so the article reaches real content faster. Knowledge and news
+// types don't need a "Quick Verdict in prose" on top of the amber verdict card.
+const SUPPRESS_SHORT_ANSWER_TYPES = new Set([
+  'explainer', 'deep_dive', 'myth_buster', 'timeline_article',
+  'news_analysis', 'trend_analysis', 'visual_list',
+])
+
 // Headings that indicate analytical/advisory sections not suited for visual_list
 const VISUAL_LIST_FORBIDDEN_HEADINGS = /\b(key takeaway|watch out|how to find|how to|tips for|things to look|things to watch|practical advice|what to avoid|warnings?|before you|getting started)\b/i
 
@@ -60,6 +68,13 @@ function sanitiseArticleForType(article: ArticleContent, articleType: string): v
   if (TAKEAWAYS_ONLY_TYPES.has(articleType) && article.executive_summary?.watch_out_for?.length) {
     console.log(`[sanitise] Stripping ${article.executive_summary.watch_out_for.length} watch_out_for from ${articleType}`)
     article.executive_summary.watch_out_for = []
+  }
+
+  // 2b. Clear redundant short_answer (Quick Verdict prose) for knowledge/news
+  //     types — it just restates the amber verdict box above it.
+  if (SUPPRESS_SHORT_ANSWER_TYPES.has(articleType) && article.executive_summary?.short_answer) {
+    console.log(`[sanitise] Clearing short_answer from ${articleType} (redundant with verdict box)`)
+    article.executive_summary.short_answer = ''
   }
 
   // 3. For visual_list: remove any analytical/advisory sections
