@@ -70,6 +70,13 @@ export default function Navbar({ showSearch = true }: NavbarProps) {
           About
         </a>
         <a
+          href="/how-it-works"
+          className="text-sm font-medium no-underline hidden sm:block"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          How It Works
+        </a>
+        <a
           href="/pricing"
           className="text-sm font-medium no-underline hidden sm:block"
           style={{ color: 'var(--text-secondary)' }}
