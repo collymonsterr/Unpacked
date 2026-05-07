@@ -23,6 +23,7 @@ import LiveDataCard from './LiveDataCard'
 import BigStatement from './BigStatement'
 import RankedItemSection from './RankedItemSection'
 import MythRealitySection from './MythRealitySection'
+import VideoEmbed from './VideoEmbed'
 import TwitterSentimentSection from './TwitterSentimentSection'
 import RedditSentimentSection from './RedditSentimentSection'
 import InteractiveComponentSection from '../interactive/InteractiveComponentSection'
@@ -360,6 +361,8 @@ export default function SectionRenderer({
           return <RankedItemSection section={section as any} />
         case 'myth_reality':
           return <MythRealitySection section={section as any} />
+        case 'video_embed':
+          return <VideoEmbed section={section as any} />
         default:
           return null
       }

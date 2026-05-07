@@ -59,6 +59,33 @@ export interface TwitterQuery {
   freshness?: SearchFreshness
 }
 
+/** A query for finding YouTube/Vimeo videos relevant to the article topic. */
+export interface VideoQuery {
+  query: string
+  /** Why this video search matters — guides the writer in choosing what to embed */
+  purpose?: string
+}
+
+/** A single video result surfaced through Brave's video search. */
+export interface VideoFinding {
+  /** Direct YouTube watch URL or Vimeo URL */
+  url: string
+  /** Video title */
+  title: string
+  /** Channel/creator name */
+  channel?: string
+  /** Duration string (e.g. "1:23:45") */
+  duration?: string
+  /** Published date if available */
+  published?: string
+  /** View count if available */
+  views?: string
+  /** Thumbnail URL */
+  thumbnail?: string
+  /** One-line description if available */
+  description?: string
+}
+
 /** A single tweet/X post surfaced through Brave site:x.com search. */
 export interface TwitterFinding {
   /** Stable id used by remove-quote and the renderer. */
@@ -143,6 +170,9 @@ export interface ResearchManifest {
   reddit_queries: RedditQuery[]
   /** Optional Twitter/X queries (executed via Brave site:x.com searches). Schema added Part 1; execution wired in Part 2. */
   twitter_queries?: TwitterQuery[]
+  /** Optional video queries — only emitted when the article topic is intrinsically video-based
+   *  (best DJ sets, best TED talks, music videos, ad campaigns, speeches, etc.) */
+  video_queries?: VideoQuery[]
   image_queries: ImageQueries
   live_data?: LiveDataQuery[]
 }
@@ -596,6 +626,21 @@ export interface MythRealitySection {
   }>
 }
 
+/**
+ * Embedded video block — renders a responsive 16:9 iframe.
+ * URL must be a YouTube or Vimeo URL. Component derives the embed URL itself.
+ */
+export interface VideoEmbedSection {
+  type: 'video_embed'
+  heading?: string
+  /** YouTube watch URL, youtu.be short URL, or Vimeo URL */
+  url: string
+  /** Optional one-line caption shown below the player */
+  caption?: string
+  /** Optional context — duration, channel, year, etc. Shown as small grey text */
+  context?: string
+}
+
 export type ArticleSection =
   | ProductCard
   | ComparisonTable
@@ -620,6 +665,7 @@ export type ArticleSection =
   | BigStatementSection
   | RankedItemSection
   | MythRealitySection
+  | VideoEmbedSection
 
 // ── Full Article ─────────────────────────────────────────────────────────────
 

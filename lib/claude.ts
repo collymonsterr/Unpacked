@@ -398,6 +398,26 @@ Examples of BAD queries (return official/institutional tweets, not commentary):
 
 For evergreen buyer guides, how-to articles, or general explainers: leave twitter_queries as an empty array.
 
+For video_queries: ONLY emit when the article topic is intrinsically video-based — when the reader expects to actually watch something, not just read about it. Generate 2-4 queries targeting the specific video content the article discusses. The Brave video search will return YouTube and Vimeo URLs that get embedded inline.
+
+EMIT video_queries for queries like:
+- "best Boiler Room sets" / "best DJ sets of 2026" → ["best boiler room sets house music", "boiler room peggy gou", "boiler room black coffee"]
+- "best TED talks on creativity" → ["TED talks creativity famous", "Ken Robinson TED talk creativity"]
+- "iconic Apple ad campaigns" → ["Apple 1984 super bowl ad", "Apple think different commercial", "iconic apple keynote moments"]
+- "best music videos of all time" → ["best music videos all time", "thriller music video michael jackson"]
+- "must-watch tech keynote moments" → ["best Steve Jobs keynote moments", "iPhone launch keynote 2007"]
+- "best comedy specials on Netflix" → ["best stand up comedy specials Netflix"]
+- "most viral product reveals" → ["best product reveal videos viral"]
+
+DO NOT emit video_queries for:
+- Buyer guides, comparisons, decision guides — these benefit from product photos, not videos
+- News analysis, breaking news — these need live data and quotes, not embedded videos
+- Explainers, deep_dives — these need facts and narrative, not video clips
+- How-to articles unless explicitly about video tutorials (rare)
+- Anything where the user wants information, not entertainment
+
+When in doubt, omit video_queries entirely. Embedding a tangentially related video is worse than no video. Only emit when the article would feel incomplete without watching the actual content. Each video query should be 3-6 words, the kind of thing someone would type into YouTube search to find that exact video.
+
 PER-QUERY FRESHNESS — applies to BOTH reddit_queries and twitter_queries:
 For each reddit_query and twitter_query, set a freshness value that controls how recent the results must be. Set this PER QUERY based on what that specific query is looking for:
 - pd (past day) — breaking announcements, things that just happened in the last 24 hours
@@ -533,7 +553,8 @@ Respond ONLY with valid JSON matching this schema exactly. No preamble, no markd
       "products": [{ "entity_name": "string", "query": "string" }],
       "editorial_sections": [{ "query": "string — specific photographable subject", "section_hint": "string — which section this image belongs near" }]
     },
-    "live_data": [{ "source": "polymarket | yahoo_finance | google_trends", "query": "string — search term", "symbols": ["string — ticker symbols for yahoo_finance only"], "purpose": "string — why this data is relevant", "rationale": "string — one sentence explaining why this data source adds insight to THIS article (REQUIRED)", "market_type": "binary | multi_outcome — for polymarket only", "timeframe": "1d | 1m | 3m | 6m — for yahoo_finance only, matches article scope" }]
+    "live_data": [{ "source": "polymarket | yahoo_finance | google_trends", "query": "string — search term", "symbols": ["string — ticker symbols for yahoo_finance only"], "purpose": "string — why this data is relevant", "rationale": "string — one sentence explaining why this data source adds insight to THIS article (REQUIRED)", "market_type": "binary | multi_outcome — for polymarket only", "timeframe": "1d | 1m | 3m | 6m — for yahoo_finance only, matches article scope" }],
+    "video_queries": [{ "query": "string — 3-6 word YouTube-style search query", "purpose": "string — what this video search is meant to surface" }]
   },
   "research_queries": ["string"],
   "hero_image_query": "string",
@@ -1462,6 +1483,7 @@ export async function writeWithSonnet(
   synthesis?: ResearchSynthesis,
   blueprint?: ArticleBlueprint,
   liveData?: Record<string, unknown>[],
+  videoFindings?: import('@/types/article').VideoFinding[],
 ): Promise<ArticleContent> {
   if (articleId && isDuplicateCall(articleId, 'write')) {
     throw new Error('Duplicate writing call blocked')
@@ -1475,6 +1497,10 @@ export async function writeWithSonnet(
   const structuredResearch = buildStructuredResearchPrompt(entityCards, synthesis)
   const blueprintSection = blueprint ? formatBlueprintForPrompt(blueprint) : ''
   const liveDataSection = formatLiveDataForSonnet(liveData)
+  const { formatVideoFindingsForPrompt } = await import('@/lib/brave-video-search')
+  const videoSection = videoFindings && videoFindings.length > 0
+    ? formatVideoFindingsForPrompt(videoFindings)
+    : ''
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const message = await getAnthropic().messages.create({
@@ -1494,6 +1520,7 @@ RESEARCH (from live web search — use these facts and prices):
 ${research}
 ${structuredResearch}
 ${liveDataSection}
+${videoSection}
 
 Plan:
 - Title: ${plan.title}

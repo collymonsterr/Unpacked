@@ -3,10 +3,11 @@
  * Takes pre-researched data from Brave and generates structured article JSON.
  */
 
-import type { ArticleContent, ArticlePlan, EntityCard, ResearchSynthesis, ArticleBlueprint } from '@/types/article'
+import type { ArticleContent, ArticlePlan, EntityCard, ResearchSynthesis, ArticleBlueprint, VideoFinding } from '@/types/article'
 import { extractJSON } from '@/lib/utils/extract-json'
 import { buildStructuredResearchPrompt } from '@/lib/structured-research-prompt'
 import { formatBlueprintForPrompt } from '@/lib/blueprint'
+import { formatVideoFindingsForPrompt } from '@/lib/brave-video-search'
 
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
@@ -409,9 +410,18 @@ OUTPUT: Return ONLY valid JSON matching this schema:
     { "type": "live_data_card", "data_source": "polymarket|yahoo_finance|google_trends", "content": {"...data object from LIVE DATA section below — copy the entire object as-is"} },
     { "type": "big_statement", "content": { "statement": "single bold sentence — a conclusion, strong take, or reframing" } },
     { "type": "ranked_item", "heading": "string", "items": [{"rank": 1, "name": "string", "content": "string (1-2 paragraphs of evidence)"}] },
-    { "type": "myth_reality", "heading": "string", "pairs": [{"myth": "string (bold claim)", "reality": "string (evidence-backed debunking)", "evidence": "string (optional supporting data)"}] }
+    { "type": "myth_reality", "heading": "string", "pairs": [{"myth": "string (bold claim)", "reality": "string (evidence-backed debunking)", "evidence": "string (optional supporting data)"}] },
+    { "type": "video_embed", "url": "string — EXACT YouTube or Vimeo URL from the VIDEOS list. Never invent.", "caption": "string — one-line description of what's in the video", "context": "string — channel · duration · year (when available)" }
   ]
 }
+
+VIDEO EMBEDS — when and how:
+- Only output video_embed sections when the VIDEOS section in the user message contains real URLs. If VIDEOS shows "NONE AVAILABLE", do NOT emit video_embed sections.
+- For ranked_list articles where the items ARE videos (best DJ sets, best speeches, best ad campaigns, best music videos, best TED talks), structure each ranked item as: a content_section with the title and editorial commentary, immediately followed by a video_embed with the matching URL from the VIDEOS list. Match by name and context — if the list has "Peggy Gou - Boiler Room NYC 2017" and your section is about that exact set, use that URL.
+- For non-ranked articles where a video provides supporting evidence (a key interview clip, a referenced demonstration), embed up to 2 videos at relevant points in the body.
+- The url field MUST be copied EXACTLY from the VIDEOS list. Never edit, shorten, build, or invent URLs. If you can't find a matching video, omit the embed — do NOT make one up.
+- Caption should add editorial value (what's notable about this set/clip), not just restate the title.
+- Do NOT use video_embed alongside an image_section for the same item — pick one. The video itself shows what the image would.
 
 WARNING BOX HEADINGS — use article-type-appropriate titles:
 - buyer_guide/comparison/roundup: "Products to Avoid" or "Skip These"
@@ -457,6 +467,7 @@ function validateArticleSchema(article: Record<string, unknown>): ValidateResult
     'pie_chart', 'line_chart', 'stat_cards', 'treemap', 'timeline',
     'image_section', 'interactive_calculator', 'head_to_head',
     'live_data_card', 'big_statement', 'ranked_item', 'myth_reality',
+    'video_embed',
   ])
 
   if (Array.isArray(article.sections)) {
@@ -486,6 +497,7 @@ export async function writeWithGemini(
   synthesis?: ResearchSynthesis,
   blueprint?: ArticleBlueprint,
   liveData?: Record<string, unknown>[],
+  videoFindings?: VideoFinding[],
 ): Promise<ArticleContent> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY
   if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY not set')
@@ -497,6 +509,9 @@ export async function writeWithGemini(
   const structuredResearch = buildStructuredResearchPrompt(entityCards, synthesis)
   const blueprintSection = blueprint ? formatBlueprintForPrompt(blueprint) : ''
   const liveDataSection = formatLiveDataForPrompt(liveData)
+  const videoSection = videoFindings && videoFindings.length > 0
+    ? formatVideoFindingsForPrompt(videoFindings)
+    : ''
 
   const userMessage = `Write a complete article in valid JSON format.
 
@@ -514,6 +529,7 @@ RESEARCH (from live web search — use these facts and prices):
 ${research}
 ${structuredResearch}
 ${liveDataSection}
+${videoSection}
 ${optionsPrompt}`
 
   await acquireSlot()

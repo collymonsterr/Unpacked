@@ -13,7 +13,8 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
-import type { ArticlePlan, ResearchManifest, EntityCard, ResearchSynthesis, PlanEntity, LiveDataQuery, TwitterFinding, TwitterSentimentSplit, RedditSentimentSplit, RedditThread } from '@/types/article'
+import type { ArticlePlan, ResearchManifest, EntityCard, ResearchSynthesis, PlanEntity, LiveDataQuery, TwitterFinding, TwitterSentimentSplit, RedditSentimentSplit, RedditThread, VideoFinding } from '@/types/article'
+import { executeVideoQueries } from '@/lib/brave-video-search'
 import {
   executeBraveQueries,
   compileResearch,
@@ -90,6 +91,8 @@ export interface OrchestratedResearchResult {
   redditContextTrigger: string | null
   /** Total Reddit threads analysed */
   redditThreadsAnalysed: number
+  /** YouTube/Vimeo videos found via Brave video search (only when planner emits video_queries) */
+  videoFindings: VideoFinding[]
 }
 
 /**
@@ -108,11 +111,12 @@ export async function executeResearch(
   const startTime = Date.now()
 
   // ── Step 1: Fire all research tasks in parallel ──
-  const [braveResults, redditResults, twitterResult, liveData] = await Promise.all([
+  const [braveResults, redditResults, twitterResult, liveData, videoFindings] = await Promise.all([
     executeBraveQueries(manifest.brave_queries, resultsPerQuery),
     executeRedditQueries(manifest.reddit_queries, resultsPerQuery),
     executeTwitterQueries(manifest.twitter_queries, resultsPerQuery, plan.article_type),
     executeLiveDataQueries(liveDataQueries, plan, articleId),
+    executeVideoQueries(manifest.video_queries, length === 'deep' ? 10 : 8),
   ])
   const twitterFindings = twitterResult.findings
   const twitterPostsAnalysed = twitterResult.rawCount
@@ -210,7 +214,7 @@ export async function executeResearch(
 
   const totalElapsed = Date.now() - startTime
   console.log(
-    `[research] Complete in ${totalElapsed}ms: search=${searchMs}ms entity=${entityMs}ms synthesis=${synthMs}ms | ${compiled.searchCount} searches, ${entityCards.length} entities, ${liveData.length} live data, ${twitterFindings.length} tweets (${twitterPostsAnalysed} analysed), ${redditThreadsPool.length} reddit threads`
+    `[research] Complete in ${totalElapsed}ms: search=${searchMs}ms entity=${entityMs}ms synthesis=${synthMs}ms | ${compiled.searchCount} searches, ${entityCards.length} entities, ${liveData.length} live data, ${twitterFindings.length} tweets (${twitterPostsAnalysed} analysed), ${redditThreadsPool.length} reddit threads, ${videoFindings.length} videos`
   )
 
   return {
@@ -233,6 +237,7 @@ export async function executeResearch(
     redditSentimentSplit: redditSynthesis?.sentimentSplit ?? null,
     redditContextTrigger: redditSynthesis?.contextTrigger ?? null,
     redditThreadsAnalysed: dedupedRedditThreads.length,
+    videoFindings,
   }
 }
 

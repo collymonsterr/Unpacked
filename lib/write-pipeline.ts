@@ -115,6 +115,8 @@ interface WritePipelineParams {
   entityCards?: EntityCard[]
   synthesis?: ResearchSynthesis
   liveData?: Record<string, unknown>[]
+  /** Video findings (YouTube/Vimeo URLs) for video-topic articles */
+  videoFindings?: import('@/types/article').VideoFinding[]
   /** Timing data from the create route (planning + research phases) */
   _timings?: Record<string, number>
 }
@@ -128,6 +130,7 @@ export async function runWritePipeline({
   entityCards,
   synthesis,
   liveData,
+  videoFindings,
   _timings,
 }: WritePipelineParams): Promise<void> {
   const db = getSupabaseAdmin()
@@ -167,15 +170,15 @@ export async function runWritePipeline({
 
   const writeArticle = async (): Promise<ArticleContent> => {
     if (isDeep) {
-      return writeWithSonnet(query, plan, researchSummary, generationOptions, articleId, undefined, entityCards, synthesis, blueprint, liveData)
+      return writeWithSonnet(query, plan, researchSummary, generationOptions, articleId, undefined, entityCards, synthesis, blueprint, liveData, videoFindings)
     }
     try {
       const optsPrompt = buildOptionsPrompt(generationOptions)
-      return await writeWithGemini(query, plan, researchSummary, optsPrompt, articleId, entityCards, synthesis, blueprint, liveData)
+      return await writeWithGemini(query, plan, researchSummary, optsPrompt, articleId, entityCards, synthesis, blueprint, liveData, videoFindings)
     } catch (geminiErr) {
       const geminiErrMsg = (geminiErr as Error).message
       console.log('[write-pipeline] Gemini failed — falling back to Sonnet:', geminiErrMsg)
-      return writeWithSonnet(query, plan, researchSummary, generationOptions, articleId, geminiErrMsg, entityCards, synthesis, blueprint, liveData)
+      return writeWithSonnet(query, plan, researchSummary, generationOptions, articleId, geminiErrMsg, entityCards, synthesis, blueprint, liveData, videoFindings)
     }
   }
 

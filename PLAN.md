@@ -119,11 +119,14 @@ New `map_section` type in the article JSON schema. Renders an interactive map wi
 
 ## Phase 2D — Media and Video Support
 
-### 2D1. Video Embed Support
-New `video_embed` block type in the article JSON schema. Renders as a responsive 16:9 iframe. Supports YouTube and Vimeo URLs. Two entry points: paste a URL in the refine box with placement instructions, or select from videos surfaced in Editor's Notes. Needs `video_embed` added to `ArticleSection` union type, a `VideoEmbed` component in `components/sections/`, and a case in `SectionRenderer.tsx`.
+### ~~2D1. Video Embed Support~~ DONE (May 2026)
+`video_embed` section type built. Renders 16:9 lazy-loaded iframe with click-to-play thumbnail. Accepts YouTube watch/youtu.be/embed/shorts URLs and Vimeo URLs. Component: `components/sections/VideoEmbed.tsx`. Wired into `SectionRenderer` and Gemini/Sonnet writer prompts. Schema validator updated.
 
-### 2D2. Video Discovery in Research Phase
-Add `video_queries` field to the Haiku planner (1–2 queries targeting video content). Use Brave's `/videos/search` endpoint during parallel research. Filter: minimum 10,000 views, published within 12 months, YouTube/Vimeo only. Surface found videos in Editor's Notes as "Related videos" section with thumbnail, title, view count, channel name. User clicks "Include" to embed. Don't auto-embed — user-initiated only.
+### ~~2D2. Video Discovery in Research Phase~~ DONE (May 2026)
+`video_queries` added to Haiku planner — emitted only for intrinsically video-based topics (best DJ sets, best speeches, music videos, ad campaigns). `lib/brave-video-search.ts` calls Brave `/videos/search` in parallel with web/Reddit/Twitter research. Returns YouTube/Vimeo URLs only. Findings passed to writer prompt with strict rule to copy URLs verbatim — never invent. Editor's Notes surfacing not yet built (out of scope for v1; videos auto-embedded by writer).
+
+### 2D3. Editor's Notes Video Surfacing (deferred)
+Surface unused video findings in the Editor tab so creators can manually embed additional videos post-generation. Persist `video_findings` to a new column on articles. Low priority — auto-embed during generation handles the main use case.
 
 ---
 
@@ -242,8 +245,8 @@ Generate article on real phone. Read, share, use every feature. Fix what feels w
 
 ## Phase 7 — Monetisation Activation
 
-### 7A-pre. Skimlinks Integration (FIRST STEP)
-Add Skimlinks JavaScript snippet to `app/layout.tsx`. Skimlinks automatically converts existing product links in articles into affiliate links across 48,500+ merchants. No code changes to the article pipeline needed. One script tag. Sign up for Skimlinks account, paste snippet, immediate affiliate revenue on all existing buyer guides and comparisons. This should be the FIRST monetisation step — before any custom affiliate infrastructure.
+### 7A-pre. Skimlinks Integration (DEFERRED — months post-launch)
+Add Skimlinks JavaScript snippet to `app/layout.tsx` once the site has meaningful traffic. Not a priority during early growth phase.
 
 ### 7A. Affiliate Infrastructure
 `affiliate_url` field alongside `product_url`. Admin toggle routes buy buttons. Skimlinks or impact.com. Quality gate: 5 published articles + quality score + traffic threshold. Start at 20%.
@@ -351,8 +354,7 @@ Three env vars confirmed unused and should be removed from Vercel: `GOOGLE_CUSTO
 7. ~~Account deletion flow → GDPR compliance~~ DONE
 8. ~~Stripe~~ DONE → monetisation foundation
 9. ~~Tweet-to-article URL detection~~ DONE → content sourcing
-10. **Skimlinks integration** → immediate affiliate revenue (one script tag)
-11. **Seed article regeneration** → 20 curated showcase articles
+10. **Seed article regeneration** → 20 curated showcase articles
 12. **Mobile end-to-end testing** → verify all new features on phone
 13. **Pre-launch creator cohort** → real feedback
 14. **"Products Mentioned" section** → affiliate surface area on all article types

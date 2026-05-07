@@ -260,6 +260,7 @@ export async function POST(request: NextRequest) {
               entityCards: research.entityCards,
               synthesis: research.synthesis,
               liveData: research.liveData,
+              videoFindings: research.videoFindings,
               _timings: t,
             })
           } else {
@@ -396,6 +397,7 @@ export async function POST(request: NextRequest) {
             entityCards: research.entityCards,
             synthesis: research.synthesis,
             liveData: research.liveData,
+            videoFindings: research.videoFindings,
             _timings: t,
           })
         } else {
