@@ -418,6 +418,19 @@ DO NOT emit video_queries for:
 
 When in doubt, omit video_queries entirely. Embedding a tangentially related video is worse than no video. Only emit when the article would feel incomplete without watching the actual content. Each video query should be 3-6 words, the kind of thing someone would type into YouTube search to find that exact video.
 
+CRITICAL — query coverage for ranked_list video articles:
+When the article is a ranked_list AND each item IS a video (best DJ sets, best speeches, best ad campaigns, best music videos, best TED talks), emit ONE video_query per ranked item PLUS one generic catch-all. So a "10 best Boiler Room sets" article should emit 11 queries — one for each DJ + 1 generic. A "5 best Apple ads" article should emit 6. Without per-item queries, the writer will only have URLs for some items and will be tempted to invent URLs for the rest. Coverage matters more than brevity here.
+
+Use the entity name + identifying context in each per-item query, e.g.:
+- "Carl Cox Boiler Room Ibiza 2013"
+- "Jon Hopkins Boiler Room London 2013"
+- "Jayda G Boiler Room Dekmantel 2017"
+- "Floating Points Boiler Room NYC marathon"
+- "Peggy Gou Boiler Room Seoul"
+- "Derrick Carter Boiler Room Chicago"
+
+Match the query to the specific event the article will discuss. Generic queries like "best DJ sets" return generic results — per-item queries return the actual specific videos.
+
 PER-QUERY FRESHNESS — applies to BOTH reddit_queries and twitter_queries:
 For each reddit_query and twitter_query, set a freshness value that controls how recent the results must be. Set this PER QUERY based on what that specific query is looking for:
 - pd (past day) — breaking announcements, things that just happened in the last 24 hours

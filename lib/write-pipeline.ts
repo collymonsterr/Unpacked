@@ -48,6 +48,78 @@ const SUPPRESS_SHORT_ANSWER_TYPES = new Set([
 const VISUAL_LIST_FORBIDDEN_HEADINGS = /\b(key takeaway|watch out|how to find|how to|tips for|things to look|things to watch|practical advice|what to avoid|warnings?|before you|getting started)\b/i
 
 /**
+ * Extract a canonical video id from a YouTube/Vimeo URL.
+ * Returns null for unparseable / non-supported URLs.
+ */
+function canonicalVideoId(url: string): string | null {
+  if (!url) return null
+  // YouTube: 11-char ID required (real IDs are exactly 11 chars).
+  // Hallucinated URLs typically have shorter or different-format IDs.
+  const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]+)/i)
+  if (yt) {
+    const id = yt[1]
+    if (id.length !== 11) return null // reject hallucinated short IDs
+    return `youtube:${id}`
+  }
+  const vimeo = url.match(/vimeo\.com\/(?:video\/)?(\d+)/i)
+  if (vimeo) return `vimeo:${vimeo[1]}`
+  return null
+}
+
+/**
+ * Strip video_embed sections whose URL doesn't match a real video found in research.
+ * Also removes adjacent image_section duplicates when a video covers the same item.
+ *
+ * This catches two writer failure modes:
+ * 1. Hallucinated URLs (writer invents YouTube IDs when no matching video was found)
+ * 2. Image + video pairing for the same item (writer ignores the "pick one" rule)
+ */
+function sanitiseVideoEmbeds(
+  article: ArticleContent,
+  videoFindings: import('@/types/article').VideoFinding[] | undefined,
+): void {
+  if (!Array.isArray(article.sections)) return
+
+  // Build set of canonical IDs from validated findings
+  const validIds = new Set<string>()
+  if (videoFindings) {
+    for (const v of videoFindings) {
+      const id = canonicalVideoId(v.url)
+      if (id) validIds.add(id)
+    }
+  }
+
+  // Pass 1: identify video_embed sections to strip (URL doesn't match a real video)
+  const sectionsToStrip = new Set<number>()
+  article.sections.forEach((s, i) => {
+    if (s.type !== 'video_embed') return
+    const url = (s as { url?: string }).url ?? ''
+    const id = canonicalVideoId(url)
+    if (!id || !validIds.has(id)) {
+      console.log(`[sanitise-video] Stripping fake video at idx ${i}: ${url.slice(0, 80)}`)
+      sectionsToStrip.add(i)
+    }
+  })
+
+  // Pass 2: identify image_section that immediately precedes a SURVIVING video_embed
+  //         covering the same item — drop the image (writer included both, pick video).
+  for (let i = 0; i < article.sections.length - 1; i++) {
+    const cur = article.sections[i]
+    const next = article.sections[i + 1]
+    if (cur.type !== 'image_section') continue
+    if (next.type !== 'video_embed') continue
+    if (sectionsToStrip.has(i + 1)) continue // video being stripped, keep image
+    console.log(`[sanitise-video] Dropping redundant image_section at idx ${i} (followed by video_embed)`)
+    sectionsToStrip.add(i)
+  }
+
+  if (sectionsToStrip.size > 0) {
+    article.sections = article.sections.filter((_, i) => !sectionsToStrip.has(i))
+    console.log(`[sanitise-video] Stripped ${sectionsToStrip.size} sections total`)
+  }
+}
+
+/**
  * Hard-code enforcement of article type rules that the model may have ignored.
  * Mutates the article in place.
  */
@@ -202,6 +274,10 @@ export async function runWritePipeline({
 
   // ── Post-write sanitisation: strip sections forbidden for this article type ──
   sanitiseArticleForType(rawArticle, plan.article_type)
+
+  // ── Post-write video sanitisation: strip hallucinated video URLs and
+  //    redundant image_sections that duplicate a video for the same item. ──
+  sanitiseVideoEmbeds(rawArticle, videoFindings)
 
   // ── Phase 3: Editorial pass + product images (parallel) ──
   const isBreakingNews = plan.article_type === 'breaking_news'

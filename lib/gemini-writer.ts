@@ -415,13 +415,29 @@ OUTPUT: Return ONLY valid JSON matching this schema:
   ]
 }
 
-VIDEO EMBEDS — when and how:
-- Only output video_embed sections when the VIDEOS section in the user message contains real URLs. If VIDEOS shows "NONE AVAILABLE", do NOT emit video_embed sections.
-- For ranked_list articles where the items ARE videos (best DJ sets, best speeches, best ad campaigns, best music videos, best TED talks), structure each ranked item as: a content_section with the title and editorial commentary, immediately followed by a video_embed with the matching URL from the VIDEOS list. Match by name and context — if the list has "Peggy Gou - Boiler Room NYC 2017" and your section is about that exact set, use that URL.
-- For non-ranked articles where a video provides supporting evidence (a key interview clip, a referenced demonstration), embed up to 2 videos at relevant points in the body.
-- The url field MUST be copied EXACTLY from the VIDEOS list. Never edit, shorten, build, or invent URLs. If you can't find a matching video, omit the embed — do NOT make one up.
-- Caption should add editorial value (what's notable about this set/clip), not just restate the title.
-- Do NOT use video_embed alongside an image_section for the same item — pick one. The video itself shows what the image would.
+VIDEO EMBEDS — STRICT RULES (post-write validation will strip violations):
+
+1. URL FIDELITY — if you cannot find an exact match, OMIT THE EMBED:
+   - The url field MUST be copied character-for-character from the VIDEOS list.
+   - Real YouTube IDs are EXACTLY 11 characters (e.g. "dQw4w9WgXcQ"). Anything shorter or longer is invented and will be stripped from the published article.
+   - NEVER guess, complete, abbreviate, or construct URLs. If the VIDEOS list does not contain a match for an item you want to discuss, write the content_section WITHOUT a video_embed. A missing video is fine; an invented URL embarrasses the platform.
+   - "Plausible-looking" YouTube IDs you've seen in training data are still inventions. Only the IDs in the VIDEOS list are real.
+
+2. VIDEO REPLACES IMAGE — never both for the same item:
+   - For ranked_list articles where each item IS a video (best DJ sets, best speeches, best music videos, best TED talks, best ad campaigns), each item gets EITHER a video_embed OR an image_section, NEVER both.
+   - If the VIDEOS list contains a match for that item → use video_embed only. Skip the image_section entirely.
+   - If the VIDEOS list does NOT contain a match for that item → use image_section only (or no media at all). Do not invent a video.
+   - Post-write validation drops any image_section that immediately precedes a video_embed.
+
+3. MATCHING:
+   - Match by entity name + context. "Peggy Gou - Boiler Room NYC 2017" in VIDEOS pairs with a section about Peggy Gou's NYC Boiler Room. Don't pair it with a section about Peggy Gou's Seoul set — that's a different video.
+   - If multiple list entries match an item, pick the most relevant one based on title/description.
+
+4. CAPTION + CONTEXT:
+   - Caption: one line of editorial value — what's notable about this clip, not a restatement of the title
+   - Context: "channel · duration · year" when those fields exist in the VIDEOS list. Skip if data isn't there — don't invent metadata.
+
+5. WHEN VIDEOS LIST IS EMPTY: Do NOT emit any video_embed sections. The article should still work as a written piece.
 
 WARNING BOX HEADINGS — use article-type-appropriate titles:
 - buyer_guide/comparison/roundup: "Products to Avoid" or "Skip These"
