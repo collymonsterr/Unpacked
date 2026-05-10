@@ -381,10 +381,10 @@ export default function HowItWorksPage() {
         <h2 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px', color: C.ink, marginBottom: '14px', fontFamily: 'var(--font-sora)' }}>Five stages. <span style={{ color: C.amber }}>Three minutes.</span></h2>
         <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '24px' }}>Every article runs through the same five-stage pipeline. A deliberately different model handles each step, which keeps errors from compounding and makes fact-checking a genuinely independent pass. Research, writing, and verification never share the same model.</p>
 
-        {/* 5-stage horizontal pipeline */}
+        {/* 5-stage horizontal pipeline — compact */}
         <FadeIn>
-          <div style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '14px', padding: '24px 20px', marginBottom: '24px' }}>
-            <div className="flex flex-col md:flex-row gap-3 md:gap-2 md:items-stretch">
+          <div style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '12px', padding: '14px 14px', marginBottom: '20px' }}>
+            <div className="flex flex-col md:flex-row gap-2 md:gap-1.5 md:items-stretch">
               {[
                 { n: '1', t: 'Plan', d: 'Classify type, pick structure, generate research manifest.' },
                 { n: '2', t: 'Research', d: 'Brave + Reddit + X + live data, all in parallel.' },
@@ -393,16 +393,16 @@ export default function HowItWorksPage() {
                 { n: '5', t: 'Fact-check', d: 'Three independent models verify every claim.' },
               ].map((stage, i, arr) => (
                 <div key={stage.n} className="flex md:flex-col items-start md:items-stretch gap-2 flex-1 relative">
-                  <div style={{ background: C.amberPale, border: `1px solid ${C.amberLight}`, borderRadius: '10px', padding: '14px 14px', flex: 1, width: '100%' }}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span style={{ width: '22px', height: '22px', minWidth: '22px', borderRadius: '50%', background: C.amber, color: 'white', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{stage.n}</span>
-                      <span style={{ fontSize: '14px', fontWeight: 700, color: C.ink }}>{stage.t}</span>
+                  <div style={{ background: C.amberPale, border: `1px solid ${C.amberLight}`, borderRadius: '8px', padding: '9px 10px', flex: 1, width: '100%' }}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span style={{ width: '17px', height: '17px', minWidth: '17px', borderRadius: '50%', background: C.amber, color: 'white', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{stage.n}</span>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: C.ink }}>{stage.t}</span>
                     </div>
-                    <p style={{ fontSize: '12px', color: C.inkLight, margin: 0, lineHeight: 1.4 }}>{stage.d}</p>
+                    <p style={{ fontSize: '10.5px', color: C.inkLight, margin: 0, lineHeight: 1.35 }}>{stage.d}</p>
                   </div>
                   {i < arr.length - 1 && (
-                    <div className="hidden md:flex items-center justify-center absolute" style={{ right: '-11px', top: '50%', transform: 'translateY(-50%)', zIndex: 1 }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.amber} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                    <div className="hidden md:flex items-center justify-center absolute" style={{ right: '-8px', top: '50%', transform: 'translateY(-50%)', zIndex: 1 }}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.amber} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
                     </div>
                   )}
                 </div>
@@ -411,14 +411,12 @@ export default function HowItWorksPage() {
           </div>
         </FadeIn>
 
-        {/* Behind the scenes */}
+        {/* Behind the scenes — two key support stages */}
         <div style={{ marginBottom: '24px' }}>
           <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: C.inkFaint, marginBottom: '10px' }}>Also happening behind the scenes</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {[
               { t: 'Editorial pass', d: '15-check quality scoring and section-level rewrites before anything ships.' },
-              { t: 'Image sourcing', d: 'Routed multi-source hero + section images, filtered for staged stock and text overlays.' },
-              { t: 'Social content', d: 'Auto-generated X thread, LinkedIn post, Reddit summary, and shareable image cards.' },
               { t: 'Live data', d: 'Polymarket odds, Yahoo Finance quotes, Google Trends velocity &mdash; filtered for relevance.' },
             ].map((b) => (
               <div key={b.t} style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '10px', padding: '14px 16px' }}>
