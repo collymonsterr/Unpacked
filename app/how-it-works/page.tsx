@@ -260,11 +260,18 @@ export default function HowItWorksPage() {
       {/* Nav — shared across all pages for consistency */}
       <Navbar />
 
+      {/* "Not publicly linked" pill — moved here from the nav after Navbar consolidation */}
+      <div style={{ maxWidth: '960px', margin: '0 auto', padding: '8px 48px 0' }} className="max-sm:!px-5">
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <span style={{ fontSize: '12px', color: C.inkFaint, background: C.amberPale, border: `1px solid ${C.amberLight}`, padding: '4px 12px', borderRadius: '20px' }}>Not publicly linked</span>
+        </div>
+      </div>
+
       {/* Floating sidebar */}
       <SideNav />
 
       {/* Hero */}
-      <div style={{ padding: '80px 48px 64px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
+      <div style={{ padding: '40px 48px 64px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
         <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2.5px', textTransform: 'uppercase', color: C.amber, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <span style={{ width: '24px', height: '1.5px', background: C.amber, display: 'block' }} />
           The thinking behind Unpacked
@@ -305,10 +312,10 @@ export default function HowItWorksPage() {
           <div style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '14px', padding: '24px 20px' }}>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
               {[
-                { val: '$0.10', lbl: 'Average cost per article' },
                 { val: '5', lbl: 'Core pipeline stages' },
                 { val: '3', lbl: 'Independent fact-checkers' },
-                { val: '9', lbl: 'Article types' },
+                { val: '14', lbl: 'Article types' },
+                { val: '3', lbl: 'Live data sources' },
                 { val: '48,500+', lbl: 'Affiliate merchants' },
                 { val: '<3 min', lbl: 'Generation time' },
               ].map((s) => (
@@ -590,28 +597,9 @@ export default function HowItWorksPage() {
       <section id="why-now" style={{ padding: '56px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
         <SecLabel>Why this has only now become possible</SecLabel>
         <h2 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px', color: C.ink, marginBottom: '14px', fontFamily: 'var(--font-sora)' }}>The economics <span style={{ color: C.amber }}>only just started working.</span></h2>
-        <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '16px' }}>Until a year ago, generating a high-quality researched article cost over $1.00 &mdash; making consumer subscription pricing loss-making from day one. The models also weren&rsquo;t reliable enough to produce the structured output Unpacked depends on. Both problems are now solved.</p>
+        <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '16px' }}>Until a year ago, the underlying model costs made a researched article unviable to generate at consumer subscription prices &mdash; loss-making from day one. The models also weren&rsquo;t reliable enough to produce the structured output Unpacked depends on. Both problems are now solved.</p>
 
-        <div style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '12px', padding: '20px 24px', margin: '24px 0' }}>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: C.ink, marginBottom: '16px' }}>Cost per article &mdash; the trajectory</div>
-          {[
-            { period: 'Early 2024', w: '100%', amount: '$1.00+', note: 'Unviable', noteColor: C.inkFaint },
-            { period: 'Late 2024', w: '35%', amount: '$0.35', note: 'Marginal', noteColor: C.inkFaint },
-            { period: 'Mid 2025', w: '18%', amount: '$0.175', note: 'Viable', noteColor: C.amber },
-            { period: 'Now', w: '10%', amount: '~$0.10', note: '~80%+ margin', noteColor: C.green },
-            { period: '2026&ndash;27', w: '4%', amount: '$0.03&ndash;05', note: '↓ projected', noteColor: C.green, barColor: C.green, amountColor: C.green, dashed: true },
-          ].map((row) => (
-            <div key={row.period} style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '10px' }}>
-              <span style={{ fontSize: '12px', color: C.inkFaint, width: '80px', flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: row.period }} />
-              <div style={{ flex: 1, height: '6px', background: C.border, borderRadius: '3px', overflow: 'hidden', opacity: row.dashed ? 0.5 : 1 }}>
-                <div style={{ height: '100%', borderRadius: '3px', background: row.barColor || C.amber, width: row.w }} />
-              </div>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: row.amountColor || C.ink, width: '64px', textAlign: 'right' }} dangerouslySetInnerHTML={{ __html: row.amount }} />
-              <span style={{ fontSize: '11px', fontWeight: 600, width: '86px', textAlign: 'right', flexShrink: 0, color: row.noteColor }}>{row.note}</span>
-            </div>
-          ))}
-        </div>
-        <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: 0 }}>Unlike almost every other business, <strong style={{ color: C.ink, fontWeight: 600 }}>Unpacked&rsquo;s costs fall automatically.</strong> Every new model release reduces the cost per article with no action required. The margins only improve over time.</p>
+        <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: 0 }}>Unlike almost every other business, <strong style={{ color: C.ink, fontWeight: 600 }}>Unpacked&rsquo;s underlying costs fall automatically.</strong> Every new model release reduces the cost of generation with no action required. The margins only improve over time.</p>
       </section>
 
       <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
@@ -649,7 +637,7 @@ export default function HowItWorksPage() {
             <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: C.amber, marginBottom: '10px' }}>Unpacked</div>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px', padding: 0, margin: 0 }}>
               {[
-                'No journalists &mdash; $0.10/article, fully automated',
+                'No journalists &mdash; fully automated pipeline',
                 'Any topic &mdash; products, finance, news, culture, health',
                 'Community of creators who distribute for you',
                 'Costs fall as models improve. Margins only grow.',
@@ -681,7 +669,7 @@ export default function HowItWorksPage() {
             {[
               { tag: 'Readers', price: '$12&ndash;29/mo', d: 'Free tier: 3 articles, no card. Standard $12/mo for 15 articles. Pro $29/mo for 60. Subscription from day one.' },
               { tag: 'Retailers', price: 'Affiliate %', d: 'Commission on product recommendations that convert. Reader pays nothing extra. Amazon, booking sites, credit cards ($50&ndash;200 per signup), insurers.' },
-              { tag: 'Publishers & brands', price: 'Later', d: 'API access at $0.50&ndash;1.00 per article vs $0.10 cost. Sponsored category placement. Month 6 and beyond.' },
+              { tag: 'Publishers & brands', price: 'Later', d: 'API access for publishers and platforms. Sponsored category placement. Month 6 and beyond.' },
             ].map((c) => (
               <div key={c.tag} style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '12px', padding: '18px 20px' }}>
                 <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.amber, marginBottom: '4px' }}>{c.tag}</div>
