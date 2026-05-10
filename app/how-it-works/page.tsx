@@ -15,7 +15,6 @@ const C = {
 
 /* ─── Section nav items ─── */
 const NAV_ITEMS = [
-  { id: 'problem', label: 'The problem' },
   { id: 'output', label: 'The output' },
   { id: 'formats', label: 'Any topic, any format' },
   { id: 'pipeline', label: 'How it\u2019s built' },
@@ -285,27 +284,6 @@ export default function HowItWorksPage() {
 
       <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
 
-      {/* ─── 1. The problem ─── */}
-      <section id="problem" style={{ padding: '56px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
-        <SecLabel>The problem</SecLabel>
-        <h2 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px', color: C.ink, marginBottom: '14px', fontFamily: 'var(--font-sora)' }}>AI gives you data. It doesn&rsquo;t help you make the decision.</h2>
-        <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '16px' }}>Every major AI tool has the same flaw: it presents information but won&rsquo;t commit to an answer. It has no idea what real people think right now, can&rsquo;t tell you what something costs today, and whatever it produces is a wall of unformatted text you can&rsquo;t share, publish, or do anything useful with.</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5" style={{ margin: '24px 0' }}>
-          <div style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '10px', padding: '16px 18px' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 700, color: C.ink, marginBottom: '4px' }}>No real verdict</h4>
-            <p style={{ fontSize: '13px', color: C.inkLight, margin: 0, lineHeight: 1.5 }}>&ldquo;Depends on your needs.&rdquo; Every AI hedges. Nobody wants a hedge &mdash; they want someone to tell them what to do.</p>
-          </div>
-          <div style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '10px', padding: '16px 18px' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 700, color: C.ink, marginBottom: '4px' }}>No real opinions</h4>
-            <p style={{ fontSize: '13px', color: C.inkLight, margin: 0, lineHeight: 1.5 }}>What do people who own this actually say on Reddit right now? AI has no idea. It generates sentiment rather than finding it.</p>
-          </div>
-          <div style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '10px', padding: '16px 18px' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 700, color: C.ink, marginBottom: '4px' }}>Nothing you can use</h4>
-            <p style={{ fontSize: '13px', color: C.inkLight, margin: 0, lineHeight: 1.5 }}>Unformatted, unverified, unshareable. It disappears the moment you close the tab. There&rsquo;s no article &mdash; just a conversation.</p>
-          </div>
-        </div>
-      </section>
-
       {/* ─── Stats strip ─── */}
       <section style={{ padding: '36px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
         <FadeIn>
@@ -339,133 +317,11 @@ export default function HowItWorksPage() {
       <section id="output" style={{ padding: '56px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
         <SecLabel>The output</SecLabel>
         <h2 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px', color: C.ink, marginBottom: '14px', fontFamily: 'var(--font-sora)' }}>An afternoon&rsquo;s research.<br />Compiled in three minutes.</h2>
-        <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '16px' }}>Unpacked doesn&rsquo;t return a chat answer &mdash; it produces a complete article. The kind that would take several hours to research properly: live sources, current prices, real community opinions pulled directly from Reddit and forums, independent fact-checking, and a clear verdict. Laid out like a magazine &mdash; with interactive charts, product cards, comparison tables, and an editorial hero image.</p>
-        <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: '16px' }}><strong style={{ color: C.ink, fontWeight: 600 }}>You are the editor.</strong> Adjust the tone, change the focus, swap images, publish it under your name. Share a link that looks like something a publication spent a day on. It costs ten cents to produce.</p>
-
-        {/* Beat 1 — ChatGPT vs Unpacked */}
-        <div style={{ margin: '36px 0' }}>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4" style={{ alignItems: 'stretch' }}>
-            <div className="md:col-span-2" style={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ padding: '14px 20px', fontSize: '14px', fontWeight: 700, borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: '8px', background: '#F3F4F6', color: '#6B7280' }}>💬 ChatGPT</div>
-              <div style={{ padding: '20px', background: 'white', fontSize: '14px', color: '#4B5563', lineHeight: 1.65, flex: 1 }}>
-                <div style={{ display: 'inline-block', background: '#F3F4F6', color: '#9CA3AF', fontSize: '11px', padding: '3px 10px', borderRadius: '4px', marginBottom: '12px', fontWeight: 600 }}>Great question!</div>
-                <p style={{ marginBottom: '12px', fontSize: '14px' }}>Both are excellent flagships. The iPhone has the A19 chip and strong ecosystem integration. The Galaxy has a 200MP sensor. Both support fast charging but you will need to purchase a charger separately.</p>
-                <div style={{ background: '#FEF2F2', borderRadius: '8px', padding: '14px 16px', margin: '12px 0', fontSize: '14px', color: '#6B7280' }}>Ultimately the best phone <strong>depends on your personal preferences</strong> and which ecosystem you are invested in.</div>
-                <p style={{ fontSize: '12px', color: '#9CA3AF', fontStyle: 'italic', marginTop: '8px', marginBottom: 0, borderTop: '1px solid #F3F4F6', paddingTop: '12px' }}>No verdict. No real opinions. Nothing to share.</p>
-              </div>
-            </div>
-            <div className="md:col-span-3" style={{ borderRadius: '14px', overflow: 'hidden', border: `2px solid ${C.amberLight}`, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ padding: '14px 20px', fontSize: '14px', fontWeight: 700, borderBottom: `1px solid ${C.amberLight}`, display: 'flex', alignItems: 'center', gap: '8px', background: C.amberPale, color: C.amberDark }}>📄 Unpacked &mdash; same question</div>
-              <div style={{ padding: '22px', background: C.cream, flex: 1 }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: C.amber, color: 'white', fontSize: '12px', fontWeight: 700, padding: '5px 12px', borderRadius: '5px', marginBottom: '14px' }}>🏆 VERDICT</div>
-                <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px', padding: 0 }}>
-                  {['iPhone 17 wins on video, ecosystem, and resale value', 'Galaxy S26 Ultra wins on camera zoom and display', 'Fly weekly? Get the iPhone. Stills-first? Get the Galaxy.'].map((t, i) => (
-                    <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '14px', color: C.inkMid, fontWeight: 500, lineHeight: 1.45 }}>
-                      <span style={{ width: '7px', height: '7px', minWidth: '7px', background: C.amber, borderRadius: '50%', marginTop: '5px' }} />
-                      {t}
-                    </li>
-                  ))}
-                </ul>
-                <div className="grid grid-cols-2 gap-2" style={{ marginBottom: '14px' }}>
-                  <div style={{ borderRadius: '8px', padding: '12px 14px', background: C.amberPale, border: `1px solid ${C.amberLight}` }}>
-                    <div style={{ fontSize: '10px', fontWeight: 700, color: C.amber, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>★ Winner</div>
-                    <div style={{ fontSize: '15px', fontWeight: 700, color: C.ink }}>iPhone 17</div>
-                    <div style={{ fontSize: '12px', color: C.inkFaint, marginTop: '2px' }}>From $799</div>
-                  </div>
-                  <div style={{ borderRadius: '8px', padding: '12px 14px', background: 'white', border: `1px solid ${C.border}` }}>
-                    <div style={{ fontSize: '10px', fontWeight: 700, color: C.inkFaint, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>Best zoom</div>
-                    <div style={{ fontSize: '15px', fontWeight: 700, color: C.ink }}>Galaxy S26</div>
-                    <div style={{ fontSize: '12px', color: C.inkFaint, marginTop: '2px' }}>From $799</div>
-                  </div>
-                </div>
-                <div style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '8px', padding: '14px 16px', marginBottom: '12px' }}>
-                  <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: C.inkFaint, marginBottom: '10px' }}>Real opinions &mdash; 3,400 Reddit discussions</div>
-                  {[{ name: 'iPhone 17', pct: 55, active: true }, { name: 'Galaxy S26', pct: 38, active: false }].map((r) => (
-                    <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: r.active ? '6px' : 0 }}>
-                      <span style={{ fontSize: '12px', color: C.inkLight, width: '70px' }}>{r.name}</span>
-                      <div style={{ flex: 1, height: '6px', background: C.border, borderRadius: '3px', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', borderRadius: '3px', background: r.active ? C.amber : '#D4C9B8', width: `${r.pct}%` }} />
-                      </div>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: r.active ? C.amber : C.inkFaint, width: '32px', textAlign: 'right' }}>{r.pct}%</span>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '8px', padding: '14px 16px', marginBottom: '12px' }}>
-                  <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: C.inkFaint, marginBottom: '10px' }}>Key specs compared</div>
-                  <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr>
-                        <th style={{ padding: '6px 0', borderBottom: `1px solid ${C.border}`, color: C.inkFaint, fontWeight: 600, textAlign: 'left' }}></th>
-                        <th style={{ padding: '6px 0', borderBottom: `1px solid ${C.border}`, color: C.amber, fontWeight: 700, textAlign: 'center' }}>iPhone 17</th>
-                        <th style={{ padding: '6px 0', borderBottom: `1px solid ${C.border}`, color: C.inkMid, fontWeight: 600, textAlign: 'center' }}>Galaxy S26</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        ['Camera', '48MP Fusion', '200MP Wide'],
-                        ['Chip', 'A19 Pro', 'Snapdragon 8+'],
-                        ['Battery', '4,800 mAh', '5,000 mAh'],
-                        ['Price', '$799', '$799'],
-                      ].map(([label, a, b]) => (
-                        <tr key={label}>
-                          <td style={{ padding: '6px 0', color: C.inkFaint, fontWeight: 500, borderBottom: `1px solid ${C.border}` }}>{label}</td>
-                          <td style={{ padding: '6px 0', color: C.ink, fontWeight: 500, textAlign: 'center', borderBottom: `1px solid ${C.border}` }}>{a}</td>
-                          <td style={{ padding: '6px 0', color: C.ink, fontWeight: 500, textAlign: 'center', borderBottom: `1px solid ${C.border}` }}>{b}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div style={{ fontSize: '13px', color: C.green, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '18px', height: '18px', borderRadius: '50%', background: C.greenLight, fontSize: '10px' }}>✓</span>
-                  Prices verified · specs confirmed against live sources
-                </div>
-              </div>
-            </div>
-          </div>
-          <p style={{ textAlign: 'center', fontSize: '13px', color: C.inkFaint, fontStyle: 'italic', marginTop: '12px' }}>Unformatted text you cannot share. <span style={{ color: C.amber, fontWeight: 600, fontStyle: 'normal' }}>vs a polished article that travels.</span></p>
-        </div>
-
-        {/* Beat 2 — Four proof-points */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5" style={{ margin: '28px 0' }}>
-          {[
-            { t: 'Researched from the live web', d: 'Current prices, recent reviews, live data. Not recycled training data &mdash; real sources searched at the moment of generation.' },
-            { t: 'Real opinions from real people', d: 'Reddit, forums, X/Twitter &mdash; community sentiment pulled and synthesised, not generated by the AI. Every viewpoint attributed.' },
-            { t: 'Triple fact-checked', d: 'A dedicated verification stack &mdash; deliberately different models from the writer &mdash; independently checks every price, spec, and claim. Corrections shown transparently.' },
-            { t: 'Built to be shared', d: 'A beautiful link that looks like a magazine article. Auto-generated threads, LinkedIn posts, Reddit summaries, and image cards ship with every piece.' },
-          ].map((b) => (
-            <div key={b.t} style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '10px', padding: '18px' }}>
-              <h4 style={{ fontSize: '14px', fontWeight: 700, color: C.ink, marginBottom: '5px' }}>{b.t}</h4>
-              <p style={{ fontSize: '13px', color: C.inkLight, margin: 0, lineHeight: 1.55 }} dangerouslySetInnerHTML={{ __html: b.d }} />
-            </div>
-          ))}
-        </div>
-
-        {/* Beat 3 — Six-point differentiation grid */}
-        <FadeIn>
-          <div style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '14px', padding: '26px 28px', margin: '28px 0 0' }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: C.amber, marginBottom: '4px' }}>Not a chatbot. Not a content tool.</div>
-            <h3 style={{ fontSize: '20px', fontWeight: 700, color: C.ink, marginBottom: '20px', fontFamily: 'var(--font-sora)', letterSpacing: '-0.3px' }}>Six things no competitor combines.</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {[
-                { t: 'Picks a winner', d: 'Every article commits to a verdict. No &ldquo;it depends.&rdquo; 50+ banned hedge phrases are enforced.' },
-                { t: 'Triple fact-check', d: 'Three independent models verify claims. Corrections applied transparently before publish.' },
-                { t: 'Real community sentiment', d: 'Reddit threads and X posts pulled live, classified by stance, attributed to the source.' },
-                { t: 'Live market data', d: 'Polymarket odds, stock prices, and Google Trends embedded at the moment of generation.' },
-                { t: 'Interactive tools', d: 'Bespoke decision trees, calculators, and scenario simulators generated per article type.' },
-                { t: 'Creator-first', d: 'Every article publishes under a creator&rsquo;s name, carries their affiliate links, and earns them revenue.' },
-              ].map((d) => (
-                <div key={d.t} style={{ background: C.cream, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '14px 16px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: C.ink, marginBottom: '4px' }}>{d.t}</div>
-                  <p style={{ fontSize: '12px', color: C.inkLight, margin: 0, lineHeight: 1.5 }} dangerouslySetInnerHTML={{ __html: d.d }} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </FadeIn>
+        <p style={{ fontSize: '16px', color: C.inkLight, lineHeight: 1.75, marginBottom: 0 }}>Unpacked doesn&rsquo;t return a chat answer &mdash; it produces a complete article. The kind that would take several hours to research properly: live sources, current prices, real community opinions pulled directly from Reddit and X, independent fact-checking, and a clear verdict. Laid out like a magazine &mdash; with interactive charts, product cards, comparison tables, and an editorial hero image. You publish it under your name.</p>
       </section>
 
       <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
+
 
       {/* ─── 3. Any topic, any format ─── */}
       <section id="formats" style={{ padding: '56px 48px', maxWidth: '960px', margin: '0 auto' }} className="max-sm:!px-5">
