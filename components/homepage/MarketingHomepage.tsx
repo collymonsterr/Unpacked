@@ -2,6 +2,7 @@ import MarketingHero from '@/components/homepage/MarketingHero'
 import HowItWorksRow from '@/components/homepage/HowItWorksRow'
 import FeaturesGrid from '@/components/homepage/FeaturesGrid'
 import EditorialControlRow from '@/components/homepage/EditorialControlRow'
+import QuoteBreaker from '@/components/homepage/QuoteBreaker'
 import TrustStrip from '@/components/TrustStrip'
 import SearchForm from '@/components/SearchForm'
 import ExampleChips from '@/components/ExampleChips'
@@ -38,11 +39,25 @@ export default function MarketingHomepage({ featuredPool, trendingIdList, all, e
       {/* 3-step explainer (process) */}
       <HowItWorksRow />
 
+      {/* Breaker 1 — opinion quote linking to /about (the philosophy) */}
+      <QuoteBreaker
+        quote="We&rsquo;re not building an AI tool. We&rsquo;re building the publishing platform AI made possible."
+        href="/about"
+        ctaLabel="Read the full story"
+      />
+
       {/* Output quality features (6-card grid) */}
       <FeaturesGrid />
 
       {/* Editorial control / publishing pitch (3-card row, dark background) */}
       <EditorialControlRow />
+
+      {/* Breaker 2 — opinion quote linking to /how-it-works (the pipeline) */}
+      <QuoteBreaker
+        quote="Eight stages. Five AI models. Three independent fact-checks. One article you can put your name on."
+        href="/how-it-works"
+        ctaLabel="See how the pipeline works"
+      />
 
       {/* Trust signals — thin transition strip reinforcing the themes above */}
       <div className="my-10">
