@@ -1,5 +1,7 @@
 import MarketingHero from '@/components/homepage/MarketingHero'
 import HowItWorksRow from '@/components/homepage/HowItWorksRow'
+import FeaturesGrid from '@/components/homepage/FeaturesGrid'
+import EditorialControlRow from '@/components/homepage/EditorialControlRow'
 import TrustStrip from '@/components/TrustStrip'
 import SearchForm from '@/components/SearchForm'
 import ExampleChips from '@/components/ExampleChips'
@@ -33,10 +35,16 @@ export default function MarketingHomepage({ featuredPool, trendingIdList, all, e
       {/* Marketing hero with rotating preview + 2 CTAs */}
       <MarketingHero exampleSlug={exampleSlug} />
 
-      {/* 3-step explainer */}
+      {/* 3-step explainer (process) */}
       <HowItWorksRow />
 
-      {/* Trust signals */}
+      {/* Output quality features (6-card grid) */}
+      <FeaturesGrid />
+
+      {/* Editorial control / publishing pitch (3-card row, dark background) */}
+      <EditorialControlRow />
+
+      {/* Trust signals — thin transition strip reinforcing the themes above */}
       <div className="my-10">
         <TrustStrip />
       </div>
