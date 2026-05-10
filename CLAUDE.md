@@ -413,6 +413,9 @@ Never push directly to main without confirmation. Always verify the build succee
 ### 6. Code Quality
 No placeholder implementations. No "TODO: implement later" unless explicitly agreed. No unused imports or dead code. Preserve existing patterns — don't refactor code you weren't asked to touch.
 
+### 7. Page-Specific Fixes — Always Link
+Whenever a fix or change targets a specific page (homepage, /about, /how-it-works, /pricing, /article/[slug], /admin, etc.), end the response with a direct live link to that page so the founder can click through and verify immediately. Format: `https://unpacked.fyi/<path>` on its own line at the end of the summary. For multi-page changes, list each affected page. For changes that aren't user-visible (pipeline internals, prompts, types) no link is needed.
+
 ---
 
 See BUILD.md for current feature state. See PLAN.md for the forward build plan.
