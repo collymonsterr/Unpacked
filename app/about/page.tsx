@@ -1,5 +1,4 @@
-import Logo from '@/components/ui/Logo'
-import UserMenu from '@/components/ui/UserMenu'
+import Navbar from '@/components/ui/Navbar'
 import SearchForm from '@/components/SearchForm'
 import AboutHero from '@/components/about/AboutHero'
 import Link from 'next/link'
@@ -57,14 +56,8 @@ export default async function AboutPage() {
 
   return (
     <div style={{ backgroundColor: '#FAFAF8', minHeight: '100vh' }}>
-      {/* Nav */}
-      <nav className="px-6 py-5 flex items-center justify-between max-w-6xl mx-auto">
-        <Logo size="md" />
-        <div className="flex items-center gap-3">
-          <Link href="/" className="text-sm font-medium no-underline" style={{ color: '#9E948A' }}>Home</Link>
-          <UserMenu />
-        </div>
-      </nav>
+      {/* Nav — shared across all pages for consistency */}
+      <Navbar />
 
       {/* ═══ 1. HERO ═══ */}
       <AboutHero />

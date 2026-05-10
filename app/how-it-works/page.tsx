@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import Logo from '@/components/ui/Logo'
+import Navbar from '@/components/ui/Navbar'
 
 /* ─── colour tokens ─── */
 const C = {
@@ -257,11 +257,8 @@ export default function HowItWorksPage() {
   return (
     <div className="hiw-root" style={{ background: C.cream, minHeight: '100vh', color: C.ink, fontFamily: 'var(--font-outfit), system-ui, sans-serif', fontSize: '16px', lineHeight: 1.7, overflowX: 'hidden' }}>
 
-      {/* Nav */}
-      <nav style={{ padding: '18px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, background: 'rgba(250,250,248,0.95)', backdropFilter: 'blur(12px)', zIndex: 100 }} className="max-sm:!px-5">
-        <Logo size="md" />
-        <span style={{ fontSize: '12px', color: C.inkFaint, background: C.amberPale, border: `1px solid ${C.amberLight}`, padding: '4px 12px', borderRadius: '20px' }}>Not publicly linked</span>
-      </nav>
+      {/* Nav — shared across all pages for consistency */}
+      <Navbar />
 
       {/* Floating sidebar */}
       <SideNav />
