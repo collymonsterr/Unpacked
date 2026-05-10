@@ -32,15 +32,13 @@ const STEPS = [
   },
   {
     num: '03',
-    title: 'Read your article',
-    desc: 'A complete visual article with a verdict, charts, real Reddit quotes, and triple fact-checked claims. Yours to share, edit, or publish.',
-    tag: 'Beautiful output. Always.',
+    title: 'Polish it in your tone',
+    desc: 'Rewrite any section, swap images, pull in extra research, refine the wording. Then publish it under your name.',
+    tag: 'Your article, your name.',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="9" y1="13" x2="15" y2="13" />
-        <line x1="9" y1="17" x2="15" y2="17" />
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
       </svg>
     ),
   },
