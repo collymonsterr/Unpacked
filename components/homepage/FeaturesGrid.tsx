@@ -11,35 +11,21 @@
 
 const FEATURES = [
   {
+    title: 'Real opinions from real people',
+    body: 'We pull live Reddit threads and X conversations, summarised inline with sentiment splits. Not generated quotes — actual posts from actual people debating the topic right now.',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    ),
+  },
+  {
     title: 'Triple fact-checked',
     body: 'Every claim verified by three independent models — Gemini with Google Search, Claude, and GPT-4o-mini — before you publish.',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         <polyline points="9 12 11 14 15 10" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Real images, never AI',
-    body: 'Sourced from Pexels, Unsplash, and live web search. We never generate fake images — every photo is real.',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-        <circle cx="9" cy="9" r="2" />
-        <path d="M21 15l-5-5L5 21" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Interactive charts and tables',
-    body: 'Comparison tables, bar charts, calculators, and stat cards rendered automatically from the research — not flat screenshots.',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10" />
-        <line x1="12" y1="20" x2="12" y2="4" />
-        <line x1="6" y1="20" x2="6" y2="14" />
-        <line x1="3" y1="20" x2="21" y2="20" />
       </svg>
     ),
   },
@@ -53,21 +39,34 @@ const FEATURES = [
     ),
   },
   {
-    title: 'Real community opinion',
-    body: 'Reddit threads and X conversations summarised inline with sentiment splits. Real voices, not invented quotes.',
+    title: 'Real images and videos',
+    body: 'Photos from Pexels, Unsplash, and live web search. YouTube and Vimeo embeds for video-led articles. Every image and video is yours to swap, replace, or position where you want.',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+        <circle cx="9" cy="9" r="2" />
+        <path d="M21 15l-5-5L5 21" />
       </svg>
     ),
   },
   {
-    title: 'Editorial polish',
-    body: 'A senior-editor model pass rewrites weak sections — no AI hedging, no "it depends," clear opinions, no filler.',
+    title: 'Interactive charts and tables',
+    body: 'Comparison tables, bar charts, calculators, and stat cards rendered automatically from the research — not flat screenshots, fully interactive components.',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 20h9" />
-        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+        <line x1="18" y1="20" x2="18" y2="10" />
+        <line x1="12" y1="20" x2="12" y2="4" />
+        <line x1="6" y1="20" x2="6" y2="14" />
+        <line x1="3" y1="20" x2="21" y2="20" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Opinionated, never hedged',
+    body: 'We banned "it depends," "on the other hand," and 50 other AI hedge phrases. Every article picks a winner and defends it — no fence-sitting.',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
       </svg>
     ),
   },

@@ -8,9 +8,9 @@
 
 const CONTROLS = [
   {
-    eyebrow: 'Refine',
+    eyebrow: 'Refine the writing',
     title: 'Rewrite anything',
-    body: 'Click any section, give a quick brief, get it rewritten. Change the tone, expand a point, soften the verdict, swap the angle. Your article, your voice.',
+    body: 'Click any section, give a quick brief, get it rewritten. Change the tone, expand a point, soften the verdict, swap the angle. The first draft is just the start.',
     icon: (
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 20h9" />
@@ -19,14 +19,15 @@ const CONTROLS = [
     ),
   },
   {
-    eyebrow: 'Replace',
-    title: 'Swap any image',
-    body: 'Hover any image and hit "New photo" to have us find a better match — or upload your own from your phone or laptop. Every image is yours to change.',
+    eyebrow: 'Decide the contents',
+    title: 'You choose what goes in',
+    body: 'We over-research every article. The Editor tab shows you everything we found — including what didn’t make the first draft. Pull in extra Reddit quotes, swap any image, drop in a YouTube video, reorder the layout. Your article fills out the way you want it.',
     icon: (
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="23 4 23 10 17 10" />
-        <polyline points="1 20 1 14 7 14" />
-        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+        <path d="M9 11H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h4" />
+        <path d="M15 5h4a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-4" />
+        <line x1="9" y1="14" x2="15" y2="8" />
+        <line x1="9" y1="8" x2="15" y2="14" />
       </svg>
     ),
   },
@@ -66,7 +67,7 @@ export default function EditorialControlRow() {
           className="text-base mb-12 text-center max-w-[640px] mx-auto"
           style={{ color: '#B0A89E', lineHeight: 1.55 }}
         >
-          We hand you a polished first draft. Everything from the wording to the images to the layout is yours to change — then publish under your own name.
+          You don&rsquo;t just get an AI generation and send it. You get a first draft, all the surplus research we did, and the tools to shape it into the article you actually want.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
