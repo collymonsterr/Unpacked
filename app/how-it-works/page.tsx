@@ -393,12 +393,12 @@ export default function HowItWorksPage() {
                 { n: '5', t: 'Fact-check', d: 'Three independent models verify every claim.' },
               ].map((stage, i, arr) => (
                 <div key={stage.n} className="flex md:flex-col items-start md:items-stretch gap-2 flex-1 relative">
-                  <div style={{ background: C.amberPale, border: `1px solid ${C.amberLight}`, borderRadius: '8px', padding: '9px 10px', flex: 1, width: '100%' }}>
+                  <div className="pipeline-stage-card" style={{ background: C.amberPale, border: `1px solid ${C.amberLight}`, borderRadius: '8px', padding: '9px 10px', flex: 1, width: '100%' }}>
                     <div className="flex items-center gap-1.5 mb-1">
                       <span style={{ width: '17px', height: '17px', minWidth: '17px', borderRadius: '50%', background: C.amber, color: 'white', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{stage.n}</span>
                       <span style={{ fontSize: '12px', fontWeight: 700, color: C.ink }}>{stage.t}</span>
                     </div>
-                    <p style={{ fontSize: '10.5px', color: C.inkLight, margin: 0, lineHeight: 1.35 }}>{stage.d}</p>
+                    <p style={{ color: C.inkLight, margin: 0 }}>{stage.d}</p>
                   </div>
                   {i < arr.length - 1 && (
                     <div className="hidden md:flex items-center justify-center absolute" style={{ right: '-8px', top: '50%', transform: 'translateY(-50%)', zIndex: 1 }}>
@@ -419,9 +419,9 @@ export default function HowItWorksPage() {
               { t: 'Editorial pass', d: '15-check quality scoring and section-level rewrites before anything ships.' },
               { t: 'Live data', d: 'Polymarket odds, Yahoo Finance quotes, Google Trends velocity &mdash; filtered for relevance.' },
             ].map((b) => (
-              <div key={b.t} style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '10px', padding: '14px 16px' }}>
+              <div key={b.t} className="behind-scenes-card" style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: '10px', padding: '14px 16px' }}>
                 <div style={{ fontSize: '13px', fontWeight: 700, color: C.ink, marginBottom: '3px' }}>{b.t}</div>
-                <p style={{ fontSize: '12px', color: C.inkLight, margin: 0, lineHeight: 1.5 }} dangerouslySetInnerHTML={{ __html: b.d }} />
+                <p style={{ color: C.inkLight, margin: 0 }} dangerouslySetInnerHTML={{ __html: b.d }} />
               </div>
             ))}
           </div>
@@ -740,6 +740,10 @@ export default function HowItWorksPage() {
         .hiw-root h3 { font-size: 22px !important; font-weight: 700 !important; }
         .hiw-root h4 { font-size: 16px !important; font-weight: 700 !important; }
         .hiw-root section { padding-top: 64px !important; padding-bottom: 64px !important; }
+        /* Opt-out for compact card components — restore the inline tiny sizing
+           that the global p override otherwise blows up to 18px. */
+        .hiw-root .pipeline-stage-card p { font-size: 11px !important; line-height: 1.4 !important; }
+        .hiw-root .behind-scenes-card p { font-size: 12px !important; line-height: 1.5 !important; }
       `}</style>
     </div>
   )
