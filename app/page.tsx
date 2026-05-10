@@ -1,13 +1,8 @@
 import Navbar from '@/components/ui/Navbar'
-import HomepageHero from '@/components/HomepageHero'
-import FeaturedSection from '@/components/homepage/FeaturedSection'
-import TrendingSection from '@/components/homepage/TrendingSection'
-import PopularSection from '@/components/homepage/PopularSection'
-import RecentArticlesGrid from '@/components/RecentArticlesGrid'
-import ExploreByTopic from '@/components/homepage/ExploreByTopic'
 import PendingArticleRecovery from '@/components/PendingArticleRecovery'
 import Footer from '@/components/ui/Footer'
-import TrustStrip from '@/components/TrustStrip'
+import SearchHomepage from '@/components/homepage/SearchHomepage'
+import MarketingHomepage from '@/components/homepage/MarketingHomepage'
 import type { ArticleRow } from '@/types/article'
 
 import type { Metadata } from 'next'
@@ -83,8 +78,27 @@ async function getHomepageData() {
   }
 }
 
+/**
+ * Detect server-side whether the visitor is signed in.
+ * Returns false on any error so anonymous flow renders by default.
+ */
+async function isAuthenticatedVisitor(): Promise<boolean> {
+  try {
+    const { createServerSupabase } = await import('@/lib/supabase')
+    const supabase = await createServerSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+    return !!user
+  } catch {
+    return false
+  }
+}
+
 export default async function HomePage() {
-  const { featuredPool, trendingPool, trendingIdList, popular, all } = await getHomepageData()
+  const [data, isAuthed] = await Promise.all([
+    getHomepageData(),
+    isAuthenticatedVisitor(),
+  ])
+  const { featuredPool, trendingPool, trendingIdList, popular, all } = data
 
   return (
     <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
@@ -92,47 +106,22 @@ export default async function HomePage() {
       {/* Nav — no search bar on homepage (hero has the main search) */}
       <Navbar showSearch={false} />
 
-      {/* Hero + feature cards (auth-conditional) */}
-      <HomepageHero existingQueries={all.map(a => a.query)} />
-
-      {/* Trust strip */}
-      <div className="mb-10">
-        <TrustStrip />
-      </div>
-
-      {/* Featured */}
-      {featuredPool.length > 0 && (
-        <>
-          <FeaturedSection
-            pool={featuredPool}
-            fallbackArticles={all.filter(a => !a.is_featured && !trendingIdList.includes(a.id)).slice(0, 10)}
-          />
-          <div className="max-w-6xl mx-auto px-4 md:px-6 my-14" style={{ borderTop: '1px solid #e2e0d8' }} />
-        </>
+      {isAuthed ? (
+        <SearchHomepage
+          featuredPool={featuredPool}
+          trendingPool={trendingPool}
+          trendingIdList={trendingIdList}
+          popular={popular}
+          all={all}
+        />
+      ) : (
+        <MarketingHomepage
+          featuredPool={featuredPool}
+          trendingIdList={trendingIdList}
+          all={all}
+          exampleSlug={featuredPool[0]?.slug}
+        />
       )}
-
-      {/* Trending Today */}
-      {trendingPool.length > 0 && (
-        <>
-          <TrendingSection pool={trendingPool} />
-          <div className="max-w-6xl mx-auto px-4 md:px-6 my-14" style={{ borderTop: '1px solid #e2e0d8' }} />
-        </>
-      )}
-
-      {/* Most Popular */}
-      {popular.length > 0 && (
-        <>
-          <PopularSection articles={popular} />
-          <div className="max-w-6xl mx-auto px-4 md:px-6 my-14" style={{ borderTop: '1px solid #e2e0d8' }} />
-        </>
-      )}
-
-      {/* Explore by Topic */}
-      <ExploreByTopic />
-      <div className="max-w-6xl mx-auto px-4 md:px-6 my-14" style={{ borderTop: '1px solid #e2e0d8' }} />
-
-      {/* All Articles */}
-      <RecentArticlesGrid articles={all} />
 
       {/* Footer */}
       <Footer />
