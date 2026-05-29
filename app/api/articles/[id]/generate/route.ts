@@ -186,7 +186,8 @@ export async function POST(
         enrichArticleWithImages(
           rawArticle,
           row.plan.entities,
-          row.plan.visual_strategy?.image_density
+          row.plan.visual_strategy?.image_density,
+          id
         ),
         fetchThumbnailImage(
           rawArticle.title,

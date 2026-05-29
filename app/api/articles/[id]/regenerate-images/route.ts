@@ -33,7 +33,7 @@ export async function POST(
 
   try {
     const [enrichedArticle, thumbnailUrl] = await Promise.all([
-      enrichArticleWithImages(row.article, row.plan.entities),
+      enrichArticleWithImages(row.article, row.plan.entities, undefined, id),
       fetchThumbnailImage(
         row.article.title,
         row.article.article_type,

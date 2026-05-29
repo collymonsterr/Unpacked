@@ -8,7 +8,7 @@
 
 import type { ArticleType } from '@/lib/article-types'
 
-export type ImageSource = 'pexels' | 'unsplash' | 'brave'
+export type ImageSource = 'google' | 'pexels' | 'unsplash' | 'brave'
 export type ImagePurpose = 'hero' | 'product' | 'editorial_section'
 
 export interface ImageRequest {
@@ -20,6 +20,8 @@ export interface ImageRequest {
 
 export interface ImageCandidate {
   url: string
+  /** Small preview URL — used for cheap/fast vision selection. Falls back to `url`. */
+  thumbnail?: string
   source: ImageSource
   alt: string
   width: number
@@ -36,31 +38,35 @@ export interface ImageCandidate {
  * First source is primary; the rest are fallbacks tried in order.
  */
 export function routeImageRequest(request: ImageRequest): ImageSource[] {
+  // Google Images is the PRIMARY source for every request — it searches the
+  // open web like a human would, so it has real photos of specific/named/new
+  // subjects (products, people, events) that stock libraries lack. Pexels/
+  // Unsplash/Brave are graceful fallbacks for when Google returns nothing.
+
   // Hero images
   if (request.purpose === 'hero') {
-    // News needs real event photos — Brave is best for current events
-    if (request.style === 'news_photo') return ['brave']
-    // Products need actual product photos
-    if (request.style === 'product_photo') return ['brave']
-    // Everything else: editorial quality from Pexels/Unsplash, Brave fallback
-    return ['pexels', 'unsplash', 'brave']
+    // News + product subjects need real-world / specific photos, not stock.
+    if (request.style === 'news_photo') return ['google', 'brave']
+    if (request.style === 'product_photo') return ['google', 'brave']
+    // Everything else: Google first, then editorial-quality stock, Brave last.
+    return ['google', 'pexels', 'unsplash', 'brave']
   }
 
-  // Product images — Brave is best for specific product photos
+  // Product images — Google + Brave find specific product photos
   if (request.purpose === 'product') {
-    return ['brave']
+    return ['google', 'brave']
   }
 
   // Editorial section images
   if (request.purpose === 'editorial_section') {
     // News articles need real-world photos
     if (request.articleType === 'news_analysis' || request.articleType === 'breaking_news') {
-      return ['brave']
+      return ['google', 'brave']
     }
-    return ['pexels', 'unsplash', 'brave']
+    return ['google', 'pexels', 'unsplash', 'brave']
   }
 
-  return ['brave']
+  return ['google', 'brave']
 }
 
 /**

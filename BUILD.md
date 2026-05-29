@@ -13,7 +13,7 @@ What exists right now, confirmed by full codebase audit April 2026. Update this 
 | 3. Blueprint | Thesis, winner, section skeleton, word budgets, big statement placement | Gemini 2.5 Flash | `lib/blueprint.ts` |
 | 4. Writing | Full article JSON with validation + retry + fallback | Gemini Flash (default), Sonnet (premium/fallback) | `lib/gemini-writer.ts`, `lib/claude.ts` |
 | 5. Editorial | 15-check scoring, section rewrites | Sonnet (primary), Gemini (fallback) | `lib/editorial-pass.ts` |
-| 6. Images | Routed multi-source: Pexels → Unsplash → Brave | Haiku (query gen) | `lib/images.ts`, `lib/image-router.ts`, `lib/pexels.ts` |
+| 6. Images | Google Images first → vision-pick best → rehost to Supabase (stock = fallback) | Haiku (query gen + vision selection) | `lib/images.ts`, `lib/image-router.ts`, `lib/google-images.ts`, `lib/image-selector.ts`, `lib/image-storage.ts`, `lib/pexels.ts` |
 | 7. Fact-check | Triple: Gemini+Google Search, Haiku credibility, GPT-4o-mini arbitration | 3 models | `lib/fact-check.ts` |
 | 8. Social | X thread, LinkedIn post, Reddit summary, image cards | Gemini Flash | `lib/social-content.ts` |
 
@@ -186,12 +186,17 @@ Four distinct components in `components/sections/LiveDataCard.tsx`, auto-selecte
 
 ---
 
-## Image Pipeline (built — routed multi-source)
+## Image Pipeline (rebuilt May 2026 — Google-Images-first + vision selection + rehosting)
 
-- `lib/image-router.ts` — routes by image type: hero editorial → pexels/unsplash/brave, news → brave only
-- `lib/pexels.ts` — Pexels API with attribution (graceful fallback if key missing)
-- `lib/images.ts` — hero + product images, Haiku query generation, candidate filtering
-- Owner can upload custom hero image via Supabase Storage
+Mirrors how a human sources an image: search the best index (Google Images) with the literal subject, visually scan the grid, pick the best, and save a copy. Replaces the old stock-first, regex-pick-first[0] approach that returned generic "person at a laptop" photos for specific/named subjects (e.g. "Opus 4.8").
+
+- `lib/google-images.ts` — **primary source for every article.** `searchGoogleImages(query, opts)` hits SerpAPI `engine=google_images` (reuses the existing `SERPAPI_KEY` already used for Google Trends — no new credentials). `safe=active`, large-size bias (`tbs=isz:l`). Maps `images_results[]` → `ImageCandidate` with real dimensions + a small `thumbnail` URL. Returns `[]` on missing key/failure (graceful fallback).
+- `lib/image-selector.ts` — **vision selection.** `selectBestImage(candidates, subject, context)` sends candidate *thumbnails* (small, fast, Google-CDN reliable) to Claude Haiku 4.5 vision in one call and picks the single most on-subject, sharp, text/watermark-free image. Fallback GPT-4o-mini; final fallback `candidates[0]`. Skips the call when <2 candidates. Logs `api_usage_log` (`call_type: 'image_selection'`).
+- `lib/image-storage.ts` — **rehosting.** `rehostImage(url, articleId, kind)` downloads the chosen image (10s timeout, 10MB cap, content-type check) and uploads to Supabase Storage `article-images` under `heroes/`/`sections/`/`products/`, returning a stable, hotlink-proof public URL. `null` on failure → caller keeps the original URL. Skips images already on our storage.
+- `lib/image-router.ts` — routes by image type with **Google first** in every branch: hero editorial → google/pexels/unsplash/brave; hero news/product + product → google/brave; editorial sections → google (+ stock or brave). Dimension/landscape filters in `filterImageCandidates()` are now meaningful (Google returns real dims).
+- `lib/images.ts` — `fetchHeroImage()` resolves a candidate pool, vision-picks, then rehosts. `resolveSectionImage()` does the same for editorial sections. `fetchProductImages()` is Google-first (primary product image rehosted; gallery extras hotlinked). Haiku query gen (`generateHeroQuery`) + planner `hero_image_query` both lead with the literal named subject.
+- `lib/pexels.ts` / `lib/unsplash.ts` — stock libraries, now **fallback only** (used when Google/SerpAPI returns nothing).
+- Owner can still upload a custom hero image via Supabase Storage; admin "Replace thumbnail" still offers multiple candidates (no vision-collapse there — the user picks).
 
 ---
 

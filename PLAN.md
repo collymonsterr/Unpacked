@@ -103,14 +103,14 @@ Editor Bar handles this — contextual helper text shows unused findings count a
 
 Image routing is built. These sessions improve selection quality.
 
-### 2A. Wikimedia Commons + SerpAPI Product Images
-Wikimedia for news/politics/science. SerpAPI Google Shopping for products (brand + exact model + identifiers).
+### 2A. SerpAPI Google Images as primary source — ✅ DELIVERED (May 2026)
+`lib/google-images.ts` makes Google Images (SerpAPI `engine=google_images`, reusing the existing `SERPAPI_KEY`) the first source for every article; stock libraries (Pexels/Unsplash) demoted to fallback. Chosen images rehosted to Supabase Storage (`lib/image-storage.ts`) for stable, hotlink-proof URLs. _(Wikimedia Commons not pursued — Google Images covers news/politics/science with far higher hit-rate; Google Shopping superseded by Google Images for products.)_
 
-### 2B. AI Photo Editor Step
-After blueprint: cheap model call generates context-aware image query and image_mode. Hard rules: finance → real-world/metaphor, health → human/clinical, products → never abstract. Remove hero query from planning step.
+### 2B. Better, literal image query — ✅ DELIVERED (May 2026)
+Query now leads with the **literal named subject** ("Claude Opus 4.8", "Carl Cox DJ") instead of an editorialized metaphor. Strengthened the rule in both the planner (`lib/claude.ts` `hero_image_query`) and the Haiku fallback (`generateHeroQuery`). _(Kept query generation in the planner rather than adding a separate post-blueprint photo-editor call — simpler, one fewer model hop.)_
 
-### 2C. Vision Selection Model
-GPT-4o-mini vision evaluates 4–6 candidates. Reject: corporate stock, staged scenes, irrelevant imagery, text overlays. ~$0.005/article added.
+### 2C. Vision Selection Model — ✅ DELIVERED (May 2026)
+`lib/image-selector.ts` `selectBestImage()` sends candidate thumbnails to **Claude Haiku 4.5 vision** (primary; GPT-4o-mini fallback; `candidates[0]` final fallback) and picks the single best — rejecting corporate stock, staged scenes, off-subject crops, text/watermark overlays. Replaces "take the first regex-passing URL." Logged as `image_selection` in `api_usage_log`.
 
 ### 2E. Interactive Map Component
 New `map_section` type in the article JSON schema. Renders an interactive map with custom markers, popups with data labels (e.g. "Strait of Hormuz — 20.9M barrels/day"), and Unpacked design system styling. Use Leaflet (free, open source) or Google Maps JavaScript API (free tier: 28,000 loads/month). Pipeline changes: planner detects geographic content and adds `map_data` field with locations/coordinates/labels. Writer includes `map_section` with array of points: `{ name, lat, lng, value, description }`. New `MapSection.tsx` component. Use cases: oil chokepoints, travel destination lists, "best cities" rankings, geopolitical articles, visual lists of places.

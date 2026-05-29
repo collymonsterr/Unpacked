@@ -2,6 +2,9 @@ import type { PlanEntity, ArticleContent, ArticleType, ImageDensity, ProductCard
 import { routeImageRequest, filterImageCandidates, type ImageCandidate, type ImageSource } from '@/lib/image-router'
 import { searchPexels } from '@/lib/pexels'
 import { searchUnsplash } from '@/lib/unsplash'
+import { searchGoogleImages } from '@/lib/google-images'
+import { selectBestImage } from '@/lib/image-selector'
+import { rehostImage } from '@/lib/image-storage'
 
 interface BraveImageResult {
   properties: { url: string }
@@ -108,19 +111,36 @@ async function fetchProductImages(
   maxImages: number,
   entityName?: string
 ): Promise<string[]> {
-  // Primary search
-  const primaryResults = await searchBraveImages(searchQuery, 20)
-
-  // Secondary search with a variation for more variety
-  let secondaryResults: BraveImageResult[] = []
-  if (maxImages > 2 && entityName) {
-    const secondaryQuery = `${entityName} review photo high quality`
-    secondaryResults = await searchBraveImages(secondaryQuery, 10)
+  const urls: string[] = []
+  const seen = new Set<string>()
+  const addUrl = (u: string) => {
+    if (u && !seen.has(u)) { seen.add(u); urls.push(u) }
   }
 
-  // Combine, filter, and deduplicate — allow multiple from same host for product images
-  const allResults = [...primaryResults, ...secondaryResults]
-  return filterAndRankImageUrls(allResults, true).slice(0, maxImages)
+  // Google Images first — best index for specific, named products.
+  const googleCandidates = await searchGoogleImages(searchQuery, { count: maxImages + 6 })
+  for (const c of filterImageCandidates(googleCandidates, 'product')) {
+    addUrl(c.url)
+    if (urls.length >= maxImages) break
+  }
+
+  // Supplement with Brave if Google didn't return enough.
+  if (urls.length < maxImages) {
+    const primaryResults = await searchBraveImages(searchQuery, 20)
+    let secondaryResults: BraveImageResult[] = []
+    if (maxImages > 2 && entityName) {
+      const secondaryQuery = `${entityName} review photo high quality`
+      secondaryResults = await searchBraveImages(secondaryQuery, 10)
+    }
+    // Allow multiple from same host for product galleries.
+    const braveUrls = filterAndRankImageUrls([...primaryResults, ...secondaryResults], true)
+    for (const u of braveUrls) {
+      addUrl(u)
+      if (urls.length >= maxImages) break
+    }
+  }
+
+  return urls.slice(0, maxImages)
 }
 
 function getImageCount(articleType: ArticleType, productType?: string): number {
@@ -268,6 +288,8 @@ async function fetchFromSource(
   count: number,
 ): Promise<ImageCandidate[]> {
   switch (source) {
+    case 'google':
+      return searchGoogleImages(query, { count })
     case 'pexels':
       return searchPexels(query, { perPage: count, orientation: 'landscape' })
     case 'unsplash':
@@ -301,6 +323,8 @@ async function resolveHeroCandidates(
   articleId?: string,
   style?: 'editorial_photo' | 'news_photo' | 'product_photo' | 'abstract',
 ): Promise<ImageCandidate[]> {
+  // Subject-led query from the planner (already name-led + de-metaphorized) —
+  // the literal thing a human would type into Google Images.
   const baseQuery = heroImageQuery || await generateHeroQuery(title, summary ?? '', articleId)
   const isReplacing = excludeUrls && excludeUrls.length > 0
 
@@ -312,7 +336,7 @@ async function resolveHeroCandidates(
 
   const excludeSet = new Set(excludeUrls ?? [])
 
-  // Get source priority from the router
+  // Get source priority from the router (Google first)
   const sources = routeImageRequest({
     query,
     purpose: 'hero',
@@ -322,15 +346,15 @@ async function resolveHeroCandidates(
 
   let candidates: ImageCandidate[] = []
 
-  // Try sources in priority order until we have enough
+  // Try sources in priority order until we have a healthy pool for selection.
   for (const source of sources) {
-    if (candidates.length >= 6) break
-    const needed = 6 - candidates.length
+    if (candidates.length >= 8) break
+    const needed = 8 - candidates.length
     const results = await fetchFromSource(source, query, needed + 2) // fetch extra to allow filtering
     const filtered = filterImageCandidates(results, 'hero')
       .filter(c => !excludeSet.has(c.url))
     candidates.push(...filtered)
-    if (candidates.length > 0) {
+    if (filtered.length > 0) {
       console.log(`[hero-images] ${source}: found ${filtered.length} candidates for "${query.slice(0, 40)}"`)
     }
   }
@@ -406,11 +430,23 @@ export async function fetchHeroImage(
   const candidates = await resolveHeroCandidates(
     title, articleType, excludeUrls, heroImageQuery, summary, articleId, style,
   )
-  const best = candidates[0]
-  if (!best) return { url: null }
+  if (candidates.length === 0) return { url: null }
+
+  // Vision model scans the candidates and picks the best one — the way a human
+  // would scan a Google Images grid. Falls back to the top-ranked candidate.
+  const subject = shortenTitle(title)
+  const chosen = (await selectBestImage(candidates, subject, summary, articleId)) ?? candidates[0]
+
+  // Rehost the chosen image to our own storage for a stable, hotlink-proof URL.
+  let finalUrl = chosen.url
+  if (articleId) {
+    const rehosted = await rehostImage(chosen.url, articleId, 'hero')
+    if (rehosted) finalUrl = rehosted
+  }
+
   return {
-    url: best.url,
-    attribution: best.attribution ?? null,
+    url: finalUrl,
+    attribution: chosen.attribution ?? null,
   }
 }
 
@@ -461,10 +497,42 @@ function getProductTypeHint(productType?: string): string {
   }
 }
 
+/**
+ * Resolve a single editorial-section image: search via the router (Google
+ * first), optionally let the vision model pick the best candidate, then rehost
+ * it to our storage. Returns a stable URL or null.
+ */
+async function resolveSectionImage(
+  query: string,
+  articleType: ArticleType,
+  articleId?: string,
+  useVision = true,
+): Promise<string | null> {
+  const sources = routeImageRequest({ query, purpose: 'editorial_section', articleType })
+  let chosen: ImageCandidate | null = null
+  for (const source of sources) {
+    if (chosen) break
+    const candidates = await fetchFromSource(source, query, useVision ? 6 : 3)
+    const filtered = filterImageCandidates(candidates, 'editorial_section')
+    if (filtered.length > 0) {
+      chosen = useVision
+        ? (await selectBestImage(filtered, query, undefined, articleId)) ?? filtered[0]
+        : filtered[0]
+    }
+  }
+  if (!chosen) return null
+  if (articleId) {
+    const rehosted = await rehostImage(chosen.url, articleId, 'section')
+    if (rehosted) return rehosted
+  }
+  return chosen.url
+}
+
 export async function enrichArticleWithImages(
   article: ArticleContent,
   entities: PlanEntity[],
-  imageDensity?: ImageDensity
+  imageDensity?: ImageDensity,
+  articleId?: string,
 ): Promise<ArticleContent> {
   const skipProductImages = imageDensity === 'none'
 
@@ -489,7 +557,13 @@ export async function enrichArticleWithImages(
           : planQuery)
         : `${card.entity_name} ${typeHint || 'product photo'}`
       console.log(`[images] Searching for "${card.entity_name}": "${baseQuery}" (max: ${maxImages})`)
-      const imageUrls = await fetchProductImages(baseQuery, maxImages, card.entity_name)
+      let imageUrls = await fetchProductImages(baseQuery, maxImages, card.entity_name)
+      // Rehost the primary (most prominent) product image for a stable URL.
+      // Gallery extras stay hotlinked to bound pipeline time.
+      if (articleId && imageUrls.length > 0) {
+        const rehosted = await rehostImage(imageUrls[0], articleId, 'product')
+        if (rehosted) imageUrls = [rehosted, ...imageUrls.slice(1)]
+      }
       return { entity_name: card.entity_name, imageUrls }
     })
   )
@@ -509,21 +583,12 @@ export async function enrichArticleWithImages(
         section.images.map(async (img) => {
           // Skip images that already have a URL (e.g. user-uploaded) or have no search query
           if (!img.search_query || img.image_url) return img
-          // Route editorial section images through Pexels/Unsplash → Brave
-          const sources = routeImageRequest({
-            query: img.search_query,
-            purpose: 'editorial_section',
-            articleType: article.article_type as ArticleType,
-          })
-          let imageUrl: string | null = null
-          for (const source of sources) {
-            if (imageUrl) break
-            const candidates = await fetchFromSource(source, img.search_query, 3)
-            const filtered = filterImageCandidates(candidates, 'editorial_section')
-            if (filtered.length > 0) {
-              imageUrl = filtered[0].url
-            }
-          }
+          // Google-first search → vision pick → rehost.
+          const imageUrl = await resolveSectionImage(
+            img.search_query,
+            article.article_type as ArticleType,
+            articleId,
+          )
           return { ...img, image_url: imageUrl }
         })
       )
@@ -597,27 +662,20 @@ export async function enrichArticleWithImages(
       const editorialQuery = `${titleTopic} editorial photography`
       console.log(`[images] No editorial images — searching via router: "${editorialQuery}"`)
 
-      // Try Pexels/Unsplash first for editorial images
-      const sources = routeImageRequest({
-        query: editorialQuery,
-        purpose: 'editorial_section',
-        articleType: article.article_type as ArticleType,
-      })
-      let editorialUrls: string[] = []
-      for (const source of sources) {
-        if (editorialUrls.length >= 2) break
-        const candidates = await fetchFromSource(source, editorialQuery, 3)
-        const filtered = filterImageCandidates(candidates, 'editorial_section')
-        editorialUrls.push(...filtered.map(c => c.url))
-      }
-      editorialUrls = editorialUrls.slice(0, 2)
+      // Google-first search → vision pick → rehost.
+      const editorialUrl = await resolveSectionImage(
+        editorialQuery,
+        article.article_type as ArticleType,
+        articleId,
+      )
+      const editorialUrls = editorialUrl ? [editorialUrl] : []
 
       if (editorialUrls.length > 0) {
         const imageSection = {
           type: 'image_section' as const,
           heading: '',
           images: editorialUrls.map(url => ({ search_query: editorialQuery, caption: '', image_url: url })),
-          layout: editorialUrls.length === 1 ? 'single' as const : 'gallery' as const,
+          layout: 'single' as const,
         }
 
         // Find insertion point: after 2nd content_section, or after 3rd product_card
@@ -667,18 +725,11 @@ export async function enrichArticleWithImages(
         targets.map(async ({ s, idx }) => {
           const heading = (s as { heading?: string }).heading ?? ''
           const searchQuery = `${heading} editorial photography`
-          const sources = routeImageRequest({
-            query: searchQuery,
-            purpose: 'editorial_section',
-            articleType: article.article_type as ArticleType,
-          })
-          let imageUrl: string | null = null
-          for (const source of sources) {
-            if (imageUrl) break
-            const candidates = await fetchFromSource(source, searchQuery, 3)
-            const filtered = filterImageCandidates(candidates, 'editorial_section')
-            if (filtered.length > 0) imageUrl = filtered[0].url
-          }
+          const imageUrl = await resolveSectionImage(
+            searchQuery,
+            article.article_type as ArticleType,
+            articleId,
+          )
           if (!imageUrl) return null
           return {
             insertAfter: idx,

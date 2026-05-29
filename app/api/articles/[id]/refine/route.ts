@@ -170,7 +170,7 @@ export async function POST(
       }
 
       // Enrich with images
-      const enriched = await enrichArticleWithImages(rawArticle, plan.entities)
+      const enriched = await enrichArticleWithImages(rawArticle, plan.entities, undefined, id)
 
       // Preserve hero image from parent
       if (!enriched.thumbnail_url && row.article.thumbnail_url) {
@@ -335,7 +335,7 @@ export async function POST(
       }
     }
 
-    const enriched = await enrichArticleWithImages(refined, row.plan?.entities ?? [])
+    const enriched = await enrichArticleWithImages(refined, row.plan?.entities ?? [], undefined, id)
 
     // Preserve hero image from parent
     if (!enriched.thumbnail_url && row.article.thumbnail_url) {

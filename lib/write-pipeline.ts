@@ -294,6 +294,7 @@ export async function runWritePipeline({
       rawArticle,
       plan.entities,
       plan.visual_strategy?.image_density,
+      articleId,
     ),
   ])
   t.editorial_ms = Date.now() - editStart

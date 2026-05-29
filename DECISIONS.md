@@ -148,3 +148,22 @@ Five distribution engines across a single section read as a wishlist; three read
 
 **Decision: /vision returns a 301 redirect to /how-it-works via next.config.ts (not a deleted 404)**
 Any existing inbound links (email signatures, DMs, decks already shared) should land on the replacement, not break. A 301 is also the SEO-correct signal if /vision was ever indexed despite the prior robots.txt block. The redirect lives in next.config.ts `redirects()` — source-controlled, reviewable in diffs, and colocated with the rest of the routing config.
+
+---
+
+## Image Sourcing — Google-Images-first + vision selection + rehosting (May 2026)
+
+**Decision: Google Images is the primary image source for every article; stock libraries (Pexels/Unsplash) are fallback only**
+The old order queried *stock* libraries first. Stock libraries have no photo of a specific or newly-named subject ("Opus 4.8", a named DJ, a current event), so they returned generic "person at a laptop" filler — the #1 cause of bad heroes. A human sourcing an image doesn't open a stock site; they Google the literal subject. We now do the same: `lib/google-images.ts` (SerpAPI `engine=google_images`) leads every route. Stock is the graceful fallback when Google/SerpAPI returns nothing. **Lucky break:** `SERPAPI_KEY` was already configured for Google Trends, so this needed no new account, key, or billing.
+
+**Decision: Accept the open-web (editorial-use) copyright posture for Google Images results**
+Google Images surfaces open-web photos that may be copyrighted, vs. stock libraries' explicit licences. We accept this under an editorial-use posture — the same posture as the existing Brave image source — because relevance matters more than licence purity for an editorial publication, and the founder confirmed the trade-off. Per-domain licensing logic is explicitly out of scope for v1.
+
+**Decision: Rehost every chosen image to Supabase Storage (`lib/image-storage.ts`)**
+Hotlinking open-web URLs breaks (404s, hotlink protection, CDN expiry) and leaks referrer data. We download the chosen image and serve it from our `article-images` bucket (`heroes/`/`sections/`/`products/`), mirroring the pattern `lib/imagen.ts` already uses for AI heroes. Stable URLs, no breakage. **Scope:** hero, primary product image, and editorial-section images are rehosted; product *gallery* extras stay hotlinked (rehosting every gallery image per article is too heavy for marginal benefit).
+
+**Decision: Vision model *looks* at candidates and picks — Claude Haiku 4.5 primary, not GPT-4o-mini**
+Nothing previously looked at the images — `fetchHeroImage()` returned `candidates[0]`, the first URL passing a regex. A regex can't tell a sharp on-subject press photo from a watermarked, off-topic crop. `lib/image-selector.ts` now sends candidate *thumbnails* to a vision model that picks the single best. We use **Haiku 4.5** as primary (we're already on the Anthropic stack and it's vision-capable and cheap) with GPT-4o-mini as fallback and `candidates[0]` as final fallback — the plan originally specified GPT-4o-mini primary, but keeping selection on the existing Anthropic SDK is simpler and one fewer provider dependency. Thumbnails (not full originals) are sent: small, fast, Google-CDN-reliable, cheaper.
+
+**Decision: Keep the literal-subject query in the planner; do NOT seed Google from the raw article title**
+The plan's wording was "seed the Google query from the literal subject (title/entity name)." Implementing that literally regressed *metaphorical* titles — "The Death of Side Hustles" would Google grim/irrelevant images instead of gig-work photos. Instead we kept the single planner-generated `hero_image_query` (which is already instructed to de-metaphorize) and **strengthened** its rule so a specifically *named* subject (product, version, person, event) leads the query verbatim. Same fix applied to the Haiku fallback `generateHeroQuery`. This gets literal names right ("Opus 4.8" stays "Opus 4.8") without breaking metaphor handling.

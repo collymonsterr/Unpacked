@@ -497,8 +497,9 @@ For sections: an array of {heading, purpose} defining the article structure. Eac
 
 For suggestion_chips: generate 3 refinements (modify this article) and 3 related (generate a new article on a naturally connected topic). IMPORTANT: If any related topic includes a year, use ${new Date().getFullYear()} — never 2024 or 2025. Omit the year entirely if the topic is evergreen.
 
-For hero_image_query: generate a single search query (5-8 words) that would find a beautiful, magazine-quality hero photograph for this article. Think: what would a photo editor at a premium magazine search for? The image should be aspirational, high-resolution, and have NO text or infographics.
+For hero_image_query: generate a single search query (5-8 words) that finds a real photograph of the article's actual subject. This query is run against Google Images, so it must read like what a knowledgeable person would literally type to find a photo of the thing — NOT a poetic or abstract description. The image should be high-resolution and have NO text or infographics.
 Rules:
+- HIGHEST PRIORITY — Named subject leads verbatim: if the article is about a specifically named product, model, version, person, company, band, or event, that EXACT name must be the first words of the query, spelled exactly ("Claude Opus 4.8", "iPhone 17 Pro", "Carl Cox DJ", "Nvidia RTX 5090", "Taylor Swift Eras Tour"). Do NOT replace a named subject with a generic category — a person Googling "Opus 4.8" wants Opus 4.8, not a stock "AI brain" image. Add 1-3 grounding context words after the name only if helpful ("Claude Opus 4.8 Anthropic logo").
 - Product articles: the ACTUAL product in a lifestyle setting (not generic category — "Sony WH-1000XM5 headphones on desk" not "headphones")
 - Geopolitical/news: a SPECIFIC location, landmark, or scene ("Taiwan Strait naval ships aerial", "US Capitol building at night")
 - Finance/economics: tangible objects that represent the concept ("Federal Reserve building Washington DC", "gold bars stacked in vault")
