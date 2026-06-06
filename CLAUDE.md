@@ -71,7 +71,7 @@ Every article flows through these stages in order. File paths and models verifie
 ### Stage 2: Research → `lib/research-orchestrator.ts` → `executeResearch()`
 - Runs in parallel: Brave web search + Reddit search + Twitter/X search + live data queries
 - **Brave:** `lib/brave-research.ts` — 4–10 searches, `sanitizeSnippet()` prevents JSON failures, optional per-query `freshness` (pd/pw/pm)
-- **Reddit:** `executeRedditQueries()` — via Brave site:reddit.com searches, per-query freshness
+- **Reddit:** `executeRedditQueries()` — Brave site:reddit.com searches (discovery) + **Reddit native comment fetching** (`lib/reddit-comments.ts` → `fetchTopComments()`, public `.json`, no key) for the top ~6 threads. Haiku (`summariseRedditFindings()`) then SELECTS the single best real comment per thread by index (rejects sarcasm/jokes/questions/off-topic), and that verbatim comment becomes the card quote (`snippet`) with a `comment_url` permalink. Falls back to the Brave fragment per-thread if comments don't load. On by default; disable with `REDDIT_NATIVE_API=off`.
 - **Twitter/X:** `executeTwitterQueries()` — via Brave site:x.com searches; filters by canonical `x.com/{handle}/status/{id}` URL pattern, snippet ≥50 chars, max 8 findings; stored as `twitter_findings` (top-level JSONB column). Haiku sentiment paragraph stored as `twitter_summary` (TEXT column). NO Twitter SDK, NO API key required.
 - **Live data:** `executeLiveDataQueries()` — Polymarket + Yahoo Finance + Google Trends (all parallel)
 - Entity card extraction from research findings

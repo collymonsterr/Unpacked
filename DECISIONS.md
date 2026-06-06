@@ -167,3 +167,25 @@ Nothing previously looked at the images — `fetchHeroImage()` returned `candida
 
 **Decision: Keep the literal-subject query in the planner; do NOT seed Google from the raw article title**
 The plan's wording was "seed the Google query from the literal subject (title/entity name)." Implementing that literally regressed *metaphorical* titles — "The Death of Side Hustles" would Google grim/irrelevant images instead of gig-work photos. Instead we kept the single planner-generated `hero_image_query` (which is already instructed to de-metaphorize) and **strengthened** its rule so a specifically *named* subject (product, version, person, event) leads the query verbatim. Same fix applied to the Haiku fallback `generateHeroQuery`. This gets literal names right ("Opus 4.8" stays "Opus 4.8") without breaking metaphor handling.
+
+---
+
+## Reddit Quotes — read real comments, select like an editor (May 2026)
+
+**Decision: Quote real top-voted comments fetched from Reddit, not Brave's page-preview blurb**
+"What Reddit is saying" cards displayed `matchingFinding.content.slice(0,200)` — the first 200 chars of Brave's web-search *preview* of the Reddit page. That's a page blurb, not the best comment, which is why cards showed mid-word cutoffs ("highway s"), off-topic/wrong-product lines (a KTM "1290evo" comment under a Ducati article), sarcasm, and prospective-buyer *questions* instead of owner verdicts. The model never even read the thread. New `lib/reddit-comments.ts` reads the actual top-voted comments from each thread's public `.json`, so we quote what people really wrote and upvoted — mirroring how a human finds good quotes by reading the comments.
+
+**Decision: Public Reddit `.json`, no OAuth app (founder's call), Brave as fallback**
+The reliable path is a Reddit OAuth app, but the founder tried creating one before, it didn't work, and they explicitly chose the zero-setup route. So we use the public `.json` endpoint (no key) with a polite User-Agent, a 6s timeout, one retry on `old.reddit.com`, and a 10-min in-memory cache. **Accepted trade-off:** Reddit can block data-center IPs, so the hit-rate isn't 100% — but every failure path degrades to the previous Brave fragment, so it's never worse than before. This is consistent with the existing Reddit `.json` usage in `lib/url-prefetch.ts`. If fallbacks become frequent, the OAuth app is a later upgrade.
+
+**Decision: On by default (`REDDIT_NATIVE_API=off` to disable), not opt-in**
+The code's original TODO suggested an opt-IN `if (process.env.REDDIT_NATIVE_API)` gate. We flipped it to **on-by-default** so the improvement ships to production without the founder adding any env var (their stated preference: don't make me set things up). Set `REDDIT_NATIVE_API=off|0|false` to fall back to Brave-only.
+
+**Decision: Haiku SELECTS a comment by index — it never writes quote text**
+To eliminate any risk of model-fabricated quotes attributed to "Reddit user," `summariseRedditFindings()` returns a per-thread `best_comments[]` index into the real fetched comments (0 = nothing worth quoting). The displayed quote is the verbatim comment at that index, cleaned/sentence-trimmed in code. The model only *chooses* and *rejects* (sarcasm, jokes, questions, off-topic, wrong product) — exactly like the image vision-selector picks an index. Every quote is therefore real and links to its exact `comment_url` permalink.
+
+**Decision: Reddit only for now — X/Twitter deferred**
+The X "what people are saying" cards have the identical Brave-snippet weakness, but X has no free comment/replies API (their paid API is a separate cost decision), whereas Reddit comments are free. So we fixed Reddit cleanly now and parked X as its own decision.
+
+**Decision: Fetch each thread's `.json` once and share it (no double-fetch)**
+We discovered `brave-research.ts` already fetched every Reddit thread's `.json` (for the `num_comments` quality filter) and threw away the comments in `data[1]`. Rather than add a second fetch for comments (which would double Reddit load and raise rate-limit/403 risk — the opposite of reliable), both callers now go through one cached `fetchThreadData()` keyed by permalink. The existing polite sequential metadata pass warms the cache; the orchestrator's quote selection reads from it. Net: real comments for **~0 extra Reddit requests** vs. today's baseline. This was the key reliability decision — the live 403s we saw from data-center IPs make minimising request count matter.

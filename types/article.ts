@@ -139,12 +139,14 @@ export interface RedditThread {
   subreddit: string
   num_comments?: number
   score?: number
-  /** Snippet/summary text from Brave or Reddit metadata */
+  /** Snippet/summary text — a real top comment (Reddit native) or Brave fragment */
   snippet?: string
   /** Viewpoint classification set by Haiku synthesis */
   viewpoint?: 'pro' | 'sceptical' | 'neutral'
   /** Relative timestamp string (e.g. "14h ago") */
   time_label?: string
+  /** Permalink to the specific quoted comment (Reddit native selection), if any */
+  comment_url?: string
 }
 
 export interface ImageQueries {

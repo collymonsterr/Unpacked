@@ -23,6 +23,7 @@ import {
   type ResearchFinding,
 } from '@/lib/brave-research'
 import { extractEntityCards } from '@/lib/entity-extraction'
+import { fetchTopComments, isRedditNativeEnabled, type RedditComment } from '@/lib/reddit-comments'
 import { logApiCall } from '@/lib/api-usage'
 import { extractJSON } from '@/lib/utils/extract-json'
 import { searchPolymarket, type PolymarketResult } from '@/lib/data-sources/polymarket'
@@ -165,19 +166,47 @@ export async function executeResearch(
     return true
   })
 
+  // ── Step 3c: Get REAL top comments for the most-engaged threads (Reddit native) ──
+  // The card quote used to be Brave's truncated page blurb. Instead, read the actual
+  // top-voted comments from each thread's public .json so Haiku can quote a real,
+  // complete, on-topic owner opinion. These are almost always CACHE HITS: the Brave
+  // comment-count filter (enrichAndFilterRedditThreads) already fetched each thread's
+  // .json and cached its comments via the shared fetchThreadData(), so this adds ~0
+  // extra Reddit requests. Capped, graceful — empty map on any failure falls back to
+  // the Brave snippet below.
+  const MAX_COMMENT_THREADS = 6
+  let commentsByUrl = new Map<string, RedditComment[]>()
+  if (isRedditNativeEnabled() && dedupedRedditThreads.length > 0) {
+    const ranked = [...dedupedRedditThreads]
+      .sort((a, b) => ((b.score ?? 0) + (b.num_comments ?? 0)) - ((a.score ?? 0) + (a.num_comments ?? 0)))
+      .slice(0, MAX_COMMENT_THREADS)
+    try {
+      const fetched = await Promise.all(
+        ranked.map(async t => [t.url, await fetchTopComments(t.url, { limit: 8 })] as const),
+      )
+      commentsByUrl = new Map(fetched.filter(([, c]) => c.length > 0))
+      const withComments = commentsByUrl.size
+      if (withComments > 0) console.log(`[research] Reddit native: real comments for ${withComments}/${ranked.length} threads`)
+    } catch (err) {
+      console.warn('[research] Reddit comment fetch failed — using Brave snippets:', (err as Error).message)
+    }
+  }
+
   // ── Step 4: Build synthesis (Haiku) + Twitter summary (Haiku) + Reddit summary (Haiku) in parallel ──
   const synthStart = Date.now()
 
-  // Build enriched reddit threads with snippets from findings for the sentiment call.
-  // IMPORTANT: Only match by exact URL. The old fallback (any finding from the same
-  // subreddit) caused duplicate-looking cards when two threads from the same subreddit
-  // both got the same finding's content as their snippet.
+  // Build enriched reddit threads carrying real comments (for selection) plus the
+  // Brave fragment as a fallback snippet.
+  // IMPORTANT: Only match the Brave finding by exact URL. The old fallback (any
+  // finding from the same subreddit) caused duplicate-looking cards when two threads
+  // from the same subreddit both got the same finding's content as their snippet.
   const redditThreadsForSynthesis = dedupedRedditThreads.map(t => {
     const matchingFinding = compiled.findings.find(f => f.url === t.url)
     const rawSnippet = matchingFinding?.content?.slice(0, 200) ?? undefined
     return {
       ...t,
       snippet: rawSnippet ? sanitizeRedditSnippet(rawSnippet) : undefined,
+      comments: commentsByUrl.get(t.url) ?? [],
     }
   })
 
@@ -205,12 +234,21 @@ export async function executeResearch(
     }
   }
 
-  // Apply viewpoint tags from Haiku classification back to Reddit threads
-  const redditThreadsPool: RedditThread[] = dedupedRedditThreads.map((t, i) => ({
-    ...t,
-    snippet: redditThreadsForSynthesis[i]?.snippet,
-    viewpoint: redditSynthesis?.viewpoints?.[i] ?? undefined,
-  }))
+  // Apply Haiku's per-thread selection: quote the chosen REAL comment when one was
+  // picked (bestComments[i] is 1-based; 0 = nothing worth quoting), otherwise fall
+  // back to the Brave fragment. Also carry the exact comment permalink.
+  const redditThreadsPool: RedditThread[] = dedupedRedditThreads.map((t, i) => {
+    const enriched = redditThreadsForSynthesis[i]
+    const comments = enriched?.comments ?? []
+    const bestIdx = redditSynthesis?.bestComments?.[i] ?? 0
+    const chosen = bestIdx >= 1 && comments[bestIdx - 1] ? comments[bestIdx - 1] : null
+    return {
+      ...t,
+      snippet: chosen ? chosen.body : enriched?.snippet,
+      viewpoint: redditSynthesis?.viewpoints?.[i] ?? undefined,
+      comment_url: chosen?.permalink,
+    }
+  })
 
   const totalElapsed = Date.now() - startTime
   console.log(
@@ -933,11 +971,17 @@ Return the JSON now.`
 
 // ── Reddit sentiment summary (Haiku) ────────────────────────────────────────
 
-const REDDIT_SUMMARY_SYSTEM = `You are analysing what people are actually saying on Reddit about a topic. You will be given a small set of Reddit thread summaries with subreddit names, scores, and comment counts. Return a JSON object with the following fields:
+const REDDIT_SUMMARY_SYSTEM = `You are a senior editor analysing what people actually say on Reddit about a topic. You will be given a small set of Reddit threads (subreddit, score, comment count, title). Most threads also list their top real comments, numbered. Return a JSON object with the following fields:
 
 1. "summary": ONE short paragraph (3-4 sentences, max ~80 words) capturing the prevailing sentiment, the main camps if there is disagreement, and any standout community reactions. Be specific — reference actual subreddit communities and their stances.
 2. "viewpoints": an array with one entry per thread (same order as input). Each entry is one of "pro", "sceptical", or "neutral" — classifying whether that thread/community supports the main thesis/topic, opposes/criticises it, or takes no clear side.
-3. "sentiment_split": an object with:
+3. "best_comments": an array with one entry per thread (same order as input). For each thread, SELECT the single best comment to quote and return its number (the integer shown before the comment). Return 0 if the thread lists no comments, or if NONE of its comments is worth quoting.
+   Choose the comment that is:
+   - A substantive, genuine opinion or first-hand experience clearly ABOUT the article's subject.
+   - Representative of that thread's stance and interesting to a reader.
+   REJECT (return 0 rather than pick a bad one): sarcasm, jokes, one-liners with no substance, questions, off-topic comments, comments about a DIFFERENT product/model than the subject, and pure meta/moderation.
+   You are SELECTING an existing comment by its number — never write, paraphrase, or invent quote text.
+4. "sentiment_split": an object with:
    - "pro_label": a short label (2-5 words) for the supporting position (e.g. "Expecting prolonged hold", "Bullish on outcome")
    - "sceptical_label": a short label (2-5 words) for the opposing position (e.g. "Frustrated with pace", "Calling it overhyped")
    - "pro_pct": integer percentage of threads that are pro
@@ -945,12 +989,13 @@ const REDDIT_SUMMARY_SYSTEM = `You are analysing what people are actually saying
    - "neutral_pct": integer percentage that are neutral
    - "summary": one plain-English sentence describing the split (e.g. "r/economics leans cautiously optimistic while r/personalfinance voices practical frustration.")
    The three percentages MUST sum to 100.
-4. "context_trigger": a short string like "Surge in discussion after Fed announcement" if the threads reference a specific triggering event, or null if no clear trigger.
+5. "context_trigger": a short string like "Surge in discussion after Fed announcement" if the threads reference a specific triggering event, or null if no clear trigger.
 
-HARD RULES for the summary paragraph:
+HARD RULES:
+- Base the summary and sentiment on the REAL comments shown, not the titles alone.
 - NEVER use generic phrases like "opinions are mixed", "the community is divided", "redditors are talking about", "there's a lot of discussion".
 - Be specific: name subreddits, reference actual stances, describe the tension.
-- Never invent quotes or attributions.
+- Never invent quotes or attributions. "best_comments" must only ever contain numbers that appear in the input.
 - Do NOT use hashtags or emoji.
 - If the subreddits contradict each other, say so directly with subreddit names.
 - Write in the voice of an editor describing the conversation, not a marketer.
@@ -962,10 +1007,12 @@ interface RedditSynthesisResult {
   sentimentSplit: RedditSentimentSplit | null
   contextTrigger: string | null
   viewpoints: Array<'pro' | 'sceptical' | 'neutral'>
+  /** Per-thread 1-based index of the chosen comment to quote; 0 = none. */
+  bestComments: number[]
 }
 
 async function summariseRedditFindings(
-  threads: Array<{ title: string; url: string; subreddit: string; num_comments?: number; score?: number; snippet?: string }>,
+  threads: Array<{ title: string; url: string; subreddit: string; num_comments?: number; score?: number; snippet?: string; comments?: RedditComment[] }>,
   plan: ArticlePlan,
 ): Promise<RedditSynthesisResult | null> {
   if (!threads || threads.length < 2) return null
@@ -975,8 +1022,17 @@ async function summariseRedditFindings(
       const meta = [t.subreddit]
       if (t.score) meta.push(`${t.score} upvotes`)
       if (t.num_comments) meta.push(`${t.num_comments} comments`)
-      const snippet = t.snippet ? ` — ${t.snippet.slice(0, 200)}` : ''
-      return `${i + 1}. [${meta.join(', ')}] ${t.title}${snippet}`
+      const header = `${i + 1}. [${meta.join(', ')}] ${t.title}`
+      // Prefer listing the real top comments so Haiku can SELECT one by number.
+      if (t.comments && t.comments.length > 0) {
+        const commentLines = t.comments
+          .map((c, ci) => `   ${ci + 1}) (${c.score} upvotes) ${c.body.slice(0, 240)}`)
+          .join('\n')
+        return `${header}\n   TOP COMMENTS:\n${commentLines}`
+      }
+      // No real comments available — fall back to the Brave fragment, no selectable comments.
+      const snippet = t.snippet ? `\n   (preview only, no comments) ${t.snippet.slice(0, 200)}` : ''
+      return `${header}${snippet}`
     })
     .join('\n')
 
@@ -1028,13 +1084,22 @@ Return the JSON now.`
       return 'neutral'
     })
 
+    // Validate each selected comment index against that thread's available comments.
+    const rawBest: unknown[] = Array.isArray(parsed.best_comments) ? parsed.best_comments : []
+    const bestComments: number[] = threads.map((t, i) => {
+      const n = Number(rawBest[i])
+      const available = t.comments?.length ?? 0
+      if (!Number.isInteger(n) || n < 1 || n > available) return 0
+      return n
+    })
+
     const contextTrigger = typeof parsed.context_trigger === 'string' ? parsed.context_trigger : null
 
-    return { summary, sentimentSplit, contextTrigger, viewpoints }
+    return { summary, sentimentSplit, contextTrigger, viewpoints, bestComments }
   } catch {
     const cleaned = text.trim()
     return cleaned.length > 0
-      ? { summary: cleaned, sentimentSplit: null, contextTrigger: null, viewpoints: [] }
+      ? { summary: cleaned, sentimentSplit: null, contextTrigger: null, viewpoints: [], bestComments: [] }
       : null
   }
 }

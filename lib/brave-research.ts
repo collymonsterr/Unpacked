@@ -5,6 +5,7 @@
  */
 
 import type { ArticleType } from '@/lib/article-types'
+import { fetchThreadData } from '@/lib/reddit-comments'
 
 const BRAVE_API = 'https://api.search.brave.com/res/v1/web/search'
 const BRAVE_IMAGE_API = 'https://api.search.brave.com/res/v1/images/search'
@@ -116,34 +117,14 @@ const MIN_REDDIT_COMMENTS = 10
 /**
  * Fetch metadata for a Reddit thread via public JSON API.
  * Returns num_comments and score, or null on failure.
+ *
+ * Delegates to the shared `fetchThreadData()` (lib/reddit-comments.ts) which
+ * fetches the thread's `.json` ONCE and caches both metadata AND top comments.
+ * That means this comment-count filter and the orchestrator's later quote
+ * selection share a single network call per thread — no double-fetching Reddit.
  */
 async function fetchRedditMetadata(url: string): Promise<{ num_comments: number; score: number } | null> {
-  try {
-    // Normalize URL: strip trailing slash, query params, append .json
-    let cleanUrl = url.split('?')[0].replace(/\/+$/, '')
-    // Remove existing .json if present
-    cleanUrl = cleanUrl.replace(/\.json$/, '')
-    const jsonUrl = `${cleanUrl}.json`
-
-    const res = await fetch(jsonUrl, {
-      headers: { 'User-Agent': 'Unpacked/1.0' },
-      signal: AbortSignal.timeout(5000),
-    })
-    if (!res.ok) return null
-
-    const data = await res.json()
-    // Reddit returns an array — first element is the post listing
-    const postData = data?.[0]?.data?.children?.[0]?.data
-    if (!postData) return null
-
-    return {
-      num_comments: postData.num_comments ?? 0,
-      score: postData.score ?? 0,
-    }
-  } catch {
-    // Don't block pipeline on metadata failure
-    return null
-  }
+  return (await fetchThreadData(url)).meta
 }
 
 /**

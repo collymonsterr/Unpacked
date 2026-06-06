@@ -94,6 +94,9 @@ Persistent owner-only toolbar between article metadata and hero image. Six butto
 ### 1M. Research Over-Gather
 Increase Brave web searches from 6–10 to 12–15. Increase Reddit searches from 2–3 to 5–8. Extra cost: ~3 cents per article. The surplus research gets stored in `research_findings` JSONB and populates the Editor's Notes tab and section replacement suggestions. Ensures Editor's Notes always has meaningful content even after a good article. Also surface: contrarian viewpoints, alternative products, additional statistics, and related questions from the plan mode questions pool.
 
+### ~~1O. Reddit Native Comments — real quotes~~ DONE (May 2026)
+"What Reddit is saying" cards quoted Brave's truncated page-preview blurb instead of an actual comment — producing mid-sentence cutoffs, off-topic/wrong-product lines, sarcasm, and prospective-buyer questions. Now `lib/reddit-comments.ts` reads the real top-voted comments from each thread's public `.json` (no app/OAuth — the founder opted for zero-setup), and Haiku SELECTS the single best real comment per thread by index (rejecting sarcasm/jokes/questions/off-topic). The verbatim comment becomes the card quote with a `comment_url` permalink; sentiment is grounded in real comments. On by default (`REDDIT_NATIVE_API=off` to disable), Brave fragment as per-thread fallback. _(X/Twitter has the same Brave-snippet weakness but no free comment API — deferred as a separate decision.)_
+
 ### ~~1N. Post-Generation Education Banner~~ SUPERSEDED by Editor Bar (1L)
 Editor Bar handles this — contextual helper text shows unused findings count and other nudges. No separate banner needed.
 

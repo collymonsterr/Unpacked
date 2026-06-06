@@ -281,9 +281,9 @@ export default function RedditSentimentSection({
                 {thread.snippet || thread.title}
               </p>
 
-              {/* Read full discussion link */}
+              {/* Read full discussion link — points to the exact quoted comment when available */}
               <a
-                href={thread.url}
+                href={thread.comment_url || thread.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs font-semibold no-underline hover:underline inline-flex items-center gap-1"
