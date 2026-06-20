@@ -189,3 +189,22 @@ The X "what people are saying" cards have the identical Brave-snippet weakness, 
 
 **Decision: Fetch each thread's `.json` once and share it (no double-fetch)**
 We discovered `brave-research.ts` already fetched every Reddit thread's `.json` (for the `num_comments` quality filter) and threw away the comments in `data[1]`. Rather than add a second fetch for comments (which would double Reddit load and raise rate-limit/403 risk — the opposite of reliable), both callers now go through one cached `fetchThreadData()` keyed by permalink. The existing polite sequential metadata pass warms the cache; the orchestrator's quote selection reads from it. Net: real comments for **~0 extra Reddit requests** vs. today's baseline. This was the key reliability decision — the live 403s we saw from data-center IPs make minimising request count matter.
+
+---
+
+## Daily Automated Article — one fresh article per day (May 2026)
+
+**Decision: Vercel Cron + internal route, NOT a remote Claude/agent bot**
+The founder wanted "an automatic agent/bot/feed" that publishes one fresh article daily. The instinctive read is an external agent, but that agent would have no access to production API keys or the Supabase DB, so it couldn't actually run Unpacked's pipeline. The right tool is a **Vercel Cron job** hitting an internal route (`/api/cron/daily-article`) that reuses the *exact* production pipeline (`planArticle` → `executeResearch` → `runWritePipeline`). Runs in-app with real keys, produces a real fact-checked article, deploys with the codebase, zero external dependencies. (We're on Vercel Pro, so arbitrary cron schedules are supported.)
+
+**Decision: Reuse the create pipeline by duplicating a slim version, not refactoring `create`**
+The cron needs plan→research→write, which `app/api/articles/create/route.ts` already does — but `create` is wrapped in rate-limiting, tier checks, auth/visibility branching, anonymous preview, and plan-mode handling that the cron doesn't want. Rather than refactor that critical path into a shared helper (risky, and CLAUDE.md says don't refactor code you weren't asked to touch), the cron route carries a slim, admin-only, always-authenticated copy of just the plan→research→write steps. ~40 lines duplicated; `create` untouched.
+
+**Decision: Live topic discovery via existing Brave search + rotating beats, not the LLM's stale memory**
+"Most topical" requires *current* signal, and Haiku's training data is stale. So `pickDailyTopic()` rotates a 14-beat editorial calendar day-to-day (deliberately weighted away from partisan politics, per the founder's "not just politics, other interesting stuff"), runs Brave discovery (`freshness: pw`) on the day's beat, and has Haiku **select** one concrete query from real headlines — avoiding the last 14 days of auto-topics. Returns null (cron skips the day) rather than publish something stale when there's no signal.
+
+**Decision: Published by default, with an `unlisted` review-queue escape hatch**
+The founder asked for articles "going on fresh" daily, so the default is `published` (live + on the homepage), attributed to the admin user. But auto-publishing unreviewed AI content under their name/brand is a real risk, so `DAILY_ARTICLE_VISIBILITY=unlisted` flips it to a review queue (live URL, off the homepage) with a one-env-var change — no redeploy of logic. Surfaced this trade-off explicitly so it's a conscious choice.
+
+**Decision: 20-hour double-run guard + `?force=1` manual override**
+Cron retries, manual tests, and overlapping invocations could double-post. The route skips if a `source: 'daily_cron'` article was created in the last 20h, except when an admin passes `?force=1` (so the founder can trigger ad-hoc test runs). Auth accepts the `CRON_SECRET` bearer (Vercel-injected) OR an admin session, so manual browser testing works without the secret.

@@ -177,6 +177,9 @@ Watch list of accounts in admin. Polls via third-party service (Twilert ~$10–2
 ### 4I. Entertainment/Trending Content Strategy
 Google Trends 200%+ spike as automatic trigger for suggested articles. Builds on existing Google Trends integration. Complements Reddit opportunity monitor — different signal source, same one-click generate UX.
 
+### ~~4J. Daily Automated Article~~ DONE (May 2026)
+Vercel Cron (`vercel.json`, 7am Dublin) → `app/api/cron/daily-article` picks the day's most topical, non-politics subject (`lib/daily-topic.ts`: rotating beats → Brave discovery → Haiku selection, avoiding recent repeats) and runs the full production pipeline, publishing one fresh article per day attributed to the admin. Published by default; `DAILY_ARTICLE_VISIBILITY=unlisted` makes it a review queue. 20h double-run guard; `?force=1` for manual admin test runs. This is the unattended-publishing flywheel — different from the human-in-the-loop opportunity monitors (4G/4H/4I), which surface prompts for one-click manual generation.
+
 ### ~~4J. Tweet-to-Article URL Detection~~ DONE (April 2026)
 Detect tweet/X URLs pasted into the search box. Extract tweet content via oEmbed API (free, no auth) with Brave Search fallback. Inject tweet text, author, and engagement stats as structured context before planning. Also handles Reddit URLs and general article URLs. Store source tweet data in `generation_options.source_tweet` for attribution display. SearchForm shows "Tweet detected" indicator. Article page shows "Inspired by @handle" attribution when generated from a tweet. Built as `lib/url-prefetch.ts` — URL detection + content fetching for tweets (oEmbed + Brave fallback), Reddit posts (existing `.json` pattern), and general URLs (Brave snippet).
 

@@ -215,6 +215,19 @@ Mirrors how a human sources an image: search the best index (Google Images) with
 
 ---
 
+## Daily Automated Article (built May 2026 — Vercel Cron)
+
+One fresh, fully-generated article published automatically every day — no human in the loop.
+
+- **Trigger:** Vercel Cron (`vercel.json` → `0 6 * * *`, 07:00 Europe/Dublin) hits `app/api/cron/daily-article/route.ts` (GET).
+- **Auth:** Vercel sends `Authorization: Bearer ${CRON_SECRET}` (set `CRON_SECRET` in Vercel env). An authenticated **admin session** is also accepted, and `?force=1` lets the founder trigger a manual test run from the browser. A **20-hour double-run guard** prevents accidental duplicate posts (bypassed by `?force=1`).
+- **Topic selection (`lib/daily-topic.ts` → `pickDailyTopic()`):** rotates through 14 editorial beats day-to-day (Tech, AI, Science, Space, Health, Culture, Entertainment, Gaming, Business, Automotive, Food, Home, Sports, Finance — deliberately weighted away from partisan politics). Runs Brave discovery on the day's beat (`freshness: pw`, broadening to `pm` on a quiet week), pulls the last 14 days of auto-topics to avoid repeats, then **Haiku picks ONE current, concrete, opinion-friendly query** ("Is X worth it?", "X vs Y"). Returns null (cron skips the day) if there's no real signal. Logged as `daily_topic` in `api_usage_log`.
+- **Generation:** reuses the **exact production pipeline** — `planArticle()` → `executeResearch()` → `runWritePipeline()` (fact-check + social run async inside it) — run inline (`maxDuration = 300`). Article is **attributed to the admin user** (`ADMIN_USER_ID` profile) and tagged `generation_options.source = 'daily_cron'`.
+- **Visibility:** `published` by default (live + on the homepage). Set `DAILY_ARTICLE_VISIBILITY=unlisted` to turn it into a **review queue** — articles get a live URL but stay off the homepage until the founder publishes them.
+- **Cost:** ~1 daily article (2 Brave discovery searches + 1 Haiku pick + the normal ~$0.02–0.12 generation). Returns `{ ok, id, slug, title, url, rationale }` for the cron log.
+
+---
+
 ## Interactive Components (built April 2026, async)
 
 Bespoke interactive tools generated per article — decision trees, scenario simulators, maps, and calculators. No other content platform generates tailored interactive tools from article content.

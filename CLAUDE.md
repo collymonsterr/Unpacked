@@ -274,12 +274,13 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - `components/editor/FindingCard.tsx` — individual research finding with source link + checkbox
 - `components/SharePanel.tsx` — 4-tab social content panel (Twitter, LinkedIn, Reddit, Image Cards)
 
-### API Routes (58 total)
+### API Routes (59 total)
 - `app/api/articles/create/route.ts` — main generation flow
 - `app/api/articles/plan-preview/route.ts` — plan mode: planning + research + angle generation
 - `app/api/articles/search/route.ts` — navbar autocomplete
 - `app/api/articles/[id]/edit-full/route.ts` — patches article JSONB from full-document editor (no AI call); owner/admin gate; whitelisted fields per section type; tags modified sections with `edited: true`
 - `app/api/improve-prompt/route.ts` — Haiku-powered query improvement suggestions
+- `app/api/cron/daily-article/route.ts` — **Vercel Cron** daily auto-article. Auth: `CRON_SECRET` bearer or admin session. Picks a topical subject (`lib/daily-topic.ts`) → runs the full pipeline → publishes (admin-attributed). 20h double-run guard; `?force=1` for manual admin runs. Schedule in `vercel.json` (`0 6 * * *` = 7am Dublin).
 
 ### Other
 - `lib/api-usage.ts` — cost logging + duplicate guard
@@ -353,6 +354,9 @@ NEXT_PUBLIC_ADMIN_USER_ID      # Admin user's Supabase UUID (used in useAdminMod
 ADMIN_USER_ID                  # Server-side admin user ID (lib/auth-check.ts)
 ADMIN_EMAIL                    # Server-side admin email (lib/auth-check.ts)
 GEMINI_MAX_CONCURRENT=3        # Concurrent generation limit (in-memory)
+CRON_SECRET                    # Vercel Cron auth — sent as `Authorization: Bearer` to /api/cron/* (set in Vercel)
+DAILY_ARTICLE_VISIBILITY       # Optional: 'unlisted' turns the daily auto-article into a review queue (default: published)
+REDDIT_NATIVE_API              # Optional: 'off' disables Reddit native comment fetching (default: on)
 ```
 
 ---
