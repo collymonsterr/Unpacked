@@ -11,8 +11,9 @@ import type {
 } from '@/types/article'
 import { extractJSON } from '@/lib/utils/extract-json'
 import { logApiCall } from '@/lib/api-usage'
+import { MODELS, GEMINI_FLASH_URL } from '@/lib/models'
 
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+const GEMINI_API_URL = GEMINI_FLASH_URL
 
 // ── Stage 1: Gemini + Google Search Grounding ──────────────────────────────
 
@@ -155,7 +156,7 @@ async function stage1GeminiVerification(
       const usage = data.usageMetadata
       logApiCall({
         callType: 'fact_check_stage1',
-        model: 'gemini-2.5-flash',
+        model: MODELS.geminiFlash,
         inputTokens: usage?.promptTokenCount,
         outputTokens: usage?.candidatesTokenCount,
         articleId,
@@ -233,7 +234,7 @@ async function stage1GeminiVerification(
       const usage2 = claimData.usageMetadata
       logApiCall({
         callType: 'fact_check_claims',
-        model: 'gemini-2.5-flash',
+        model: MODELS.geminiFlash,
         inputTokens: usage2?.promptTokenCount,
         outputTokens: usage2?.candidatesTokenCount,
         articleId,
@@ -306,7 +307,7 @@ async function stage2HaikuReview(
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-20250414',
+        model: MODELS.haiku,
         max_tokens: 2048,
         messages: [{
           role: 'user',
@@ -325,7 +326,7 @@ async function stage2HaikuReview(
 
     logApiCall({
       callType: 'fact_check_stage2',
-      model: 'claude-haiku-4-20250414',
+      model: MODELS.haiku,
       inputTokens: data.usage?.input_tokens,
       outputTokens: data.usage?.output_tokens,
       articleId,
@@ -398,7 +399,7 @@ async function stage3Arbitration(
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: MODELS.gptMini,
         temperature: 0.1,
         max_tokens: 2048,
         messages: [{
@@ -419,7 +420,7 @@ async function stage3Arbitration(
 
     logApiCall({
       callType: 'fact_check_stage3',
-      model: 'gpt-4o-mini',
+      model: MODELS.gptMini,
       inputTokens: data.usage?.prompt_tokens,
       outputTokens: data.usage?.completion_tokens,
       articleId,

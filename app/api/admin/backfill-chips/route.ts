@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/auth-check'
+import { MODELS } from '@/lib/models'
 
 export const maxDuration = 300 // 5 minutes — admin backfill can process many articles
 
@@ -50,7 +51,7 @@ export async function POST() {
         const query = row.query as string ?? ''
 
         const message = await getAnthropic().messages.create({
-          model: 'claude-haiku-4-5-20251001',
+          model: MODELS.haiku,
           max_tokens: 256,
           system: 'You generate short, punchy article suggestion chips. Return only valid JSON with no commentary.',
           messages: [{

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { MODELS } from '@/lib/models'
 
 const SYSTEM_PROMPT = `You are a query improvement assistant for a publishing platform. Users type research questions and you rewrite them to be more specific, more useful, and more likely to produce a great article. Always return exactly 3 alternatives. Each alternative should take a different angle or interpret the user's intent differently — not just add words to the original. Return JSON only: { "alternatives": [string, string, string] }`
 
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     const message = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: MODELS.haiku,
       max_tokens: 300,
       temperature: 0.7,
       system: SYSTEM_PROMPT,

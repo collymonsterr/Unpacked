@@ -208,3 +208,21 @@ The founder asked for articles "going on fresh" daily, so the default is `publis
 
 **Decision: 20-hour double-run guard + `?force=1` manual override**
 Cron retries, manual tests, and overlapping invocations could double-post. The route skips if a `source: 'daily_cron'` article was created in the last 20h, except when an admin passes `?force=1` (so the founder can trigger ad-hoc test runs). Auth accepts the `CRON_SECRET` bearer (Vercel-injected) OR an admin session, so manual browser testing works without the secret.
+
+---
+
+## Model Efficiency Pass — Tier 1 (May 2026)
+
+Audit of "now that we've got better models, find efficiencies." Tier 1 = low-risk drop-ins; Tier 2/3 (conditional editorial pass, batched image-vision, collapsing blueprint/editorial scaffolding) deferred pending the editorial-rewrite-rate data this pass starts logging.
+
+**Decision: One source of truth for model IDs — `lib/models.ts`**
+Active model IDs were hardcoded across ~12 files. They now import `MODELS` from `lib/models.ts`, so the next "upgrade everything" is a one-line change, not a 12-file hunt. This is the highest-leverage fix for a solo founder and made the rest of this pass trivial. The historical IDs in `MODEL_PRICING` (api-usage.ts, cost-breakdown, admin/costs) were deliberately left out — that's a price *ledger* keyed by exact past IDs, not a live selector.
+
+**Decision: Bump Sonnet 4 → Sonnet 5, and the stale fact-check Haiku 4.0 → 4.5**
+Everything Anthropic-premium (editorial pass, deep/premium writer, refine, interactive components) moves to `claude-sonnet-5` — a straight quality lift on the steps that guard the editorial voice. Fact-check Stage 2 was on `claude-haiku-4-20250414` (4.0) while everything else was 4.5 — pure inconsistency, now unified. Pricing: Sonnet-5 added to the cost tables as a **placeholder equal to Sonnet 4** ($3/$15) with a TODO — needs the real number verified so the admin Costs tab stays accurate. Reverting the bump is a one-liner in `models.ts`.
+
+**Decision: Remove OpenAI from the image-selection path**
+Vision selection was Haiku 4.5 → GPT-4o-mini → `candidates[0]`. Haiku 4.5 vision is strong and reliable, so the OpenAI middle tier was removed: the chain is now Haiku 4.5 → `candidates[0]`. One fewer provider and failure point in the image path. OpenAI is kept **only** where it earns its place — the independent third voice in fact-check arbitration (a trust pillar).
+
+**Decision (scope): declined the hook's Vercel-AI-SDK / Workflow migration**
+Editor hooks repeatedly recommended replacing the direct Anthropic/Gemini/OpenAI SDK calls with the Vercel AI SDK and moving retries to Workflow DevKit. That's a large re-architecture, unrelated to the requested efficiency pass, and would touch every generation call — declined as out of scope. Revisit only as a deliberate, separately-scoped decision.

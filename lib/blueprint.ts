@@ -13,8 +13,9 @@ import { ARTICLE_TYPES, type ArticleType } from '@/lib/article-types'
 import { FORBIDDEN_PHRASES, getToneDescription } from '@/lib/editorial-rules'
 import { extractJSON } from '@/lib/utils/extract-json'
 import { logApiCall } from '@/lib/api-usage'
+import { MODELS, GEMINI_FLASH_URL } from '@/lib/models'
 
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+const GEMINI_API_URL = GEMINI_FLASH_URL
 
 /**
  * Generate an article blueprint that constrains the prose writing pass.
@@ -218,7 +219,7 @@ Return ONLY valid JSON:
     try {
       logApiCall({
         callType: 'blueprint',
-        model: 'gemini-2.5-flash',
+        model: MODELS.geminiFlash,
         inputTokens: Math.round(prompt.length / 3.8),
         outputTokens: Math.round(text.length / 3.8),
       })

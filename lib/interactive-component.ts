@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { logApiCall } from '@/lib/api-usage'
+import { MODELS } from '@/lib/models'
 import { extractJSON } from '@/lib/utils/extract-json'
 import type {
   InteractiveComponentType,
@@ -298,7 +299,7 @@ Respond with valid JSON matching the ${componentType} schema. Include the "type"
   try {
     // Try Haiku first (cheaper)
     const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: MODELS.haiku,
       max_tokens: 3000,
       temperature: 0.3,
       system: SYSTEM_PROMPT,
@@ -312,7 +313,7 @@ Respond with valid JSON matching the ${componentType} schema. Include the "type"
 
     logApiCall({
       callType: 'interactive_component',
-      model: 'claude-haiku-4-5-20251001',
+      model: MODELS.haiku,
       inputTokens: response.usage?.input_tokens,
       outputTokens: response.usage?.output_tokens,
       articleId,
@@ -328,7 +329,7 @@ Respond with valid JSON matching the ${componentType} schema. Include the "type"
     console.warn(`[interactive] Haiku output invalid for ${articleId}, trying Sonnet fallback`)
 
     const sonnetResponse = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: MODELS.sonnet,
       max_tokens: 4000,
       temperature: 0.3,
       system: SYSTEM_PROMPT,
@@ -342,7 +343,7 @@ Respond with valid JSON matching the ${componentType} schema. Include the "type"
 
     logApiCall({
       callType: 'interactive_component_fallback',
-      model: 'claude-sonnet-4-20250514',
+      model: MODELS.sonnet,
       inputTokens: sonnetResponse.usage?.input_tokens,
       outputTokens: sonnetResponse.usage?.output_tokens,
       articleId,
@@ -360,7 +361,7 @@ Respond with valid JSON matching the ${componentType} schema. Include the "type"
     console.error(`[interactive] Generation failed for ${articleId}:`, (err as Error).message)
     logApiCall({
       callType: 'interactive_component',
-      model: 'claude-haiku-4-5-20251001',
+      model: MODELS.haiku,
       articleId,
       errorMessage: (err as Error).message,
     })

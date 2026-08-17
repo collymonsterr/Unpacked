@@ -16,8 +16,9 @@
 
 import type AnthropicSDK from '@anthropic-ai/sdk'
 import type { ImageCandidate } from '@/lib/image-router'
+import { MODELS } from '@/lib/models'
 
-const HAIKU_MODEL = 'claude-haiku-4-5-20251001'
+const HAIKU_MODEL = MODELS.haiku
 const MAX_CANDIDATES = 10
 
 interface SelectionResult {
@@ -124,53 +125,6 @@ async function selectWithHaiku(
   return parseSelection(text, thumbs.length)
 }
 
-async function selectWithOpenAI(
-  thumbs: string[],
-  subject: string,
-  context: string | undefined,
-  articleId?: string,
-): Promise<SelectionResult | null> {
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) return null
-
-  const userContent: Array<Record<string, unknown>> = [
-    { type: 'text', text: buildInstruction(subject, context, thumbs.length) },
-  ]
-  thumbs.forEach((url, i) => {
-    userContent.push({ type: 'text', text: `Image ${i + 1}:` })
-    userContent.push({ type: 'image_url', image_url: { url, detail: 'low' } })
-  })
-
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 20_000)
-  try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 150,
-        messages: [{ role: 'user', content: userContent }],
-      }),
-      signal: controller.signal,
-    })
-    clearTimeout(timeoutId)
-    if (!res.ok) return null
-    const data = await res.json()
-    await logUsage(
-      'gpt-4o-mini',
-      data?.usage?.prompt_tokens ?? 0,
-      data?.usage?.completion_tokens ?? 0,
-      articleId,
-    )
-    const text = data?.choices?.[0]?.message?.content ?? ''
-    return parseSelection(text, thumbs.length)
-  } catch {
-    clearTimeout(timeoutId)
-    return null
-  }
-}
-
 /**
  * Pick the best image from a candidate list using a vision model.
  * Always returns a candidate when the list is non-empty (never null unless empty),
@@ -189,10 +143,9 @@ export async function selectBestImage(
   const thumbs = pool.map(c => c.thumbnail || c.url)
 
   try {
-    let result = await selectWithHaiku(thumbs, subject, context, articleId).catch(() => null)
-    if (!result) {
-      result = await selectWithOpenAI(thumbs, subject, context, articleId).catch(() => null)
-    }
+    // Haiku 4.5 vision picks the best; on any failure we fall through to the
+    // top-ranked candidate below. (No OpenAI fallback — kept off the image path.)
+    const result = await selectWithHaiku(thumbs, subject, context, articleId).catch(() => null)
 
     if (result && result.index >= 1 && result.index <= pool.length) {
       const chosen = pool[result.index - 1]

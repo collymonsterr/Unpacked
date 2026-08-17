@@ -60,6 +60,8 @@ Applies to: anything touching the generation flow, homepage layout, article page
 
 Every article flows through these stages in order. File paths and models verified against code.
 
+**Model IDs live in one place — `lib/models.ts`.** All active inference calls import `MODELS` (`haiku` = `claude-haiku-4-5-20251001`, `sonnet` = `claude-sonnet-5`, `geminiFlash` = `gemini-2.5-flash`, `gptMini` = `gpt-4o-mini` for fact-check only, `gptImage` = `gpt-image-1`). Change a model there and every stage updates at once. (May 2026: Sonnet bumped 4→5; fact-check review Haiku bumped 4.0→4.5; OpenAI removed from image selection.)
+
 ### Stage 1: Planning → `lib/claude.ts` → `planArticle()`
 - **Model:** Claude Haiku 4.5 (`claude-haiku-4-5-20251001`)
 - Classifies article type (14 types), decides structure, produces `forbidden_components`
@@ -86,7 +88,7 @@ Every article flows through these stages in order. File paths and models verifie
 
 ### Stage 4: Writing → `lib/gemini-writer.ts` → `writeWithGemini()`
 - **Default model:** Gemini 2.5 Flash (temp 0.3, maxOutputTokens: 65536)
-- **Premium/fallback:** Claude Sonnet (`claude-sonnet-4-20250514`) via `lib/claude.ts` → `writeWithSonnet()`
+- **Premium/fallback:** Claude Sonnet (`MODELS.sonnet` = `claude-sonnet-5`) via `lib/claude.ts` → `writeWithSonnet()`
 - 3 retries with JSON validation before Sonnet fallback
 - `validateArticleSchema()` checks structure
 - `formatLiveDataForPrompt()` injects live data
@@ -94,7 +96,7 @@ Every article flows through these stages in order. File paths and models verifie
 - **Cost:** ~$0.02–0.03 default, ~$0.08–0.12 Sonnet
 
 ### Stage 5: Editorial Pass → `lib/editorial-pass.ts` → `runEditorialPass()`
-- **Primary:** Claude Sonnet (`claude-sonnet-4-20250514`)
+- **Primary:** Claude Sonnet (`MODELS.sonnet` = `claude-sonnet-5`)
 - **Fallback:** Gemini Flash
 - 15 editorial checks, rewrites weak sections via `applyEditorRewrites()`
 - Rewrite threshold: prompt says ≤80, code applies at ≤80 (aligned April 2026)
@@ -113,7 +115,7 @@ Every article flows through these stages in order. File paths and models verifie
 
 ### Stage 7: Fact-Check → `lib/fact-check.ts` → `runTripleFactCheck()`
 - **Stage 1:** Gemini + Google Search grounding + claim extraction (`stage1GeminiVerification()`, thinkingBudget: 0)
-- **Stage 2:** Haiku credibility review (`stage2HaikuReview()` — uses `claude-haiku-4-20250414`)
+- **Stage 2:** Haiku credibility review (`stage2HaikuReview()` — uses `MODELS.haiku` = `claude-haiku-4-5-20251001`)
 - **Stage 3:** GPT-4o-mini arbitration (`stage3Arbitration()` — conditional, only when stages disagree)
 - `applyCorrections()` modifies article, `buildAudit()` creates trail, `determineFinalVerdict()` for consensus
 - Runs async after article delivered

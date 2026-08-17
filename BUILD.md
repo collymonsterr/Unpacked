@@ -19,6 +19,8 @@ What exists right now, confirmed by full codebase audit April 2026. Update this 
 
 Pipeline orchestrated by `lib/write-pipeline.ts` with parallel phases and timing data.
 
+**Model IDs are centralized in `lib/models.ts`** (May 2026). Every active inference call imports `MODELS` — one edit re-points the whole pipeline. Same pass: Sonnet 4→**5** (editorial, premium/deep write, refine, interactive components), fact-check review Haiku 4.0→**4.5** (was the one stale model), and **OpenAI dropped from image selection** (Haiku 4.5 vision → `candidates[0]`; OpenAI kept only for fact-check arbitration). Sonnet-5 price in the cost tables is a placeholder = Sonnet 4 — verify. Deferred (Tier 2/3): conditional editorial pass, batched section-image vision, and collapsing the blueprint/editorial scaffolding — pending editorial-rewrite-rate data.
+
 ---
 
 ## Article Types (14, verified in `lib/article-types.ts`)

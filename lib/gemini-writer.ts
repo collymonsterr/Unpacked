@@ -8,8 +8,9 @@ import { extractJSON } from '@/lib/utils/extract-json'
 import { buildStructuredResearchPrompt } from '@/lib/structured-research-prompt'
 import { formatBlueprintForPrompt } from '@/lib/blueprint'
 import { formatVideoFindingsForPrompt } from '@/lib/brave-video-search'
+import { MODELS, GEMINI_FLASH_URL } from '@/lib/models'
 
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+const GEMINI_API_URL = GEMINI_FLASH_URL
 
 const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
 
@@ -46,7 +47,7 @@ async function logGeminiFallback(callType: string, errorMessage: string, rawResp
     const db = getSupabaseAdmin()
     await db.from('api_usage_log').insert({
       call_type: `gemini_fallback_${callType}`,
-      model: 'gemini-2.5-flash',
+      model: MODELS.geminiFlash,
       input_tokens: 0,
       output_tokens: 0,
       article_id: articleId ?? null,
@@ -636,7 +637,7 @@ ${optionsPrompt}`
           const { logApiCall } = await import('@/lib/api-usage')
           logApiCall({
             callType: 'write',
-            model: 'gemini-2.5-flash',
+            model: MODELS.geminiFlash,
             inputTokens: Math.round((systemPrompt.length + userMessage.length) / 3.8),
             outputTokens: Math.round(text.length / 3.8),
             articleId: articleId ?? undefined,
@@ -825,7 +826,7 @@ Apply ONLY the requested change and return the full updated article JSON. All se
           const { logApiCall } = await import('@/lib/api-usage')
           logApiCall({
             callType: 'refine',
-            model: 'gemini-2.5-flash',
+            model: MODELS.geminiFlash,
             inputTokens: Math.round(userMessage.length / 3.8),
             outputTokens: Math.round(text.length / 3.8),
             articleId: articleId ?? undefined,

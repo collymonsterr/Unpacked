@@ -14,6 +14,7 @@
 import { logApiCall } from '@/lib/api-usage'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import type { ArticleContent } from '@/types/article'
+import { MODELS, GEMINI_FLASH_URL } from '@/lib/models'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -36,7 +37,7 @@ export interface SocialContent {
 
 // ── Gemini call ──────────────────────────────────────────────────────────────
 
-const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+const GEMINI_API = GEMINI_FLASH_URL
 
 async function callGemini(prompt: string, articleId?: string): Promise<string> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY
@@ -67,7 +68,7 @@ async function callGemini(prompt: string, articleId?: string): Promise<string> {
 
   logApiCall({
     callType: 'social_content',
-    model: 'gemini-2.5-flash',
+    model: MODELS.geminiFlash,
     inputTokens,
     outputTokens,
     articleId,

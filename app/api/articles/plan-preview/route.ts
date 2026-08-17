@@ -3,6 +3,7 @@ export const maxDuration = 120 // 2 minutes — planning + research can take 30-
 import { NextRequest } from 'next/server'
 import { planArticle } from '@/lib/claude'
 import { executeResearch } from '@/lib/research-orchestrator'
+import { MODELS } from '@/lib/models'
 import { createServerSupabase } from '@/lib/supabase'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getArticleTypePromptList } from '@/lib/article-types'
@@ -265,7 +266,7 @@ Return ONLY a JSON array of exactly 3 objects with fields: headline, article_typ
   const t0 = Date.now()
 
   const response = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
+    model: MODELS.haiku,
     max_tokens: 2000,
     temperature: 0.7,
     messages: [{ role: 'user', content: prompt }],
@@ -274,7 +275,7 @@ Return ONLY a JSON array of exactly 3 objects with fields: headline, article_typ
   const ms = Date.now() - t0
   const usage = response.usage
   await logApiCall({
-    model: 'claude-haiku-4-5-20251001',
+    model: MODELS.haiku,
     callType: 'plan_angles',
     inputTokens: usage.input_tokens,
     outputTokens: usage.output_tokens,
@@ -348,7 +349,7 @@ Return ONLY a JSON array of ${threads.slice(0, 5).length} strings, one summary p
 
     const anthropic = getAnthropic()
     const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: MODELS.haiku,
       max_tokens: 500,
       temperature: 0.3,
       messages: [{ role: 'user', content: prompt }],
@@ -356,7 +357,7 @@ Return ONLY a JSON array of ${threads.slice(0, 5).length} strings, one summary p
 
     const usage = response.usage
     await logApiCall({
-      model: 'claude-haiku-4-5-20251001',
+      model: MODELS.haiku,
       callType: 'plan_reddit_summary',
       inputTokens: usage.input_tokens,
       outputTokens: usage.output_tokens,

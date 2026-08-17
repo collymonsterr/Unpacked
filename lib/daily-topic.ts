@@ -16,8 +16,9 @@ import { executeBraveQueries } from '@/lib/brave-research'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { logApiCall } from '@/lib/api-usage'
 import { extractJSON } from '@/lib/utils/extract-json'
+import { MODELS } from '@/lib/models'
 
-const HAIKU = 'claude-haiku-4-5-20251001'
+const HAIKU = MODELS.haiku
 
 export interface DailyTopic {
   /** The Unpacked-style query fed into the generation pipeline. */

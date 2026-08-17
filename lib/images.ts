@@ -5,6 +5,7 @@ import { searchUnsplash } from '@/lib/unsplash'
 import { searchGoogleImages } from '@/lib/google-images'
 import { selectBestImage } from '@/lib/image-selector'
 import { rehostImage } from '@/lib/image-storage'
+import { MODELS } from '@/lib/models'
 
 interface BraveImageResult {
   properties: { url: string }
@@ -224,7 +225,7 @@ async function generateHeroQuery(
     if (!apiKey) return shortenTitle(title)
 
     const anthropic = new Anthropic({ apiKey, maxRetries: 2, timeout: 10_000 })
-    const model = 'claude-haiku-4-5-20251001'
+    const model = MODELS.haiku
 
     const message = await anthropic.messages.create({
       model,

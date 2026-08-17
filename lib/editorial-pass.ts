@@ -18,6 +18,7 @@ import type { ArticleContent, ArticleBlueprint, EntityCard, EditorResult, Editor
 import { FORBIDDEN_PHRASES } from '@/lib/editorial-rules'
 import { extractJSON } from '@/lib/utils/extract-json'
 import { logApiCall } from '@/lib/api-usage'
+import { MODELS, GEMINI_FLASH_URL } from '@/lib/models'
 
 // ── Anthropic client (lazy-init) ──
 
@@ -33,11 +34,11 @@ function getAnthropic(): Anthropic {
   return _anthropic
 }
 
-const SONNET_MODEL = 'claude-sonnet-4-20250514'
+const SONNET_MODEL = MODELS.sonnet
 
 // ── Gemini fallback ──
 
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+const GEMINI_API_URL = GEMINI_FLASH_URL
 
 // ── Public API ──
 
@@ -304,7 +305,7 @@ async function callGeminiEditor(
     try {
       logApiCall({
         callType: 'editorial_pass',
-        model: 'gemini-2.5-flash',
+        model: MODELS.geminiFlash,
         inputTokens: Math.round(prompt.length / 3.8),
         outputTokens: Math.round(text.length / 3.8),
         articleId,

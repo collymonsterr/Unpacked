@@ -24,6 +24,7 @@ import {
 } from '@/lib/brave-research'
 import { extractEntityCards } from '@/lib/entity-extraction'
 import { fetchTopComments, isRedditNativeEnabled, type RedditComment } from '@/lib/reddit-comments'
+import { MODELS } from '@/lib/models'
 import { logApiCall } from '@/lib/api-usage'
 import { extractJSON } from '@/lib/utils/extract-json'
 import { searchPolymarket, type PolymarketResult } from '@/lib/data-sources/polymarket'
@@ -342,7 +343,7 @@ Return JSON:
   "gaps": ["string — what the research didn't find"]
 }`
 
-  const model = 'claude-haiku-4-5-20251001'
+  const model = MODELS.haiku
   const message = await getAnthropic().messages.create({
     model,
     max_tokens: 1024,
@@ -915,7 +916,7 @@ ${tweetList}
 
 Return the JSON now.`
 
-  const model = 'claude-haiku-4-5-20251001'
+  const model = MODELS.haiku
   const message = await getAnthropic().messages.create({
     model,
     max_tokens: 512,
@@ -1044,7 +1045,7 @@ ${threadList}
 
 Return the JSON now.`
 
-  const model = 'claude-haiku-4-5-20251001'
+  const model = MODELS.haiku
   const message = await getAnthropic().messages.create({
     model,
     max_tokens: 512,

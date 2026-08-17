@@ -1,12 +1,13 @@
 import { NextRequest } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/auth-check'
+import { MODELS } from '@/lib/models'
 import { CATEGORIES } from '@/lib/category-config'
 import Anthropic from '@anthropic-ai/sdk'
 
 const VALID_CATEGORIES = CATEGORIES.map(c => c.dbValue)
 
-const HAIKU_MODEL = 'claude-haiku-4-5-20251001'
+const HAIKU_MODEL = MODELS.haiku
 
 /** Extract first ~200 words of readable text from article JSON */
 function extractContent(article: Record<string, unknown>): string {

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/auth-check'
+import { MODELS } from '@/lib/models'
 import { isValidUUID } from '@/lib/validate'
 
 export async function POST(
@@ -80,7 +81,7 @@ async function generateCardSummary(articleId: string, db: ReturnType<typeof getS
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: MODELS.haiku,
         max_tokens: 100,
         messages: [{
           role: 'user',

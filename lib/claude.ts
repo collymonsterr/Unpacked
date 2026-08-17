@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { MODELS } from '@/lib/models'
 import type { ArticlePlan, ArticleContent, ArticleType, ResearchManifest, EntityCard, ResearchSynthesis, ArticleBlueprint } from '@/types/article'
 import { VISUAL_DEFAULTS } from '@/lib/article-config'
 import { ARTICLE_TYPE_LIST } from '@/lib/article-types'
@@ -1178,7 +1179,7 @@ export async function planArticle(query: string, options?: GenOptions, articleId
   }
 
   const optionsPrompt = options ? buildOptionsPrompt(options) : ''
-  const model = 'claude-haiku-4-5-20251001'
+  const model = MODELS.haiku
 
   // Layer 1: Sanitise query to remove common false-positive trigger phrases
   const sanitizedQuery = sanitizeQueryForPlanning(query)
@@ -1506,7 +1507,7 @@ export async function writeWithSonnet(
   let lastError: Error | null = null
   const optionsPrompt = options ? buildOptionsPrompt(options) : ''
   const maxTokens = options?.length === 'quick' ? 8000 : options?.length === 'deep' ? 24000 : 16000
-  const model = 'claude-sonnet-4-20250514'
+  const model = MODELS.sonnet
 
   const structuredResearch = buildStructuredResearchPrompt(entityCards, synthesis)
   const blueprintSection = blueprint ? formatBlueprintForPrompt(blueprint) : ''
@@ -1639,7 +1640,7 @@ export async function refineArticle(
     : ''
 
   // Fallback: Claude Sonnet
-  const model = 'claude-sonnet-4-20250514'
+  const model = MODELS.sonnet
   const message = await getAnthropic().messages.create({
     model,
     max_tokens: 16000,
