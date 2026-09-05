@@ -206,8 +206,11 @@ The cron needs plan→research→write, which `app/api/articles/create/route.ts`
 **Decision: Published by default, with an `unlisted` review-queue escape hatch**
 The founder asked for articles "going on fresh" daily, so the default is `published` (live + on the homepage), attributed to the admin user. But auto-publishing unreviewed AI content under their name/brand is a real risk, so `DAILY_ARTICLE_VISIBILITY=unlisted` flips it to a review queue (live URL, off the homepage) with a one-env-var change — no redeploy of logic. Surfaced this trade-off explicitly so it's a conscious choice.
 
-**Decision: 20-hour double-run guard + `?force=1` manual override**
-Cron retries, manual tests, and overlapping invocations could double-post. The route skips if a `source: 'daily_cron'` article was created in the last 20h, except when an admin passes `?force=1` (so the founder can trigger ad-hoc test runs). Auth accepts the `CRON_SECRET` bearer (Vercel-injected) OR an admin session, so manual browser testing works without the secret.
+**Decision: double-run guard + `?force=1` manual override**
+Cron retries, manual tests, and overlapping invocations could double-post. The route skips if a `source: 'daily_cron'` article was created recently, except when an admin passes `?force=1` (so the founder can trigger ad-hoc test runs). Auth accepts the `CRON_SECRET` bearer (Vercel-injected) OR an admin session, so manual browser testing works without the secret.
+
+**Decision: ~10 articles/week via two schedules + slot-offset beats, NOT 2 pipelines per run (May 2026)**
+Founder asked for "an article or two a day, 5–12/week, with a good spread across the week — not just what happened that day." Running two full pipelines in one invocation risks the 300s function limit, so instead there are **two cron schedules** hitting the same route — daily morning (slot 0) + Mon/Wed/Fri afternoon (slot 1) = ~10/week, one safe pipeline per run. The **spread is structural**: the beat rotates by day, and `slot` offsets it to the opposite side of the 14-beat ring, so same-day articles are far-apart categories and a week fans out across the calendar — you can't get five of the same category. "Not just same-day": discovery uses past-week freshness (broadening to past-month), and several beats (Science, Space, Health, Culture) are inherently topical-not-breaking. Guards changed to match: the old 20h guard would have blocked the afternoon run, so it's now a **5h** recent-run guard (catches retries, allows the morning+afternoon pair) plus a hard **weekly cap of 12** so it can never overshoot the range. Risk: if Vercel dedups the two same-path cron entries it falls back to 7/week — still inside 5–12, confirmable from the logs.
 
 ---
 

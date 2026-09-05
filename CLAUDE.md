@@ -282,7 +282,7 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - `app/api/articles/search/route.ts` — navbar autocomplete
 - `app/api/articles/[id]/edit-full/route.ts` — patches article JSONB from full-document editor (no AI call); owner/admin gate; whitelisted fields per section type; tags modified sections with `edited: true`
 - `app/api/improve-prompt/route.ts` — Haiku-powered query improvement suggestions
-- `app/api/cron/daily-article/route.ts` — **Vercel Cron** daily auto-article. Auth: `CRON_SECRET` bearer or admin session. Picks a topical subject (`lib/daily-topic.ts`) → runs the full pipeline → publishes (admin-attributed). 20h double-run guard; `?force=1` for manual admin runs. Schedule in `vercel.json` (`0 6 * * *` = 7am Dublin).
+- `app/api/cron/daily-article/route.ts` — **Vercel Cron** auto-article. Auth: `CRON_SECRET` bearer or admin session. Picks a topical subject (`lib/daily-topic.ts`, beat varies by day + `slot`) → full pipeline → publishes (admin-attributed). Two schedules in `vercel.json`: `0 6 * * *` (daily, slot 0) + `0 14 * * 1,3,5` (Mon/Wed/Fri, slot 1) ≈ **~10 articles/week** with a category spread. Guards: skip if an auto-article ran in the last 5h; hard **weekly cap of 12**; `?force=1` bypasses both for manual admin runs.
 
 ### Other
 - `lib/api-usage.ts` — cost logging + duplicate guard

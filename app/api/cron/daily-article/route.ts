@@ -43,23 +43,41 @@ export async function GET(request: NextRequest) {
 
   const db = getSupabaseAdmin()
 
-  // ── Guard: don't double-publish if a daily article already ran in the last 20h ──
-  // (Skipped for an explicit admin manual run with ?force=1.)
+  // Morning cron (06:00 UTC) = slot 0, afternoon cron (14:00 UTC) = slot 1.
+  // The slot offsets the topic beat so two articles on the same day are
+  // different categories, and the week fans out across the beat calendar.
+  const slot = new Date().getUTCHours() >= 12 ? 1 : 0
+  const WEEKLY_CAP = 12
+
   if (!force) {
-    const since = new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString()
+    // Guard 1: don't double-fire the SAME run — skip if an auto-article was
+    // created in the last 5h. Morning/afternoon runs are ~8h apart, so this
+    // only catches accidental retries, never the intended second run of a day.
+    const recentSince = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
     const { data: recent } = await db
       .from('articles')
       .select('id, slug')
       .filter('generation_options->>source', 'eq', 'daily_cron')
-      .gte('created_at', since)
+      .gte('created_at', recentSince)
       .limit(1)
     if (recent && recent.length > 0) {
-      return Response.json({ ok: false, reason: 'already_ran_today', existing: recent[0] }, { status: 200 })
+      return Response.json({ ok: false, reason: 'ran_recently', existing: recent[0] }, { status: 200 })
+    }
+
+    // Guard 2: weekly cap — never publish more than WEEKLY_CAP auto-articles / 7 days.
+    const weekSince = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const { count: weekCount } = await db
+      .from('articles')
+      .select('id', { count: 'exact', head: true })
+      .filter('generation_options->>source', 'eq', 'daily_cron')
+      .gte('created_at', weekSince)
+    if ((weekCount ?? 0) >= WEEKLY_CAP) {
+      return Response.json({ ok: false, reason: 'weekly_cap_reached', weekCount }, { status: 200 })
     }
   }
 
-  // ── Pick today's topic ──
-  const topic = await pickDailyTopic()
+  // ── Pick today's topic (beat varies by day + slot) ──
+  const topic = await pickDailyTopic(slot)
   if (!topic) {
     return Response.json({ ok: false, reason: 'no_topic_signal' }, { status: 200 })
   }
@@ -70,6 +88,8 @@ export async function GET(request: NextRequest) {
     tone: 'opinionated',
     visual: 'standard',
     source: 'daily_cron',
+    _slot: slot,
+    _beat: topic.category,
     _topicRationale: topic.rationale,
   }
 

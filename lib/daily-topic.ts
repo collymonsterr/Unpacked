@@ -140,8 +140,11 @@ Return ONLY valid JSON, no markdown:
 /**
  * Pick today's article topic. Returns null when there's no usable signal.
  */
-export async function pickDailyTopic(): Promise<DailyTopic | null> {
-  const beat = BEATS[dayIndex() % BEATS.length]
+export async function pickDailyTopic(slot = 0): Promise<DailyTopic | null> {
+  // Beat rotates by day; `slot` (0 = morning, 1 = afternoon) offsets to the
+  // OPPOSITE side of the ring so two articles on the same day are far-apart
+  // categories. Over a week this fans out across the whole beat calendar.
+  const beat = BEATS[(dayIndex() + slot * Math.floor(BEATS.length / 2)) % BEATS.length]
 
   const [headlines, recent] = await Promise.all([discover(beat), recentAutoTopics()])
   if (headlines.length === 0) {

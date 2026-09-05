@@ -219,14 +219,15 @@ Mirrors how a human sources an image: search the best index (Google Images) with
 
 ## Daily Automated Article (built May 2026 — Vercel Cron)
 
-One fresh, fully-generated article published automatically every day — no human in the loop.
+Fresh, fully-generated articles published automatically — no human in the loop. **~10/week** with a category spread (tuned May 2026 from 1/day to hit the founder's 5–12/week target).
 
-- **Trigger:** Vercel Cron (`vercel.json` → `0 6 * * *`, 07:00 Europe/Dublin) hits `app/api/cron/daily-article/route.ts` (GET).
-- **Auth:** Vercel sends `Authorization: Bearer ${CRON_SECRET}` (set `CRON_SECRET` in Vercel env). An authenticated **admin session** is also accepted, and `?force=1` lets the founder trigger a manual test run from the browser. A **20-hour double-run guard** prevents accidental duplicate posts (bypassed by `?force=1`).
-- **Topic selection (`lib/daily-topic.ts` → `pickDailyTopic()`):** rotates through 14 editorial beats day-to-day (Tech, AI, Science, Space, Health, Culture, Entertainment, Gaming, Business, Automotive, Food, Home, Sports, Finance — deliberately weighted away from partisan politics). Runs Brave discovery on the day's beat (`freshness: pw`, broadening to `pm` on a quiet week), pulls the last 14 days of auto-topics to avoid repeats, then **Haiku picks ONE current, concrete, opinion-friendly query** ("Is X worth it?", "X vs Y"). Returns null (cron skips the day) if there's no real signal. Logged as `daily_topic` in `api_usage_log`.
-- **Generation:** reuses the **exact production pipeline** — `planArticle()` → `executeResearch()` → `runWritePipeline()` (fact-check + social run async inside it) — run inline (`maxDuration = 300`). Article is **attributed to the admin user** (`ADMIN_USER_ID` profile) and tagged `generation_options.source = 'daily_cron'`.
-- **Visibility:** `published` by default (live + on the homepage). Set `DAILY_ARTICLE_VISIBILITY=unlisted` to turn it into a **review queue** — articles get a live URL but stay off the homepage until the founder publishes them.
-- **Cost:** ~1 daily article (2 Brave discovery searches + 1 Haiku pick + the normal ~$0.02–0.12 generation). Returns `{ ok, id, slug, title, url, rationale }` for the cron log.
+- **Trigger:** Two Vercel Cron schedules (`vercel.json`), both hitting `app/api/cron/daily-article/route.ts` (GET): `0 6 * * *` (daily, 07:00 Dublin, **slot 0**) + `0 14 * * 1,3,5` (Mon/Wed/Fri 15:00 Dublin, **slot 1**) → 7 + 3 = ~10/week. (If Vercel collapses the two same-path entries, it degrades to 7/week — still in range.)
+- **Weekly spread:** one article per run, each from a different **beat**. `slot` offsets the beat to the OPPOSITE side of the 14-beat ring, so a day's two articles are far-apart categories and the week fans out across the calendar — never 5 of the same category. A hard **weekly cap of 12** (`source: 'daily_cron'` count over 7 days) prevents overshoot.
+- **Auth & guards:** Vercel sends `Authorization: Bearer ${CRON_SECRET}` (set `CRON_SECRET` in Vercel env); an admin session is also accepted. `?force=1` bypasses guards for a manual browser test. A **5-hour** recent-run guard blocks accidental double-fires without blocking the intended morning+afternoon pair.
+- **Topic selection (`lib/daily-topic.ts` → `pickDailyTopic(slot)`):** 14 editorial beats (Tech, AI, Science, Space, Health, Culture, Entertainment, Gaming, Business, Automotive, Food, Home, Sports, Finance — weighted away from partisan politics). Brave discovery on the beat (`freshness: pw`, broadening to `pm` on a quiet week — so it's topical-over-the-week, **not only same-day breaking**), avoids the last 14 days of auto-topics, then **Haiku picks ONE current, concrete, opinion-friendly query**. Returns null (that run skips) if there's no real signal. Logged as `daily_topic`.
+- **Generation:** reuses the **exact production pipeline** — `planArticle()` → `executeResearch()` → `runWritePipeline()` (fact-check + social async inside it) — inline (`maxDuration = 300`). **Attributed to the admin user** (`ADMIN_USER_ID`), tagged `generation_options.source = 'daily_cron'` with `_slot`/`_beat`/`_topicRationale` for spread traceability.
+- **Visibility:** `published` by default (live + homepage). `DAILY_ARTICLE_VISIBILITY=unlisted` turns it into a **review queue** (live URL, off homepage until the founder publishes).
+- **Cost:** per article, 2 Brave discovery searches + 1 Haiku pick + the normal ~$0.02–0.12 generation. Returns `{ ok, id, slug, title, url, rationale }` for the cron log.
 
 ---
 
