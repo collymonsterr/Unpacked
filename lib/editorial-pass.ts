@@ -53,21 +53,26 @@ export async function runEditorialPass(
   blueprint: ArticleBlueprint,
   entityCards: EntityCard[],
   articleId?: string,
+  opts?: { cheap?: boolean },
 ): Promise<EditorResult> {
   const { prompt, sectionTexts } = buildEditorialPrompt(article, blueprint)
 
-  // Try Sonnet first
-  try {
-    const result = await callSonnetEditor(prompt, articleId)
-    const rewriteKeys = Object.keys(result.rewrites)
-    if (rewriteKeys.length > 0) {
-      console.log(`[editorial] Sonnet score: ${result.score} — ${rewriteKeys.length} rewrites (sections ${rewriteKeys.join(', ')})`)
-    } else {
-      console.log(`[editorial] Sonnet score: ${result.score} — passed clean`)
+  // Cheap mode (e.g. the daily auto-article) skips the premium Sonnet editor and
+  // runs the same checks on Gemini Flash — ~½¢ vs ~8¢, the biggest per-article saving.
+  if (!opts?.cheap) {
+    // Try Sonnet first
+    try {
+      const result = await callSonnetEditor(prompt, articleId)
+      const rewriteKeys = Object.keys(result.rewrites)
+      if (rewriteKeys.length > 0) {
+        console.log(`[editorial] Sonnet score: ${result.score} — ${rewriteKeys.length} rewrites (sections ${rewriteKeys.join(', ')})`)
+      } else {
+        console.log(`[editorial] Sonnet score: ${result.score} — passed clean`)
+      }
+      return result
+    } catch (err) {
+      console.error('[editorial] Sonnet failed, falling back to Gemini:', (err as Error).message)
     }
-    return result
-  } catch (err) {
-    console.error('[editorial] Sonnet failed, falling back to Gemini:', (err as Error).message)
   }
 
   // Fall back to Gemini

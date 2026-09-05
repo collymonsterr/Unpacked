@@ -74,6 +74,33 @@ export async function GET(request: NextRequest) {
     if ((weekCount ?? 0) >= WEEKLY_CAP) {
       return Response.json({ ok: false, reason: 'weekly_cap_reached', weekCount }, { status: 200 })
     }
+
+    // Guard 3: monthly budget — stop once this month's estimated spend hits the cap.
+    // `total_cost` captures per-article LLM spend; Brave/SerpAPI aren't logged
+    // per-article, so add a flat search estimate. (Weekly cap above is the volume
+    // backstop; this is the dollar backstop.) Override with DAILY_ARTICLE_MONTHLY_BUDGET.
+    const budget = Number(process.env.DAILY_ARTICLE_MONTHLY_BUDGET ?? '5')
+    if (budget > 0) {
+      const monthStart = new Date()
+      monthStart.setUTCDate(1)
+      monthStart.setUTCHours(0, 0, 0, 0)
+      const { data: monthRows } = await db
+        .from('articles')
+        .select('total_cost')
+        .filter('generation_options->>source', 'eq', 'daily_cron')
+        .gte('created_at', monthStart.toISOString())
+      const rows = monthRows ?? []
+      const SEARCH_EST_PER_ARTICLE = 0.08 // Brave + SerpAPI, not logged per-article
+      const spent =
+        rows.reduce((s, r) => s + ((r as { total_cost?: number }).total_cost ?? 0), 0) +
+        rows.length * SEARCH_EST_PER_ARTICLE
+      if (spent >= budget) {
+        return Response.json(
+          { ok: false, reason: 'monthly_budget_reached', spent: Math.round(spent * 100) / 100, budget },
+          { status: 200 },
+        )
+      }
+    }
   }
 
   // ── Pick today's topic (beat varies by day + slot) ──
@@ -84,10 +111,11 @@ export async function GET(request: NextRequest) {
   const query = topic.query
 
   const generationOptions: Record<string, unknown> = {
-    length: 'standard',
+    length: 'quick',        // cheap mode — 800-1200 words, fewer sections/images
     tone: 'opinionated',
     visual: 'standard',
     source: 'daily_cron',
+    cheap: true,            // editorial pass runs on Gemini (not Sonnet 5) — see runEditorialPass
     _slot: slot,
     _beat: topic.category,
     _topicRationale: topic.rationale,

@@ -282,7 +282,7 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - `app/api/articles/search/route.ts` — navbar autocomplete
 - `app/api/articles/[id]/edit-full/route.ts` — patches article JSONB from full-document editor (no AI call); owner/admin gate; whitelisted fields per section type; tags modified sections with `edited: true`
 - `app/api/improve-prompt/route.ts` — Haiku-powered query improvement suggestions
-- `app/api/cron/daily-article/route.ts` — **Vercel Cron** auto-article. Auth: `CRON_SECRET` bearer or admin session. Picks a topical subject (`lib/daily-topic.ts`, beat varies by day + `slot`) → full pipeline → publishes (admin-attributed). Two schedules in `vercel.json`: `0 6 * * *` (daily, slot 0) + `0 14 * * 1,3,5` (Mon/Wed/Fri, slot 1) ≈ **~10 articles/week** with a category spread. Guards: skip if an auto-article ran in the last 5h; hard **weekly cap of 12**; `?force=1` bypasses both for manual admin runs.
+- `app/api/cron/daily-article/route.ts` — **Vercel Cron** auto-article. Auth: `CRON_SECRET` bearer or admin session. Picks a topical subject (`lib/daily-topic.ts`, beat varies by day + `slot`) → full pipeline → publishes (admin-attributed). Two schedules in `vercel.json`: `0 6 * * *` (daily, slot 0) + `0 14 * * 1,3,5` (Mon/Wed/Fri, slot 1) ≈ **~10 articles/week** with a category spread. **Cheap mode** (`length: 'quick'` + `cheap: true` → editorial pass on Gemini not Sonnet) keeps it ~$5/mo. Guards: skip if an auto-article ran in the last 5h; hard **weekly cap of 12**; **monthly $ budget** (`DAILY_ARTICLE_MONTHLY_BUDGET`, default $5 — sums this month's `total_cost` + a flat search estimate); `?force=1` bypasses all guards for manual admin runs.
 
 ### Other
 - `lib/api-usage.ts` — cost logging + duplicate guard
@@ -358,6 +358,7 @@ ADMIN_EMAIL                    # Server-side admin email (lib/auth-check.ts)
 GEMINI_MAX_CONCURRENT=3        # Concurrent generation limit (in-memory)
 CRON_SECRET                    # Vercel Cron auth — sent as `Authorization: Bearer` to /api/cron/* (set in Vercel)
 DAILY_ARTICLE_VISIBILITY       # Optional: 'unlisted' turns the daily auto-article into a review queue (default: published)
+DAILY_ARTICLE_MONTHLY_BUDGET   # Optional: $ ceiling for daily auto-articles/month — cron skips once month-to-date est. spend hits it (default: 5)
 REDDIT_NATIVE_API              # Optional: 'off' disables Reddit native comment fetching (default: on)
 ```
 
