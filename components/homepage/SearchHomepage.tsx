@@ -5,14 +5,14 @@ import PopularSection from '@/components/homepage/PopularSection'
 import RecentArticlesGrid from '@/components/RecentArticlesGrid'
 import ExploreByTopic from '@/components/homepage/ExploreByTopic'
 import TrustStrip from '@/components/TrustStrip'
-import type { ArticleRow } from '@/types/article'
+import type { ArticleCardData } from '@/lib/article-card'
 
 interface Props {
-  featuredPool: ArticleRow[]
-  trendingPool: ArticleRow[]
+  featuredPool: ArticleCardData[]
+  trendingPool: ArticleCardData[]
   trendingIdList: string[]
-  popular: ArticleRow[]
-  all: ArticleRow[]
+  popular: ArticleCardData[]
+  all: ArticleCardData[]
 }
 
 /**
@@ -38,7 +38,7 @@ export default function SearchHomepage({ featuredPool, trendingPool, trendingIdL
         <>
           <FeaturedSection
             pool={featuredPool}
-            fallbackArticles={all.filter(a => !a.is_featured && !trendingIdList.includes(a.id)).slice(0, 10)}
+            fallbackArticles={all.filter(a => !a.isFeatured && !trendingIdList.includes(a.id)).slice(0, 10)}
           />
           <div className="max-w-6xl mx-auto px-4 md:px-6 my-14" style={{ borderTop: '1px solid #e2e0d8' }} />
         </>

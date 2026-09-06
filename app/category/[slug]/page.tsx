@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { CATEGORIES, CATEGORY_BY_SLUG, slugToDbCategory } from '@/lib/category-config'
 import Navbar from '@/components/ui/Navbar'
 import Footer from '@/components/ui/Footer'
+import { LISTING_EXCLUDED_SLUGS, isHiddenFromListings } from '@/lib/seo-canonical'
 import CategoryPageClient from './CategoryPageClient'
 
 export const dynamic = 'force-dynamic'
@@ -43,6 +44,10 @@ async function getCategoryArticles(categoryName: string, sort: string, page: num
   const { getSupabaseAdmin } = await import('@/lib/supabase')
   const db = getSupabaseAdmin()
 
+  // 301'd duplicate slugs are excluded in SQL — filtering after the fact would
+  // leave short pages, since the range is applied server-side.
+  const excluded = `(${LISTING_EXCLUDED_SLUGS.map(sl => `"${sl}"`).join(',')})`
+
   // Get total count
   const { count: totalCount } = await db
     .from('articles')
@@ -50,6 +55,7 @@ async function getCategoryArticles(categoryName: string, sort: string, page: num
     .eq('category', categoryName)
     .in('status', ['complete', 'verified'])
     .eq('visibility', 'published')
+    .not('slug', 'in', excluded)
 
   // Build query with sort
   let query = db
@@ -58,6 +64,7 @@ async function getCategoryArticles(categoryName: string, sort: string, page: num
     .eq('category', categoryName)
     .in('status', ['complete', 'verified'])
     .eq('visibility', 'published')
+    .not('slug', 'in', excluded)
 
   if (sort === 'popular') {
     query = query.order('view_count', { ascending: false, nullsFirst: false })
@@ -74,7 +81,8 @@ async function getCategoryArticles(categoryName: string, sort: string, page: num
   const { data } = await query
 
   return {
-    articles: data ?? [],
+    // Belt and braces: catches pipeline debris that is not also a redirect source.
+    articles: (data ?? []).filter(r => !isHiddenFromListings(r.slug as string)),
     totalCount: totalCount ?? 0,
     totalPages: Math.ceil((totalCount ?? 0) / ITEMS_PER_PAGE),
   }

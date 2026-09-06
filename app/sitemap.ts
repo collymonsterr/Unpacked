@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { CATEGORIES } from '@/lib/category-config'
+import { isIndexableSlug } from '@/lib/seo-canonical'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [
@@ -50,7 +51,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .limit(500)
 
     if (data) {
-      for (const row of data) {
+      // Redirected duplicates, noindexed pages and pipeline debris are never
+      // submitted for indexing — see lib/seo-canonical.ts.
+      for (const row of data.filter(r => isIndexableSlug(r.slug))) {
         entries.push({
           url: `https://unpacked.fyi/article/${row.slug}`,
           lastModified: new Date(row.updated_at ?? row.created_at),

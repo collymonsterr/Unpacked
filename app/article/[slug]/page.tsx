@@ -1,10 +1,11 @@
 export const dynamic = 'force-dynamic'
 
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import type { ArticleRow, ProductCard } from '@/types/article'
 import type { LinkableArticle } from '@/lib/internal-links'
 import { generateArticleJsonLd, generateProductJsonLd, generateBreadcrumbJsonLd, generateClaimReviewJsonLd, generateVerdictReviewJsonLd } from '@/lib/structured-data'
+import { getCanonicalSlug, isIndexableSlug } from '@/lib/seo-canonical'
 import ArticlePageClient from './ArticlePageClient'
 
 // Cache internal links data (1 hour) — avoids DB call on every page load
@@ -64,6 +65,12 @@ async function getArticle(slug: string): Promise<ArticleRow | null> {
 
 export default async function ArticlePage({ params }: Props) {
   const { slug } = await params
+
+  // Duplicate slugs 301 to their keeper before any DB work — the map is an
+  // in-memory lookup, so this costs nothing on the common path.
+  const canonicalSlug = getCanonicalSlug(slug)
+  if (canonicalSlug !== slug) permanentRedirect(`/article/${canonicalSlug}`)
+
   const row = await getArticle(slug)
 
   if (!row) notFound()
@@ -185,12 +192,20 @@ export async function generateMetadata({ params }: Props) {
   const title = row.article?.title ?? row.plan?.title ?? row.query
   const rawDesc = row.article?.quick_verdict?.one_liner ?? row.plan?.quick_verdict_preview ?? ''
   const description = rawDesc.length > 155 ? rawDesc.slice(0, 152) + '...' : rawDesc
-  const canonicalUrl = `https://unpacked.fyi/article/${row.slug}`
+  // Point the canonical at the keeper, so a duplicate reached directly still
+  // hands its ranking signals to the surviving URL.
+  const canonicalUrl = `https://unpacked.fyi/article/${getCanonicalSlug(row.slug)}`
   const ogImage = row.article?.thumbnail_url ?? `https://unpacked.fyi/api/og/${row.slug}`
 
   return {
     title: `${title} | Unpacked`,
     description,
+    // Unlisted articles and the pages in NOINDEX_SLUGS stay reachable by link
+    // but are kept out of the index; `follow` still passes link equity on.
+    robots:
+      row.visibility !== 'published' || !isIndexableSlug(row.slug)
+        ? { index: false, follow: true }
+        : undefined,
     alternates: {
       canonical: canonicalUrl,
     },

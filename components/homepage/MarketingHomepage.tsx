@@ -9,12 +9,12 @@ import ExampleChips from '@/components/ExampleChips'
 import FeaturedSection from '@/components/homepage/FeaturedSection'
 import ExploreByTopic from '@/components/homepage/ExploreByTopic'
 import RecentArticlesGrid from '@/components/RecentArticlesGrid'
-import type { ArticleRow } from '@/types/article'
+import type { ArticleCardData } from '@/lib/article-card'
 
 interface Props {
-  featuredPool: ArticleRow[]
+  featuredPool: ArticleCardData[]
   trendingIdList: string[]
-  all: ArticleRow[]
+  all: ArticleCardData[]
   exampleSlug?: string
 }
 
@@ -91,7 +91,7 @@ export default function MarketingHomepage({ featuredPool, trendingIdList, all, e
         <>
           <FeaturedSection
             pool={featuredPool}
-            fallbackArticles={all.filter(a => !a.is_featured && !trendingIdList.includes(a.id)).slice(0, 10)}
+            fallbackArticles={all.filter(a => !a.isFeatured && !trendingIdList.includes(a.id)).slice(0, 10)}
           />
           <div className="max-w-6xl mx-auto px-4 md:px-6 my-14" style={{ borderTop: '1px solid #e2e0d8' }} />
         </>

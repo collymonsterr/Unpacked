@@ -3,37 +3,17 @@
 import { useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import type { ArticleRow, ProductCard } from '@/types/article'
-import { getReadingTime } from '@/lib/reading-time'
+import { typeLabel, type ArticleCardData } from '@/lib/article-card'
 
 interface Props {
-  articles: ArticleRow[]
-}
-
-function getCardImage(row: ArticleRow): string | null {
-  if (row.article?.thumbnail_url) return row.article.thumbnail_url
-  const productCards = row.article?.sections?.filter(
-    (s): s is ProductCard => s.type === 'product_card'
-  )
-  return productCards?.[0]?.image_urls?.[0] ?? productCards?.[0]?.image_url ?? null
-}
-
-const TYPE_LABELS: Record<string, string> = {
-  buyer_guide: 'Buyer Guide', comparison: 'Comparison', decision_guide: 'Decision Guide',
-  explainer: 'Explainer', how_to: 'How-To', roundup: 'Roundup',
-  news_analysis: 'News Analysis', trend_analysis: 'Trend Analysis',
-  breaking_news: 'Breaking News', deep_dive: 'Deep Dive',
-  // Legacy types (old articles may still have these)
-  news: 'News', planning: 'Travel & Living', tutorial: 'Tutorial',
+  articles: ArticleCardData[]
 }
 
 // ── Article Card ──
 
-function ArticleCard({ row }: { row: ArticleRow }) {
-  const art = row.article
-  const img = getCardImage(row)
-  const type = art?.article_type ?? ''
-  const readTime = art ? getReadingTime(art) : 0
+function ArticleCard({ row }: { row: ArticleCardData }) {
+  const img = row.imageUrl
+  const readTime = row.readingTime
   const [imgError, setImgError] = useState(false)
 
   return (
@@ -49,7 +29,7 @@ function ArticleCard({ row }: { row: ArticleRow }) {
         {img && !imgError ? (
           <Image
             src={img}
-            alt={art?.title ?? ''}
+            alt={row.title}
             fill
             className="object-cover"
             onError={() => setImgError(true)}
@@ -67,9 +47,9 @@ function ArticleCard({ row }: { row: ArticleRow }) {
             className="text-base font-bold leading-snug line-clamp-3"
             style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
           >
-            {art?.title}
+            {row.title}
           </h3>
-          {row.fact_check && (
+          {row.hasFactCheck && (
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               <polyline points="9 12 11 14 15 10" />
@@ -77,7 +57,7 @@ function ArticleCard({ row }: { row: ArticleRow }) {
           )}
         </div>
         <p className="text-xs mt-auto" style={{ color: 'var(--accent)' }}>
-          {TYPE_LABELS[type] ?? type.replace(/_/g, ' ')}
+          {typeLabel(row.articleType)}
         </p>
         {readTime > 0 && (
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
@@ -139,12 +119,7 @@ const FILTER_TO_SLUG: Record<string, string> = {
   'AI & Future': 'ai',
 }
 
-/** Get the category for an article — prefers top-level column, falls back to plan */
-function getArticleCategory(row: ArticleRow): string | null {
-  if (row.category) return row.category
-  if (row.plan?.category) return row.plan.category
-  return null
-}
+/** Category resolution (top-level column, else plan) already happened in `toArticleCard()`. */
 
 // ── Main Grid ──
 
@@ -155,16 +130,13 @@ export default function RecentArticlesGrid({ articles }: Props) {
 
   // Always newest first
   const sorted = [...articles].sort((a, b) =>
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   )
 
   const dbValue = FILTER_TO_DB[activeCategory] ?? null
   const filtered = activeCategory === 'All'
     ? sorted
-    : sorted.filter((a) => {
-        const cat = getArticleCategory(a)
-        return cat && dbValue && cat === dbValue
-      })
+    : sorted.filter((a) => a.category && dbValue && a.category === dbValue)
 
   if (articles.length === 0) return null
 

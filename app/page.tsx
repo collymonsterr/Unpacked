@@ -3,7 +3,8 @@ import PendingArticleRecovery from '@/components/PendingArticleRecovery'
 import Footer from '@/components/ui/Footer'
 import SearchHomepage from '@/components/homepage/SearchHomepage'
 import MarketingHomepage from '@/components/homepage/MarketingHomepage'
-import type { ArticleRow } from '@/types/article'
+import { toArticleCard, type ArticleCardData, type ArticleCardSource } from '@/lib/article-card'
+import { isHiddenFromListings } from '@/lib/seo-canonical'
 
 import type { Metadata } from 'next'
 
@@ -20,20 +21,34 @@ async function getHomepageData() {
     const { getSupabaseAdmin } = await import('@/lib/supabase')
     const db = getSupabaseAdmin()
 
-    // Single query — get all visible articles with all flags
+    // Single query — get all visible articles with all flags.
+    //
+    // `plan` and `fact_check` are projected down to the one scalar each that the
+    // cards actually need (category, and "did a fact-check run"), and
+    // `suggestion_chips` is not read on the homepage at all. `article` is still
+    // fetched whole because reading time needs the section text — but it never
+    // leaves the server: everything below runs on the projected card shape.
     const { data } = await db
       .from('articles')
-      .select('id, slug, query, status, plan, article, hidden_from_homepage, root_article_id, parent_article_id, is_featured, is_trending, trending_set_at, view_count, user_id, user_name, user_avatar, fact_check, verified_at, created_at, updated_at, suggestion_chips, card_summary, category')
+      .select('id, slug, query, article, root_article_id, is_featured, is_trending, trending_set_at, view_count, user_name, user_avatar, verified_at, created_at, card_summary, category, plan_category:plan->>category, fact_check_probe:fact_check->>checks_performed')
       .in('status', ['complete', 'verified'])
       .eq('hidden_from_homepage', false)
       .eq('visibility', 'published')
       .order('created_at', { ascending: false })
       .limit(200)
 
-    const allArticles = (data ?? []) as ArticleRow[]
+    type RawRow = ArticleCardSource & {
+      root_article_id?: string | null
+      plan_category?: string | null
+      fact_check_probe?: string | null
+    }
+
+    const allArticles = ((data ?? []) as unknown as RawRow[])
+      // Pipeline test debris and 301'd duplicate slugs never appear in listings.
+      .filter(r => !isHiddenFromListings(r.slug))
 
     // Deduplicate chains: for each root, keep latest
-    const latestByChain = new Map<string, ArticleRow>()
+    const latestByChain = new Map<string, RawRow>()
     for (const a of allArticles) {
       const chainKey = a.root_article_id ?? a.id
       const existing = latestByChain.get(chainKey)
@@ -41,25 +56,34 @@ async function getHomepageData() {
         latestByChain.set(chainKey, a)
       }
     }
-    const deduplicated = Array.from(latestByChain.values())
+
+    // Project to the lightweight card shape before anything reaches a client
+    // component — this is what keeps the initial HTML small.
+    const deduplicated: ArticleCardData[] = Array.from(latestByChain.values()).map(r =>
+      toArticleCard({
+        ...r,
+        plan: r.plan_category ? { category: r.plan_category } : null,
+        fact_check: r.fact_check_probe ?? null,
+      })
+    )
 
     // Featured pool — full pool passed to client for random rotation
     const featuredPool = deduplicated
-      .filter(a => a.is_featured)
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .filter(a => a.isFeatured)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
     // Trending pool — full pool passed to client for random rotation
     const trendingPool = deduplicated
-      .filter(a => a.is_trending)
+      .filter(a => a.isTrending)
       .sort((a, b) => {
-        const at = a.trending_set_at ? new Date(a.trending_set_at).getTime() : 0
-        const bt = b.trending_set_at ? new Date(b.trending_set_at).getTime() : 0
+        const at = a.trendingSetAt ? new Date(a.trendingSetAt).getTime() : 0
+        const bt = b.trendingSetAt ? new Date(b.trendingSetAt).getTime() : 0
         return bt - at
       })
 
     // Most popular — top 4 by views, fully automatic
     const popular = [...deduplicated]
-      .sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0))
+      .sort((a, b) => b.viewCount - a.viewCount)
       .slice(0, 4)
 
     // IDs in featured and trending pools — used for exclusions
@@ -70,7 +94,7 @@ async function getHomepageData() {
     // Recent Articles — newest first, excluding featured and trending
     const all = [...deduplicated]
       .filter(a => !featuredIds.has(a.id) && !trendingIds.has(a.id))
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
     return { featuredPool, trendingPool, trendingIdList, popular, all }
   } catch {

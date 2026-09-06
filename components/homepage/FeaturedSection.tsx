@@ -3,26 +3,17 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import type { ArticleRow } from '@/types/article'
-import { getReadingTime } from '@/lib/reading-time'
+import { typeLabel, type ArticleCardData } from '@/lib/article-card'
 import SectionHeader from './SectionHeader'
 
-const TYPE_LABELS: Record<string, string> = {
-  buyer_guide: 'Buyer Guide', comparison: 'Comparison', decision_guide: 'Decision Guide',
-  explainer: 'Explainer', how_to: 'How-To', roundup: 'Roundup',
-  news_analysis: 'News Analysis', trend_analysis: 'Trend Analysis',
-  breaking_news: 'Breaking News', deep_dive: 'Deep Dive',
-  news: 'News', planning: 'Travel & Living', tutorial: 'Tutorial',
-}
-
 interface Props {
-  pool: ArticleRow[]
-  fallbackArticles?: ArticleRow[]
+  pool: ArticleCardData[]
+  fallbackArticles?: ArticleCardData[]
 }
 
 export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) {
-  const [heroArticle, setHeroArticle] = useState<ArticleRow | null>(null)
-  const [smallArticles, setSmallArticles] = useState<ArticleRow[]>([])
+  const [heroArticle, setHeroArticle] = useState<ArticleCardData | null>(null)
+  const [smallArticles, setSmallArticles] = useState<ArticleCardData[]>([])
 
   useEffect(() => {
     if (pool.length === 0) return
@@ -30,7 +21,7 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
     const storedHeroId = localStorage.getItem('featuredHeroId')
     const hasVisited = localStorage.getItem('hasVisitedFeatured')
 
-    let hero: ArticleRow
+    let hero: ArticleCardData
 
     if (!hasVisited || !storedHeroId) {
       // First visit: random hero from pool
@@ -49,7 +40,7 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
     // Small cards: 4 most recent from remaining pool, then fill from fallback if needed
     const remaining = pool
       .filter(a => a.id !== hero.id)
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
     let cards = remaining.slice(0, 4)
 
@@ -69,39 +60,8 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
     return <div style={{ height: '540px' }} />
   }
 
-  const heroArt = heroArticle.article
-  const heroType = heroArt?.article_type ?? ''
-  const heroDescription = heroArt?.executive_summary?.short_answer ?? heroArt?.quick_verdict?.one_liner ?? ''
-  // Card summary: use card_summary if available, else first complete sentence of verdict
-  const heroVerdict = (() => {
-    // Priority 1: dedicated card_summary (generated when article is featured)
-    const cardSummary = (heroArticle as unknown as Record<string, unknown>).card_summary as string | undefined
-    if (cardSummary && cardSummary.trim().length > 0) return cardSummary.trim()
-
-    // Priority 2: first complete sentence of verdict
-    const rec = heroArt?.quick_verdict?.recommendation
-    if (rec) {
-      // Split on first period followed by space or end, but only if >10 chars before it
-      const firstSentence = rec.match(/^[^.;!?]+[.;!?]/)
-      if (firstSentence) return firstSentence[0].replace(/;$/, '.').trim()
-      return rec.split(';')[0].trim()
-    }
-
-    const oneLiner = heroArt?.quick_verdict?.one_liner
-    if (oneLiner) {
-      const firstSentence = oneLiner.match(/^[^.;!?]+[.;!?]/)
-      if (firstSentence) return firstSentence[0].trim()
-      return oneLiner
-    }
-
-    const takeaway = heroArt?.executive_summary?.key_takeaways?.[0]
-    if (takeaway) return takeaway
-    return ''
-  })()
-  const heroImg = heroArt?.thumbnail_url
-  const heroReadTime = heroArt ? getReadingTime(heroArt) : 0
-  const heroDate = new Date(heroArticle.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
-  const heroAuthorName = heroArticle.user_name ?? 'Unpacked'
+  const heroDate = new Date(heroArticle.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
+  const heroAuthorName = heroArticle.userName ?? 'Unpacked'
   const heroAuthorInitial = heroAuthorName.charAt(0).toUpperCase()
 
   return (
@@ -126,10 +86,10 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
           }}
         >
           <div className="relative" style={{ height: '220px' }}>
-            {heroImg ? (
+            {heroArticle.imageUrl ? (
               <Image
-                src={heroImg}
-                alt={heroArt?.title ?? ''}
+                src={heroArticle.imageUrl}
+                alt={heroArticle.title}
                 fill
                 className="object-cover"
                 unoptimized
@@ -141,7 +101,7 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
           <div className="p-4 flex-1 flex flex-col gap-0">
             {/* 1. Category badge */}
             <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--accent)' }}>
-              {TYPE_LABELS[heroType] ?? heroType.replace(/_/g, ' ')}
+              {typeLabel(heroArticle.articleType)}
             </p>
 
             {/* 2. Title + verified shield */}
@@ -150,9 +110,9 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
                 className="text-lg font-bold leading-snug line-clamp-2"
                 style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
               >
-                {heroArt?.title}
+                {heroArticle.title}
               </h3>
-              {heroArticle.fact_check && (
+              {heroArticle.hasFactCheck && (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-1">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   <polyline points="9 12 11 14 15 10" />
@@ -161,14 +121,14 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
             </div>
 
             {/* 3. Description */}
-            {heroDescription && (
+            {heroArticle.description && (
               <p className="text-xs leading-relaxed mb-2 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
-                {heroDescription}
+                {heroArticle.description}
               </p>
             )}
 
             {/* 4. Verdict box */}
-            {heroVerdict && (
+            {heroArticle.verdict && (
               <div
                 className="rounded-lg px-3 py-2 mb-2"
                 style={{ backgroundColor: '#f0efed' }}
@@ -187,7 +147,7 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
                   className="text-xs leading-relaxed line-clamp-2"
                   style={{ color: 'var(--text-primary)', fontStyle: 'italic' }}
                 >
-                  {heroVerdict}
+                  {heroArticle.verdict}
                 </p>
               </div>
             )}
@@ -199,9 +159,9 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
             >
               {/* Left: author + date */}
               <div className="flex items-center gap-2">
-                {heroArticle.user_avatar ? (
+                {heroArticle.userAvatar ? (
                   <img
-                    src={heroArticle.user_avatar}
+                    src={heroArticle.userAvatar}
                     alt=""
                     className="w-6 h-6 rounded-full"
                     referrerPolicy="no-referrer"
@@ -219,17 +179,17 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
                     {heroAuthorName}
                   </p>
                   <p className="text-[10px] leading-tight" style={{ color: 'var(--text-secondary)' }}>
-                    {heroDate} · {heroReadTime} min read
+                    {heroDate} · {heroArticle.readingTime} min read
                   </p>
                 </div>
               </div>
 
               {/* Right: views + fact-checked */}
               <div className="flex items-center gap-3 text-[10px]" style={{ color: 'var(--text-secondary)' }}>
-                {(heroArticle.view_count ?? 0) > 0 && (
-                  <span>{(heroArticle.view_count ?? 0).toLocaleString()} views</span>
+                {heroArticle.viewCount > 0 && (
+                  <span>{heroArticle.viewCount.toLocaleString()} views</span>
                 )}
-                {heroArticle.verified_at && (
+                {heroArticle.verifiedAt && (
                   <span className="flex items-center gap-0.5" style={{ color: '#059669' }}>
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <path d="M20 6L9 17l-5-5" />
@@ -251,9 +211,7 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
           }}
         >
           {smallArticles.map((row) => {
-            const art = row.article
-            const img = art?.thumbnail_url
-            const type = art?.article_type ?? ''
+            const img = row.imageUrl
             return (
               <Link
                 key={row.id}
@@ -268,7 +226,7 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
                   {img ? (
                     <Image
                       src={img}
-                      alt={art?.title ?? ''}
+                      alt={row.title}
                       fill
                       className="object-cover"
                       unoptimized
@@ -281,16 +239,16 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
                 </div>
                 <div className="p-2.5">
                   <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: 'var(--accent)' }}>
-                    {TYPE_LABELS[type] ?? type.replace(/_/g, ' ')}
+                    {typeLabel(row.articleType)}
                   </p>
                   <div className="flex items-start gap-1">
                     <h4
                       className="text-sm font-bold leading-snug line-clamp-2"
                       style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
                     >
-                      {art?.title}
+                      {row.title}
                     </h4>
-                    {row.fact_check && (
+                    {row.hasFactCheck && (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                         <polyline points="9 12 11 14 15 10" />

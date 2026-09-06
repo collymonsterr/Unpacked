@@ -1,5 +1,6 @@
 import slugify from 'slugify'
 import { getSupabaseAdmin } from './supabase'
+import { isDebrisSlug } from './seo-canonical'
 
 // Words that add no meaning to a URL
 const STOP_WORDS = new Set([
@@ -117,6 +118,19 @@ function cleanSlug(input: string): string {
 
   // Remove trailing hyphens
   slug = slug.replace(/-+$/, '')
+
+  // A title like "Gemini Test: Robot Vacuums 2026" would mint a slug that every
+  // listing and the sitemap then have to filter back out. Strip the test marker
+  // at the source instead — see lib/seo-canonical.ts.
+  if (isDebrisSlug(slug)) {
+    slug = slug
+      .replace(/(^|-)(sonnet|gemini|haiku|opus|gpt|claude|pipeline|smoke|e2e|qa)-test(-|$)/gi, '$1')
+      .replace(/(^|-)test-(article|run|fixture|\d+)(-|$)/gi, '$1')
+      .replace(/-{2,}/g, '-')
+      .replace(/^-+|-+$/g, '')
+    // "Pipeline Test 3" strips down to "3" — not a usable URL.
+    if (!/[a-z]/.test(slug)) slug = ''
+  }
 
   return slug || 'article'
 }

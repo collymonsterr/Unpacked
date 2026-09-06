@@ -1,18 +1,10 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import type { ArticleRow } from '@/types/article'
+import { typeLabel, type ArticleCardData } from '@/lib/article-card'
 import SectionHeader from './SectionHeader'
 
-const TYPE_LABELS: Record<string, string> = {
-  buyer_guide: 'Buyer Guide', comparison: 'Comparison', decision_guide: 'Decision Guide',
-  explainer: 'Explainer', how_to: 'How-To', roundup: 'Roundup',
-  news_analysis: 'News Analysis', trend_analysis: 'Trend Analysis',
-  breaking_news: 'Breaking News', deep_dive: 'Deep Dive',
-  news: 'News', planning: 'Travel & Living', tutorial: 'Tutorial',
-}
-
 interface Props {
-  articles: ArticleRow[]
+  articles: ArticleCardData[]
 }
 
 export default function PopularSection({ articles }: Props) {
@@ -27,9 +19,7 @@ export default function PopularSection({ articles }: Props) {
       {/* Desktop: 2x2 image grid (unchanged) */}
       <div className="hidden md:grid grid-cols-4 gap-4">
         {items.map((row, rank) => {
-          const art = row.article
-          const img = art?.thumbnail_url
-          const type = art?.article_type ?? ''
+          const img = row.imageUrl
           return (
             <Link
               key={row.id}
@@ -52,7 +42,7 @@ export default function PopularSection({ articles }: Props) {
                 {img ? (
                   <Image
                     src={img}
-                    alt={art?.title ?? ''}
+                    alt={row.title}
                     fill
                     className="object-cover"
                     unoptimized
@@ -63,16 +53,16 @@ export default function PopularSection({ articles }: Props) {
               </div>
               <div className="p-3">
                 <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--accent)' }}>
-                  {TYPE_LABELS[type] ?? type.replace(/_/g, ' ')}
+                  {typeLabel(row.articleType)}
                 </p>
                 <div className="flex items-start gap-1.5">
                   <h4
                     className="text-base font-bold leading-snug line-clamp-3 mb-1"
                     style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
                   >
-                    {art?.title}
+                    {row.title}
                   </h4>
-                  {row.fact_check && (
+                  {row.hasFactCheck && (
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                       <polyline points="9 12 11 14 15 10" />
@@ -80,7 +70,7 @@ export default function PopularSection({ articles }: Props) {
                   )}
                 </div>
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  {row.view_count ?? 0} views
+                  {row.viewCount} views
                 </p>
               </div>
             </Link>
@@ -91,9 +81,7 @@ export default function PopularSection({ articles }: Props) {
       {/* Mobile: horizontal list cards */}
       <div className="flex flex-col gap-3 md:hidden">
         {items.map((row, rank) => {
-          const art = row.article
-          const img = art?.thumbnail_url
-          const type = art?.article_type ?? ''
+          const img = row.imageUrl
           return (
             <Link
               key={row.id}
@@ -109,7 +97,7 @@ export default function PopularSection({ articles }: Props) {
                 {img ? (
                   <Image
                     src={img}
-                    alt={art?.title ?? ''}
+                    alt={row.title}
                     fill
                     className="object-cover"
                     unoptimized
@@ -131,16 +119,16 @@ export default function PopularSection({ articles }: Props) {
               {/* Content */}
               <div className="flex-1 p-3 flex flex-col justify-center min-w-0">
                 <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: 'var(--accent)' }}>
-                  {TYPE_LABELS[type] ?? type.replace(/_/g, ' ')}
+                  {typeLabel(row.articleType)}
                 </p>
                 <div className="flex items-start gap-1">
                   <h4
                     className="text-sm font-bold leading-snug line-clamp-2 mb-0.5"
                     style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
                   >
-                    {art?.title}
+                    {row.title}
                   </h4>
-                  {row.fact_check && (
+                  {row.hasFactCheck && (
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                       <polyline points="9 12 11 14 15 10" />
@@ -148,7 +136,7 @@ export default function PopularSection({ articles }: Props) {
                   )}
                 </div>
                 <p className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>
-                  {row.view_count ?? 0} views
+                  {row.viewCount} views
                 </p>
               </div>
             </Link>
