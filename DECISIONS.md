@@ -235,3 +235,26 @@ Vision selection was Haiku 4.5 → GPT-4o-mini → `candidates[0]`. Haiku 4.5 vi
 
 **Decision (scope): declined the hook's Vercel-AI-SDK / Workflow migration**
 Editor hooks repeatedly recommended replacing the direct Anthropic/Gemini/OpenAI SDK calls with the Vercel AI SDK and moving retries to Workflow DevKit. That's a large re-architecture, unrelated to the requested efficiency pass, and would touch every generation call — declined as out of scope. Revisit only as a deliberate, separately-scoped decision.
+
+---
+
+## Homepage Payload and SEO Canonicalisation (September 2026)
+
+**Decision: listing cards get a projected shape (`ArticleCardData`), not the DB row**
+Every listing component took an `ArticleRow`, so the full `article`, `plan`, `fact_check` and `suggestion_chips` JSONB for 200 articles was serialised into the RSC payload embedded in the homepage's initial HTML — a measured 5.77 MB to render about eighteen scalars per card. Rather than trim the `select()` and leave client components free to reach for whole rows again, the projection is a **type boundary**: `toArticleCard()` resolves the card fields server-side and `ArticleCardData` is the only shape a card can consume. The rule that keeps it fixed is "never pass an `ArticleRow` into a listing component" — a `select()` diet alone would have regressed the first time someone needed one more field. Reading time still needs the section text, so `article` is fetched but never crosses to the client. Result: 441 KB of rendered HTML.
+
+**Decision: consolidate duplicate URLs with a redirect map, not by deleting rows**
+Roughly two dozen slugs competed with a near-identical twin — pipeline test artefacts, `-N` collision forks from `generateUniqueSlug()`, and a few cases of the same question asked twice. Deleting the losers would be irreversible and would throw away whatever links and traffic they had. Instead `lib/seo-canonical.ts` holds one declarative map: redirects (permanent, equity moves to the keeper), a noindex set (live and linkable, just not competing), and debris patterns (test artefacts, filtered everywhere). **No article row is deleted and every entry is reversible by editing one file.**
+
+Keeper selection is rule-based so future entries stay consistent: R1 an explicit editorial decision wins; R2 a `-N`-suffixed slug always loses to its unsuffixed twin, because the suffix only exists because of a slug collision; R3 otherwise the higher `view_count` wins. R2 deliberately overrides R3 — a couple of suffixed twins have more views than their keeper, but the clean URL is worth more than the accumulated difference.
+
+**Decision: fix the debris at slug generation, not only in the filters**
+The six `gemini-test-…` / `sonnet-test-…` articles exist because a test title flowed straight into `cleanSlug()`. Filtering them out of listings and the sitemap treats the symptom, so `cleanSlug()` now strips model/pipeline test markers at the source. The regex is deliberately narrow — it requires a `<model|pipeline>-test` marker, so a real article like `chatgpt-build-production-app-test` is untouched. Verified against the live DB: exactly the 6 known artefacts matched, zero false positives.
+
+**Decision: exclude duplicates from category listings in SQL, not after fetching**
+Category pages paginate server-side with `.range()`. Filtering the returned page would leave short pages, so redirect sources are excluded in the query (and in the count) via `LISTING_EXCLUDED_SLUGS`. The post-fetch `isHiddenFromListings()` filter stays as a cheap safety net for debris that is not also a redirect source.
+
+**Decision: verify the redirect map against production data before wiring it**
+A wrong 301 silently kills a live URL, so the map was checked against the live DB first: every target exists, is `complete`/`verified` and `published`; no redirect chains; no missing keepers. This is worth repeating before adding entries.
+
+**Note: `permanentRedirect()` emits 308, not 301.** Google treats 308 as equivalent to 301 for canonicalisation, so this is fine — but don't "fix" it to 301 expecting a behaviour change.

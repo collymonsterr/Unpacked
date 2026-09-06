@@ -1,6 +1,6 @@
 # CLAUDE.md — Unpacked (unpacked.fyi)
 
-Read this before doing anything. Technical facts only — verified against codebase April 2026.
+Read this before doing anything. Technical facts only — verified against codebase September 2026.
 
 For current feature state see BUILD.md. For roadmap see PLAN.md.
 
@@ -104,14 +104,20 @@ Every article flows through these stages in order. File paths and models verifie
 - Rules: `lib/editorial-rules.ts` — `FORBIDDEN_PHRASES` (50+), `FILLER_PATTERNS` (20), `TONE_DESCRIPTIONS` (10 codes)
 
 ### Stage 6: Images → `lib/images.ts` + `lib/image-router.ts`
-- `routeImageRequest()` returns ordered source list per image type
-- Hero editorial: Pexels → Unsplash → Brave
-- News/products: Brave only
+- **Google Images is the primary source for every request** — it searches the open web, so it has real photos of specific/named/new subjects that stock libraries lack. Stock is the fallback, not the default.
+- `routeImageRequest()` returns an ordered source list per image type:
+  - Hero, news/product style: `google → brave`
+  - Hero, everything else: `google → pexels → unsplash → brave`
+  - Product images: `google → brave`
+  - Editorial sections: `google → brave` for news/breaking, else `google → pexels → unsplash → brave`
 - `generateHeroQuery()` — Haiku-powered smart query
+- **Vision selection** (`lib/image-selector.ts`) — Haiku 4.5 vision picks the best candidate; falls back to `candidates[0]`. OpenAI was removed from this path (Aug 2026).
+- **Rehosting** (`lib/image-storage.ts`) — chosen images are copied into Supabase Storage so articles don't hotlink third-party URLs that rot.
 - `resolveHeroCandidates()` — tries sources in priority order
 - `enrichArticleWithImages()` — product images + editorial sections
 - Filtering: REJECTED_PATTERNS, SMALL_IMAGE_PATTERNS, TEXT_IMAGE_PATTERNS, PREFERRED_HOSTNAMES
-- Pexels integration: `lib/pexels.ts` (requires `PEXELS_API_KEY`, graceful fallback if missing)
+- Stock integrations: `lib/pexels.ts`, `lib/unsplash.ts` (graceful fallback if the key is missing)
+- `lib/imagen.ts` — `gpt-image-1` generation, emergency hero fallback only
 
 ### Stage 7: Fact-Check → `lib/fact-check.ts` → `runTripleFactCheck()`
 - **Stage 1:** Gemini + Google Search grounding + claim extraction (`stage1GeminiVerification()`, thinkingBudget: 0)
@@ -241,6 +247,14 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - `lib/image-router.ts` — source routing by image type
 - `lib/pexels.ts` — Pexels API integration
 - `lib/article-types.ts` — 14 type definitions with component rules
+- `lib/models.ts` — **single source of truth for active model IDs**
+- `lib/google-images.ts` — Google image search (primary image source)
+- `lib/image-selector.ts` — Haiku 4.5 vision picks the best candidate
+- `lib/image-storage.ts` — rehosts chosen images into Supabase Storage
+- `lib/imagen.ts` — `gpt-image-1` emergency hero generation
+- `lib/unsplash.ts` — Unsplash stock fallback
+- `lib/reddit-comments.ts` — Reddit native top-comment fetching
+- `lib/daily-topic.ts` — rotating 14-beat calendar for the daily cron
 - `lib/stripe-config.ts` — Stripe instance, price IDs, tier limits
 - `lib/url-prefetch.ts` — URL detection, content fetching (tweets/Reddit/articles), context injection
 
@@ -276,13 +290,17 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 - `components/editor/FindingCard.tsx` — individual research finding with source link + checkbox
 - `components/SharePanel.tsx` — 4-tab social content panel (Twitter, LinkedIn, Reddit, Image Cards)
 
-### API Routes (59 total)
+### API Routes (61 total)
 - `app/api/articles/create/route.ts` — main generation flow
 - `app/api/articles/plan-preview/route.ts` — plan mode: planning + research + angle generation
 - `app/api/articles/search/route.ts` — navbar autocomplete
 - `app/api/articles/[id]/edit-full/route.ts` — patches article JSONB from full-document editor (no AI call); owner/admin gate; whitelisted fields per section type; tags modified sections with `edited: true`
 - `app/api/improve-prompt/route.ts` — Haiku-powered query improvement suggestions
-- `app/api/cron/daily-article/route.ts` — **Vercel Cron** auto-article. Auth: `CRON_SECRET` bearer or admin session. Picks a topical subject (`lib/daily-topic.ts`, beat varies by day + `slot`) → full pipeline → publishes (admin-attributed). Two schedules in `vercel.json`: `0 6 * * *` (daily, slot 0) + `0 14 * * 1,3,5` (Mon/Wed/Fri, slot 1) ≈ **~10 articles/week** with a category spread. **Cheap mode** (`length: 'quick'` + `cheap: true` → editorial pass on Gemini not Sonnet) keeps it ~$5/mo. Guards: skip if an auto-article ran in the last 5h; hard **weekly cap of 12**; **monthly $ budget** (`DAILY_ARTICLE_MONTHLY_BUDGET`, default $5 — sums this month's `total_cost` + a flat search estimate); `?force=1` bypasses all guards for manual admin runs.
+- `app/api/cron/daily-article/route.ts` — **Vercel Cron** auto-article. Auth: `CRON_SECRET` bearer or admin session. Picks a topical subject (`lib/daily-topic.ts`, beat varies by day + `slot`, where `slot` is derived from the UTC hour — `>= 12` is the afternoon run, not a query param) → full pipeline → publishes (admin-attributed). Two schedules in `vercel.json`: `0 6 * * *` (daily, slot 0) + `0 14 * * 1,3,5` (Mon/Wed/Fri, slot 1) ≈ **~10 articles/week** with a category spread. **Cheap mode** (`length: 'quick'` + `cheap: true` → editorial pass on Gemini not Sonnet) keeps it ~$5/mo. Guards: skip if an auto-article ran in the last 5h; hard **weekly cap of 12**; **monthly $ budget** (`DAILY_ARTICLE_MONTHLY_BUDGET`, default $5 — sums this month's `total_cost` + a flat search estimate); `?force=1` bypasses all guards for manual admin runs.
+
+### Presentation
+- `lib/article-card.ts` — `ArticleCardData` + `toArticleCard()` + shared `TYPE_LABELS`/`typeLabel()`
+- `lib/seo-canonical.ts` — slug redirects, noindex set, debris patterns
 
 ### Other
 - `lib/api-usage.ts` — cost logging + duplicate guard
@@ -292,6 +310,13 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 ---
 
 ## Homepage Structure
+
+`app/page.tsx` is a server component that detects sign-in state server-side (`isAuthenticatedVisitor()`) and renders **one of two homepages**:
+
+- **Signed out → `MarketingHomepage`** — sells the product: hero, marketing sections, Featured, Explore by Topic, Recent Articles.
+- **Signed in → `SearchHomepage`** — puts the tool first: search, TrustStrip, Featured, Trending Today, Most Popular, Explore by Topic, Recent Articles.
+
+Shared furniture, in order:
 
 1. **PendingArticleRecovery** — recovers in-progress articles
 2. **Navbar** (no search on homepage) — menu order: About, Pricing, Creators, Explore
@@ -304,6 +329,42 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 9. **Footer**
 
 Deduplicates article chains via `root_article_id`.
+
+### Listing cards ship a projected shape, not whole rows
+
+**Never pass an `ArticleRow` to a listing component.** Every card renders from `ArticleCardData` (`lib/article-card.ts`), resolved on the server by `toArticleCard()`.
+
+The homepage query selects scalars plus `plan->>category` and `fact_check->>checks_performed` projections — it does **not** select `plan`, `fact_check` or `suggestion_chips` whole. `article` is still fetched (reading time needs the section text) but never leaves the server.
+
+This matters because anything a client component receives is serialised into the RSC payload embedded in the initial HTML. The 200 full rows the homepage used to pass measured **5.77 MB**; the rendered homepage HTML is now **441 KB**.
+
+Card components (`FeaturedSection`, `TrendingSection`, `PopularSection`, `RecentArticlesGrid`) share `typeLabel()` and `TYPE_LABELS` from `lib/article-card.ts` — do not re-declare a local label map.
+
+---
+
+## SEO Canonicalisation — `lib/seo-canonical.ts`
+
+One indexable URL per search intent. Three mechanisms, all reversible by editing that one file — **nothing here deletes an article row**:
+
+| Mechanism | Effect | Used for |
+|-----------|--------|----------|
+| `SLUG_REDIRECTS` | Permanent redirect; link equity moves to the keeper | True duplicates (21 entries) |
+| `NOINDEX_SLUGS` | Live and linkable, dropped from sitemap, served `robots: noindex, follow` | Reachable but shouldn't compete in search |
+| `DEBRIS_PATTERNS` | Filtered from every listing and the sitemap, blocked at slug generation | Pipeline/model test artefacts |
+
+Keeper selection rules, so future entries stay consistent:
+- **R1** — an explicit editorial decision wins.
+- **R2** — a `-N`-suffixed slug always loses to its unsuffixed twin (the suffix only exists because `generateUniqueSlug()` hit a collision).
+- **R3** — otherwise the higher `view_count` wins.
+
+Wired into five places:
+- `app/article/[slug]/page.tsx` — `permanentRedirect()` before any DB work (in-memory lookup, zero cost on the common path); canonical tag points at the keeper; `robots: noindex, follow` for unlisted/non-indexable
+- `app/sitemap.ts` — `isIndexableSlug()` filter
+- `app/page.tsx` — `isHiddenFromListings()` filter
+- `app/category/[slug]/page.tsx` — `LISTING_EXCLUDED_SLUGS` excluded in SQL, so pagination stays even
+- `lib/slug.ts` — `cleanSlug()` strips test markers so debris slugs are never minted
+
+Note: `permanentRedirect()` emits **308**, which Google treats as equivalent to 301 for canonicalisation.
 
 ---
 
@@ -407,6 +468,8 @@ When any feature ships, update BUILD.md immediately. When the plan changes, upda
 At the start of every session, read CLAUDE.md, BUILD.md, PLAN.md, OVERVIEW.md, and STRATEGY.md before doing anything. Verify your understanding of the current state matches what's documented.
 
 **The canonical doc set is exactly 7 files in the repo root:** CLAUDE.md, BUILD.md, PLAN.md, DECISIONS.md, OVERVIEW.md, STRATEGY.md, README.md. If you encounter any other markdown file in the root, flag it — it is either drift or a working draft that should be moved to `docs/drafts/` or deleted.
+
+Outside the root: `docs/` holds generated reference material (e.g. `docs/WRITING-PROMPTS-REFERENCE.md`, a read-only extraction of every prompt in the pipeline) and `docs/drafts/` holds working briefs. Neither is canonical — if a fact in `docs/` disagrees with the code, the code wins.
 
 ### 3. Autonomous Execution
 When the founder gives a clear, detailed brief: execute it fully without stopping to ask questions. When the brief is ambiguous or high-risk: use investigate-plan-approve-code.

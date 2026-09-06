@@ -3,21 +3,8 @@
  * Usage: npx tsx scripts/test-pipeline-timing.ts "best robot vacuum 2026"
  */
 
-import { readFileSync } from 'fs'
-import { resolve } from 'path'
-
-// Load .env.local manually (no dotenv dependency)
-const envPath = resolve(import.meta.dirname ?? __dirname, '..', '.env.local')
-const envContent = readFileSync(envPath, 'utf-8')
-for (const line of envContent.split('\n')) {
-  const trimmed = line.trim()
-  if (!trimmed || trimmed.startsWith('#')) continue
-  const eqIdx = trimmed.indexOf('=')
-  if (eqIdx === -1) continue
-  const key = trimmed.slice(0, eqIdx).trim()
-  const val = trimmed.slice(eqIdx + 1).trim()
-  if (!process.env[key]) process.env[key] = val
-}
+// Must come before the lib imports below — they read env vars at module load.
+import './load-env'
 
 import { planArticle } from '../lib/claude'
 import { executeResearch } from '../lib/research-orchestrator'

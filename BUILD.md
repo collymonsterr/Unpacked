@@ -1,6 +1,6 @@
 # BUILD.md — Unpacked Current Feature State
 
-What exists right now, confirmed by full codebase audit April 2026. Update this file whenever a feature ships.
+What exists right now, confirmed by full codebase audit September 2026. Update this file whenever a feature ships.
 
 ---
 
@@ -273,7 +273,9 @@ Bespoke interactive tools generated per article — decision trees, scenario sim
 
 ---
 
-## Homepage (built, updated April 2026)
+## Homepage (built, updated September 2026)
+
+**Two homepages, chosen server-side.** `app/page.tsx` detects sign-in state via `isAuthenticatedVisitor()` and renders `MarketingHomepage` (signed out — sells the product) or `SearchHomepage` (signed in — puts search first). Both draw from the same single query.
 
 1. PendingArticleRecovery → Navbar (no search) → HomepageHero → TrustStrip
 2. Featured: 1 hero (2fr) + 2×2 small cards (3fr), 540px, pool-based rotation
@@ -304,6 +306,16 @@ Three-column layout with thin vertical dividers (desktop) / stacked with horizon
 Top/bottom borders, 18px padding. Component: `components/TrustStrip.tsx`.
 
 **Note:** Trust strip says "Grok" but actual fact-check pipeline uses GPT-4o-mini for arbitration. Intentional — Grok is a stronger consumer brand name.
+
+### Card payload projection (built September 2026)
+
+Listing cards render from `ArticleCardData` (`lib/article-card.ts`), not from `ArticleRow`. `toArticleCard()` resolves the ~18 scalars a card actually needs on the server; the heavy JSONB never crosses into a client component.
+
+- Homepage query selects scalars plus `plan->>category` and `fact_check->>checks_performed` projections. `plan`, `fact_check` and `suggestion_chips` are no longer fetched whole; `article` is fetched (reading time needs section text) but stays server-side.
+- **Measured:** the 200 full rows previously passed to client components serialised to **5.77 MB**. Rendered homepage HTML is now **441 KB**.
+- `TYPE_LABELS` / `typeLabel()` are shared from `lib/article-card.ts` — the four duplicate local copies (Featured, Trending, Popular, Recent) are gone, and the shared map now covers all 14 types (the old copies were missing `ranked_list`, `myth_buster`, `timeline_article`, `visual_list`, so those cards rendered a de-underscored fallback).
+
+**Rule: never pass an `ArticleRow` into a listing component.**
 
 ---
 
@@ -389,7 +401,7 @@ Admin = email matches `NEXT_PUBLIC_ADMIN_EMAIL`.
 
 ---
 
-## API Routes (57 confirmed)
+## API Routes (61 confirmed)
 
 Covering: articles CRUD (create, view, delete, refine, regenerate, visibility, type switch), admin (costs, feedback, analytics, users, backfill, reclassify, migrate), article features (fact-check, featured, trending, pin, hide, share-credit, social-content, card-summary, research, cost-breakdown, section-edit, section-suggestions, edit-full), images (upload-hero, replace-image, replace-thumbnail, set-primary-image, regenerate-images, upload-refine-image, swap-image), stripe (checkout, webhook, portal), profile (profile, usage, article-count), founding creators, improve-prompt, plan-preview, categories, saved-articles, waitlist, search, recent, reorder, claim, start-writing.
 
@@ -406,11 +418,27 @@ Covering: articles CRUD (create, view, delete, refine, regenerate, visibility, t
 
 ---
 
-## SEO (built)
+## SEO (built, extended September 2026)
 
 - JSON-LD structured data: Article, Person, ClaimReview, Review, BreadcrumbList
 - Sitemap, robots.txt, OG tags, canonical URLs
 - Security headers in next.config.ts (X-Content-Type-Options, X-Frame-Options, etc.)
+
+### Canonicalisation — one indexable URL per intent (built September 2026)
+
+`lib/seo-canonical.ts` is the single map. No article rows are deleted; every entry is reversible by editing that file.
+
+| Mechanism | Effect | Current entries |
+|-----------|--------|-----------------|
+| `SLUG_REDIRECTS` | Permanent redirect (308, which Google treats as 301) | 21 |
+| `NOINDEX_SLUGS` | Live + linkable, out of sitemap, `robots: noindex, follow` | 2 (`macbook-neo`, `macbook-neo-vs-dell-inspiron-14`) |
+| `DEBRIS_PATTERNS` | Filtered from listings + sitemap, blocked at slug generation | 6 matches in DB |
+
+Keeper rules: **R1** editorial decision wins → **R2** a `-N` suffixed slug always loses to its unsuffixed twin → **R3** otherwise higher `view_count` wins.
+
+Wired into: article page (redirect + canonical + robots), `app/sitemap.ts`, `app/page.tsx`, `app/category/[slug]/page.tsx` (excluded in SQL so pagination stays even), and `lib/slug.ts` (`cleanSlug()` strips test markers so debris is never minted again).
+
+**Verified against the live DB before shipping:** all 21 redirect targets exist, are `complete`/`verified` and `published`; no redirect chains; the debris regex matched exactly the 6 known test artefacts with no false positives on real articles (e.g. `chatgpt-build-production-app-test` stays indexable). Sitemap article URLs dropped from **231 to 208** (21 redirects + 2 noindexed removed); total sitemap is 224 entries including 16 static/category pages.
 
 ---
 
@@ -554,6 +582,9 @@ Technical tone: "Write for an expert audience. Assume domain knowledge. Skip int
 9. ~~**Duplicate Reddit threads in articles**~~ — **FIXED April 2026.** Reddit URLs vary (www vs non-www, trailing slashes, query params), bypassing exact-string dedup. Fix: `normalizeRedditUrl()` in `lib/brave-research.ts` strips www prefix, query params, hash, trailing slashes via URL API. Applied at 3 layers: source level (compileResearch seenUrls), extraction level (secondary seenThreadUrls), orchestrator level (post-compilation dedup). Also applied in remove-quote API to prevent re-introduction on dismiss.
 10. ~~**Article slug fuzzy match returning wrong articles**~~ — **FIXED April 2026.** `getArticle()` had a fuzzy fallback (`ilike('slug', '${slug.slice(0,30)}%')`) that could match unrelated articles. Also, `.single()` errored on duplicate slugs. Fix: removed fuzzy fallback entirely, switched to `.maybeSingle()` with exact match + ordering. Applied to: `app/article/[slug]/page.tsx`, `app/article/[slug]/edit/page.tsx`, `app/api/articles/[id]/route.ts`, `app/api/og/[slug]/route.tsx`.
 11. ~~**Private article metadata leaked in 404 responses**~~ — **FIXED April 2026.** `generateMetadata()` returned full title/description/OG data for private articles even when unauthenticated. Fix: added visibility gate check to `generateMetadata()` in `app/article/[slug]/page.tsx`.
+12. ~~**Homepage shipped ~5.8 MB of JSONB to the browser**~~ — **FIXED September 2026.** Listing components took `ArticleRow`, so the full `article`/`plan`/`fact_check`/`suggestion_chips` for 200 articles were serialised into the RSC payload embedded in the initial HTML. Fix: `lib/article-card.ts` projects rows to `ArticleCardData` on the server. Measured 5.77 MB of row JSON → 441 KB rendered HTML.
+13. ~~**Four listing components carried divergent copies of `TYPE_LABELS`**~~ — **FIXED September 2026.** All four were missing the four article types added in April 2026, so `ranked_list`, `myth_buster`, `timeline_article` and `visual_list` cards showed a de-underscored fallback label. Fix: one shared `TYPE_LABELS`/`typeLabel()` in `lib/article-card.ts`, covering all 14 types plus legacy.
+14. **Google Analytics is blocked by our own CSP** — **OPEN, found September 2026.** `next.config.ts` `script-src` allows only `'self'`, Stripe and Vercel hosts, so the `@next/third-parties` GA tag (`G-FQJWVZ1TNG`) is refused by the browser on every page load. GA has collected nothing since the CSP shipped. Fix is one line — add `https://www.googletagmanager.com` to `script-src` and `https://*.google-analytics.com` to `connect-src` — but it widens the CSP, so it is a deliberate call, not a silent patch.
 
 ---
 
@@ -568,8 +599,8 @@ Verified absent from codebase as of April 2026:
 - **Referral system** — not built
 - **Email capture / weekly digest** — not built
 - **Trending questions dashboard** — not built (live data sources exist but no `/trending` page)
-- **Vision-based image selection** — not built (filtering is rule-based, no GPT-4o-mini vision)
-- **Canonical topic system** — not built
+- ~~**Vision-based image selection**~~ — **BUILT May 2026.** Haiku 4.5 vision picks the best candidate in `lib/image-selector.ts`, falling back to `candidates[0]`. (OpenAI removed from this path Aug 2026.) This line previously contradicted the pipeline table above it.
+- ~~**Canonical topic system**~~ — **PARTIALLY BUILT September 2026.** `lib/seo-canonical.ts` gives one indexable URL per intent via redirects/noindex/debris rules. What is still not built is the *forward* half: detecting at generation time that a new query duplicates an existing article's intent and offering the existing article instead of writing a second one.
 - ~~**Creator status / badges**~~ — Founding Creator badge built (amber badge on author block + dashboard). Topic ownership badges not yet built.
 - **Views-for-premium mechanic** — not built
 - **Screenshot-proof branding** — not built

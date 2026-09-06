@@ -1,6 +1,6 @@
 # PLAN.md — Unpacked Forward Build Plan
 
-Last updated: April 2026 (Build 5 — Stripe wired, URL prefetch built, monetisation strategy added)
+Last updated: September 2026 (Build 8 — homepage payload projection + SEO canonicalisation shipped; docs reconciled against code)
 
 ---
 
@@ -159,8 +159,9 @@ Surface at `/trending`: Google Trends (already have SerpAPI), Reddit hot posts, 
 ### 4C. Remix/Fork with Attribution
 Fork any published article. Original creator gets attribution and 20% of future affiliate earnings. `forked_from_id` field on articles.
 
-### 4D. Canonical Topic System
-Before generation: check for similar existing articles. Non-blocking warning with options to read, create different angle, or update existing. Admin designates canonical per topic.
+### 4D. Canonical Topic System — *backward half DONE (September 2026)*
+**Done:** `lib/seo-canonical.ts` consolidates the duplicates that already exist — 21 permanent redirects, a noindex set, and debris patterns, wired into the article page, sitemap, homepage and category listings. One indexable URL per intent, no rows deleted.
+**Remaining (the forward half):** before generation, check whether a new query duplicates an existing article's intent. Non-blocking warning with options to read, create a different angle, or update the existing one. Admin designates canonical per topic. Note that `lib/query-cache.ts` already does a similar-article lookup in the create route — start there rather than building a second mechanism.
 
 ### ~~4E. Creator Status and Badges~~ PARTIALLY DONE (April 2026)
 ~~Founder badge for first 100 users (is_founding_creator boolean, 10 credits/month, admin approval flow, `/founding-creators` page).~~ Remaining: Topic ownership badges, Verified Creator tier.
@@ -340,6 +341,9 @@ Reddit thread links in `CommunityInsights.tsx` wrap subreddit links, producing `
 
 ### M5. Loading Message Pacing
 Loading messages exhaust at ~70 seconds but articles average ~188 seconds, leaving ~1.7 minutes of dead silence. Flat 5s interval, no adaptive pacing. Fix: implement graduated intervals (fast early, slow mid, long tail). File: `components/ArticleGenerating.tsx`. Highest-priority UX bug rescued from old TODO.md.
+
+### M8. Google Analytics blocked by our own CSP — *found September 2026*
+`next.config.ts` `script-src` allows only `'self'`, Stripe and Vercel hosts, so the `@next/third-parties` GA tag (`G-FQJWVZ1TNG`) is refused by the browser on every page load — confirmed in the console. GA has collected nothing since the CSP shipped. One-line fix (add `https://www.googletagmanager.com` to `script-src`, `https://*.google-analytics.com` to `connect-src`), but it widens the CSP, so it needs a deliberate yes rather than a silent patch. Alternative: drop GA entirely and rely on PostHog, which is already reverse-proxied through `/ingest` and therefore unaffected.
 
 ### M6. Set Provider Spending Caps
 Set hard spending caps in Anthropic, OpenAI, and Google billing dashboards as last-line cost defence. Not yet confirmed done. No code change — operational task.
