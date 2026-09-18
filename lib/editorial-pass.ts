@@ -14,6 +14,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
+import { createAnthropic } from '@/lib/anthropic-client'
 import type { ArticleContent, ArticleBlueprint, EntityCard, EditorResult, EditorIssue } from '@/types/article'
 import { FORBIDDEN_PHRASES } from '@/lib/editorial-rules'
 import { extractJSON } from '@/lib/utils/extract-json'
@@ -25,7 +26,7 @@ import { MODELS, GEMINI_FLASH_URL } from '@/lib/models'
 let _anthropic: Anthropic | null = null
 function getAnthropic(): Anthropic {
   if (!_anthropic) {
-    _anthropic = new Anthropic({
+    _anthropic = createAnthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
       maxRetries: 2,
       timeout: 60_000,

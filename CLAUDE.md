@@ -132,6 +132,14 @@ Every article flows through these stages in order. File paths and models verifie
 - `saveSocialContent()` saves to DB
 - Runs async after article delivered
 
+### Anthropic → Gemini fallback → `lib/anthropic-client.ts`
+- **Always construct Anthropic clients with `createAnthropic()`, never `new Anthropic()`.**
+- When a `messages.create()` call fails because of the Anthropic *account* (empty credit balance, quota, rejected key — `classifyProviderError()` in `lib/provider-errors.ts`), the same request is replayed on Gemini Flash and returned in Anthropic's response shape. Callers don't change.
+- Ordinary errors (timeouts, overload, bad requests) rethrow untouched. Requests carrying images (vision selection) rethrow — `lib/image-selector.ts` already degrades to `candidates[0]`.
+- Not covered: `lib/fact-check.ts` stage 2 and `lib/data-sources/polymarket.ts` call the API with raw `fetch`; both already degrade without blocking the article.
+- Cost caveat: fallback calls are logged under the requested Anthropic model's pricing, so the admin Costs tab and the cron budget guard *overstate* spend during an outage — the safe direction.
+- Look for `[anthropic-fallback]` in Vercel logs to see when it's active.
+
 ### Pipeline Orchestration → `lib/write-pipeline.ts` → `runWritePipeline()`
 - Phase 1: Blueprint
 - Phase 2: Write + hero image (parallel)

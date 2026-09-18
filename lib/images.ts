@@ -220,11 +220,11 @@ async function generateHeroQuery(
   articleId?: string
 ): Promise<string> {
   try {
-    const Anthropic = (await import('@anthropic-ai/sdk')).default
+    const { createAnthropic } = await import('@/lib/anthropic-client')
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) return shortenTitle(title)
 
-    const anthropic = new Anthropic({ apiKey, maxRetries: 2, timeout: 10_000 })
+    const anthropic = createAnthropic({ apiKey, maxRetries: 2, timeout: 10_000 })
     const model = MODELS.haiku
 
     const message = await anthropic.messages.create({

@@ -11,11 +11,12 @@ import { extractJSON } from '@/lib/utils/extract-json'
 import { logApiCall } from '@/lib/api-usage'
 import { detectUrls, prefetchUrls, extractUserRequest, buildPrefetchContext } from '@/lib/url-prefetch'
 import Anthropic from '@anthropic-ai/sdk'
+import { createAnthropic } from '@/lib/anthropic-client'
 
 let _anthropic: Anthropic | null = null
 function getAnthropic(): Anthropic {
   if (!_anthropic) {
-    _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 2, timeout: 30_000 })
+    _anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 2, timeout: 30_000 })
   }
   return _anthropic
 }

@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { createAnthropic } from '@/lib/anthropic-client'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/auth-check'
 import { MODELS } from '@/lib/models'
@@ -8,7 +9,7 @@ export const maxDuration = 300 // 5 minutes — admin backfill can process many 
 let _anthropic: Anthropic | null = null
 function getAnthropic(): Anthropic {
   if (!_anthropic) {
-    _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    _anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   }
   return _anthropic
 }

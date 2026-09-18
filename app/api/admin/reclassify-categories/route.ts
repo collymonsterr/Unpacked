@@ -3,7 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/auth-check'
 import { MODELS } from '@/lib/models'
 import { CATEGORIES } from '@/lib/category-config'
-import Anthropic from '@anthropic-ai/sdk'
+import { createAnthropic } from '@/lib/anthropic-client'
 
 const VALID_CATEGORIES = CATEGORIES.map(c => c.dbValue)
 
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 })
   }
 
-  const client = new Anthropic({ apiKey })
+  const client = createAnthropic({ apiKey })
   const db = getSupabaseAdmin()
 
   // Fetch all published articles

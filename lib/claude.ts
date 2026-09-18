@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { createAnthropic } from '@/lib/anthropic-client'
 import { MODELS } from '@/lib/models'
 import type { ArticlePlan, ArticleContent, ArticleType, ResearchManifest, EntityCard, ResearchSynthesis, ArticleBlueprint } from '@/types/article'
 import { VISUAL_DEFAULTS } from '@/lib/article-config'
@@ -12,7 +13,7 @@ import { formatBlueprintForPrompt } from '@/lib/blueprint'
 let _anthropic: Anthropic | null = null
 function getAnthropic(): Anthropic {
   if (!_anthropic) {
-    _anthropic = new Anthropic({
+    _anthropic = createAnthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
       maxRetries: 4,
       timeout: 5 * 60 * 1000, // 5 minutes — web search calls are slow

@@ -13,6 +13,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
+import { createAnthropic } from '@/lib/anthropic-client'
 import type { ArticlePlan, ResearchManifest, EntityCard, ResearchSynthesis, PlanEntity, LiveDataQuery, TwitterFinding, TwitterSentimentSplit, RedditSentimentSplit, RedditThread, VideoFinding } from '@/types/article'
 import { executeVideoQueries } from '@/lib/brave-video-search'
 import {
@@ -34,7 +35,7 @@ import { fetchGoogleTrends, type GoogleTrendsResult } from '@/lib/data-sources/g
 let _anthropic: Anthropic | null = null
 function getAnthropic(): Anthropic {
   if (!_anthropic) {
-    _anthropic = new Anthropic({
+    _anthropic = createAnthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
       maxRetries: 2,
       timeout: 30_000,

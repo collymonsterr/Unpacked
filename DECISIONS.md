@@ -258,3 +258,13 @@ Category pages paginate server-side with `.range()`. Filtering the returned page
 A wrong 301 silently kills a live URL, so the map was checked against the live DB first: every target exists, is `complete`/`verified` and `published`; no redirect chains; no missing keepers. This is worth repeating before adding entries.
 
 **Note: `permanentRedirect()` emits 308, not 301.** Google treats 308 as equivalent to 301 for canonicalisation, so this is fine — but don't "fix" it to 301 expecting a behaviour change.
+
+---
+
+## Autopilot Resilience (September 2026)
+
+**Decision: fall back to Gemini on Anthropic *account* failures, transparently, in one wrapper**
+An empty Anthropic balance stopped every article — including the daily autopilot — from 17 Aug to 18 Sep, while Gemini, Brave and OpenAI were healthy throughout. The founder asked for the simplest thing that keeps one or two articles a day publishing without his attention. Topping up alone fixes today but not the next lapse, so `createAnthropic()` wraps the SDK client: account-level failures (credit, quota, rejected key) replay on Gemini Flash and come back in Anthropic's response shape. One new file plus a constructor swap in ten call sites; no caller logic changed. It deliberately does **not** retry ordinary errors — that would mask real bugs and double latency. Trade-off accepted: during an outage, planning/synthesis/topic selection run on Gemini instead of Haiku, and Sonnet-quality editorial is unavailable (the cron already runs editorial on Gemini in cheap mode, so autopilot quality barely moves).
+
+**Decision: topic picker must only anchor on things the headlines present as new**
+The first fallback run picked "GPT-5.6 vs Claude 3.5 Sonnet" because a model-tracker page used "Claude 3.5 Sonnet" as a naming example. That's a prompt gap, not a model gap — any model could make it. The picker prompt now forbids building a query around names that appear as examples or history.

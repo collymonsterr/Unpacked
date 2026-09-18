@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { createAnthropic } from '@/lib/anthropic-client'
 import { logApiCall } from '@/lib/api-usage'
 import { MODELS } from '@/lib/models'
 import { extractJSON } from '@/lib/utils/extract-json'
@@ -9,7 +9,7 @@ import type {
   ArticlePlan,
 } from '@/types/article'
 
-const anthropic = new Anthropic()
+const anthropic = createAnthropic()
 
 const SYSTEM_PROMPT = `You are an interactive component data generator for Unpacked, a publishing platform. You receive an article and its research data. Your job is to generate structured JSON data for an interactive component that helps readers make a decision or understand the content better.
 

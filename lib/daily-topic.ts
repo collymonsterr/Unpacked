@@ -132,6 +132,7 @@ Rules for the query:
 - Specific and concrete — lead with the named product, person, company, game, study, or event.
 - Interesting to a broad audience and a good fit for an opinionated verdict ("Is X worth it?", "X vs Y: which wins?", "What the new X actually means").
 - 6-14 words. No clickbait, no years unless essential, no hashtags.
+- Only name a product, model or event the headlines present as NEW or happening now. Tracker and listicle pages mention older names as examples or history — never build the query around those, and never pair a new release against an outdated one.
 - AVOID partisan politics, elections, culture-war flashpoints, tragedy/disaster, and anything we recently covered.
 
 Return ONLY valid JSON, no markdown:
