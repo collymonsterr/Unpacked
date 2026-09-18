@@ -9,6 +9,7 @@ import { findCachedArticle } from '@/lib/query-cache'
 import { buildResearchPreview } from '@/lib/research-preview'
 import { runWritePipeline } from '@/lib/write-pipeline'
 import { detectUrls, prefetchUrls, extractUserRequest, buildPrefetchContext, type PrefetchedContent } from '@/lib/url-prefetch'
+import { classifyProviderError } from '@/lib/provider-errors'
 
 export const maxDuration = 300 // 5 minutes — deep articles need 2-3 min for full pipeline
 
@@ -419,13 +420,17 @@ export async function POST(request: NextRequest) {
       } catch (err) {
         const errCode = (err as NodeJS.ErrnoException).code
         const isRefused = errCode === 'PLANNING_REFUSED' || errCode === 'PLANNING_PARSE_ERROR'
-        console.error(`[create] Generation failed (${errCode ?? 'unknown'}):`, err)
+        const providerError = classifyProviderError(err)
+        console.error(`[create] Generation failed (${errCode ?? providerError?.code ?? 'unknown'}):`, err)
         await db
           .from('articles')
           .update({
             status: 'error',
             ...(isRefused && {
               generation_options: { ...(generationOptions ?? {}), _error: 'topic_refused' },
+            }),
+            ...(providerError && {
+              generation_options: { ...(generationOptions ?? {}), _error: providerError.code, _error_detail: providerError.detail },
             }),
           })
           .eq('id', data.id)

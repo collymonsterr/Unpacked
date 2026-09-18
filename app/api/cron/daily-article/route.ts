@@ -8,6 +8,7 @@ import { getSupabaseAdmin } from '@/lib/supabase'
 import { generateUniqueSlug } from '@/lib/slug'
 import { requireAdmin } from '@/lib/auth-check'
 import { pickDailyTopic } from '@/lib/daily-topic'
+import { classifyProviderError } from '@/lib/provider-errors'
 
 /**
  * Daily automated article generation.
@@ -231,7 +232,16 @@ export async function GET(request: NextRequest) {
     })
   } catch (err) {
     console.error('[daily-article] generation failed:', err)
-    await db.from('articles').update({ status: 'error' }).eq('id', data.id)
-    return Response.json({ ok: false, error: 'generation_failed', detail: String(err) }, { status: 500 })
+    const providerError = classifyProviderError(err)
+    await db
+      .from('articles')
+      .update({
+        status: 'error',
+        ...(providerError && {
+          generation_options: { ...generationOptions, _error: providerError.code, _error_detail: providerError.detail },
+        }),
+      })
+      .eq('id', data.id)
+    return Response.json({ ok: false, error: providerError?.code ?? 'generation_failed', detail: providerError?.detail ?? String(err) }, { status: 500 })
   }
 }

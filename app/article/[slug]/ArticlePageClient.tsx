@@ -253,6 +253,9 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
 
   // ── Determine which view to show ──
   const showError = row.status === 'error'
+  const errorOptions = row.generation_options as Record<string, unknown> | null
+  const errorTag = errorOptions?._error as string | undefined
+  const errorDetail = errorOptions?._error_detail as string | undefined
   const showAwaitingAuth = !showArticle && !showError && row.status === 'awaiting_auth' && !claimInProgress
   const showGenerating = !showArticle && !showError && !showAwaitingAuth && isGenerating
   const showSkeleton = !showArticle && !showError && !showAwaitingAuth && !showGenerating
@@ -290,15 +293,28 @@ export default function ArticlePageClient({ initialRow, linkableArticles, creato
             </svg>
           </div>
           <p className="text-2xl font-bold mb-2" style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}>
-            {(row.generation_options as Record<string, unknown> | null)?._error === 'topic_refused'
+            {errorTag === 'topic_refused'
               ? "This topic hit a safety filter"
-              : 'Something went wrong generating this article'}
+              : errorTag === 'provider_unavailable'
+                ? 'Article generation is temporarily unavailable'
+                : 'Something went wrong generating this article'}
           </p>
           <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-            {(row.generation_options as Record<string, unknown> | null)?._error === 'topic_refused'
+            {errorTag === 'topic_refused'
               ? "One of our verification models flagged this query. This can happen with certain phrasing — try rewording your question or approaching it from a slightly different angle. Most topics work fine on a second attempt."
-              : 'The generation timed out or hit an error. Start a new search to try again.'}
+              : errorTag === 'provider_unavailable'
+                ? "One of the AI services we rely on isn't responding right now. It's on our side, not your question — please try again a little later."
+                : 'The generation timed out or hit an error. Start a new search to try again.'}
           </p>
+          {/* Admin sees the actual cause, so an account-level outage is obvious at a glance */}
+          {isAdmin && errorDetail && (
+            <p
+              className="text-xs mb-6 mx-auto max-w-md rounded-lg px-3 py-2"
+              style={{ backgroundColor: '#FDECEA', color: '#9B1C1C', border: '1px solid #F5C2C0' }}
+            >
+              Admin: {errorDetail}
+            </p>
+          )}
           <div className="flex items-center justify-center gap-3">
             <Link
               href="/"

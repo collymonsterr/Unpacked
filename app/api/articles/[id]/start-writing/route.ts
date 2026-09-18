@@ -4,6 +4,7 @@ import { getSupabaseAdmin, createServerSupabase } from '@/lib/supabase'
 import { isValidUUID } from '@/lib/validate'
 import { runWritePipeline } from '@/lib/write-pipeline'
 import type { ArticlePlan } from '@/types/article'
+import { classifyProviderError } from '@/lib/provider-errors'
 
 export const maxDuration = 300 // 5 minutes — full pipeline runs here after sign-in gate
 
@@ -136,9 +137,15 @@ export async function POST(
       })
     } catch (err) {
       console.error('[start-writing] Pipeline failed:', err)
+      const providerError = classifyProviderError(err)
       await db
         .from('articles')
-        .update({ status: 'error' })
+        .update({
+          status: 'error',
+          ...(providerError && {
+            generation_options: { ...(generationOptions ?? {}), _error: providerError.code, _error_detail: providerError.detail },
+          }),
+        })
         .eq('id', id)
     }
   })
