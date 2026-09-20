@@ -571,6 +571,8 @@ Technical tone: "Write for an expert audience. Assume domain knowledge. Skip int
 
 ## Known Bugs (verified)
 
+0. **The daily automated article has never run in production** — **DIAGNOSED 20 Sep 2026; needs one env var.** `vercel.json` fires `/api/cron/daily-article` on schedule and Vercel does invoke it (confirmed 06:00:32 on 19 and 20 Sep), but the route returns **401** every time. Vercel only attaches `Authorization: Bearer <CRON_SECRET>` when a `CRON_SECRET` env var exists on the project; it does not, so the route rejects its own cron. Evidence: exactly **one** article in the DB has ever carried `source: 'daily_cron'`, and that was a local test run. The feature shipped 20 Jun 2026 and has produced nothing since. **Fix: add `CRON_SECRET` to Project Settings → Environment Variables (Production), then redeploy.** No code change restores this — without the env var there is no header to authenticate. The route now logs an explicit `CRON_SECRET is NOT SET` error and returns a `cron_secret_not_set` hint instead of a bare 401.
+
 1. ~~**Big statements and pull quotes visually identical**~~ — **FIXED April 2026.** Pull quotes now use left-border italic style; big statements keep amber card + quote SVG.
 2. ~~**Polymarket uses old Haiku model**~~ — **FIXED April 2026.** Updated to `claude-haiku-4-5-20251001`.
 3. ~~**Editorial pass score threshold mismatch**~~ — **FIXED April 2026.** Code threshold aligned to ≤80, matching the prompt.

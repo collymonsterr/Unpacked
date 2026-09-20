@@ -38,7 +38,23 @@ export async function GET(request: NextRequest) {
     const auth = await requireAdmin()
     viaAdmin = auth.authorized
     if (!viaAdmin) {
-      return Response.json({ ok: false, error: 'unauthorized' }, { status: 401 })
+      // Vercel only attaches `Authorization: Bearer <CRON_SECRET>` when the
+      // CRON_SECRET env var exists on the project. Without it every scheduled
+      // run is rejected here — which is exactly what happened silently from
+      // Jun to Sep 2026. Say so loudly rather than returning a bare 401.
+      if (!secret) {
+        console.error(
+          '[daily-article] CRON_SECRET is NOT SET on this project. Vercel therefore sends no ' +
+          'Authorization header and every scheduled run is rejected. Set CRON_SECRET in ' +
+          'Project Settings → Environment Variables (Production) and redeploy.'
+        )
+      } else if (authHeader) {
+        console.error('[daily-article] Authorization header did not match CRON_SECRET — the env var and the caller disagree.')
+      }
+      return Response.json(
+        { ok: false, error: 'unauthorized', hint: secret ? 'cron_secret_mismatch' : 'cron_secret_not_set' },
+        { status: 401 }
+      )
     }
   }
 
