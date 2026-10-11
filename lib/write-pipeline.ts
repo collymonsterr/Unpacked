@@ -6,7 +6,7 @@
  *   1. Generate blueprint (Gemini Flash, ~5-8s)
  *   2. Write prose + fetch hero image in parallel (~30-40s)
  *   3. Editorial pass + product images in parallel (~3-15s)
- *   4. Apply any rewrites
+ *   4. Apply any rewrites, then the verdict guard (one cheap repair if the verdict hedges)
  *   5. Save article
  *   6. Start fact-check (async)
  *
@@ -22,6 +22,7 @@ import { pickBestArticleImage } from '@/lib/imagen'
 import { runTripleFactCheck, applyCorrections } from '@/lib/fact-check'
 import { generateSocialContent, saveSocialContent } from '@/lib/social-content'
 import { generateInteractiveComponent } from '@/lib/interactive-component'
+import { runVerdictGuard, type VerdictGuardResult } from '@/lib/verdict-guard'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import type { ArticlePlan, EntityCard, ResearchSynthesis, ArticleContent, ArticleSection } from '@/types/article'
 
@@ -172,6 +173,7 @@ export interface PipelineTimings {
   blueprint_ms: number
   writing_ms: number
   editorial_ms: number
+  verdict_guard_ms?: number
   images_ms: number
   save_ms: number
   factcheck_ms?: number
@@ -309,6 +311,23 @@ export async function runWritePipeline({
     console.log(`[write-pipeline] Editorial score ${editorialResult.score}/100 — no rewrites needed`)
   }
 
+  // ── Verdict guard: every article must reach a clear verdict. Runs for every
+  //    type and in cheap mode (the one repair call is Gemini Flash). Never
+  //    throws and never blocks delivery — a failure is recorded, not raised. ──
+  const guardStart = Date.now()
+  let verdictGuard: VerdictGuardResult
+  try {
+    verdictGuard = await runVerdictGuard(enrichedArticle, plan.article_type, {
+      articleId,
+      winner: blueprint.winner,
+      verdictStatement: blueprint.verdict_statement,
+    })
+  } catch (err) {
+    verdictGuard = { status: 'error', reasons: [(err as Error)?.message ?? String(err)] }
+  }
+  t.verdict_guard_ms = Date.now() - guardStart
+  console.log(`[verdict-guard] ${verdictGuard.status} in ${t.verdict_guard_ms}ms${verdictGuard.reasons.length > 0 ? `: ${verdictGuard.reasons.join('; ')}` : ''}`)
+
   // Apply hero image (fetched in parallel with writing)
   enrichedArticle.thumbnail_url = heroResult.url ?? pickBestArticleImage(enrichedArticle)
   if (heroResult.attribution) {
@@ -339,6 +358,7 @@ export async function runWritePipeline({
     blueprint_ms: t.blueprint_ms,
     writing_ms: t.writing_ms,
     editorial_ms: t.editorial_ms,
+    verdict_guard_ms: t.verdict_guard_ms,
     images_ms: 0, // images run in parallel — no additional wall-clock time
     save_ms: 0, // will be set after save
     total_ms: totalMs,
@@ -346,6 +366,7 @@ export async function runWritePipeline({
   updatePayload.generation_options = {
     ...(generationOptions ?? {}),
     timings,
+    verdict_guard: verdictGuard,
   }
 
   await db
@@ -358,7 +379,7 @@ export async function runWritePipeline({
 
   // Single summary log line
   const fmtS = (ms: number | undefined) => ms != null ? `${(ms / 1000).toFixed(1)}s` : '-'
-  console.log(`[pipeline] Complete in ${fmtS(timings.total_ms)}: plan=${fmtS(t.planning_ms)} research=${fmtS(t.research_ms)} blueprint=${fmtS(t.blueprint_ms)} write=${fmtS(t.writing_ms)} editor=${fmtS(t.editorial_ms)} save=${fmtS(t.save_ms)}`)
+  console.log(`[pipeline] Complete in ${fmtS(timings.total_ms)}: plan=${fmtS(t.planning_ms)} research=${fmtS(t.research_ms)} blueprint=${fmtS(t.blueprint_ms)} write=${fmtS(t.writing_ms)} editor=${fmtS(t.editorial_ms)} verdict=${fmtS(t.verdict_guard_ms)} save=${fmtS(t.save_ms)}`)
 
   // ── Phase 4b: Social content generation (fire-and-forget — never blocks) ──
   // Runs in parallel with fact-check. Fetches creator name from DB.
@@ -443,6 +464,7 @@ export async function runWritePipeline({
         generation_options: {
           ...(generationOptions ?? {}),
           timings,
+          verdict_guard: verdictGuard,
         },
       })
       .eq('id', articleId)
