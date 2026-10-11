@@ -97,7 +97,8 @@ Seven canonical files live in the repo root. Anything else is a working draft.
 |------|---------------|
 | [CLAUDE.md](CLAUDE.md) | Technical reference — stack, pipeline, schema, workflow rules |
 | [BUILD.md](BUILD.md) | What is built right now |
-| [PLAN.md](PLAN.md) | Forward build plan |
+| [PLAN.md](PLAN.md) | Near-term backlog and maintenance |
+| [ROADMAP.md](ROADMAP.md) | The next big change — flexible content blocks, then thread unpacking |
 | [DECISIONS.md](DECISIONS.md) | Closed decisions and their reasoning |
 | [OVERVIEW.md](OVERVIEW.md) | Product positioning |
 | [STRATEGY.md](STRATEGY.md) | Growth strategy |

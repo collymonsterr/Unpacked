@@ -4,6 +4,8 @@
 >
 > **Last extracted:** April 2026
 >
+> ⚠️ **STALE — verify against the source before relying on it.** Prompts have changed since this was extracted: the image stage moved Google-first with vision selection (May), Reddit native comment selection landed (May), model IDs centralised in `lib/models.ts` with Sonnet 4→5 (Aug), and the daily topic-picker prompt was tightened (Sep). The prompts in `lib/` are the truth; this file is a convenience snapshot. Re-extract rather than trusting a detail here.
+>
 > **How to read this:** Each section corresponds to one stage of the 8-stage article generation pipeline. The actual prompt text sent to the AI model is shown in code blocks. Commentary above each block explains what stage it belongs to, which model receives it, and what it controls.
 
 ---

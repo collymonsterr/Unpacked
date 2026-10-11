@@ -2,7 +2,7 @@
 
 **Purpose:** Shared context doc for outside-of-Claude-Code conversations (Claude AI brainstorm thread, marketing thread, external collaborators). Keep the narrative here; keep technical ground truth in CLAUDE.md and build state in BUILD.md.
 
-**Last updated:** 2026-04-07
+**Last updated:** 2026-04-07 · **Reviewed 2026-10-11 — still accurate.** Checked against the code: the 14 article types, the model line-up and the fact-check providers all match. Per CLAUDE.md this file only changes when product positioning shifts, so an old date here is expected, not drift.
 
 ---
 

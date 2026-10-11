@@ -4,7 +4,7 @@
 
 **Not a build list** — PLAN.md owns the forward build plan. Where this doc mentions features, it's for strategic context only.
 
-**Last updated:** 2026-04-07
+**Last updated:** 2026-04-07 · **Reviewed 2026-10-11 — still accurate.** Checked against the code: the 14 article types, the model line-up and the fact-check providers all match. Per CLAUDE.md this file only changes when growth strategy shifts, so an old date here is expected, not drift.
 
 ---
 

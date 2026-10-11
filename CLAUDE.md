@@ -10,7 +10,71 @@ For current feature state see BUILD.md. For roadmap see PLAN.md.
 
 A web platform where users type any question and receive a complete, visual, opinionated article in 2–3 minutes. Every article picks a winner. After generation, three AI models independently fact-check every claim. Users put their name on articles and will eventually earn affiliate revenue from product recommendations.
 
-**URL:** https://unpacked.fyi | **Repo:** GitHub → Vercel auto-deploy | **Name:** Unpacked (unpacked.fyi)
+**URL:** https://unpacked.fyi | **Repo:** `git@github.com:collymonsterr/articleai.git` (branch `main`) | **Name:** Unpacked (unpacked.fyi)
+
+---
+
+## Getting Started — Fresh Clone
+
+```bash
+git clone git@github.com:collymonsterr/articleai.git
+cd articleai
+npm install
+cp .env.example .env.local   # then fill in real values
+npm run dev                  # http://localhost:3000
+```
+
+Node 22 (what this is developed against; no `engines` field is pinned). npm — a `package-lock.json` is committed, so use `npm ci` for a reproducible install.
+
+**Every key and its purpose is documented in `.env.example`.** The five you cannot run the pipeline without: `ANTHROPIC_API_KEY`, `GOOGLE_GEMINI_API_KEY`, `BRAVE_SEARCH_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`. Everything else degrades quietly — a missing `SERPAPI_KEY` drops trend charts, a missing `OPENAI_API_KEY` skips fact-check arbitration.
+
+**Database:** point `.env.local` at the existing Supabase project. ⚠️ **You cannot recreate the schema from this repo** — `lib/schema.sql` describes 9 columns on `articles`; the live table has about 50, and there are 11 tables in total (`articles`, `profiles`, `founding_applications`, `article_feedback`, `api_usage_log`, `upgrade_waitlist`, `share_credits_log`, `saved_articles`, `rate_limits`, `article_views`, `article_votes`). The `scripts/*.sql` files are the incremental migrations that got it there, but nothing records which ones ran. To stand up an independent database, take a `pg_dump` from the live Supabase project rather than trusting `lib/schema.sql`.
+
+`next.config.ts` loads `.env.local` manually when not on Vercel, because Claude Code sets an empty `ANTHROPIC_API_KEY` in the shell that would otherwise win.
+
+---
+
+## Running, Checking and Deploying
+
+| Command | What it does |
+|---------|--------------|
+| `npm run dev` | Dev server on :3000 (Turbopack) |
+| `npm run build` | Production build — **the real gate; run before every commit** |
+| `npm run lint` | ESLint |
+| `npx tsc --noEmit` | Type check without emitting |
+
+**There is no automated test suite** — no Jest, Vitest or Playwright, and no `test` script. "Tested" in this repo means: `npx tsc --noEmit` clean, `npm run build` succeeds, and the changed path exercised for real. Treat that as a known gap, not a standard to copy.
+
+Exercising things for real:
+- `scripts/*.ts` are one-off diagnostics — run with `npx tsx scripts/<name>.ts`. They import `./load-env` for `.env.local`; do not add a `dotenv` import, it is not a dependency. (`scripts/full-schema-comparison.ts` reads a gitignored `test-outputs/` directory and will not run on a fresh clone.)
+- The pipeline is slow and costs money per run (~$0.01 cheap mode, ~$0.03–0.12 standard). Prefer calling one stage directly in a scratch script over generating whole articles in a loop.
+- `/api/cron/daily-article?force=1` with an admin session runs the entire pipeline end to end and publishes. It is the best single smoke test.
+
+**Deployment:** pushing to `main` auto-deploys to production on Vercel. There is no staging branch and no CI — the build on Vercel is the first gate after your local one. Env var changes in Vercel only take effect on the **next** deployment, so a change there needs a redeploy.
+
+---
+
+## Repository Layout
+
+```
+app/            Next.js App Router — pages and API routes
+  api/          61 route handlers (articles CRUD, admin, stripe, cron, …)
+  article/      article page + full-document editor
+  category/     12 category pages
+  admin/        admin dashboard
+components/     React components (107 files); ui/ and homepage/ subfolders
+lib/            All pipeline and business logic (56 files) — the heart of the app
+  data-sources/ Polymarket, Yahoo Finance, Google Trends
+types/          article.ts — ArticleRow, ArticleContent, section union types
+hooks/          useAdminMode and friends
+scripts/        One-off diagnostics and SQL migrations (not part of the build)
+docs/           Generated reference + drafts. NOT canonical — code wins.
+public/         Static assets
+```
+
+Path alias: `@/` → repo root (e.g. `@/lib/claude`).
+
+Where things live: **article generation is all in `lib/`** — start at `lib/write-pipeline.ts` to see the orchestration, then follow the stage files. Rendering lives in `components/` and is driven by the section-type union in `types/article.ts`.
 
 ---
 
@@ -186,7 +250,22 @@ Tech, Finance, Health, Travel, Home, Entertainment, Science, Business, Automotiv
 
 ---
 
-## Known Bugs and Issues
+## Known Problems — Read Before You Trust Anything Here
+
+Full list in BUILD.md § Known Bugs. These are the ones that will bite a newcomer:
+
+### 1. The daily automated article has NEVER run in production ⚠️ open
+`vercel.json` schedules `/api/cron/daily-article`, and Vercel does invoke it on time — but the route returns **401** every time. Vercel only attaches `Authorization: Bearer <CRON_SECRET>` when a `CRON_SECRET` env var *exists* on the project, and it does not. Exactly one article in the database has ever carried `source: 'daily_cron'`, and that was a local test run.
+**Fix:** add `CRON_SECRET` in Vercel → Settings → Environment Variables (Production), then redeploy. No code change can fix it — without the variable there is no header to authenticate. Verified still outstanding 11 Oct 2026.
+
+### 2. Google Analytics is blocked by our own CSP ⚠️ open
+`next.config.ts` `script-src` omits `googletagmanager.com`, so the GA tag is refused on every page load and has collected nothing since the CSP shipped. PostHog is unaffected (reverse-proxied via `/ingest`). Fix widens the CSP — a deliberate call.
+
+### 3. `lib/schema.sql` is three versions behind the real database
+9 columns vs ~50 live, 1 table vs 11. Do not use it to provision a database. See § Getting Started.
+
+### 4. No automated tests
+No test framework, no CI. `npm run build` + `npx tsc --noEmit` is the entire safety net.
 
 ### SERVERLESS: In-memory state won't persist across invocations
 - Gemini concurrency limiter in `lib/gemini-writer.ts` — in-memory
@@ -406,6 +485,8 @@ Per-article controls: Featured toggle, Trending toggle, Hero pin (one at a time)
 
 ## Environment Variables
 
+`.env.example` is the authoritative list — it carries every variable with a note on what breaks without it. Summary:
+
 ```
 ANTHROPIC_API_KEY              # Haiku planning + Sonnet premium/fallback + editorial
 GOOGLE_GEMINI_API_KEY          # Gemini Flash writing + blueprint + fact-check + social
@@ -424,6 +505,10 @@ NEXT_PUBLIC_ADMIN_EMAIL        # Admin user's email
 NEXT_PUBLIC_ADMIN_USER_ID      # Admin user's Supabase UUID (used in useAdminMode hook)
 ADMIN_USER_ID                  # Server-side admin user ID (lib/auth-check.ts)
 ADMIN_EMAIL                    # Server-side admin email (lib/auth-check.ts)
+STRIPE_SECRET_KEY              # Stripe API key (checkout errors without it)
+NEXT_PUBLIC_POSTHOG_KEY        # PostHog analytics — unset disables analytics silently
+NEXT_PUBLIC_POSTHOG_HOST       # PostHog host (default https://us.i.posthog.com)
+TWITTER_API_KEY                # RESERVED — documented in research-orchestrator but nothing reads it yet
 GEMINI_MAX_CONCURRENT=3        # Concurrent generation limit (in-memory)
 CRON_SECRET                    # Vercel Cron auth — sent as `Authorization: Bearer` to /api/cron/* (set in Vercel)
 DAILY_ARTICLE_VISIBILITY       # Optional: 'unlisted' turns the daily auto-article into a review queue (default: published)
@@ -475,7 +560,7 @@ When any feature ships, update BUILD.md immediately. When the plan changes, upda
 ### 2. Session Start
 At the start of every session, read CLAUDE.md, BUILD.md, PLAN.md, OVERVIEW.md, and STRATEGY.md before doing anything. Verify your understanding of the current state matches what's documented.
 
-**The canonical doc set is exactly 7 files in the repo root:** CLAUDE.md, BUILD.md, PLAN.md, DECISIONS.md, OVERVIEW.md, STRATEGY.md, README.md. If you encounter any other markdown file in the root, flag it — it is either drift or a working draft that should be moved to `docs/drafts/` or deleted.
+**The canonical doc set is exactly 8 files in the repo root:** CLAUDE.md, BUILD.md, PLAN.md, ROADMAP.md, DECISIONS.md, OVERVIEW.md, STRATEGY.md, README.md. (ROADMAP.md added Oct 2026 — the next big architectural change; PLAN.md stays the near-term backlog.) If you encounter any other markdown file in the root, flag it — it is either drift or a working draft that should be moved to `docs/drafts/` or deleted.
 
 Outside the root: `docs/` holds generated reference material (e.g. `docs/WRITING-PROMPTS-REFERENCE.md`, a read-only extraction of every prompt in the pipeline) and `docs/drafts/` holds working briefs. Neither is canonical — if a fact in `docs/` disagrees with the code, the code wins.
 
