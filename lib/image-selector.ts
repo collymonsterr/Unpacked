@@ -97,8 +97,10 @@ async function selectWithHaiku(
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return null
 
-  const Anthropic = (await import('@anthropic-ai/sdk')).default
-  const anthropic = new Anthropic({ apiKey, maxRetries: 1, timeout: 20_000 })
+  // Vision requests don't fall back (the wrapper rethrows image-bearing calls and
+  // the caller degrades to the first candidate) — wrapped for consistency.
+  const { createAnthropic } = await import('@/lib/anthropic-client')
+  const anthropic = createAnthropic({ apiKey, maxRetries: 1, timeout: 20_000 })
 
   const content: AnthropicSDK.MessageParam['content'] = [
     { type: 'text', text: buildInstruction(subject, context, thumbs.length) },
