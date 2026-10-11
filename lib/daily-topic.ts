@@ -19,7 +19,7 @@ import { logApiCall } from '@/lib/api-usage'
 import { extractJSON } from '@/lib/utils/extract-json'
 import { MODELS } from '@/lib/models'
 
-const HAIKU = MODELS.haiku
+const TOPIC_MODEL = MODELS.geminiFlash
 
 export interface DailyTopic {
   /** The Unpacked-style query fed into the generation pipeline. */
@@ -166,14 +166,14 @@ Return the JSON now.`
 
   try {
     const message = await getAnthropic().messages.create({
-      model: HAIKU,
+      model: TOPIC_MODEL,
       max_tokens: 200,
       system: SYSTEM,
       messages: [{ role: 'user', content: userMessage }],
     })
     logApiCall({
       callType: 'daily_topic',
-      model: HAIKU,
+      model: TOPIC_MODEL,
       inputTokens: message.usage?.input_tokens,
       outputTokens: message.usage?.output_tokens,
     })

@@ -186,8 +186,16 @@ export default function SectionRenderer({
   let twitterInjected = false
   let redditInjected = false
   let interactiveInjected = false
-  const hasTwitterData = twitterFindings && twitterFindings.length >= 2
-  const hasRedditData = redditThreads && redditThreads.length >= 1
+  // Hide a social panel when the conversation isn't actually about the subject:
+  // the analyser's relevant_count (new articles) or, for older articles, a split
+  // that is ~all neutral (the analyser's way of saying "nothing on-topic").
+  const socialIsRelevant = (split?: { relevant_count?: number; neutral_pct?: number } | null) => {
+    if (!split) return true
+    if (typeof split.relevant_count === 'number') return split.relevant_count >= 2
+    return (split.neutral_pct ?? 0) < 90
+  }
+  const hasTwitterData = !!twitterFindings && twitterFindings.length >= 2 && socialIsRelevant(twitterSentimentSplit)
+  const hasRedditData = !!redditThreads && redditThreads.length >= 1 && socialIsRelevant(redditSentimentSplit)
   const hasInteractive = !!interactiveComponent
 
   while (i < sections.length) {

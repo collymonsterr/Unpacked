@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
     tone: 'opinionated',
     visual: 'standard',
     source: 'daily_cron',
-    cheap: true,            // editorial pass runs on Gemini (not Sonnet 5) — see runEditorialPass
+    cheap: true,            // legacy flag; the editorial polish runs on Sonnet for every article (model policy)
     _slot: slot,
     _beat: topic.category,
     _topicRationale: topic.rationale,

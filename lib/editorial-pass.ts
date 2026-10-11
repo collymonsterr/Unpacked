@@ -58,22 +58,23 @@ export async function runEditorialPass(
 ): Promise<EditorResult> {
   const { prompt, sectionTexts } = buildEditorialPrompt(article, blueprint)
 
-  // Cheap mode (e.g. the daily auto-article) skips the premium Sonnet editor and
-  // runs the same checks on Gemini Flash — ~½¢ vs ~8¢, the biggest per-article saving.
-  if (!opts?.cheap) {
-    // Try Sonnet first
-    try {
-      const result = await callSonnetEditor(prompt, articleId)
-      const rewriteKeys = Object.keys(result.rewrites)
-      if (rewriteKeys.length > 0) {
-        console.log(`[editorial] Sonnet score: ${result.score} — ${rewriteKeys.length} rewrites (sections ${rewriteKeys.join(', ')})`)
-      } else {
-        console.log(`[editorial] Sonnet score: ${result.score} — passed clean`)
-      }
-      return result
-    } catch (err) {
-      console.error('[editorial] Sonnet failed, falling back to Gemini:', (err as Error).message)
+  // Model policy (Oct 2026): this is the ONE step that runs on Claude Sonnet —
+  // its rewrites are the published prose, where quality shows. Every article
+  // gets it, including the daily auto-article (`opts.cheap` no longer downgrades
+  // it). Gemini Flash is the fallback if Sonnet fails. ~3-7¢ per article.
+  void opts
+  // Try Sonnet first
+  try {
+    const result = await callSonnetEditor(prompt, articleId)
+    const rewriteKeys = Object.keys(result.rewrites)
+    if (rewriteKeys.length > 0) {
+      console.log(`[editorial] Sonnet score: ${result.score} — ${rewriteKeys.length} rewrites (sections ${rewriteKeys.join(', ')})`)
+    } else {
+      console.log(`[editorial] Sonnet score: ${result.score} — passed clean`)
     }
+    return result
+  } catch (err) {
+    console.error('[editorial] Sonnet failed, falling back to Gemini:', (err as Error).message)
   }
 
   // Fall back to Gemini
@@ -258,7 +259,7 @@ async function callSonnetEditor(
   try {
     logApiCall({
       callType: 'editorial_pass',
-      model: SONNET_MODEL,
+      model: message.model || SONNET_MODEL, // gemini-2.5-flash when the wrapper fell back
       inputTokens: message.usage?.input_tokens,
       outputTokens: message.usage?.output_tokens,
       articleId,

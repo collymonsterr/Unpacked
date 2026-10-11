@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     const message = await anthropic.messages.create({
-      model: MODELS.haiku,
+      model: MODELS.geminiFlash,
       max_tokens: 300,
       temperature: 0.7,
       system: SYSTEM_PROMPT,

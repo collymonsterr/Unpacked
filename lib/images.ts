@@ -3,7 +3,7 @@ import { routeImageRequest, filterImageCandidates, type ImageCandidate, type Ima
 import { searchPexels } from '@/lib/pexels'
 import { searchUnsplash } from '@/lib/unsplash'
 import { searchGoogleImages } from '@/lib/google-images'
-import { selectBestImage } from '@/lib/image-selector'
+import { selectBestImage, filterVerifiedImageUrls } from '@/lib/image-selector'
 import { rehostImage } from '@/lib/image-storage'
 import { MODELS } from '@/lib/models'
 
@@ -210,7 +210,7 @@ function shortenTitle(title: string): string {
  * Each call with excludeUrls uses a different search angle to maximise variety.
  */
 /**
- * Generate a hero image search query using Claude Haiku.
+ * Generate a hero image search query (Gemini Flash-Lite).
  * Smart, context-aware — replaces the old hardcoded keyword matching.
  * Falls back to shortenTitle() if the API call fails.
  */
@@ -221,11 +221,11 @@ async function generateHeroQuery(
 ): Promise<string> {
   try {
     const { createAnthropic } = await import('@/lib/anthropic-client')
-    const apiKey = process.env.ANTHROPIC_API_KEY
-    if (!apiKey) return shortenTitle(title)
+    if (!process.env.GOOGLE_GEMINI_API_KEY) return shortenTitle(title)
 
-    const anthropic = createAnthropic({ apiKey, maxRetries: 2, timeout: 10_000 })
-    const model = MODELS.haiku
+    // Routed to Gemini Flash-Lite by createAnthropic (model policy).
+    const anthropic = createAnthropic({ maxRetries: 2, timeout: 10_000 })
+    const model = MODELS.geminiFlashLite
 
     const message = await anthropic.messages.create({
       model,
@@ -433,10 +433,12 @@ export async function fetchHeroImage(
   )
   if (candidates.length === 0) return { url: null }
 
-  // Vision model scans the candidates and picks the best one — the way a human
-  // would scan a Google Images grid. Falls back to the top-ranked candidate.
+  // Gemini vision verifies every candidate actually shows the subject and picks
+  // the best. If none pass, use no hero (the pipeline then falls back to a
+  // verified in-article image, or none) — never the top result unchecked.
   const subject = shortenTitle(title)
-  const chosen = (await selectBestImage(candidates, subject, summary, articleId)) ?? candidates[0]
+  const chosen = await selectBestImage(candidates, subject, summary, articleId)
+  if (!chosen) return { url: null }
 
   // Rehost the chosen image to our own storage for a stable, hotlink-proof URL.
   let finalUrl = chosen.url
@@ -516,8 +518,9 @@ async function resolveSectionImage(
     const candidates = await fetchFromSource(source, query, useVision ? 6 : 3)
     const filtered = filterImageCandidates(candidates, 'editorial_section')
     if (filtered.length > 0) {
+      // Verified pick only; if nothing passes, try the next source.
       chosen = useVision
-        ? (await selectBestImage(filtered, query, undefined, articleId)) ?? filtered[0]
+        ? await selectBestImage(filtered, query, undefined, articleId)
         : filtered[0]
     }
   }
@@ -558,7 +561,10 @@ export async function enrichArticleWithImages(
           : planQuery)
         : `${card.entity_name} ${typeHint || 'product photo'}`
       console.log(`[images] Searching for "${card.entity_name}": "${baseQuery}" (max: ${maxImages})`)
-      let imageUrls = await fetchProductImages(baseQuery, maxImages, card.entity_name)
+      // Fetch extra candidates, then keep only images Gemini vision confirms show
+      // this exact product (no lookalikes / other brands). None pass → no image.
+      const rawUrls = await fetchProductImages(baseQuery, maxImages + 4, card.entity_name)
+      let imageUrls = (await filterVerifiedImageUrls(rawUrls, card.entity_name, articleId)).slice(0, maxImages)
       // Rehost the primary (most prominent) product image for a stable URL.
       // Gallery extras stay hotlinked to bound pipeline time.
       if (articleId && imageUrls.length > 0) {
@@ -640,8 +646,9 @@ export async function enrichArticleWithImages(
         // Retry with a different query variation
         const retryQuery = `${card.entity_name} review`
         console.log(`[images] Retry for "${card.entity_name}": need ${needed} more images, query: "${retryQuery}"`)
-        const extraUrls = await fetchProductImages(retryQuery, needed + 2, card.entity_name)
-        const newUrls = extraUrls.filter(u => !currentUrls.includes(u)).slice(0, needed)
+        const extraUrls = await fetchProductImages(retryQuery, needed + 4, card.entity_name)
+        const unseen = extraUrls.filter(u => !currentUrls.includes(u))
+        const newUrls = (await filterVerifiedImageUrls(unseen, card.entity_name, articleId)).slice(0, needed)
 
         if (newUrls.length > 0) {
           const combined = [...currentUrls, ...newUrls]

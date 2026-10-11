@@ -163,12 +163,8 @@ export async function POST(
 
       // Step 2: Write article
       let rawArticle
-      if (isDeep) {
-        // Deep articles use Sonnet (higher quality, more output tokens)
-        console.log('[generate] Writing with Sonnet (deep mode)')
-        rawArticle = await writeWithSonnet(row.query, row.plan, researchWithLinks, storedOptions, id)
-      } else {
-        // Standard/quick use Gemini Flash (fast, cheap)
+      {
+        // Model policy: every length drafts on Gemini Flash; Sonnet only as an emergency fallback.
         try {
           console.log('[generate] Writing with Gemini Flash')
           const optionsPrompt = storedOptions ? buildSimpleOptionsPrompt(storedOptions) : ''

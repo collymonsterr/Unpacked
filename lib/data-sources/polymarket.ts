@@ -144,9 +144,8 @@ async function selectMarketsWithHaiku(
 ): Promise<PolymarketCandidate[]> {
   if (candidates.length === 0) return []
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    console.warn('[polymarket] No ANTHROPIC_API_KEY — skipping Haiku filter')
+  if (!process.env.GOOGLE_GEMINI_API_KEY) {
+    console.warn('[polymarket] No GOOGLE_GEMINI_API_KEY — skipping relevance filter')
     return candidates.slice(0, 2)
   }
 
@@ -184,38 +183,18 @@ Return ONLY a JSON array of selected market IDs. Examples:
 ["id1", "id2"] or [] if none relevant.`
 
   try {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 15000)
-
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model: MODELS.haiku,
-        max_tokens: 200,
-        temperature: 0,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    })
-    clearTimeout(timeoutId)
-
-    if (!res.ok) {
-      console.warn(`[polymarket] Haiku API error ${res.status}`)
-      return []
-    }
-
-    const data = await res.json()
-    const text = data.content?.[0]?.text ?? ''
+    const { geminiText } = await import('@/lib/anthropic-client')
+    const g = await Promise.race([
+      geminiText({ model: MODELS.geminiFlashLite, maxTokens: 200, temperature: 0, prompt }),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('polymarket filter timeout')), 15000)),
+    ])
+    const data = { usage: { input_tokens: g.inputTokens, output_tokens: g.outputTokens } }
+    const text = g.text
 
     // Log usage
     logApiCall({
       callType: 'polymarket_filter',
-      model: MODELS.haiku,
+      model: MODELS.geminiFlashLite,
       inputTokens: data.usage?.input_tokens,
       outputTokens: data.usage?.output_tokens,
       articleId,

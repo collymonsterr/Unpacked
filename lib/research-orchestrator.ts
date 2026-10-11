@@ -344,7 +344,7 @@ Return JSON:
   "gaps": ["string — what the research didn't find"]
 }`
 
-  const model = MODELS.haiku
+  const model = MODELS.geminiFlash
   const message = await getAnthropic().messages.create({
     model,
     max_tokens: 1024,
@@ -558,7 +558,15 @@ async function executeLiveDataQueries(
         }
         case 'google_trends': {
           const trendsResult = await fetchGoogleTrends(q.query ?? '')
-          if (trendsResult) {
+          // Drop series with no real signal (empty, or a flat near-zero line) so
+          // the writer never embeds a dead "0/100" chart. Mirrors hasTrendsSignal()
+          // in components/sections/LiveDataCard.tsx, which hides older ones.
+          const tv = (trendsResult?.timelineData ?? []).map(d => Number(d.value)).filter(Number.isFinite)
+          const trendsHasSignal = tv.length >= 4 && Math.max(...tv) >= 10 && tv.filter(v => v > 0).length >= Math.ceil(tv.length / 4)
+          if (trendsResult && !trendsHasSignal) {
+            console.log(`[research-orchestrator] Google Trends: no usable signal for "${(q.query ?? '').slice(0, 40)}" — skipped`)
+          }
+          if (trendsResult && trendsHasSignal) {
             trendsResults.push(trendsResult as unknown as Record<string, unknown>)
           }
           break
@@ -880,6 +888,7 @@ const TWITTER_SUMMARY_SYSTEM = `You are analysing what people are actually sayin
    - "summary": one plain-English sentence describing the split (e.g. "Critics outnumber supporters roughly 3:2, with most scepticism focused on cost overruns.")
    The three percentages MUST sum to 100.
 4. "context_trigger": a short string like "Trending after TSMC announced suspension of orders" if the tweets reference a specific triggering event, or null if no clear trigger.
+5. "relevant_count": integer — how many of the input tweets are genuinely ABOUT the article's subject (discussing it directly, not merely sharing a keyword, not off-topic, not spam). Be strict; 0 is a valid answer. The page hides this panel when fewer than 2 are relevant.
 
 HARD RULES for the summary paragraph:
 - Never use generic phrases like "users are talking about", "the community is buzzing", "people have mixed feelings", "X users had a lot to say", "the discourse online".
@@ -917,7 +926,7 @@ ${tweetList}
 
 Return the JSON now.`
 
-  const model = MODELS.haiku
+  const model = MODELS.geminiFlash
   const message = await getAnthropic().messages.create({
     model,
     max_tokens: 512,
@@ -950,6 +959,7 @@ Return the JSON now.`
         sceptical_pct: split.sceptical_pct ?? (100 - split.pro_pct),
         neutral_pct: split.neutral_pct ?? 0,
         summary: split.summary ?? '',
+        ...(typeof parsed.relevant_count === 'number' && { relevant_count: parsed.relevant_count }),
       }
     }
 
@@ -992,6 +1002,7 @@ const REDDIT_SUMMARY_SYSTEM = `You are a senior editor analysing what people act
    - "summary": one plain-English sentence describing the split (e.g. "r/economics leans cautiously optimistic while r/personalfinance voices practical frustration.")
    The three percentages MUST sum to 100.
 5. "context_trigger": a short string like "Surge in discussion after Fed announcement" if the threads reference a specific triggering event, or null if no clear trigger.
+6. "relevant_count": integer — how many of the input threads are genuinely ABOUT the article's subject (title or real comments discuss it directly; not general-purpose weekly threads, not off-topic, not merely sharing a keyword). Be strict; 0 is a valid answer. The page hides this panel when fewer than 2 are relevant.
 
 HARD RULES:
 - Base the summary and sentiment on the REAL comments shown, not the titles alone.
@@ -1046,7 +1057,7 @@ ${threadList}
 
 Return the JSON now.`
 
-  const model = MODELS.haiku
+  const model = MODELS.geminiFlash
   const message = await getAnthropic().messages.create({
     model,
     max_tokens: 512,
@@ -1078,6 +1089,7 @@ Return the JSON now.`
         sceptical_pct: split.sceptical_pct ?? (100 - split.pro_pct),
         neutral_pct: split.neutral_pct ?? 0,
         summary: split.summary ?? '',
+        ...(typeof parsed.relevant_count === 'number' && { relevant_count: parsed.relevant_count }),
       }
     }
 

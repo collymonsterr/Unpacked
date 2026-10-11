@@ -297,9 +297,9 @@ ${researchContext ? `RESEARCH FINDINGS:\n${researchContext}` : ''}
 Respond with valid JSON matching the ${componentType} schema. Include the "type" field set to "${componentType}".`
 
   try {
-    // Try Haiku first (cheaper)
+    // Gemini Flash (model policy: Claude only for the editorial polish)
     const response = await anthropic.messages.create({
-      model: MODELS.haiku,
+      model: MODELS.geminiFlash,
       max_tokens: 3000,
       temperature: 0.3,
       system: SYSTEM_PROMPT,
@@ -313,7 +313,7 @@ Respond with valid JSON matching the ${componentType} schema. Include the "type"
 
     logApiCall({
       callType: 'interactive_component',
-      model: MODELS.haiku,
+      model: MODELS.geminiFlash,
       inputTokens: response.usage?.input_tokens,
       outputTokens: response.usage?.output_tokens,
       articleId,
@@ -321,15 +321,15 @@ Respond with valid JSON matching the ${componentType} schema. Include the "type"
 
     const parsed = extractJSON(text)
     if (parsed && validateComponentData(parsed, componentType)) {
-      console.log(`[interactive] Generated ${componentType} for ${articleId} via Haiku`)
+      console.log(`[interactive] Generated ${componentType} for ${articleId} via Gemini`)
       return parsed as InteractiveComponentData
     }
 
-    // Haiku output invalid — try Sonnet fallback
-    console.warn(`[interactive] Haiku output invalid for ${articleId}, trying Sonnet fallback`)
+    // Output invalid — one more Gemini attempt
+    console.warn(`[interactive] Gemini output invalid for ${articleId}, retrying once`)
 
     const sonnetResponse = await anthropic.messages.create({
-      model: MODELS.sonnet,
+      model: MODELS.geminiFlash,
       max_tokens: 4000,
       temperature: 0.3,
       system: SYSTEM_PROMPT,
@@ -343,7 +343,7 @@ Respond with valid JSON matching the ${componentType} schema. Include the "type"
 
     logApiCall({
       callType: 'interactive_component_fallback',
-      model: MODELS.sonnet,
+      model: MODELS.geminiFlash,
       inputTokens: sonnetResponse.usage?.input_tokens,
       outputTokens: sonnetResponse.usage?.output_tokens,
       articleId,
@@ -351,7 +351,7 @@ Respond with valid JSON matching the ${componentType} schema. Include the "type"
 
     const sonnetParsed = extractJSON(sonnetText)
     if (sonnetParsed && validateComponentData(sonnetParsed, componentType)) {
-      console.log(`[interactive] Generated ${componentType} for ${articleId} via Sonnet fallback`)
+      console.log(`[interactive] Generated ${componentType} for ${articleId} via Gemini retry`)
       return sonnetParsed as InteractiveComponentData
     }
 
@@ -361,7 +361,7 @@ Respond with valid JSON matching the ${componentType} schema. Include the "type"
     console.error(`[interactive] Generation failed for ${articleId}:`, (err as Error).message)
     logApiCall({
       callType: 'interactive_component',
-      model: MODELS.haiku,
+      model: MODELS.geminiFlash,
       articleId,
       errorMessage: (err as Error).message,
     })

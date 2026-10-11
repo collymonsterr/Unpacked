@@ -71,10 +71,23 @@ export default function LiveDataCard({ section }: LiveDataCardProps) {
       return <YahooFinanceGrid items={[section.content]} cardStyle={cardStyle} ref={ref} />
     }
     case 'google_trends':
+      // No real search-interest signal (empty series or a flat near-zero line) —
+      // the card would just show "0/100" and a dead chart, so hide it.
+      if (!hasTrendsSignal(section.content)) return null
       return <GoogleTrendsCard content={section.content} cardStyle={cardStyle} ref={ref} />
     default:
       return null
   }
+}
+
+/** True when a Google Trends payload has a usable interest series. */
+export function hasTrendsSignal(content: Record<string, unknown>): boolean {
+  const series = Array.isArray(content.timelineData) ? content.timelineData as Array<{ value?: unknown }> : []
+  const values = series.map(d => Number(d.value)).filter(v => Number.isFinite(v))
+  if (values.length < 4) return false
+  const max = Math.max(...values)
+  const nonZero = values.filter(v => v > 0).length
+  return max >= 10 && nonZero >= Math.ceil(values.length / 4)
 }
 
 // ── Shared Components ───────────────────────────────────────────────────────

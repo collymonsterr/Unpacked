@@ -66,37 +66,19 @@ async function generateCardSummary(articleId: string, db: ReturnType<typeof getS
 
   if (!title || !verdict) return
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    console.warn('[card-summary] No ANTHROPIC_API_KEY, skipping')
+  if (!process.env.GOOGLE_GEMINI_API_KEY) {
+    console.warn('[card-summary] No GOOGLE_GEMINI_API_KEY, skipping')
     return
   }
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: MODELS.haiku,
-        max_tokens: 100,
-        messages: [{
-          role: 'user',
-          content: `You are writing a one-sentence summary for an article card on a homepage. It must be punchy, specific, and give a compelling reason to click. Maximum 20 words. Do not start with the article title. Do not use generic phrases like "this article covers" or "find out". Write the summary as a direct confident statement of the article's main finding or verdict. If you include a year, the current year is ${new Date().getFullYear()} — never use 2024 or 2025.\n\nArticle title: ${title}\nArticle type: ${articleType}\nVerdict: ${verdict}`,
-        }],
-      }),
+    const { geminiText } = await import('@/lib/anthropic-client')
+    const g = await geminiText({
+      model: MODELS.geminiFlashLite,
+      maxTokens: 100,
+      prompt: `You are writing a one-sentence summary for an article card on a homepage. It must be punchy, specific, and give a compelling reason to click. Maximum 20 words. Do not start with the article title. Do not use generic phrases like "this article covers" or "find out". Write the summary as a direct confident statement of the article's main finding or verdict. If you include a year, the current year is ${new Date().getFullYear()} — never use 2024 or 2025.\n\nArticle title: ${title}\nArticle type: ${articleType}\nVerdict: ${verdict}`,
     })
-
-    if (!res.ok) {
-      console.error('[card-summary] API error:', res.status, await res.text())
-      return
-    }
-
-    const data = await res.json()
-    const summary = data.content?.[0]?.text?.trim()
+    const summary = g.text.trim()
 
     if (summary && summary.length > 0) {
       await db.from('articles').update({ card_summary: summary }).eq('id', articleId)

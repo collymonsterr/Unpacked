@@ -288,9 +288,8 @@ async function stage2HaikuReview(
 ): Promise<HaikuReview[]> {
   if (claims.length === 0) return []
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    console.warn('[fact-check] ANTHROPIC_API_KEY not set — skipping Stage 2')
+  if (!process.env.GOOGLE_GEMINI_API_KEY) {
+    console.warn('[fact-check] GOOGLE_GEMINI_API_KEY not set — skipping Stage 2')
     return []
   }
 
@@ -299,34 +298,19 @@ async function stage2HaikuReview(
       `[${c.id}] "${c.text}" (category: ${c.category}, verdict: ${c.verdict})${c.evidence.length > 0 ? `\n  Evidence: ${c.evidence.map(e => `${e.source}: "${e.snippet}"`).join('; ')}` : ''}${c.correction ? `\n  Correction: ${c.correction}` : ''}`
     ).join('\n\n')
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: MODELS.haiku,
-        max_tokens: 2048,
-        messages: [{
-          role: 'user',
-          content: `${HAIKU_REVIEW_PROMPT}\n\nArticle type: ${articleType}\nCategory: ${category}\n\nClaims to review:\n${claimsText}`,
-        }],
-      }),
+    // Stage 2 runs on Gemini Flash (model policy: Claude only for the editorial polish).
+    const { geminiText } = await import('@/lib/anthropic-client')
+    const g = await geminiText({
+      model: MODELS.geminiFlash,
+      maxTokens: 2048,
+      prompt: `${HAIKU_REVIEW_PROMPT}\n\nArticle type: ${articleType}\nCategory: ${category}\n\nClaims to review:\n${claimsText}`,
     })
-
-    if (!res.ok) {
-      console.error('[fact-check] Stage 2 Haiku error:', res.status)
-      return []
-    }
-
-    const data = await res.json()
-    const text = data.content?.[0]?.text ?? ''
+    const data = { usage: { input_tokens: g.inputTokens, output_tokens: g.outputTokens } }
+    const text = g.text
 
     logApiCall({
       callType: 'fact_check_stage2',
-      model: MODELS.haiku,
+      model: MODELS.geminiFlash,
       inputTokens: data.usage?.input_tokens,
       outputTokens: data.usage?.output_tokens,
       articleId,

@@ -9,17 +9,27 @@
  * When you bump a model here, add its price to MODEL_PRICING too.
  */
 export const MODELS = {
-  /** Fast, cheap Anthropic: planning, research synthesis, selection, fact-check review, daily topic. */
+  /**
+   * Legacy — no longer called. Model policy (Oct 2026): Claude Sonnet ONLY for the
+   * final editorial polish; Gemini everywhere else. lib/anthropic-client.ts routes
+   * any non-Sonnet model straight to Gemini, so a stray reference can't bill Anthropic.
+   */
   haiku: 'claude-haiku-4-5-20251001',
-  /** Premium Anthropic: editorial pass, deep/premium writing, refine, Gemini-writer fallback. */
+  /** The ONE Anthropic step: editorial polish (lib/editorial-pass.ts). Also an emergency fallback if the Gemini writer/refine fails. */
   sonnet: 'claude-sonnet-5',
-  /** Google workhorse: blueprint, default writer, fact-check grounding, social content. */
+  /** Google workhorse: planning, topic, research synthesis, blueprint, writer, fact-check, image verification, social. */
   geminiFlash: 'gemini-2.5-flash',
+  /** Google, cheapest: trivial classification / one-liners (hero query, card summary, filters, categories). */
+  geminiFlashLite: 'gemini-2.5-flash-lite',
   /** OpenAI: kept ONLY as the independent third voice in fact-check arbitration. */
   gptMini: 'gpt-4o-mini',
   /** OpenAI image generation — emergency AI hero fallback (lib/imagen.ts). */
   gptImage: 'gpt-image-1',
 } as const
+
+/** Gemini generateContent endpoint for any Gemini model ID. */
+export const geminiUrl = (model: string) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
 
 /** Full Gemini generateContent endpoint for the current Flash model. */
 export const GEMINI_FLASH_URL =

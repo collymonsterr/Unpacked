@@ -1180,7 +1180,7 @@ export async function planArticle(query: string, options?: GenOptions, articleId
   }
 
   const optionsPrompt = options ? buildOptionsPrompt(options) : ''
-  const model = MODELS.haiku
+  const model = MODELS.geminiFlash
 
   // Layer 1: Sanitise query to remove common false-positive trigger phrases
   const sanitizedQuery = sanitizeQueryForPlanning(query)

@@ -267,7 +267,7 @@ Return ONLY a JSON array of exactly 3 objects with fields: headline, article_typ
   const t0 = Date.now()
 
   const response = await anthropic.messages.create({
-    model: MODELS.haiku,
+    model: MODELS.geminiFlash,
     max_tokens: 2000,
     temperature: 0.7,
     messages: [{ role: 'user', content: prompt }],
@@ -276,7 +276,7 @@ Return ONLY a JSON array of exactly 3 objects with fields: headline, article_typ
   const ms = Date.now() - t0
   const usage = response.usage
   await logApiCall({
-    model: MODELS.haiku,
+    model: MODELS.geminiFlash,
     callType: 'plan_angles',
     inputTokens: usage.input_tokens,
     outputTokens: usage.output_tokens,
@@ -350,7 +350,7 @@ Return ONLY a JSON array of ${threads.slice(0, 5).length} strings, one summary p
 
     const anthropic = getAnthropic()
     const response = await anthropic.messages.create({
-      model: MODELS.haiku,
+      model: MODELS.geminiFlash,
       max_tokens: 500,
       temperature: 0.3,
       messages: [{ role: 'user', content: prompt }],
@@ -358,7 +358,7 @@ Return ONLY a JSON array of ${threads.slice(0, 5).length} strings, one summary p
 
     const usage = response.usage
     await logApiCall({
-      model: MODELS.haiku,
+      model: MODELS.geminiFlash,
       callType: 'plan_reddit_summary',
       inputTokens: usage.input_tokens,
       outputTokens: usage.output_tokens,

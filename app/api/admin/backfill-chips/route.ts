@@ -52,7 +52,7 @@ export async function POST() {
         const query = row.query as string ?? ''
 
         const message = await getAnthropic().messages.create({
-          model: MODELS.haiku,
+          model: MODELS.geminiFlashLite,
           max_tokens: 256,
           system: 'You generate short, punchy article suggestion chips. Return only valid JSON with no commentary.',
           messages: [{

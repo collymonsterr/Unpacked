@@ -7,7 +7,7 @@ import { createAnthropic } from '@/lib/anthropic-client'
 
 const VALID_CATEGORIES = CATEGORIES.map(c => c.dbValue)
 
-const HAIKU_MODEL = MODELS.haiku
+const HAIKU_MODEL = MODELS.geminiFlashLite
 
 /** Extract first ~200 words of readable text from article JSON */
 function extractContent(article: Record<string, unknown>): string {
@@ -42,12 +42,12 @@ export async function POST(request: NextRequest) {
   const auth = await requireAdmin()
   if (!auth.authorized) return auth.error!
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    return Response.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 })
+  if (!process.env.GOOGLE_GEMINI_API_KEY) {
+    return Response.json({ error: 'GOOGLE_GEMINI_API_KEY not configured' }, { status: 500 })
   }
 
-  const client = createAnthropic({ apiKey })
+  // Routed to Gemini Flash-Lite by createAnthropic (model policy).
+  const client = createAnthropic()
   const db = getSupabaseAdmin()
 
   // Fetch all published articles

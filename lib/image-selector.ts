@@ -1,70 +1,128 @@
 /**
- * Vision-based image selection.
+ * Vision-based image verification and selection (Gemini).
  *
- * Replicates the final step a human takes when sourcing an image: after
- * Google Images returns a grid of candidates, a person visually scans them
- * and picks the single best one. We do the same — send the candidate
- * thumbnails to a vision model and let it choose, instead of blindly taking
- * the first URL that passes a regex.
+ * Replicates what a photo editor does with a grid of search results: look at
+ * every candidate, reject anything that isn't actually the subject (a Samsung
+ * foldable in an "Apple foldable" article, a stock lookalike, a collage,
+ * a watermarked or text-heavy image), then pick the best of what's left.
  *
- * Primary: Claude Haiku 4.5 (vision). Fallback: GPT-4o-mini (vision).
- * Final fallback: the top-ranked candidate (candidates[0]).
+ * Model policy (Oct 2026): runs on Gemini 2.5 Flash vision — no Anthropic.
  *
- * Thumbnails (not full-res originals) are sent to the model — they're small,
- * fast, reliably fetchable (Google CDN), and cheaper to process.
+ * Strict by design: if NO candidate passes verification — or the verifier
+ * itself fails — callers get null and use no image (or the existing
+ * non-photo fallback). We never publish the top search result unchecked.
  */
 
-import type AnthropicSDK from '@anthropic-ai/sdk'
 import type { ImageCandidate } from '@/lib/image-router'
-import { MODELS } from '@/lib/models'
+import { MODELS, geminiUrl } from '@/lib/models'
+import { fetchInlineImage } from '@/lib/anthropic-client'
 
-const HAIKU_MODEL = MODELS.haiku
+const VISION_MODEL = MODELS.geminiFlash
 const MAX_CANDIDATES = 10
 
-interface SelectionResult {
-  index: number // 1-based; 0 means "none acceptable"
-  reason?: string
+interface Verification {
+  /** 1-based image numbers that clearly show the subject and are usable. */
+  passed: number[]
+  /** 1-based best image, or 0 when none pass. */
+  best: number
 }
 
-function buildInstruction(subject: string, context: string | undefined, n: number): string {
-  return `You are a senior photo editor choosing the single best image for an editorial article.
+function buildInstruction(subject: string, context: string | undefined, n: number, purpose: 'hero' | 'gallery'): string {
+  return `You are a strict senior photo editor verifying images for an editorial article.
 
-The article is about: ${subject}${context ? `\nContext: ${context}` : ''}
+SUBJECT: ${subject}${context ? `\nCONTEXT: ${context.slice(0, 300)}` : ''}
 
-Below are ${n} candidate images, numbered 1 to ${n}. Pick the ONE best image for the hero/lead slot.
+You will see ${n} candidate images, labelled "Image 1" to "Image ${n}". Check EACH one.
 
-Choose the image that:
-- Clearly and accurately shows the actual subject above (the real product/person/place/thing — not a lookalike, not an unrelated stock concept)
-- Looks like a real, sharp, high-quality photograph
-- Has NO text overlay, watermark, logo, infographic, chart, collage, or screenshot framing
-- Is suitable as a wide editorial hero image
+An image PASSES only if ALL of these hold:
+1. It clearly shows the actual subject. If the subject names a specific product, brand, model, person, place, game, vehicle or company, the image must show THAT exact thing — identifiable by its design, branding or likeness. A different brand's product, a lookalike, a generic stand-in, or a different model is a FAIL (e.g. a Samsung or Google foldable is a FAIL for an Apple foldable; an Android phone is a FAIL for an iPhone).
+   For an unreleased or rumoured product, a render or prototype is acceptable only if it plausibly depicts THAT product with its maker's design language; anything clearly another company's product is a FAIL.
+   If the subject is a broad concept (a trend, a food category, an idea), a clearly relevant real photograph passes.
+2. It is a real, sharp photograph or official product image — not a chart, infographic, meme, screenshot of a web page, collage or thumbnail grid.
+3. No dominant text overlay or watermark.
+${purpose === 'hero' ? '4. It would work as a wide editorial lead image.\n' : ''}
+When unsure whether an image shows the exact subject, FAIL it.
 
-Reject images that are off-topic, low quality, watermarked, text-heavy, collages, or the wrong subject.
-
-Respond with ONLY a JSON object, no prose:
-{"index": <number 1-${n}, or 0 if none are acceptable>, "reason": "<short reason>"}`
+Respond with ONLY JSON:
+{"results":[{"image":1,"pass":true,"reason":"short"}, ...], "best": <number of the best passing image, or 0 if none pass>}`
 }
 
-function parseSelection(text: string, n: number): SelectionResult | null {
-  if (!text) return null
-  // Pull the first {...} block out of the response.
-  const match = text.match(/\{[\s\S]*\}/)
-  const raw = match ? match[0] : text
+async function verifyWithGemini(
+  thumbs: string[],
+  subject: string,
+  context: string | undefined,
+  purpose: 'hero' | 'gallery',
+  articleId?: string,
+): Promise<Verification> {
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY
+  if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY not set')
+
+  // Download thumbnails ourselves (Gemini needs inline bytes). Unfetchable
+  // images are dropped — they can't be verified, so they can't be used.
+  const inlined = await Promise.all(thumbs.map(u => fetchInlineImage(u)))
+  const usable = inlined
+    .map((data, i) => ({ data, original: i + 1 }))
+    .filter((x): x is { data: { mime_type: string; data: string }; original: number } => !!x.data)
+  if (usable.length === 0) return { passed: [], best: 0 }
+
+  const parts: Record<string, unknown>[] = [
+    { text: buildInstruction(subject, context, usable.length, purpose) },
+  ]
+  usable.forEach((u, i) => {
+    parts.push({ text: `Image ${i + 1}:` })
+    parts.push({ inline_data: u.data })
+  })
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 30_000)
+  let res: Response
   try {
-    const parsed = JSON.parse(raw) as { index?: unknown; reason?: unknown }
-    const idx = Number(parsed.index)
-    if (Number.isInteger(idx) && idx >= 0 && idx <= n) {
-      return { index: idx, reason: typeof parsed.reason === 'string' ? parsed.reason : undefined }
-    }
-  } catch {
-    // Fall through to a looser numeric parse.
+    res = await fetch(`${geminiUrl(VISION_MODEL)}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts }],
+        generationConfig: {
+          temperature: 0,
+          maxOutputTokens: 1024,
+          responseMimeType: 'application/json',
+          thinkingConfig: { thinkingBudget: 0 },
+        },
+      }),
+    })
+  } finally {
+    clearTimeout(timer)
   }
-  const numMatch = raw.match(/\d+/)
-  if (numMatch) {
-    const idx = Number(numMatch[0])
-    if (idx >= 0 && idx <= n) return { index: idx }
+  if (!res.ok) throw new Error(`Gemini vision ${res.status}: ${(await res.text()).slice(0, 200)}`)
+
+  const data = await res.json() as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[]
+    usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number }
   }
-  return null
+  await logUsage(VISION_MODEL, data.usageMetadata?.promptTokenCount ?? 0, data.usageMetadata?.candidatesTokenCount ?? 0, articleId)
+
+  const text = data.candidates?.[0]?.content?.parts?.map(p => p.text ?? '').join('') ?? ''
+  const match = text.match(/\{[\s\S]*\}/)
+  const parsed = JSON.parse(match ? match[0] : text) as {
+    results?: { image?: unknown; pass?: unknown; reason?: unknown }[]
+    best?: unknown
+  }
+
+  // Map the model's numbering (over usable images) back to the original list.
+  const toOriginal = (k: number) => usable[k - 1]?.original ?? 0
+  const passed = (parsed.results ?? [])
+    .filter(r => r.pass === true && Number.isInteger(Number(r.image)))
+    .map(r => toOriginal(Number(r.image)))
+    .filter(n => n > 0)
+  const bestRaw = toOriginal(Number(parsed.best) || 0)
+  const best = passed.includes(bestRaw) ? bestRaw : (passed[0] ?? 0)
+
+  const rejected = (parsed.results ?? []).filter(r => r.pass !== true)
+  if (rejected.length > 0) {
+    console.log(`[image-verify] "${subject.slice(0, 40)}": ${passed.length}/${thumbs.length} passed; rejected e.g. ${rejected.slice(0, 2).map(r => String(r.reason ?? '').slice(0, 50)).join(' | ')}`)
+  }
+  return { passed, best }
 }
 
 async function logUsage(
@@ -74,63 +132,17 @@ async function logUsage(
   articleId?: string,
 ): Promise<void> {
   try {
-    const { getSupabaseAdmin } = await import('@/lib/supabase')
-    const db = getSupabaseAdmin()
-    await db.from('api_usage_log').insert({
-      call_type: 'image_selection',
-      model,
-      input_tokens: inputTokens,
-      output_tokens: outputTokens,
-      article_id: articleId ?? null,
-    })
+    const { logApiCall } = await import('@/lib/api-usage')
+    logApiCall({ callType: 'image_selection', model, inputTokens, outputTokens, articleId })
   } catch {
     // Non-critical.
   }
 }
 
-async function selectWithHaiku(
-  thumbs: string[],
-  subject: string,
-  context: string | undefined,
-  articleId?: string,
-): Promise<SelectionResult | null> {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) return null
-
-  // Vision requests don't fall back (the wrapper rethrows image-bearing calls and
-  // the caller degrades to the first candidate) — wrapped for consistency.
-  const { createAnthropic } = await import('@/lib/anthropic-client')
-  const anthropic = createAnthropic({ apiKey, maxRetries: 1, timeout: 20_000 })
-
-  const content: AnthropicSDK.MessageParam['content'] = [
-    { type: 'text', text: buildInstruction(subject, context, thumbs.length) },
-  ]
-  thumbs.forEach((url, i) => {
-    content.push({ type: 'text', text: `Image ${i + 1}:` })
-    content.push({ type: 'image', source: { type: 'url', url } })
-  })
-
-  const message = await anthropic.messages.create({
-    model: HAIKU_MODEL,
-    max_tokens: 150,
-    messages: [{ role: 'user', content }],
-  })
-
-  await logUsage(
-    HAIKU_MODEL,
-    message.usage?.input_tokens ?? 0,
-    message.usage?.output_tokens ?? 0,
-    articleId,
-  )
-
-  const text = message.content.find(b => b.type === 'text')?.text ?? ''
-  return parseSelection(text, thumbs.length)
-}
-
 /**
- * Pick the best image from a candidate list using a vision model.
- * Always returns a candidate when the list is non-empty (never null unless empty),
- * falling back to the top-ranked candidate if the model can't decide.
+ * Verify candidates and pick the best one that actually shows the subject.
+ * Returns null when none pass (or verification fails) — callers must then use
+ * no image / the non-photo fallback, never candidates[0] unchecked.
  */
 export async function selectBestImage(
   candidates: ImageCandidate[],
@@ -139,32 +151,40 @@ export async function selectBestImage(
   articleId?: string,
 ): Promise<ImageCandidate | null> {
   if (candidates.length === 0) return null
-  if (candidates.length === 1) return candidates[0]
-
   const pool = candidates.slice(0, MAX_CANDIDATES)
   const thumbs = pool.map(c => c.thumbnail || c.url)
 
   try {
-    // Haiku 4.5 vision picks the best; on any failure we fall through to the
-    // top-ranked candidate below. (No OpenAI fallback — kept off the image path.)
-    const result = await selectWithHaiku(thumbs, subject, context, articleId).catch(() => null)
-
-    if (result && result.index >= 1 && result.index <= pool.length) {
-      const chosen = pool[result.index - 1]
-      console.log(
-        `[image-selector] Picked #${result.index}/${pool.length} for "${subject.slice(0, 40)}"` +
-        (result.reason ? ` — ${result.reason.slice(0, 60)}` : ''),
-      )
-      return chosen
+    const { best } = await verifyWithGemini(thumbs, subject, context, 'hero', articleId)
+    if (best >= 1 && best <= pool.length) {
+      console.log(`[image-selector] Picked #${best}/${pool.length} for "${subject.slice(0, 40)}"`)
+      return pool[best - 1]
     }
-
-    if (result && result.index === 0) {
-      // Model judged none acceptable — fall back to top-ranked candidate.
-      console.log(`[image-selector] Model rejected all candidates for "${subject.slice(0, 40)}" — using top rank`)
-    }
+    console.log(`[image-selector] No candidate shows "${subject.slice(0, 40)}" — using no image`)
   } catch (err) {
-    console.warn(`[image-selector] Selection failed: ${(err as Error).message}`)
+    console.warn(`[image-selector] Verification failed for "${subject.slice(0, 40)}" — using no image: ${(err as Error).message}`)
   }
+  return null
+}
 
-  return candidates[0]
+/**
+ * Verify a list of image URLs (e.g. a product gallery) and return only those
+ * that show the subject, best first, preserving search order otherwise.
+ * Returns [] when none pass or verification fails.
+ */
+export async function filterVerifiedImageUrls(
+  urls: string[],
+  subject: string,
+  articleId?: string,
+): Promise<string[]> {
+  if (urls.length === 0) return []
+  const pool = urls.slice(0, MAX_CANDIDATES)
+  try {
+    const { passed, best } = await verifyWithGemini(pool, subject, undefined, 'gallery', articleId)
+    const ordered = best ? [best, ...passed.filter(n => n !== best)] : passed
+    return ordered.map(n => pool[n - 1]).filter(Boolean)
+  } catch (err) {
+    console.warn(`[image-verify] Gallery verification failed for "${subject.slice(0, 40)}" — using no images: ${(err as Error).message}`)
+    return []
+  }
 }

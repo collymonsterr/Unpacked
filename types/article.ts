@@ -114,6 +114,8 @@ export interface TwitterSentimentSplit {
   neutral_pct: number
   /** One-sentence plain English summary of the split */
   summary: string
+  /** How many analysed items were genuinely about the subject (null/absent on older articles). Panel hides below 2. */
+  relevant_count?: number
 }
 
 /** Sentiment split data for Reddit discussion. Set by Haiku synthesis. */
@@ -130,6 +132,8 @@ export interface RedditSentimentSplit {
   neutral_pct: number
   /** One-sentence plain English summary of the split */
   summary: string
+  /** How many analysed items were genuinely about the subject (null/absent on older articles). Panel hides below 2. */
+  relevant_count?: number
 }
 
 /** A single Reddit thread surfaced through Brave site:reddit.com search and enriched with metadata. */

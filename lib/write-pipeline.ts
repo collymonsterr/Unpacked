@@ -241,9 +241,9 @@ export async function runWritePipeline({
     'editorial_photo' | 'news_photo' | 'product_photo' | 'abstract' | undefined
 
   const writeArticle = async (): Promise<ArticleContent> => {
-    if (isDeep) {
-      return writeWithSonnet(query, plan, researchSummary, generationOptions, articleId, undefined, entityCards, synthesis, blueprint, liveData, videoFindings)
-    }
+    // Model policy: the draft is written on Gemini for every length (deep included);
+    // Claude Sonnet is reserved for the editorial polish below. Sonnet writes only
+    // as an emergency fallback when Gemini fails outright.
     try {
       const optsPrompt = buildOptionsPrompt(generationOptions)
       return await writeWithGemini(query, plan, researchSummary, optsPrompt, articleId, entityCards, synthesis, blueprint, liveData, videoFindings)
