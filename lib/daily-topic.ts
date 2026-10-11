@@ -11,7 +11,8 @@
  * day rather than publishing something stale).
  */
 
-import Anthropic from '@anthropic-ai/sdk'
+import type Anthropic from '@anthropic-ai/sdk'
+import { createAnthropic } from '@/lib/anthropic-client'
 import { executeBraveQueries } from '@/lib/brave-research'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { logApiCall } from '@/lib/api-usage'
@@ -60,7 +61,7 @@ function dayIndex(): number {
 let _anthropic: Anthropic | null = null
 function getAnthropic(): Anthropic {
   if (!_anthropic) {
-    _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 2, timeout: 20_000 })
+    _anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 2, timeout: 20_000 })
   }
   return _anthropic
 }
