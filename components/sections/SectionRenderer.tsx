@@ -195,7 +195,8 @@ export default function SectionRenderer({
     return (split.neutral_pct ?? 0) < 90
   }
   const hasTwitterData = !!twitterFindings && twitterFindings.length >= 2 && socialIsRelevant(twitterSentimentSplit)
-  const hasRedditData = !!redditThreads && redditThreads.length >= 1 && socialIsRelevant(redditSentimentSplit)
+  // Two threads minimum, like X: a single thread is usually a general-purpose one.
+  const hasRedditData = !!redditThreads && redditThreads.length >= 2 && socialIsRelevant(redditSentimentSplit)
   const hasInteractive = !!interactiveComponent
 
   while (i < sections.length) {
