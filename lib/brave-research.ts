@@ -9,6 +9,7 @@ import { fetchThreadData } from '@/lib/reddit-comments'
 
 const BRAVE_API = 'https://api.search.brave.com/res/v1/web/search'
 const BRAVE_IMAGE_API = 'https://api.search.brave.com/res/v1/images/search'
+const BRAVE_NEWS_API = 'https://api.search.brave.com/res/v1/news/search'
 
 /**
  * Normalize a Reddit URL to a canonical form for deduplication.
@@ -60,6 +61,61 @@ interface ResearchOutput {
   sources: { title: string; url: string }[]
   redditThreads: RedditThread[]
   findings: ResearchFinding[]
+}
+
+/** One story from Brave's News index. */
+export interface NewsResult {
+  title: string
+  url: string
+  snippet: string
+  /** Human-readable recency from Brave, e.g. "3 hours ago". Absent on undated pages. */
+  age: string
+  hostname: string
+}
+
+/**
+ * Brave NEWS search — a different index from `braveSearch()`.
+ *
+ * Web search ranks evergreen SEO pages ("8 Food Trends for 2027") above actual
+ * events, because those pages are optimised for the words you would use to
+ * describe wanting news. The news index returns dated stories instead, which is
+ * what topic discovery needs.
+ *
+ * Endpoint and params verified against Brave's API docs + a live response,
+ * Oct 2026: GET /res/v1/news/search, results[] of {title,url,description,age,meta_url}.
+ */
+export async function braveNewsSearch(
+  query: string,
+  count = 10,
+  freshness: BraveFreshness = 'pw',
+): Promise<NewsResult[]> {
+  const apiKey = process.env.BRAVE_SEARCH_API_KEY
+  if (!apiKey) return []
+
+  try {
+    const url = new URL(BRAVE_NEWS_API)
+    url.searchParams.set('q', query)
+    url.searchParams.set('count', String(count))
+    url.searchParams.set('freshness', freshness)
+    url.searchParams.set('safesearch', 'strict')
+    url.searchParams.set('text_decorations', 'false')
+
+    const res = await fetch(url.toString(), {
+      headers: { Accept: 'application/json', 'X-Subscription-Token': apiKey },
+    })
+    if (!res.ok) return []
+
+    const data = await res.json()
+    return (data.results ?? []).map((r: Record<string, unknown>) => ({
+      title: typeof r.title === 'string' ? r.title : '',
+      url: typeof r.url === 'string' ? r.url : '',
+      snippet: typeof r.description === 'string' ? r.description : '',
+      age: typeof r.age === 'string' ? r.age : '',
+      hostname: (r.meta_url as { hostname?: string } | undefined)?.hostname ?? '',
+    })).filter((r: NewsResult) => r.title && r.url)
+  } catch {
+    return []
+  }
 }
 
 /** Brave Search freshness param. pd = past day, pw = past week, pm = past month. */
