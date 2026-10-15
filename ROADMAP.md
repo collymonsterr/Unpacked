@@ -63,6 +63,30 @@ Paste a Reddit or X thread URL and get a visual article of the discussion: what 
 
 ---
 
+## 3. Story Radar — demand-signal topic discovery with human approval
+
+**Shipped (part 1, Oct 2026):** `lib/story-radar.ts` + `scripts/preview-radar.ts`.
+
+The topic picker asks *"what did publishers write about?"* — a **supply** signal, which is full of SEO filler. Radar asks *"what are people engaging with?"* — a **demand** signal with numbers attached that filler cannot fake.
+
+Three mechanisms:
+- **Collectors** — Hacker News (free, real points/comments) and Brave news per beat. Reddit is the strongest signal but now blocks unauthenticated listing requests from servers (403 verified); it needs a free Reddit OAuth app.
+- **Clustering** — Jaccard token overlap groups items describing the same event.
+- **Scoring** — corroboration (max 45) outweighs velocity (max 30) plus recency (max 25), and a single-source story is multiplied by 0.72. Rationale: independent outlets covering one event is the only signal a content farm cannot manufacture. Before this weighting, "Celebrating 70 Years of Fortran" (one HN post) outranked a five-outlet discovery story.
+
+Pattern filtering is shared with the daily picker via `isStoryTitle()`. Live blogs needed their own patterns — several outlets run them at once, so three transfer-rumour live blogs *corroborated each other* and looked like a real three-source story.
+
+**Remaining (part 2):**
+- `story_candidates` table: id, title, url, beat, score, evidence, status (pending/approved/rejected/published), decided_at, reject_reason.
+- Collection cron writing candidates to the queue.
+- **Telegram digest** — ~5 stories each morning with evidence and inline approve/reject buttons; a webhook route records the decision. Chosen over a dashboard because a dashboard you must remember to visit will rot.
+- Daily article cron takes the top *approved* candidate. **When the queue is empty, it auto-publishes the best unreviewed story if it clears a high score threshold** — keeps cadence without going silent.
+- Learning loop: past approvals/rejections become few-shot examples, so it stops surfacing what the founder always rejects.
+
+Needs from the founder: a Telegram bot token + chat id, and the `story_candidates` migration run in Supabase.
+
+---
+
 ## Sequencing
 
 1. **Unblock the daily article first** — add `CRON_SECRET` in Vercel (CLAUDE.md § Known Problems). It is the headline feature and it has never run. Nothing below matters as much.
