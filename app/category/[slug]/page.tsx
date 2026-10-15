@@ -3,10 +3,16 @@ import type { Metadata } from 'next'
 import { CATEGORIES, CATEGORY_BY_SLUG, slugToDbCategory } from '@/lib/category-config'
 import Navbar from '@/components/ui/Navbar'
 import Footer from '@/components/ui/Footer'
+import { unstable_cache } from 'next/cache'
 import { LISTING_EXCLUDED_SLUGS, isHiddenFromListings } from '@/lib/seo-canonical'
+import { DB_TIMEOUT_MS, dbSignal, withTimeout } from '@/lib/db-timeout'
 import CategoryPageClient from './CategoryPageClient'
 
+// Paginated and sortable via searchParams, so the route is dynamic — but the
+// underlying query is cached per (category, sort, page). These pages produced
+// every 300s timeout in the 14-15 Oct incidents: crawlers walk all 12 of them.
 export const dynamic = 'force-dynamic'
+export const maxDuration = 20
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -40,7 +46,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 const ITEMS_PER_PAGE = 12
 
-async function getCategoryArticles(categoryName: string, sort: string, page: number) {
+const getCategoryArticlesCached = unstable_cache(
+  async (categoryName: string, sort: string, page: number) => {
   const { getSupabaseAdmin } = await import('@/lib/supabase')
   const db = getSupabaseAdmin()
 
@@ -56,6 +63,7 @@ async function getCategoryArticles(categoryName: string, sort: string, page: num
     .in('status', ['complete', 'verified'])
     .eq('visibility', 'published')
     .not('slug', 'in', excluded)
+    .abortSignal(dbSignal())
 
   // Build query with sort
   let query = db
@@ -76,9 +84,11 @@ async function getCategoryArticles(categoryName: string, sort: string, page: num
   }
 
   const offset = (page - 1) * ITEMS_PER_PAGE
-  query = query.range(offset, offset + ITEMS_PER_PAGE - 1)
+  query = query.range(offset, offset + ITEMS_PER_PAGE - 1).abortSignal(dbSignal())
 
-  const { data } = await query
+  const { data, error } = await query
+  // Never cache a failed query as an empty category.
+  if (error) throw error
 
   return {
     // Belt and braces: catches pipeline debris that is not also a redirect source.
@@ -86,6 +96,19 @@ async function getCategoryArticles(categoryName: string, sort: string, page: num
     totalCount: totalCount ?? 0,
     totalPages: Math.ceil((totalCount ?? 0) / ITEMS_PER_PAGE),
   }
+  },
+  ['category-articles-v1'],
+  { revalidate: 120, tags: ['articles'] }
+)
+
+/** Empty category beats a hung page when the database stalls. */
+async function getCategoryArticles(categoryName: string, sort: string, page: number) {
+  return withTimeout(
+    getCategoryArticlesCached(categoryName, sort, page),
+    DB_TIMEOUT_MS,
+    `category ${categoryName} p${page}`,
+    { articles: [], totalCount: 0, totalPages: 0 }
+  )
 }
 
 export default async function CategoryPage({ params, searchParams }: Props) {

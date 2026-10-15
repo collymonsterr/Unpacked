@@ -103,6 +103,86 @@ function resolveVerdict(row: ArticleCardSource): string {
   return art?.executive_summary?.key_takeaways?.[0] ?? ''
 }
 
+/**
+ * The flat shape a listing query should ask Postgres for: scalars plus a few
+ * JSON paths, instead of the whole `article` blob.
+ *
+ * Selecting `article` whole meant the homepage pulled every article's full body
+ * out of the database on every render. These projections are what the cards
+ * actually read.
+ *
+ * `readingTime` is the one casualty — it is computed from the full section text,
+ * which is exactly what we are no longer fetching. Cards hide "x min read" when
+ * it is 0. Restoring it needs a stored `reading_time` column (see
+ * scripts/add-performance-indexes.sql for the follow-up note).
+ */
+export interface ArticleCardProjection {
+  id: string
+  slug: string
+  query?: string | null
+  title?: string | null
+  article_type?: string | null
+  thumbnail_url?: string | null
+  short_answer?: string | null
+  one_liner?: string | null
+  recommendation?: string | null
+  first_takeaway?: string | null
+  plan_title?: string | null
+  plan_category?: string | null
+  category?: string | null
+  card_summary?: string | null
+  is_featured?: boolean | null
+  is_trending?: boolean | null
+  trending_set_at?: string | null
+  view_count?: number | null
+  created_at: string
+  user_name?: string | null
+  user_avatar?: string | null
+  fact_check_probe?: unknown
+  verified_at?: string | null
+}
+
+/** First complete sentence, used for verdict lines. */
+function firstSentence(text: string): string {
+  const match = text.match(/^[^.;!?]+[.;!?]/)
+  if (match) return match[0].replace(/;$/, '.').trim()
+  return text.split(';')[0].trim()
+}
+
+/** Same verdict priority as `resolveVerdict()`, over projected columns. */
+function projectedVerdict(row: ArticleCardProjection): string {
+  if (row.card_summary && row.card_summary.trim()) return row.card_summary.trim()
+  if (row.recommendation) return firstSentence(row.recommendation)
+  if (row.one_liner) return firstSentence(row.one_liner)
+  return row.first_takeaway ?? ''
+}
+
+/** Build a card from a projected listing row. Server-side only. */
+export function toArticleCardFromProjection(row: ArticleCardProjection): ArticleCardData {
+  return {
+    id: row.id,
+    slug: row.slug,
+    query: row.query ?? '',
+    title: row.title ?? row.plan_title ?? row.query ?? '',
+    articleType: row.article_type ?? '',
+    imageUrl: row.thumbnail_url ?? null,
+    description: row.short_answer ?? row.one_liner ?? '',
+    verdict: projectedVerdict(row),
+    // Unknown without the body — cards hide it when 0.
+    readingTime: 0,
+    category: row.category ?? row.plan_category ?? null,
+    isFeatured: row.is_featured === true,
+    isTrending: row.is_trending === true,
+    trendingSetAt: row.trending_set_at ?? null,
+    viewCount: row.view_count ?? 0,
+    createdAt: row.created_at,
+    userName: row.user_name ?? null,
+    userAvatar: row.user_avatar ?? null,
+    hasFactCheck: !!row.fact_check_probe,
+    verifiedAt: row.verified_at ?? null,
+  }
+}
+
 /** Project a full DB row down to what a listing card renders. Server-side only. */
 export function toArticleCard(row: ArticleCardSource): ArticleCardData {
   const art = row.article
