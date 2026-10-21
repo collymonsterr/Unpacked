@@ -342,6 +342,19 @@ Reddit thread links in `CommunityInsights.tsx` wrap subreddit links, producing `
 ### M5. Loading Message Pacing
 Loading messages exhaust at ~70 seconds but articles average ~188 seconds, leaving ~1.7 minutes of dead silence. Flat 5s interval, no adaptive pacing. Fix: implement graduated intervals (fast early, slow mid, long tail). File: `components/ArticleGenerating.tsx`. Highest-priority UX bug rescued from old TODO.md.
 
+### M9. Database bloat from rewriting 97 KB rows ~10x per article — *suspected cause of the outages, Oct 2026*
+Measured 21 Oct: image storage is **43 MB** (143 files) and all 360 articles are **34 MB** of logical JSON — under 100 MB total. The site is far too small to fill a disk legitimately, so the "disk space" diagnosis needs a different explanation.
+
+The likely one: Postgres never edits in place, so every `UPDATE` writes a complete new row version. The average article row is **97 KB** (of which `research_findings` alone is **33 KB**), and the pipeline updates each article roughly ten times as it moves through planning → research → blueprint → writing → editorial → fact-check → social. That is **~1 MB of dead tuples per article**, ~350 MB of churn. If autovacuum falls behind on a small instance, the table bloats to many times its real size: disk fills with garbage and queries slow down because Postgres reads through dead copies.
+
+**Unconfirmed** — bloat statistics need `pg_stat_user_tables`, which is not reachable through PostgREST. Confirm in the Supabase dashboard before acting.
+
+If confirmed, two fixes:
+1. **Stop storing `research_findings`** (33 KB/row, the single biggest column). It is raw Brave output, used during generation and never read afterwards — verify, then drop or truncate it on completion.
+2. **Update the row fewer times.** Accumulate pipeline state and write once at the end rather than after every stage.
+
+Related and still outstanding: `scripts/add-performance-indexes.sql` has never been run.
+
 ### M8. Google Analytics blocked by our own CSP — *found September 2026*
 `next.config.ts` `script-src` allows only `'self'`, Stripe and Vercel hosts, so the `@next/third-parties` GA tag (`G-FQJWVZ1TNG`) is refused by the browser on every page load — confirmed in the console. GA has collected nothing since the CSP shipped. One-line fix (add `https://www.googletagmanager.com` to `script-src`, `https://*.google-analytics.com` to `connect-src`), but it widens the CSP, so it needs a deliberate yes rather than a silent patch. Alternative: drop GA entirely and rely on PostHog, which is already reverse-proxied through `/ingest` and therefore unaffected.
 
