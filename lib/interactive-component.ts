@@ -96,6 +96,31 @@ function isNum(v: unknown): v is number {
   return typeof v === 'number' && isFinite(v)
 }
 
+/**
+ * Why `validateComponentData()` rejected something. Diagnosis only — the
+ * boolean validator below stays the gate.
+ */
+function describeValidationFailure(data: unknown, type: InteractiveComponentType): string {
+  if (!data || typeof data !== 'object') return 'not an object'
+  const d = data as Record<string, unknown>
+  if (d.type !== type) return `type is ${JSON.stringify(d.type)}, expected ${JSON.stringify(type)}`
+  if (typeof d.title !== 'string' || !d.title) return 'missing or empty title'
+  if (typeof d.subtitle !== 'string') return 'missing subtitle'
+
+  const arrayFieldsByType: Record<string, string[]> = {
+    decision_tool: ['questions', 'recommendations'],
+    scenario_simulator: ['scenarios'],
+    interactive_map: ['locations'],
+    comparison_calculator: ['options', 'criteria'],
+  }
+  for (const field of arrayFieldsByType[type] ?? []) {
+    const value = d[field]
+    if (!Array.isArray(value)) return `${field} is not an array`
+    if (value.length < 2) return `${field} has ${value.length} item(s), needs at least 2`
+  }
+  return 'a nested field failed its shape check'
+}
+
 function validateComponentData(data: unknown, type: InteractiveComponentType): data is InteractiveComponentData {
   if (!data || typeof data !== 'object') return false
   const d = data as Record<string, unknown>
@@ -325,8 +350,20 @@ Respond with valid JSON matching the ${componentType} schema. Include the "type"
       return parsed as InteractiveComponentData
     }
 
-    // Haiku output invalid — try Sonnet fallback
-    console.warn(`[interactive] Haiku output invalid for ${articleId}, trying Sonnet fallback`)
+    // Haiku output invalid — try Sonnet fallback.
+    //
+    // This path fired on 13 of 14 runs in the 14 days to 20 Oct 2026, making the
+    // "cheaper first" attempt pure overhead. The cause was never recorded, so
+    // log enough to diagnose it: a `max_tokens` stop means raise the ceiling (the
+    // planning call had exactly that bug), while a failed field points at the
+    // schema or the prompt.
+    const failure = !parsed
+      ? 'no JSON in response'
+      : `failed validation: ${describeValidationFailure(parsed, componentType)}`
+    console.warn(
+      `[interactive] Haiku output invalid for ${articleId} (${componentType}) — ${failure}; ` +
+      `stop_reason=${response.stop_reason} output_tokens=${response.usage?.output_tokens}. Trying Sonnet.`
+    )
 
     const sonnetResponse = await anthropic.messages.create({
       model: MODELS.sonnet,

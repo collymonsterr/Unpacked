@@ -9,8 +9,17 @@
  * When you bump a model here, add its price to MODEL_PRICING too.
  */
 export const MODELS = {
-  /** Fast, cheap Anthropic: planning, research synthesis, selection, fact-check review, daily topic. */
-  haiku: 'claude-haiku-4-5-20251001',
+  /**
+   * Fast, cheap Anthropic: planning, research synthesis, selection, fact-check
+   * review, daily topic.
+   *
+   * Oct 2026: 4.5 -> 5.5. Haiku 5.5 is $0.10/$0.50 per MTok against 4.5's
+   * $1/$5 — a 10x cut on ~75% of our Anthropic spend. Verified on real
+   * planning calls: same article_type, title and research manifest, ~35%
+   * faster. Thinking is adaptive-on by default and `budget_tokens` is
+   * rejected; we send neither, so no call site changes.
+   */
+  haiku: 'claude-haiku-5-5',
   /** Premium Anthropic: editorial pass, deep/premium writing, refine, Gemini-writer fallback. */
   sonnet: 'claude-sonnet-5',
   /** Google workhorse: blueprint, default writer, fact-check grounding, social content. */

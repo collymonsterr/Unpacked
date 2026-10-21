@@ -309,6 +309,10 @@ async function stage2HaikuReview(
       body: JSON.stringify({
         model: MODELS.haiku,
         max_tokens: 2048,
+        // Haiku 5.5 thinks by default and spends max_tokens doing it — see
+        // withThinkingDisabled() in lib/anthropic-client.ts. This path builds the
+        // request by hand, so it sets the flag itself.
+        thinking: { type: 'disabled' },
         messages: [{
           role: 'user',
           content: `${HAIKU_REVIEW_PROMPT}\n\nArticle type: ${articleType}\nCategory: ${category}\n\nClaims to review:\n${claimsText}`,
