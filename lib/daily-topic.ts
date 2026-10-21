@@ -14,6 +14,7 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { createAnthropic } from '@/lib/anthropic-client'
 import { braveNewsSearch, type NewsResult } from '@/lib/brave-research'
+import { isStoryTitle } from '@/lib/story-radar'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { logApiCall } from '@/lib/api-usage'
 import { extractJSON } from '@/lib/utils/extract-json'
@@ -59,26 +60,9 @@ export const BEATS: Beat[] = [
   { category: 'Finance', phrases: ['markets reacted report showed', 'central bank announced rates'] },
 ]
 
-/**
- * Headlines that are not events. Brave's news index still surfaces evergreen
- * listicles, section landing pages and release calendars; every bad auto-article
- * so far traces back to one of these shapes.
- */
-const NON_STORY_PATTERNS: RegExp[] = [
-  /\|\s*(news|gaming news|video game news|home|food|sports)\s*$/i, // "Gaming News | GameRant"
-  /^(news|gaming|food|sports|business|tech)\s*[-|]/i,
-  /\b(list of|release (date|calendar|schedule)|upcoming (games|releases|movies))\b/i,
-  /\b\d+\s+(things|ways|tips|trends|gadgets|games|movies|recipes|products|items|reasons)\b/i,
-  /\bbest\b[^.]*\b(of|in|for)\s+20\d\d\b/i,
-  /\b(trends?|predictions?)\s+(for|of)\s+20\d\d\b/i,
-  /\beverything you need to know\b/i,
-  /\b(what to watch|what to read|deals? of the (day|week)|roundup|weekly recap)\b/i,
-  /\b(wikipedia|newsletters?)\b/i,
-]
-
+/** Shared with Story Radar — see lib/story-radar.ts for the pattern list. */
 function isStory(r: NewsResult): boolean {
-  if (!r.title || r.title.length < 25) return false
-  if (NON_STORY_PATTERNS.some(re => re.test(r.title))) return false
+  if (!isStoryTitle(r.title)) return false
   // Undated pages in a news index are almost always evergreen hubs.
   if (!r.age) return false
   return true
