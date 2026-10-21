@@ -217,7 +217,9 @@ Mirrors how a human sources an image: search the best index (Google Images) with
 
 ---
 
-## Daily Automated Article (built May 2026 — Vercel Cron)
+## Daily Automated Article (built May 2026 — Vercel Cron; topic quality rebuilt Oct 2026)
+
+**Topic discovery rebuilt Oct 2026.** The first weeks of auto-articles were weak ("Is cushcore the cozy decor trend worth embracing", "Is Sam's Club's new deli find truly a weeknight dinner"). Root cause was not the prompt: discovery ran on Brave's **web** index with phrases like `"food trend this week"`, which is exactly what SEO content farms optimise for — the picker was choosing the best of a bad list. Now: Brave **news** index, event-shaped queries, listicle/landing-page filtering, per-outlet caps, and the picker is explicitly allowed to publish nothing. Verified across all 14 beats on 15 Oct: 13 produced real stories (GTA 6 launch trailer, Fox's $22bn Roku acquisition, Tesla Roadster debut, SpaceX ISS solar arrays) and Finance correctly declined as a duplicate of the previous day's CPI article. Preview without generating: `npx tsx scripts/preview-daily-topics.ts`.
 
 Fresh, fully-generated articles published automatically — no human in the loop. **~10/week** with a category spread (tuned May 2026 from 1/day to hit the founder's 5–12/week target).
 
