@@ -198,6 +198,10 @@ Return ONLY a JSON array of selected market IDs. Examples:
       body: JSON.stringify({
         model: MODELS.haiku,
         max_tokens: 200,
+        // Haiku 5.5 thinks by default and spends max_tokens doing it — see
+        // withThinkingDisabled() in lib/anthropic-client.ts. This path builds the
+        // request by hand, so it sets the flag itself.
+        thinking: { type: 'disabled' },
         temperature: 0,
         messages: [{ role: 'user', content: prompt }],
       }),

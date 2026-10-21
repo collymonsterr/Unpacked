@@ -22,18 +22,39 @@ export function createAnthropic(options?: ConstructorParameters<typeof Anthropic
   const original = client.messages.create.bind(client.messages)
 
   const withFallback = async (body: Anthropic.MessageCreateParams, requestOptions?: Anthropic.RequestOptions) => {
+    const prepared = withThinkingDisabled(body)
     try {
-      return await original(body, requestOptions)
+      return await original(prepared, requestOptions)
     } catch (err) {
       const providerError = classifyProviderError(err)
-      if (!providerError || body.stream || !isTextOnly(body)) throw err
-      console.warn(`[anthropic-fallback] ${providerError.detail} Replaying ${body.model} call on ${MODELS.geminiFlash}.`)
-      return await replayOnGemini(body)
+      if (!providerError || prepared.stream || !isTextOnly(prepared)) throw err
+      console.warn(`[anthropic-fallback] ${providerError.detail} Replaying ${prepared.model} call on ${MODELS.geminiFlash}.`)
+      return await replayOnGemini(prepared)
     }
   }
 
   ;(client.messages as unknown as { create: typeof withFallback }).create = withFallback
   return client
+}
+
+/**
+ * Turn thinking off unless the caller asked for it.
+ *
+ * Haiku 5.5 and Sonnet 5 run thinking by DEFAULT, and thinking tokens are spent
+ * out of `max_tokens`. Every ceiling in this codebase was calibrated against
+ * Haiku 4.5, which does not think — so on the model bump the 200-token daily
+ * topic picker spent 131 tokens thinking, hit `max_tokens` mid-JSON and failed
+ * to parse. Measured: thinking on = 200 output tokens, truncated, unparseable;
+ * thinking off = 114 tokens, valid JSON.
+ *
+ * Every Anthropic call here is structured extraction — classify, summarise,
+ * pick, emit JSON — not reasoning, so this costs no quality and keeps the
+ * existing ceilings honest. A caller that genuinely wants reasoning can pass
+ * its own `thinking` and this leaves it alone.
+ */
+function withThinkingDisabled(body: Anthropic.MessageCreateParams): Anthropic.MessageCreateParams {
+  if (body.thinking) return body
+  return { ...body, thinking: { type: 'disabled' } }
 }
 
 function isTextOnly(body: Anthropic.MessageCreateParams): boolean {

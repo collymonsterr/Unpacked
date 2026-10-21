@@ -15,7 +15,10 @@ function getAnthropic(): Anthropic {
   if (!_anthropic) {
     _anthropic = createAnthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
-      maxRetries: 4,
+      // planArticle() already loops 3 times and writeWithSonnet() twice, so 4
+      // SDK retries meant up to 12 billed calls for one plan. 2 keeps the
+      // transient-error protection and bounds the worst case at 6.
+      maxRetries: 2,
       timeout: 5 * 60 * 1000, // 5 minutes — web search calls are slow
     })
   }
@@ -1210,8 +1213,13 @@ export async function planArticle(query: string, options?: GenOptions, articleId
 
     const message = await getAnthropic().messages.create({
       model,
-      max_tokens: 3072,
-      system: PLANNING_SYSTEM_PROMPT,
+      // 3072 truncated real plans mid-JSON: Haiku 4.5 averaged ~2,357 output
+      // tokens against that ceiling, so long plans failed to parse and burned the
+      // retry loop. Measured plans fit comfortably under 8000.
+      max_tokens: 8000,
+      // The planning prompt is 400+ identical lines on every call — by far our
+      // largest repeated input. Cached reads cost ~0.1x, writes ~1.25x.
+      system: [{ type: 'text', text: PLANNING_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: userContent }],
     })
 

@@ -124,7 +124,7 @@ Applies to: anything touching the generation flow, homepage layout, article page
 
 Every article flows through these stages in order. File paths and models verified against code.
 
-**Model IDs live in one place — `lib/models.ts`.** All active inference calls import `MODELS` (`haiku` = `claude-haiku-4-5-20251001`, `sonnet` = `claude-sonnet-5`, `geminiFlash` = `gemini-2.5-flash`, `gptMini` = `gpt-4o-mini` for fact-check only, `gptImage` = `gpt-image-1`). Change a model there and every stage updates at once. (May 2026: Sonnet bumped 4→5; fact-check review Haiku bumped 4.0→4.5; OpenAI removed from image selection.)
+**Model IDs live in one place — `lib/models.ts`.** All active inference calls import `MODELS` (`haiku` = `claude-haiku-5-5`, `sonnet` = `claude-sonnet-5`, `geminiFlash` = `gemini-2.5-flash`, `gptMini` = `gpt-4o-mini` for fact-check only, `gptImage` = `gpt-image-1`). Change a model there and every stage updates at once. (May 2026: Sonnet bumped 4→5; fact-check review Haiku bumped 4.0→4.5; OpenAI removed from image selection.)
 
 ### Stage 1: Planning → `lib/claude.ts` → `planArticle()`
 - **Model:** Claude Haiku 4.5 (`claude-haiku-4-5-20251001`)
@@ -195,6 +195,12 @@ Every article flows through these stages in order. File paths and models verifie
 - Generates: X thread, LinkedIn post, Reddit summary, image cards
 - `saveSocialContent()` saves to DB
 - Runs async after article delivered
+
+### Thinking is disabled by default → `lib/anthropic-client.ts`
+- **Haiku 5.5 and Sonnet 5 run thinking by default, and thinking tokens come out of `max_tokens`.** Every ceiling in this repo was calibrated against Haiku 4.5, which does not think, so the model bump truncated short calls mid-JSON — the 200-token daily topic picker spent 131 tokens thinking and failed to parse.
+- `createAnthropic()` therefore sets `thinking: { type: 'disabled' }` on every request unless the caller passes its own. Every Anthropic call here is structured extraction (classify, summarise, pick, emit JSON), not reasoning, so this costs no quality.
+- **The three raw-`fetch` call sites set the flag themselves** — `lib/fact-check.ts` stage 2, `lib/data-sources/polymarket.ts`, `app/api/articles/[id]/featured/route.ts`. They bypass the SDK wrapper, so a new one must do the same.
+- If you raise a `max_tokens` or add a call site, remember the ceiling covers thinking too.
 
 ### Anthropic → Gemini fallback → `lib/anthropic-client.ts`
 - **Always construct Anthropic clients with `createAnthropic()`, never `new Anthropic()`.**
@@ -575,7 +581,7 @@ REDDIT_NATIVE_API              # Optional: 'off' disables Reddit native comment 
 ## Cost Controls
 
 - `api_usage_log` table logs every API call with token counts
-- `MODEL_PRICING` in `lib/api-usage.ts` for per-model cost rates
+- `MODEL_PRICING` in `lib/api-usage.ts` for per-model cost rates. **A missing entry silently costs a call at $0** — from Aug–Oct 2026 there was no `claude-haiku-4-5-*` row, so ~75% of Anthropic spend logged as free and the cron's monthly budget guard (which sums `articles.total_cost`) was blind to it. Resolution is exact match, then longest prefix, so dated IDs resolve; an unknown model now logs a warning. Add the price row whenever you bump a model in `lib/models.ts`.
 - Duplicate call guard: same article ID + call type blocked within 5 minutes (in-memory)
 - Query caching: checks for similar existing articles before generating
 - Concurrency limiter: GEMINI_MAX_CONCURRENT=3 (in-memory)

@@ -83,6 +83,10 @@ async function generateCardSummary(articleId: string, db: ReturnType<typeof getS
       body: JSON.stringify({
         model: MODELS.haiku,
         max_tokens: 100,
+        // Haiku 5.5 thinks by default and spends max_tokens doing it — see
+        // withThinkingDisabled() in lib/anthropic-client.ts. This path builds the
+        // request by hand, so it sets the flag itself.
+        thinking: { type: 'disabled' },
         messages: [{
           role: 'user',
           content: `You are writing a one-sentence summary for an article card on a homepage. It must be punchy, specific, and give a compelling reason to click. Maximum 20 words. Do not start with the article title. Do not use generic phrases like "this article covers" or "find out". Write the summary as a direct confident statement of the article's main finding or verdict. If you include a year, the current year is ${new Date().getFullYear()} — never use 2024 or 2025.\n\nArticle title: ${title}\nArticle type: ${articleType}\nVerdict: ${verdict}`,
