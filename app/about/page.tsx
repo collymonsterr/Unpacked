@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import type { Metadata } from 'next'
 import type { ArticleRow } from '@/types/article'
+import { DB_TIMEOUT_MS, dbSignal, withTimeout } from '@/lib/db-timeout'
 
 export const metadata: Metadata = {
   title: 'About Unpacked — Build a researched article in minutes',
@@ -30,13 +31,17 @@ export const metadata: Metadata = {
 async function getFeaturedArticles(): Promise<ArticleRow[]> {
   try {
     const { getSupabaseAdmin } = await import('@/lib/supabase')
-    const { data } = await getSupabaseAdmin()
+    // Prerendered at build time, so a stalled database only bites on rebuild —
+    // but an un-timed-out query here would hang that rebuild indefinitely.
+    const query = getSupabaseAdmin()
       .from('articles')
       .select('id, slug, article, view_count, status, verified_at, created_at')
       .in('status', ['complete', 'verified'])
       .eq('visibility', 'published')
       .order('view_count', { ascending: false })
       .limit(6)
+      .abortSignal(dbSignal())
+    const { data } = await withTimeout(query, DB_TIMEOUT_MS, 'about featured', { data: [] } as never)
     return (data ?? []) as ArticleRow[]
   } catch {
     return []

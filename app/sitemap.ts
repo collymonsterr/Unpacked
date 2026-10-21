@@ -1,6 +1,10 @@
 import type { MetadataRoute } from 'next'
 import { CATEGORIES } from '@/lib/category-config'
 import { isIndexableSlug } from '@/lib/seo-canonical'
+import { dbSignal } from '@/lib/db-timeout'
+
+// Crawlers request this constantly and it reads 500 rows. Rebuild hourly.
+export const revalidate = 3600
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [
@@ -49,6 +53,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .eq('visibility', 'published')
       .order('created_at', { ascending: false })
       .limit(500)
+      .abortSignal(dbSignal())
 
     if (data) {
       // Redirected duplicates, noindexed pages and pipeline debris are never

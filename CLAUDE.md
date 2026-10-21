@@ -429,6 +429,52 @@ Card components (`FeaturedSection`, `TrendingSection`, `PopularSection`, `Recent
 
 ---
 
+## Database Access Rules — `lib/db-timeout.ts`
+
+Added after the 14–15 Oct 2026 outages, when Postgres stopped answering while
+PostgREST stayed up. Queries hung rather than failing, no page had a timeout, and
+each request held a serverless function for the full 300s `maxDuration`. Crawlers
+walking `/category/*` piled up stuck functions, so a slow database read as a dead site.
+
+**Three rules. Breaking any one of them reintroduces the outage.**
+
+### 1. Every page-path Supabase call is time-bounded
+Use `withTimeout(work, DB_TIMEOUT_MS, label, fallback)` and `.abortSignal(dbSignal())`.
+`DB_TIMEOUT_MS` is 4s for data, `AUTH_TIMEOUT_MS` 3s for `auth.getUser()`. A page must
+never wait on the database longer than a reader would. Render degraded, stay up.
+
+### 2. Listing queries never select `article`, `plan` or `fact_check` whole
+Project the scalars out in SQL (`title:article->>title`,
+`short_answer:article->executive_summary->>short_answer`, …) and build cards with
+`toArticleCardFromProjection()`. Selecting `article` meant every homepage render
+pulled every article's full body out of Postgres.
+
+Consequence to know: `readingTime` is 0 from a projection, because it is computed
+from the full body. Cards hide "x min read" when it is 0. Restoring it needs a stored
+`reading_time` column — see the follow-up note in `scripts/add-performance-indexes.sql`.
+
+### 3. Listing and detail reads go through `unstable_cache`
+Homepage 60s, category 120s, article row 300s, sitemap 3600s. A traffic burst or a
+crawler sweep then collapses onto one database read per window.
+
+**Inside a cached function, throw on `error` — never return `null` or `[]`.**
+`unstable_cache` stores whatever you return, so a failed query returned as empty
+poisons the cache with a 404 (or an empty category) for the whole revalidate window.
+This was a real bug caught in testing.
+
+Pages also set `export const maxDuration = 20`, so nothing can pin a function for
+five minutes. API routes keep their own longer limits — the generation pipeline
+legitimately needs 300s.
+
+**A database stall must not look like deleted content.** `app/article/[slug]/page.tsx`
+returns `null` (→ 404) only when the article genuinely is not there; a timeout throws,
+which surfaces as 5xx — the transient signal crawlers retry instead of de-indexing.
+
+Verified against a genuinely dead database: homepage 200 in 4.1s, category 200 in
+4.7s, article 5xx in 9.7s, about 200 in 4.5s. Before: all hung until the 300s kill.
+
+---
+
 ## SEO Canonicalisation — `lib/seo-canonical.ts`
 
 One indexable URL per search intent. Three mechanisms, all reversible by editing that one file — **nothing here deletes an article row**:

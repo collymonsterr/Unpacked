@@ -1,11 +1,18 @@
 export const dynamic = 'force-dynamic'
 
+// Private articles check the session, so the route stays dynamic — but the row
+// and the internal-link list are cached, so repeat views and crawlers do not
+// each hit the database.
+export const maxDuration = 20
+
+import { unstable_cache } from 'next/cache'
 import { notFound, permanentRedirect } from 'next/navigation'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import type { ArticleRow, ProductCard } from '@/types/article'
 import type { LinkableArticle } from '@/lib/internal-links'
 import { generateArticleJsonLd, generateProductJsonLd, generateBreadcrumbJsonLd, generateClaimReviewJsonLd, generateVerdictReviewJsonLd } from '@/lib/structured-data'
 import { getCanonicalSlug, isIndexableSlug } from '@/lib/seo-canonical'
+import { DB_TIMEOUT_MS, dbSignal, withTimeout } from '@/lib/db-timeout'
 import ArticlePageClient from './ArticlePageClient'
 
 // Cache internal links data (1 hour) — avoids DB call on every page load
@@ -22,13 +29,14 @@ async function getLinkableArticles(excludeSlug: string): Promise<LinkableArticle
     const db = getSupabaseAdmin()
     const { data } = await db
       .from('articles')
-      .select('slug, article')
+      .select('slug, title:article->>title')
       .in('status', ['complete', 'verified'])
       .eq('visibility', 'published')
       .order('view_count', { ascending: false })
       .limit(50)
+      .abortSignal(dbSignal())
     cachedLinkArticles = (data ?? []).map(r => ({
-      title: (r.article as Record<string, unknown>)?.title as string ?? '',
+      title: (r as { title?: string }).title ?? '',
       slug: r.slug as string,
     })).filter(a => a.title && a.slug)
     cacheTimestamp = now
@@ -42,25 +50,63 @@ interface Props {
   params: Promise<{ slug: string }>
 }
 
-async function getArticle(slug: string): Promise<ArticleRow | null> {
-  // Support UUID or slug
-  const isUUID = /^[0-9a-f-]{36}$/i.test(slug)
-  const db = getSupabaseAdmin()
+/**
+ * Fetch the row. Cached per slug: article bodies change rarely, and a crawler
+ * re-reading the same URL should not re-read the database.
+ *
+ * Caching the ROW is safe — the visibility gate below still runs on every
+ * request, against the live session. Only the data read is shared.
+ */
+const getArticleCached = unstable_cache(
+  async (slug: string): Promise<ArticleRow | null> => {
+    const isUUID = /^[0-9a-f-]{36}$/i.test(slug)
+    const db = getSupabaseAdmin()
 
-  if (isUUID) {
-    const { data } = await db.from('articles').select('*').eq('id', slug).single()
+    // Throw on error rather than returning null: a failed/aborted query must
+    // never be cached as "this article does not exist".
+    if (isUUID) {
+      const { data, error } = await db
+        .from('articles').select('*').eq('id', slug)
+        .abortSignal(dbSignal())
+        .single()
+      if (error && error.code !== 'PGRST116') throw error
+      return (data as ArticleRow) ?? null
+    }
+
+    // Exact slug match — .limit(1) handles potential duplicate slugs gracefully
+    const { data, error } = await db
+      .from('articles')
+      .select('*')
+      .eq('slug', slug)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .abortSignal(dbSignal())
+      .maybeSingle()
+    if (error) throw error
     return (data as ArticleRow) ?? null
-  }
+  },
+  ['article-row-v1'],
+  { revalidate: 300, tags: ['articles'] }
+)
 
-  // Exact slug match — use .limit(1) to handle potential duplicate slugs gracefully
-  const { data } = await db
-    .from('articles')
-    .select('*')
-    .eq('slug', slug)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  return (data as ArticleRow) ?? null
+/**
+ * A database stall must not look like a deleted article. `null` means "no such
+ * article" (404); a timeout throws, which surfaces as a 5xx — the transient
+ * signal crawlers retry instead of de-indexing the URL.
+ */
+const LOOKUP_TIMED_OUT = Symbol('lookup-timed-out')
+
+async function getArticle(slug: string): Promise<ArticleRow | null> {
+  const result = await withTimeout<ArticleRow | null | typeof LOOKUP_TIMED_OUT>(
+    getArticleCached(slug),
+    DB_TIMEOUT_MS,
+    `article ${slug}`,
+    LOOKUP_TIMED_OUT
+  )
+  if (result === LOOKUP_TIMED_OUT) {
+    throw new Error(`Article lookup timed out for "${slug}" — database unavailable`)
+  }
+  return result
 }
 
 export default async function ArticlePage({ params }: Props) {

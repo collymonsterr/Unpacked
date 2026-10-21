@@ -179,7 +179,7 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
                     {heroAuthorName}
                   </p>
                   <p className="text-[10px] leading-tight" style={{ color: 'var(--text-secondary)' }}>
-                    {heroDate} · {heroArticle.readingTime} min read
+                    {heroDate}{heroArticle.readingTime > 0 ? ` · ${heroArticle.readingTime} min read` : ''}
                   </p>
                 </div>
               </div>

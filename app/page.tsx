@@ -3,12 +3,21 @@ import PendingArticleRecovery from '@/components/PendingArticleRecovery'
 import Footer from '@/components/ui/Footer'
 import SearchHomepage from '@/components/homepage/SearchHomepage'
 import MarketingHomepage from '@/components/homepage/MarketingHomepage'
-import { toArticleCard, type ArticleCardData, type ArticleCardSource } from '@/lib/article-card'
+import { unstable_cache } from 'next/cache'
+import { toArticleCardFromProjection, type ArticleCardData, type ArticleCardProjection } from '@/lib/article-card'
 import { isHiddenFromListings } from '@/lib/seo-canonical'
+import { AUTH_TIMEOUT_MS, DB_TIMEOUT_MS, dbSignal, withTimeout } from '@/lib/db-timeout'
 
 import type { Metadata } from 'next'
 
-export const dynamic = 'force-dynamic'
+// The homepage reads cookies to choose the signed-in vs signed-out variant, so
+// the route itself cannot be statically rendered. Caching the *query* gets the
+// same relief: the database is read at most once per revalidate window per
+// region instead of on every visit.
+export const revalidate = 60
+
+// Never hold a function for the platform default (300s) waiting on a database.
+export const maxDuration = 20
 
 export const metadata: Metadata = {
   alternates: {
@@ -16,34 +25,54 @@ export const metadata: Metadata = {
   },
 }
 
-async function getHomepageData() {
-  try {
+type RawRow = ArticleCardProjection & { root_article_id?: string | null }
+
+/**
+ * Read the listing rows. Not a single column of article body text is fetched —
+ * only the dozen scalars the cards render, pulled out of the JSONB by Postgres.
+ *
+ * Wrapped in `unstable_cache` so a burst of traffic (or a crawler walking the
+ * sitemap) collapses onto one database read per revalidate window.
+ */
+const getHomepageRows = unstable_cache(
+  async (): Promise<RawRow[]> => {
     const { getSupabaseAdmin } = await import('@/lib/supabase')
     const db = getSupabaseAdmin()
 
-    // Single query — get all visible articles with all flags.
-    //
-    // `plan` and `fact_check` are projected down to the one scalar each that the
-    // cards actually need (category, and "did a fact-check run"), and
-    // `suggestion_chips` is not read on the homepage at all. `article` is still
-    // fetched whole because reading time needs the section text — but it never
-    // leaves the server: everything below runs on the projected card shape.
-    const { data } = await db
+    const query = db
       .from('articles')
-      .select('id, slug, query, article, root_article_id, is_featured, is_trending, trending_set_at, view_count, user_name, user_avatar, verified_at, created_at, card_summary, category, plan_category:plan->>category, fact_check_probe:fact_check->>checks_performed')
+      .select(
+        'id, slug, query, root_article_id, is_featured, is_trending, trending_set_at, ' +
+        'view_count, user_name, user_avatar, verified_at, created_at, card_summary, category, ' +
+        'title:article->>title, article_type:article->>article_type, thumbnail_url:article->>thumbnail_url, ' +
+        'short_answer:article->executive_summary->>short_answer, ' +
+        'one_liner:article->quick_verdict->>one_liner, ' +
+        'recommendation:article->quick_verdict->>recommendation, ' +
+        'first_takeaway:article->executive_summary->key_takeaways->>0, ' +
+        'plan_title:plan->>title, plan_category:plan->>category, ' +
+        'fact_check_probe:fact_check->>checks_performed'
+      )
       .in('status', ['complete', 'verified'])
       .eq('hidden_from_homepage', false)
       .eq('visibility', 'published')
       .order('created_at', { ascending: false })
       .limit(200)
+      .abortSignal(dbSignal())
 
-    type RawRow = ArticleCardSource & {
-      root_article_id?: string | null
-      plan_category?: string | null
-      fact_check_probe?: string | null
-    }
+    const { data, error } = await query
+    if (error) throw error
+    return (data ?? []) as unknown as RawRow[]
+  },
+  ['homepage-articles-v2'],
+  { revalidate: 60, tags: ['homepage-articles'] }
+)
 
-    const allArticles = ((data ?? []) as unknown as RawRow[])
+async function getHomepageData() {
+  try {
+    // An empty homepage is a bad page; a hanging homepage is a dead site.
+    const rows = await withTimeout(getHomepageRows(), DB_TIMEOUT_MS, 'homepage articles', [] as RawRow[])
+
+    const allArticles = rows
       // Pipeline test debris and 301'd duplicate slugs never appear in listings.
       .filter(r => !isHiddenFromListings(r.slug))
 
@@ -59,13 +88,8 @@ async function getHomepageData() {
 
     // Project to the lightweight card shape before anything reaches a client
     // component — this is what keeps the initial HTML small.
-    const deduplicated: ArticleCardData[] = Array.from(latestByChain.values()).map(r =>
-      toArticleCard({
-        ...r,
-        plan: r.plan_category ? { category: r.plan_category } : null,
-        fact_check: r.fact_check_probe ?? null,
-      })
-    )
+    const deduplicated: ArticleCardData[] = Array.from(latestByChain.values())
+      .map(toArticleCardFromProjection)
 
     // Featured pool — full pool passed to client for random rotation
     const featuredPool = deduplicated
@@ -110,8 +134,15 @@ async function isAuthenticatedVisitor(): Promise<boolean> {
   try {
     const { createServerSupabase } = await import('@/lib/supabase')
     const supabase = await createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
-    return !!user
+    // Supabase Auth hangs when the database is unhealthy. This only picks which
+    // homepage variant renders, so falling back to "signed out" is harmless.
+    const result = await withTimeout(
+      supabase.auth.getUser(),
+      AUTH_TIMEOUT_MS,
+      'homepage auth check',
+      { data: { user: null } } as Awaited<ReturnType<typeof supabase.auth.getUser>>
+    )
+    return !!result.data.user
   } catch {
     return false
   }
