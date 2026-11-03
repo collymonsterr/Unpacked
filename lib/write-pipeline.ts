@@ -431,6 +431,21 @@ export async function runWritePipeline({
     const fcMs = Date.now() - fcStart
     timings.factcheck_ms = fcMs
 
+    // An article is only "verified" if claims were actually checked.
+    //
+    // When Gemini is unavailable (depleted credits returned 402 on every call
+    // from 28 Oct 2026), stage 1 returns checks_performed: 0 and no claims —
+    // but this still stamped verified_at and status 'verified', so the green
+    // Verified badge appeared on eight articles nothing had checked. A trust
+    // badge must never outlive the check behind it.
+    const actuallyChecked = (factCheckResult.checks_performed ?? 0) > 0
+    if (!actuallyChecked) {
+      console.error(
+        `[pipeline] Fact-check performed 0 checks for ${articleId} — NOT marking verified. ` +
+        `Usually means the Gemini account is unavailable (402/429); see lib/fact-check.ts stage 1.`
+      )
+    }
+
     // Update article + timings with fact-check data + audit trail
     await db
       .from('articles')
@@ -438,8 +453,9 @@ export async function runWritePipeline({
         article: finalArticle,
         fact_check: factCheckResult,
         fact_check_audit: factCheckAudit,
-        verified_at: new Date().toISOString(),
-        status: 'verified',
+        ...(actuallyChecked
+          ? { verified_at: new Date().toISOString(), status: 'verified' }
+          : { status: 'complete' }),
         generation_options: {
           ...(generationOptions ?? {}),
           timings,
