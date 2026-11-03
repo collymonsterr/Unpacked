@@ -5,6 +5,7 @@ import Image from 'next/image'
 import CreatorsCTA from './CreatorsCTA'
 import type { Metadata } from 'next'
 import type { ArticleRow } from '@/types/article'
+import { DB_TIMEOUT_MS, dbSignal, withTimeout } from '@/lib/db-timeout'
 
 export const metadata: Metadata = {
   title: 'For Creators — Unpacked',
@@ -23,13 +24,19 @@ export const metadata: Metadata = {
 async function getCreatorArticles(): Promise<ArticleRow[]> {
   try {
     const { getSupabaseAdmin } = await import('@/lib/supabase')
-    const { data } = await getSupabaseAdmin()
+    // This page is statically generated, so an un-timed-out query here does not
+    // just hang a reader — it hangs the BUILD. On 3 Nov 2026 it failed three
+    // 60s attempts against an unresponsive database and took the whole
+    // deployment down with it.
+    const query = getSupabaseAdmin()
       .from('articles')
       .select('id, slug, article, view_count, status, verified_at, user_name, user_avatar, category')
       .in('status', ['complete', 'verified'])
       .eq('visibility', 'published')
       .order('view_count', { ascending: false })
       .limit(6)
+      .abortSignal(dbSignal())
+    const { data } = await withTimeout(query, DB_TIMEOUT_MS, 'creators page', { data: [] } as never)
     return (data ?? []) as ArticleRow[]
   } catch {
     return []

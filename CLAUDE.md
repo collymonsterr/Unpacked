@@ -291,6 +291,13 @@ The page-level rules above only covered server components. These routes are hit 
 
 A slow database turned the first two into multi-minute hanging functions (2.9 minutes observed). Same rule as pages: **cache the query, bound the wait, degrade instead of hanging.**
 
+### A hanging query can fail the BUILD, not just a request
+`/creators` and `/sitemap.xml` are generated at build time. With the database unresponsive (3 Nov 2026) each took three 60-second attempts and then failed the whole deployment — so a database problem became an inability to ship fixes for it.
+
+Both are now wrapped in `withTimeout`. Note `abortSignal(dbSignal())` **was not sufficient on its own** for the sitemap: it did not release the call, and only the `withTimeout` race did. Treat `abortSignal` as the polite cancel and `withTimeout` as the guarantee — statically generated pages need both.
+
+**Verified: a full `npm run build` completes against a completely unresponsive database.** Keep it that way.
+
 ### SERVERLESS: In-memory state won't persist across invocations
 - Gemini concurrency limiter in `lib/gemini-writer.ts` — in-memory
 - Duplicate call guard in `lib/api-usage.ts` — in-memory (5-min window)
