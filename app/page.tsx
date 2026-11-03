@@ -6,6 +6,7 @@ import MarketingHomepage from '@/components/homepage/MarketingHomepage'
 import { unstable_cache } from 'next/cache'
 import { toArticleCardFromProjection, type ArticleCardData, type ArticleCardProjection } from '@/lib/article-card'
 import { isHiddenFromListings } from '@/lib/seo-canonical'
+import { featuredPool, selectFeatured } from '@/lib/featured-rotation'
 import { AUTH_TIMEOUT_MS, DB_TIMEOUT_MS, dbSignal, withTimeout } from '@/lib/db-timeout'
 
 import type { Metadata } from 'next'
@@ -91,10 +92,9 @@ async function getHomepageData() {
     const deduplicated: ArticleCardData[] = Array.from(latestByChain.values())
       .map(toArticleCardFromProjection)
 
-    // Featured pool — full pool passed to client for random rotation
-    const featuredPool = deduplicated
-      .filter(a => a.isFeatured)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    // Featured — picked here, from the clock, so the block changes on its own
+    // every few hours instead of waiting on an admin toggle.
+    const featured = selectFeatured(featuredPool(deduplicated))
 
     // Trending pool — full pool passed to client for random rotation
     const trendingPool = deduplicated
@@ -110,19 +110,24 @@ async function getHomepageData() {
       .sort((a, b) => b.viewCount - a.viewCount)
       .slice(0, 4)
 
-    // IDs in featured and trending pools — used for exclusions
-    const featuredIds = new Set(featuredPool.map(a => a.id))
     const trendingIds = new Set(trendingPool.map(a => a.id))
-    const trendingIdList = trendingPool.map(a => a.id)
 
-    // Recent Articles — newest first, excluding featured and trending
+    // Recent Articles — newest first, minus whatever is on show above it. Only
+    // the five articles Featured is *currently* showing are excluded, not the
+    // whole eligible pool: that pool now holds every recent article, and hiding
+    // all of it would gut this grid.
     const all = [...deduplicated]
-      .filter(a => !featuredIds.has(a.id) && !trendingIds.has(a.id))
+      .filter(a => !featured.shownIds.has(a.id) && !trendingIds.has(a.id))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
-    return { featuredPool, trendingPool, trendingIdList, popular, all }
+    return { featured, trendingPool, popular, all }
   } catch {
-    return { featuredPool: [], trendingPool: [], trendingIdList: [], popular: [], all: [] }
+    return {
+      featured: { hero: null, small: [], shownIds: new Set<string>() },
+      trendingPool: [],
+      popular: [],
+      all: [],
+    }
   }
 }
 
@@ -153,7 +158,7 @@ export default async function HomePage() {
     getHomepageData(),
     isAuthenticatedVisitor(),
   ])
-  const { featuredPool, trendingPool, trendingIdList, popular, all } = data
+  const { featured, trendingPool, popular, all } = data
 
   return (
     <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
@@ -163,18 +168,16 @@ export default async function HomePage() {
 
       {isAuthed ? (
         <SearchHomepage
-          featuredPool={featuredPool}
+          featured={featured}
           trendingPool={trendingPool}
-          trendingIdList={trendingIdList}
           popular={popular}
           all={all}
         />
       ) : (
         <MarketingHomepage
-          featuredPool={featuredPool}
-          trendingIdList={trendingIdList}
+          featured={featured}
           all={all}
-          exampleSlug={featuredPool[0]?.slug}
+          exampleSlug={featured.hero?.slug}
         />
       )}
 

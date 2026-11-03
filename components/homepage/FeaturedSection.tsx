@@ -1,67 +1,19 @@
-'use client'
-
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { typeLabel, type ArticleCardData } from '@/lib/article-card'
 import SectionHeader from './SectionHeader'
 
 interface Props {
-  pool: ArticleCardData[]
-  fallbackArticles?: ArticleCardData[]
+  /** Picked on the server by `selectFeatured()` — rotates on a clock. */
+  hero: ArticleCardData | null
+  small: ArticleCardData[]
 }
 
-export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) {
-  const [heroArticle, setHeroArticle] = useState<ArticleCardData | null>(null)
-  const [smallArticles, setSmallArticles] = useState<ArticleCardData[]>([])
+export default function FeaturedSection({ hero, small }: Props) {
+  if (!hero) return null
 
-  useEffect(() => {
-    if (pool.length === 0) return
-
-    const storedHeroId = localStorage.getItem('featuredHeroId')
-    const hasVisited = localStorage.getItem('hasVisitedFeatured')
-
-    let hero: ArticleCardData
-
-    if (!hasVisited || !storedHeroId) {
-      // First visit: random hero from pool
-      hero = pool[Math.floor(Math.random() * pool.length)]
-      localStorage.setItem('featuredHeroId', hero.id)
-      localStorage.setItem('hasVisitedFeatured', 'true')
-    } else {
-      // Returning visitor: random, excluding previous hero
-      const candidates = pool.filter(a => a.id !== storedHeroId)
-      hero = candidates.length > 0
-        ? candidates[Math.floor(Math.random() * candidates.length)]
-        : pool[0]
-      localStorage.setItem('featuredHeroId', hero.id)
-    }
-
-    // Small cards: 4 most recent from remaining pool, then fill from fallback if needed
-    const remaining = pool
-      .filter(a => a.id !== hero.id)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-
-    let cards = remaining.slice(0, 4)
-
-    // Fill remaining slots from fallback articles (excluding trending)
-    if (cards.length < 4 && fallbackArticles.length > 0) {
-      const poolIds = new Set(pool.map(a => a.id))
-      const fillers = fallbackArticles.filter(a => !poolIds.has(a.id))
-      cards = [...cards, ...fillers].slice(0, 4)
-    }
-
-    setHeroArticle(hero)
-    setSmallArticles(cards)
-  }, [pool, fallbackArticles])
-
-  if (!heroArticle) {
-    // SSR/loading: show a placeholder to avoid layout shift
-    return <div style={{ height: '540px' }} />
-  }
-
-  const heroDate = new Date(heroArticle.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
-  const heroAuthorName = heroArticle.userName ?? 'Unpacked'
+  const heroDate = new Date(hero.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
+  const heroAuthorName = hero.userName ?? 'Unpacked'
   const heroAuthorInitial = heroAuthorName.charAt(0).toUpperCase()
 
   return (
@@ -77,7 +29,7 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
       >
         {/* Hero card */}
         <Link
-          href={`/article/${heroArticle.slug}`}
+          href={`/article/${hero.slug}`}
           className="rounded-2xl overflow-hidden no-underline flex flex-col"
           style={{
             backgroundColor: 'var(--card)',
@@ -86,10 +38,10 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
           }}
         >
           <div className="relative" style={{ height: '220px' }}>
-            {heroArticle.imageUrl ? (
+            {hero.imageUrl ? (
               <Image
-                src={heroArticle.imageUrl}
-                alt={heroArticle.title}
+                src={hero.imageUrl}
+                alt={hero.title}
                 fill
                 className="object-cover"
                 unoptimized
@@ -101,7 +53,7 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
           <div className="p-4 flex-1 flex flex-col gap-0">
             {/* 1. Category badge */}
             <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--accent)' }}>
-              {typeLabel(heroArticle.articleType)}
+              {typeLabel(hero.articleType)}
             </p>
 
             {/* 2. Title + verified shield */}
@@ -110,9 +62,9 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
                 className="text-lg font-bold leading-snug line-clamp-2"
                 style={{ fontFamily: 'var(--font-sora)', color: 'var(--text-primary)' }}
               >
-                {heroArticle.title}
+                {hero.title}
               </h3>
-              {heroArticle.hasFactCheck && (
+              {hero.hasFactCheck && (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-1">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   <polyline points="9 12 11 14 15 10" />
@@ -121,14 +73,14 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
             </div>
 
             {/* 3. Description */}
-            {heroArticle.description && (
+            {hero.description && (
               <p className="text-xs leading-relaxed mb-2 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
-                {heroArticle.description}
+                {hero.description}
               </p>
             )}
 
             {/* 4. Verdict box */}
-            {heroArticle.verdict && (
+            {hero.verdict && (
               <div
                 className="rounded-lg px-3 py-2 mb-2"
                 style={{ backgroundColor: '#f0efed' }}
@@ -147,7 +99,7 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
                   className="text-xs leading-relaxed line-clamp-2"
                   style={{ color: 'var(--text-primary)', fontStyle: 'italic' }}
                 >
-                  {heroArticle.verdict}
+                  {hero.verdict}
                 </p>
               </div>
             )}
@@ -159,9 +111,9 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
             >
               {/* Left: author + date */}
               <div className="flex items-center gap-2">
-                {heroArticle.userAvatar ? (
+                {hero.userAvatar ? (
                   <img
-                    src={heroArticle.userAvatar}
+                    src={hero.userAvatar}
                     alt=""
                     className="w-6 h-6 rounded-full"
                     referrerPolicy="no-referrer"
@@ -179,17 +131,17 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
                     {heroAuthorName}
                   </p>
                   <p className="text-[10px] leading-tight" style={{ color: 'var(--text-secondary)' }}>
-                    {heroDate}{heroArticle.readingTime > 0 ? ` · ${heroArticle.readingTime} min read` : ''}
+                    {heroDate}{hero.readingTime > 0 ? ` · ${hero.readingTime} min read` : ''}
                   </p>
                 </div>
               </div>
 
               {/* Right: views + fact-checked */}
               <div className="flex items-center gap-3 text-[10px]" style={{ color: 'var(--text-secondary)' }}>
-                {heroArticle.viewCount > 0 && (
-                  <span>{heroArticle.viewCount.toLocaleString()} views</span>
+                {hero.viewCount > 0 && (
+                  <span>{hero.viewCount.toLocaleString()} views</span>
                 )}
-                {heroArticle.verifiedAt && (
+                {hero.verifiedAt && (
                   <span className="flex items-center gap-0.5" style={{ color: '#059669' }}>
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <path d="M20 6L9 17l-5-5" />
@@ -210,7 +162,7 @@ export default function FeaturedSection({ pool, fallbackArticles = [] }: Props) 
             gridTemplateRows: 'repeat(2, 1fr)',
           }}
         >
-          {smallArticles.map((row) => {
+          {small.map((row) => {
             const img = row.imageUrl
             return (
               <Link

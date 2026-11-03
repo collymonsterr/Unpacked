@@ -339,8 +339,6 @@ Both are now wrapped in `withTimeout`. Note `abortSignal(dbSignal())` **was not 
 ## localStorage Keys
 
 - `pendingArticleId` — article being generated; recovery on refresh/tab switch
-- `hasVisitedFeatured` — hero card rotation (first visit vs return)
-- `featuredHeroId` — last featured article shown as hero
 - `recentArticles` — up to 10 recently visited articles
 - `unpacked_votes_[articleId]` — vote state per article
 - `unpacked_session_id` — anonymous session for voting
@@ -418,6 +416,7 @@ Both are now wrapped in `withTimeout`. Note `abortSignal(dbSignal())` **was not 
 
 ### Presentation
 - `lib/article-card.ts` — `ArticleCardData` + `toArticleCard()` + shared `TYPE_LABELS`/`typeLabel()`
+- `lib/featured-rotation.ts` — automatic Featured selection: eligible pool + 6-hourly rotation
 - `lib/seo-canonical.ts` — slug redirects, noindex set, debris patterns
 
 ### Other
@@ -440,7 +439,7 @@ Shared furniture, in order:
 2. **Navbar** (no search on homepage) — menu order: About, Pricing, Creators, Explore
 3. **HomepageHero** — headline: "Ask Anything. Get the Best Answer on the Internet." (amber accent), subline about 3-minute articles, search form, example chips
 4. **TrustStrip** — 3-column layout: "Real opinions. Clear verdict." (Reddit/X/Expert reviews) | "Triple fact-checked" (Gemini/Claude/Grok) | "Live data. Not training data." (Polymarket/Yahoo Finance/Google Trends)
-5. **Featured** — 1 hero card left (2fr) + 2×2 small cards right (3fr), 540px height, pool-based rotation
+5. **Featured** — 1 hero card left (2fr) + 2×2 small cards right (3fr), 540px height. The five articles are picked **on the server from the clock** (`lib/featured-rotation.ts`) and change every 6 hours with no admin action — see § Featured Rotation
 6. **Trending Today** — exactly 3 dark-style cards (manual admin toggle, pool-based)
 7. **Most Popular** — top 4 by `view_count` with rank badges
 8. **RecentArticlesGrid** — 3 per row with category filter pills
@@ -505,6 +504,42 @@ Verified against a genuinely dead database: homepage 200 in 4.1s, category 200 i
 4.7s, article 5xx in 9.7s, about 200 in 4.5s. Before: all hung until the 300s kill.
 
 ---
+
+## Featured Rotation — `lib/featured-rotation.ts`
+
+Featured used to be a manual `is_featured` toggle plus a client-side random hero.
+The four small cards were always the four newest picks, so the block looked
+identical for days at a time and only changed if someone opened the admin
+dashboard. Readers saw the same five articles visit after visit.
+
+The selection is now a pure function of `(pool, now)`:
+
+- **Eligible pool** = every article with `is_featured` **plus** everything
+  published in the last 14 days (`FEATURED_FRESH_WINDOW_MS`). New articles reach
+  the homepage without anyone toggling anything; hand-picks stay in forever.
+- **Rotation** — a 5-article window walks through one seeded shuffle of that
+  pool, advancing every `FEATURED_ROTATION_MS` (6 hours, four changes a day).
+  Walking a window rather than reshuffling each time means **consecutive windows
+  share no articles at all**, and a full sweep covers the pool before the order
+  is drawn again.
+
+Three properties to preserve if you touch this:
+
+1. **Deterministic.** Same `(pool, now)` → same five articles, in every region
+   and on every render. The homepage is server-rendered behind a 60s cache; a
+   non-deterministic pick would reshuffle under readers and give crawlers
+   different HTML on every hit.
+2. **Server-side.** `FeaturedSection` is a plain server component that renders
+   what it is handed — no `'use client'`, no hooks, no `localStorage`. The links
+   are in the initial HTML, so crawlers see a rotating set of internal links and
+   there is no empty 540px placeholder before hydration.
+3. **Recent Articles excludes only `shownIds`, never the whole pool.** The pool
+   now contains every recent article; filtering all of it out of the Recent grid
+   would empty that grid.
+
+Rotation is time-derived, not stored, so there is nothing to migrate and no
+write load — it costs zero database queries. `selectFeatured([])` returns
+`{ hero: null }` and the section renders nothing.
 
 ## SEO Canonicalisation — `lib/seo-canonical.ts`
 

@@ -10,10 +10,10 @@ import FeaturedSection from '@/components/homepage/FeaturedSection'
 import ExploreByTopic from '@/components/homepage/ExploreByTopic'
 import RecentArticlesGrid from '@/components/RecentArticlesGrid'
 import type { ArticleCardData } from '@/lib/article-card'
+import type { FeaturedSelection } from '@/lib/featured-rotation'
 
 interface Props {
-  featuredPool: ArticleCardData[]
-  trendingIdList: string[]
+  featured: FeaturedSelection
   all: ArticleCardData[]
   exampleSlug?: string
 }
@@ -30,7 +30,7 @@ interface Props {
  * Trending and Popular sections are intentionally omitted from the marketing
  * version — they're activity signals primarily useful to repeat visitors.
  */
-export default function MarketingHomepage({ featuredPool, trendingIdList, all, exampleSlug }: Props) {
+export default function MarketingHomepage({ featured, all, exampleSlug }: Props) {
   return (
     <>
       {/* Marketing hero with rotating preview + 2 CTAs */}
@@ -87,12 +87,9 @@ export default function MarketingHomepage({ featuredPool, trendingIdList, all, e
       </section>
 
       {/* Featured articles — proof the product works */}
-      {featuredPool.length > 0 && (
+      {featured.hero && (
         <>
-          <FeaturedSection
-            pool={featuredPool}
-            fallbackArticles={all.filter(a => !a.isFeatured && !trendingIdList.includes(a.id)).slice(0, 10)}
-          />
+          <FeaturedSection hero={featured.hero} small={featured.small} />
           <div className="max-w-6xl mx-auto px-4 md:px-6 my-14" style={{ borderTop: '1px solid #e2e0d8' }} />
         </>
       )}

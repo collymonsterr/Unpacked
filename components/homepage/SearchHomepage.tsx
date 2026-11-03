@@ -6,11 +6,11 @@ import RecentArticlesGrid from '@/components/RecentArticlesGrid'
 import ExploreByTopic from '@/components/homepage/ExploreByTopic'
 import TrustStrip from '@/components/TrustStrip'
 import type { ArticleCardData } from '@/lib/article-card'
+import type { FeaturedSelection } from '@/lib/featured-rotation'
 
 interface Props {
-  featuredPool: ArticleCardData[]
+  featured: FeaturedSelection
   trendingPool: ArticleCardData[]
-  trendingIdList: string[]
   popular: ArticleCardData[]
   all: ArticleCardData[]
 }
@@ -22,7 +22,7 @@ interface Props {
  * who already know the product land directly on the search hero rather
  * than scrolling past marketing content.
  */
-export default function SearchHomepage({ featuredPool, trendingPool, trendingIdList, popular, all }: Props) {
+export default function SearchHomepage({ featured, trendingPool, popular, all }: Props) {
   return (
     <>
       {/* Hero + feature cards (auth-conditional internally) */}
@@ -34,12 +34,9 @@ export default function SearchHomepage({ featuredPool, trendingPool, trendingIdL
       </div>
 
       {/* Featured */}
-      {featuredPool.length > 0 && (
+      {featured.hero && (
         <>
-          <FeaturedSection
-            pool={featuredPool}
-            fallbackArticles={all.filter(a => !a.isFeatured && !trendingIdList.includes(a.id)).slice(0, 10)}
-          />
+          <FeaturedSection hero={featured.hero} small={featured.small} />
           <div className="max-w-6xl mx-auto px-4 md:px-6 my-14" style={{ borderTop: '1px solid #e2e0d8' }} />
         </>
       )}

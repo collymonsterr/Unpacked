@@ -280,7 +280,7 @@ Bespoke interactive tools generated per article — decision trees, scenario sim
 **Two homepages, chosen server-side.** `app/page.tsx` detects sign-in state via `isAuthenticatedVisitor()` and renders `MarketingHomepage` (signed out — sells the product) or `SearchHomepage` (signed in — puts search first). Both draw from the same single query.
 
 1. PendingArticleRecovery → Navbar (no search) → HomepageHero → TrustStrip
-2. Featured: 1 hero (2fr) + 2×2 small cards (3fr), 540px, pool-based rotation
+2. Featured: 1 hero (2fr) + 2×2 small cards (3fr), 540px — **rotates automatically every 6 hours** (see below)
 3. Trending Today: 3 dark-style cards, manual admin toggle, pool-based
 4. Most Popular: top 4 by view_count with rank badges
 5. Explore by Topic: 12 category chips with warm grey fill (`#EDECEA`), 8px radius (not fully rounded), amber hover (`#BA7517`), links to `/category/[slug]`
@@ -288,6 +288,37 @@ Bespoke interactive tools generated per article — decision trees, scenario sim
 7. Footer
 
 Deduplicates article chains via `root_article_id`.
+
+### Featured rotation (built November 2026)
+
+**The Featured block now changes on its own.** It was a manual `is_featured` toggle
+plus a client-side random hero, and the four small cards were always the four
+newest picks — so the block looked identical for days and only moved if someone
+opened the admin dashboard.
+
+`lib/featured-rotation.ts` derives the five articles from the clock instead:
+
+- **Eligible pool** = hand-picked (`is_featured`) **+ everything published in the
+  last 14 days**, so new articles reach the homepage with no admin action.
+- **Rotates every 6 hours** — four different blocks a day. A 5-article window
+  walks through a seeded shuffle, so consecutive windows share *no* articles and
+  a full sweep covers the pool before the order is redrawn.
+- Verified against production data: 29 eligible articles, 0 repeats between
+  consecutive windows, whole pool seen inside ~1.5 days.
+
+Side effects of the change:
+- `FeaturedSection` is now a **server component** — no `'use client'`, no hooks,
+  no `localStorage`. Links are in the initial HTML (better for crawlers, and the
+  540px placeholder flash before hydration is gone).
+- `hasVisitedFeatured` and `featuredHeroId` localStorage keys are **retired**.
+- Recent Articles now excludes only the five articles *currently shown*, not the
+  whole featured pool — the pool holds every recent article, so excluding all of
+  it would have emptied that grid. 18 formerly-featured articles that were
+  invisible in Recent now appear there when they are not on show.
+- Zero extra database cost: the rotation is computed, not stored.
+
+Trending Today still uses the old manual-toggle + client-random approach and has
+the same staleness problem (16 in its pool).
 
 ### Hero (updated April 2026)
 - **Logged-out headline:** "Ask Anything. Get the / Best Answer on the Internet." — second line in amber `#BA7517`

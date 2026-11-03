@@ -23,6 +23,9 @@ Vercel is serverless — in-memory rate limiting resets between function invocat
 
 ---
 
+**Decision: Featured is selected from the clock, not stored or hand-toggled**
+Featured was a manual `is_featured` flag plus a client-side random hero, and the four small cards were always the four newest picks — so the homepage showed the same five articles for days unless someone opened admin. Rather than add a cron job, a `featured_at` column or a shuffle on every render, the selection is now a pure function of `(pool, now)`: a 5-article window walks a seeded shuffle of the eligible pool, advancing every 6 hours (`lib/featured-rotation.ts`). Three reasons for deriving it instead of storing it: (1) **no write load** — the database was already shedding Disk IO budget, and a rotation that writes rows makes that worse for nothing; (2) **deterministic** — the homepage is server-rendered behind a 60s cache and crawled, so every visitor in a window must get identical HTML, which a per-render random pick cannot give; (3) **nothing to migrate or maintain** — no column, no cron, no admin step that can be forgotten. The eligible pool is hand-picks plus the last 14 days, so new articles surface automatically while editorial picks are never lost. Do not replace this with a stored `featured_at` or a cron that flips flags.
+
 ## Product
 
 **Decision: Articles pick a winner — no hedging**
