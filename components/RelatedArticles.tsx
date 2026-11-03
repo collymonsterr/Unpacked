@@ -3,24 +3,12 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import type { ArticleRow, ProductCard } from '@/types/article'
+import type { ArticleCardData } from '@/lib/article-card'
 
-function getCardImage(row: ArticleRow): string | null {
-  if (row.article?.thumbnail_url) return row.article.thumbnail_url
-  const sections = row.article?.sections ?? []
-  const firstCard = sections.find((s): s is ProductCard => s.type === 'product_card')
-  return firstCard?.image_urls?.[0] ?? firstCard?.image_url ?? null
-}
-
-function getReadingTime(row: ArticleRow): number {
-  if (!row.article) return 0
-  let words = 0
-  for (const section of row.article.sections) {
-    const json = JSON.stringify(section)
-    words += json.split(/\s+/).length
-  }
-  return Math.max(2, Math.round(words / 200))
-}
+// Image, title and type now arrive resolved from /api/articles/recent, which
+// no longer ships article bodies to the browser. Reading time needs the full
+// body to compute, so it is 0 here and the label is hidden — same trade as the
+// homepage cards. See CLAUDE.md "Writes to `articles` are expensive".
 
 interface Props {
   articleId: string
@@ -28,24 +16,22 @@ interface Props {
 }
 
 export default function RelatedArticles({ articleId, articleType }: Props) {
-  const [articles, setArticles] = useState<ArticleRow[]>([])
+  const [articles, setArticles] = useState<ArticleCardData[]>([])
 
   useEffect(() => {
     fetch('/api/articles/recent')
       .then(res => res.json())
-      .then((all: ArticleRow[]) => {
+      .then((all: ArticleCardData[]) => {
         // Exclude current article
         const others = all.filter(a => a.id !== articleId)
 
         // Match by type first
-        const sameType = others.filter(
-          a => (a.article?.article_type ?? a.plan?.article_type) === articleType
-        )
+        const sameType = others.filter(a => a.articleType === articleType)
 
         // Fill remaining slots with popular articles
         const remaining = others
           .filter(a => !sameType.includes(a))
-          .sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0))
+          .sort((a, b) => b.viewCount - a.viewCount)
 
         const result = [...sameType.slice(0, 4)]
         if (result.length < 4) {
@@ -69,9 +55,9 @@ export default function RelatedArticles({ articleId, articleType }: Props) {
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {articles.map(row => {
-          const imageUrl = getCardImage(row)
-          const title = row.article?.title ?? row.plan?.title ?? row.query
-          const readTime = getReadingTime(row)
+          const imageUrl = row.imageUrl
+          const title = row.title
+          const readTime = row.readingTime
 
           return (
             <Link

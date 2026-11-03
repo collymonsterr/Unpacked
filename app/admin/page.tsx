@@ -23,7 +23,7 @@ export default function AdminDashboard() {
 
   const fetchArticles = useCallback(async () => {
     try {
-      const res = await fetch('/api/articles/recent')
+      const res = await fetch('/api/articles/recent?full=1')
       if (!res.ok) throw new Error('Failed to fetch')
       const data = await res.json()
       const sorted = [...data].sort((a: ArticleRow, b: ArticleRow) =>

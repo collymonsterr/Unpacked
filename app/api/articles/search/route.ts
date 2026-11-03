@@ -1,6 +1,11 @@
 import { getSupabaseAdmin } from '@/lib/supabase'
+import { dbSignal } from '@/lib/db-timeout'
 
 export const dynamic = 'force-dynamic'
+
+// Navbar autocomplete — fires as the reader types, so it must never hold a
+// function open waiting on a slow database.
+export const maxDuration = 10
 
 /**
  * Navbar autocomplete search.
@@ -43,6 +48,7 @@ export async function GET(request: Request) {
       .eq('visibility', 'published')
       .order('view_count', { ascending: false })
       .limit(6)
+      .abortSignal(dbSignal())
 
     // Secondary: query text + slug matches
     const querySlugPromise = db
@@ -53,6 +59,7 @@ export async function GET(request: Request) {
       .eq('visibility', 'published')
       .order('view_count', { ascending: false })
       .limit(6)
+      .abortSignal(dbSignal())
 
     // Tertiary: card_summary + category matches
     const tertiaryPromise = db
@@ -63,6 +70,7 @@ export async function GET(request: Request) {
       .eq('visibility', 'published')
       .order('view_count', { ascending: false })
       .limit(6)
+      .abortSignal(dbSignal())
 
     const [titleResult, querySlugResult, tertiaryResult] = await Promise.all([
       titlePromise,

@@ -280,6 +280,17 @@ Postgres cannot update one column in place; an UPDATE rewrites the **whole row**
 
 **Before adding any per-request write to `articles`, remember you are rewriting ~97KB.** Put hot counters in a narrow table instead.
 
+### Hot API routes must be cached and time-bounded too
+The page-level rules above only covered server components. These routes are hit on **every page view** and were reading the database raw:
+
+| Route | Called from | Was | Now |
+|---|---|---|---|
+| `/api/categories/active` | **Navbar — every page** | no timeout, no server cache | `unstable_cache` 1h + 4s timeout, falls back to all categories |
+| `/api/articles/recent` | **RelatedArticles — every article page** | selected `article`+`plan`+`chips` for 100 rows (~10MB of TOAST per call) | projected card shape, cached 5m, 4s timeout; `?full=1` keeps the wide payload for admin |
+| `/api/articles/search` | Navbar autocomplete, fires per keystroke | no timeout | `abortSignal(dbSignal())` on all three queries, `maxDuration` 10 |
+
+A slow database turned the first two into multi-minute hanging functions (2.9 minutes observed). Same rule as pages: **cache the query, bound the wait, degrade instead of hanging.**
+
 ### SERVERLESS: In-memory state won't persist across invocations
 - Gemini concurrency limiter in `lib/gemini-writer.ts` — in-memory
 - Duplicate call guard in `lib/api-usage.ts` — in-memory (5-min window)
