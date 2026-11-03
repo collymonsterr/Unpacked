@@ -41,3 +41,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 test-outputs/
+
+# Throwaway diagnostic scripts
+.m.tmp.ts
+.measure.tmp.ts
+.verify-slugs.tmp.ts
