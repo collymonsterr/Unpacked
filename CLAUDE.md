@@ -152,7 +152,7 @@ Every article flows through these stages in order. File paths and models verifie
 
 ### Stage 4: Writing → `lib/gemini-writer.ts` → `writeWithGemini()`
 - **Default model:** Gemini 2.5 Flash (temp 0.3, maxOutputTokens: 65536)
-- **Premium/fallback:** Claude Sonnet (`MODELS.sonnet` = `claude-sonnet-5`) via `lib/claude.ts` → `writeWithSonnet()`
+- **Fallback writer: Claude Haiku 5.5.** `writeWithSonnet()` only runs when Gemini fails or the reader asked for a deep dive, so only `length: 'deep'` is worth Sonnet money — everything else writes on Haiku, 20x cheaper. Verified: Haiku produces a full 13-section buyer guide (product cards, comparison table, charts, verdict) in ~24s. Nov 2026: Gemini's credits ran dry and every article silently fell through to Sonnet 5, which became 95% of all LLM spend.
 - 3 retries with JSON validation before Sonnet fallback
 - `validateArticleSchema()` checks structure
 - `formatLiveDataForPrompt()` injects live data
@@ -272,6 +272,13 @@ Full list in BUILD.md § Known Bugs. These are the ones that will bite a newcome
 
 ### 4. No automated tests
 No test framework, no CI. `npm run build` + `npx tsc --noEmit` is the entire safety net.
+
+### Writes to `articles` are expensive — batch them ⚠️
+Postgres cannot update one column in place; an UPDATE rewrites the **whole row** (MVCC). The average `articles` row is **~97KB** (`research_findings` alone is ~33KB), so incrementing `view_count` from 41 to 42 wrote 97KB of heap plus WAL. Across 11,502 views that is **~1.1GB of disk writes to maintain an integer** — which depleted the project's Supabase **Disk IO budget** (alert, Nov 2026) and left the instance unresponsive: `upstream request timeout` on inserts, 2.9-minute API responses.
+
+`app/api/articles/[id]/view/route.ts` now writes the counter only every 10th view (and on the first 9, so new articles don't sit on zero), while `article_views` still gets one small append-only row per view, so analytics stay exact. `view_count` may trail the true figure by up to 9.
+
+**Before adding any per-request write to `articles`, remember you are rewriting ~97KB.** Put hot counters in a narrow table instead.
 
 ### SERVERLESS: In-memory state won't persist across invocations
 - Gemini concurrency limiter in `lib/gemini-writer.ts` — in-memory

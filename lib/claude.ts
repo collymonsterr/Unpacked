@@ -1516,7 +1516,15 @@ export async function writeWithSonnet(
   let lastError: Error | null = null
   const optionsPrompt = options ? buildOptionsPrompt(options) : ''
   const maxTokens = options?.length === 'quick' ? 8000 : options?.length === 'deep' ? 24000 : 16000
-  const model = MODELS.sonnet
+
+  // Gemini Flash is the intended writer. This function only runs when Gemini
+  // fails or the reader explicitly asked for a deep dive — so only the deep
+  // dive is worth Sonnet money.
+  //
+  // Nov 2026: Gemini's credits ran dry and every article silently fell through
+  // to Sonnet 5 at $2/$10 per MTok — 95% of all spend. Haiku 5.5 is $0.10/$0.50,
+  // i.e. 20x cheaper, and writes a complete article fine (verified end to end).
+  const model = options?.length === 'deep' ? MODELS.sonnet : MODELS.haiku
 
   const structuredResearch = buildStructuredResearchPrompt(entityCards, synthesis)
   const blueprintSection = blueprint ? formatBlueprintForPrompt(blueprint) : ''
