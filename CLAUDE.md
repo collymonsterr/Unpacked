@@ -525,6 +525,21 @@ which surfaces as 5xx — the transient signal crawlers retry instead of de-inde
 Verified against a genuinely dead database: homepage 200 in 4.1s, category 200 in
 4.7s, article 5xx in 9.7s, about 200 in 4.5s. Before: all hung until the 300s kill.
 
+**Re-verified 8 Nov 2026, during a second total Postgres stall** (PostgREST
+answering in 150ms, every query hanging past 30s). Article pages were returning
+**504 at exactly 20s** — their `maxDuration`. The article row was already cached
+and wrapped, but three reads on the same path were not, and one of them ran on
+every single article: the creator `profiles` lookup, which had **neither a
+timeout nor an abort signal**. The two `auth.getUser()` calls on the private
+gate, and the internal-link query (`abortSignal` but no `withTimeout`, the same
+combination that failed to release the sitemap), had the same gap.
+
+With all four bounded, article pages serve **200 in ~4.7s with the database
+still dead** — fully rendered from the `unstable_cache` entry, just without the
+author bio. The lesson is that one unbounded call is enough to pin the whole
+function: `withTimeout` has to cover *every* read on the path, not the obvious
+one. When adding any read to a page, bound it at the call site.
+
 ---
 
 ## Featured Rotation — `lib/featured-rotation.ts`
