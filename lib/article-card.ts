@@ -59,7 +59,7 @@ export interface ArticleCardSource {
   created_at: string
   user_name?: string | null
   user_avatar?: string | null
-  /** Any truthy value means a fact-check ran — the payload itself is never read. */
+  /** Read only for `checks_performed` — the rest of the payload is never used. */
   fact_check?: unknown
   verified_at?: string | null
 }
@@ -157,6 +157,26 @@ function projectedVerdict(row: ArticleCardProjection): string {
   return row.first_takeaway ?? ''
 }
 
+/**
+ * Did a fact-check actually check anything?
+ *
+ * Both call sites below used to test the value for mere truthiness, which was
+ * wrong in two different ways: the full `fact_check` JSONB is a truthy object
+ * even when `checks_performed` is 0, and the projected form arrives from
+ * Postgres as the *string* `"0"`, which is truthy too. Articles written while
+ * the fact-check provider was down carry `{ checks_performed: 0 }`, so every
+ * one of them was showing a green "Verified" shield for a check that never ran.
+ */
+function performedChecks(value: unknown): boolean {
+  if (value == null) return false
+  // `fact_check->>checks_performed` comes back as a string.
+  if (typeof value === 'string' || typeof value === 'number') return Number(value) > 0
+  if (typeof value === 'object') {
+    return Number((value as { checks_performed?: unknown }).checks_performed ?? 0) > 0
+  }
+  return false
+}
+
 /** Build a card from a projected listing row. Server-side only. */
 export function toArticleCardFromProjection(row: ArticleCardProjection): ArticleCardData {
   return {
@@ -178,7 +198,7 @@ export function toArticleCardFromProjection(row: ArticleCardProjection): Article
     createdAt: row.created_at,
     userName: row.user_name ?? null,
     userAvatar: row.user_avatar ?? null,
-    hasFactCheck: !!row.fact_check_probe,
+    hasFactCheck: performedChecks(row.fact_check_probe),
     verifiedAt: row.verified_at ?? null,
   }
 }
@@ -205,7 +225,7 @@ export function toArticleCard(row: ArticleCardSource): ArticleCardData {
     createdAt: row.created_at,
     userName: row.user_name ?? null,
     userAvatar: row.user_avatar ?? null,
-    hasFactCheck: !!row.fact_check,
+    hasFactCheck: performedChecks(row.fact_check),
     verifiedAt: row.verified_at ?? null,
   }
 }

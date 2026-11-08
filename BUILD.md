@@ -602,6 +602,20 @@ Technical tone: "Write for an expert audience. Assume domain knowledge. Skip int
 
 ---
 
+### Fact-checking is OFF — Google Gemini credits depleted ⚠️ open (since 28 Oct 2026)
+Stage 1 of the triple fact-check is Gemini + Google Search grounding. The Gemini
+API returns `402 RESOURCE_EXHAUSTED` ("prepayment credits are depleted"), so no
+claims are extracted, stage 2 reviews an empty list and stage 3 never runs.
+**Every article published since 28 October has `checks_performed: 0`.** Social
+content (also Gemini) is off for the same reason. Articles still generate and
+publish normally — the writer falls back to Haiku.
+GPT-4o-mini, the stage 3 arbiter, is separately out of credit (`429
+credit_balance_exhausted`). Anthropic and Brave are healthy.
+**Fix:** buy Gemini API prepay credits for the project the key belongs to
+(https://ai.studio/projects), and top up OpenAI. No code change required —
+the pipeline tries Gemini first on every run and resumes by itself.
+
+
 ## Known Bugs (verified)
 
 0. **The daily automated article has never run in production** — **DIAGNOSED 20 Sep 2026; needs one env var.** `vercel.json` fires `/api/cron/daily-article` on schedule and Vercel does invoke it (confirmed 06:00:32 on 19 and 20 Sep), but the route returns **401** every time. Vercel only attaches `Authorization: Bearer <CRON_SECRET>` when a `CRON_SECRET` env var exists on the project; it does not, so the route rejects its own cron. Evidence: exactly **one** article in the DB has ever carried `source: 'daily_cron'`, and that was a local test run. The feature shipped 20 Jun 2026 and has produced nothing since. **Fix: add `CRON_SECRET` to Project Settings → Environment Variables (Production), then redeploy.** No code change restores this — without the env var there is no header to authenticate. The route now logs an explicit `CRON_SECRET is NOT SET` error and returns a `cron_secret_not_set` hint instead of a bare 401.

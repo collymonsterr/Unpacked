@@ -569,7 +569,10 @@ export async function runTripleFactCheck(
   const hasDisagreements = stage2.some(r => !r.agrees_with_stage1)
 
   let stage3: ArbitrationResult[] = []
-  let stagesRun = 2
+  // Stage 1 extracting no claims means the grounding call failed — nothing was
+  // verified, however many stages were attempted. Reporting 2 here is what made
+  // the article page badge read "Triple-Verified" over an empty audit.
+  let stagesRun = stage1.claims.length > 0 ? 2 : 0
 
   if (hasDisagreements || isHighRisk) {
     stagesRun = 3

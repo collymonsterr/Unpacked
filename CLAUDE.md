@@ -298,6 +298,28 @@ Both are now wrapped in `withTimeout`. Note `abortSignal(dbSignal())` **was not 
 
 **Verified: a full `npm run build` completes against a completely unresponsive database.** Keep it that way.
 
+### The Verified badge must key off `checks_performed`, never the object ⚠️ fixed Nov 2026
+When the fact-check provider is down, `stage1GeminiVerification()` still returns a
+result — `{ checks_performed: 0, issues_found: false, issues: [] }` — and the
+pipeline stores it. Three separate places then treated that as proof of a check:
+
+- `lib/article-card.ts` — `!!row.fact_check` (a truthy object) and
+  `!!row.fact_check_probe` (the projection arrives as the **string `"0"`**,
+  also truthy). Both now go through `performedChecks()`.
+- `components/ArticleView.tsx` — badged on `status === 'verified' || fact_check`.
+  Now gated on `checks_performed > 0`.
+- `components/ui/FactCheckBar.tsx` — the green bar and `FactCheckBadge` both
+  rendered whenever `issues_found` was false, which it is when nothing ran.
+  Both now bail when `totalClaims < 1`.
+
+`runTripleFactCheck()` also recorded `stages_run: 2` unconditionally, which is
+what made the badge read **"Triple-Verified"** over an empty audit; it now reports
+0 when stage 1 extracted no claims.
+
+32 of 293 published articles were carrying a false green shield. **"Verified" is
+the platform's core credibility claim — any new surface that renders it must test
+that checks actually ran, not that a fact-check object exists.**
+
 ### SERVERLESS: In-memory state won't persist across invocations
 - Gemini concurrency limiter in `lib/gemini-writer.ts` — in-memory
 - Duplicate call guard in `lib/api-usage.ts` — in-memory (5-min window)

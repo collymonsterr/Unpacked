@@ -412,7 +412,7 @@ export default function ArticleView({ articleRow, isOwner, isAdmin = false, isNe
           <span style={{ color: 'var(--border)' }}>·</span>
           <BookmarkButton articleId={articleRow.id} user={user} />
           {/* Visibility moved to EditorBar */}
-          {(articleRow.status === 'verified' || articleRow.fact_check) && (
+          {(articleRow.fact_check?.checks_performed ?? 0) > 0 && (
             <>
               <span style={{ color: 'var(--border)' }}>·</span>
               <FactCheckBadge

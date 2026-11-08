@@ -102,6 +102,11 @@ export default function FactCheckBar({ status, factCheck, audit }: Props) {
     ? audit.total_claims
     : (factCheck?.checks_performed ?? 0)
 
+  // A fact-check that verified nothing must not announce itself as verified.
+  // When the grounding call fails the pipeline still stores a result object,
+  // just with `checks_performed: 0` — which used to light this bar up green.
+  if (status === 'verified' && totalClaims < 1) return null
+
   return (
     <>
       {/* Fixed bottom bar */}
@@ -547,6 +552,10 @@ export function FactCheckBadge({
   const totalClaims = (audit?.total_claims && audit.total_claims > 0)
     ? audit.total_claims
     : (factCheck.checks_performed ?? 0)
+
+  // Nothing checked, nothing to badge. See the note in FactCheckBar above.
+  if (totalClaims < 1) return null
+
   const isTriple = stagesRun >= 2
   const hasClaimsData = audit && audit.claims && audit.claims.length > 0
   const isExpandable = Boolean(hasClaimsData && onToggle)
