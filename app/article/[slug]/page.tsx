@@ -12,7 +12,7 @@ import type { ArticleRow, ProductCard } from '@/types/article'
 import type { LinkableArticle } from '@/lib/internal-links'
 import { generateArticleJsonLd, generateProductJsonLd, generateBreadcrumbJsonLd, generateClaimReviewJsonLd, generateVerdictReviewJsonLd } from '@/lib/structured-data'
 import { getCanonicalSlug, isIndexableSlug } from '@/lib/seo-canonical'
-import { DB_TIMEOUT_MS, dbSignal, withTimeout } from '@/lib/db-timeout'
+import { AUTH_TIMEOUT_MS, DB_TIMEOUT_MS, dbSignal, withTimeout } from '@/lib/db-timeout'
 import ArticlePageClient from './ArticlePageClient'
 
 // Cache internal links data (1 hour) — avoids DB call on every page load
@@ -27,14 +27,21 @@ async function getLinkableArticles(excludeSlug: string): Promise<LinkableArticle
   }
   try {
     const db = getSupabaseAdmin()
-    const { data } = await db
-      .from('articles')
-      .select('slug, title:article->>title')
-      .in('status', ['complete', 'verified'])
-      .eq('visibility', 'published')
-      .order('view_count', { ascending: false })
-      .limit(50)
-      .abortSignal(dbSignal())
+    // abortSignal alone has already proved insufficient elsewhere in this repo
+    // (see the sitemap note in CLAUDE.md) — withTimeout is the guarantee.
+    const { data } = await withTimeout(
+      db
+        .from('articles')
+        .select('slug, title:article->>title')
+        .in('status', ['complete', 'verified'])
+        .eq('visibility', 'published')
+        .order('view_count', { ascending: false })
+        .limit(50)
+        .abortSignal(dbSignal()),
+      DB_TIMEOUT_MS,
+      'internal link candidates',
+      { data: [] } as never
+    )
     cachedLinkArticles = (data ?? []).map(r => ({
       title: (r as { title?: string }).title ?? '',
       slug: r.slug as string,
@@ -127,7 +134,14 @@ export default async function ArticlePage({ params }: Props) {
     try {
       const { createServerSupabase } = await import('@/lib/supabase')
       const supabase = await createServerSupabase()
-      const { data: { user } } = await supabase.auth.getUser()
+      // Supabase Auth hangs too when the database is unhealthy. Falling back to
+      // "no user" keeps a private article private, which is the safe direction.
+      const { data: { user } } = await withTimeout(
+        supabase.auth.getUser(),
+        AUTH_TIMEOUT_MS,
+        'article visibility auth check',
+        { data: { user: null } } as Awaited<ReturnType<typeof supabase.auth.getUser>>
+      )
       const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
       const isAdmin = !!(user?.email && adminEmail && user.email.toLowerCase() === adminEmail.toLowerCase())
       const isOwner = user && user.id === row.user_id
@@ -180,11 +194,22 @@ export default async function ArticlePage({ params }: Props) {
   let creatorMediumUrl: string | undefined
   let isFoundingCreator = false
   if (row.user_id) {
-    const { data: profile } = await getSupabaseAdmin()
-      .from('profiles')
-      .select('bio, twitter_url, linkedin_url, medium_url, is_founding_creator')
-      .eq('id', row.user_id)
-      .single()
+    // Bounded like every other page-path read. This one had neither a timeout
+    // nor an abort signal and runs for every article that has an author, so a
+    // stalled database pinned the whole function for its 20s maxDuration — the
+    // article row itself is cached, this was the call that hung. A byline
+    // without a bio is a fine degradation; a dead page is not.
+    const { data: profile } = await withTimeout(
+      getSupabaseAdmin()
+        .from('profiles')
+        .select('bio, twitter_url, linkedin_url, medium_url, is_founding_creator')
+        .eq('id', row.user_id)
+        .abortSignal(dbSignal())
+        .single(),
+      DB_TIMEOUT_MS,
+      `creator profile ${row.user_id}`,
+      { data: null } as never
+    )
     creatorBio = profile?.bio || undefined
     creatorTwitterUrl = profile?.twitter_url || undefined
     creatorLinkedinUrl = profile?.linkedin_url || undefined
@@ -225,7 +250,14 @@ export async function generateMetadata({ params }: Props) {
     try {
       const { createServerSupabase } = await import('@/lib/supabase')
       const supabase = await createServerSupabase()
-      const { data: { user } } = await supabase.auth.getUser()
+      // Supabase Auth hangs too when the database is unhealthy. Falling back to
+      // "no user" keeps a private article private, which is the safe direction.
+      const { data: { user } } = await withTimeout(
+        supabase.auth.getUser(),
+        AUTH_TIMEOUT_MS,
+        'article visibility auth check',
+        { data: { user: null } } as Awaited<ReturnType<typeof supabase.auth.getUser>>
+      )
       const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
       const isAdmin = !!(user?.email && adminEmail && user.email.toLowerCase() === adminEmail.toLowerCase())
       const isOwner = user && user.id === row.user_id
