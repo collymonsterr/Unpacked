@@ -578,6 +578,35 @@ Rotation is time-derived, not stored, so there is nothing to migrate and no
 write load — it costs zero database queries. `selectFeatured([])` returns
 `{ hero: null }` and the section renders nothing.
 
+## The sitemap must never be published empty — `app/sitemap.ts`
+
+A truncated sitemap is not a degraded sitemap, it is a **wrong** one: it tells
+Google the site has 16 pages. `revalidate = 3600` then serves that as the truth
+for an hour, and because the route is also generated at build time, a deploy
+that lands during a database stall bakes it in.
+
+That happened on 8 Nov 2026. The build-failure fix from 3 Nov used
+`withTimeout(query, DB_TIMEOUT_MS, …, { data: [] })`, so a stalled Postgres
+returned **zero articles** and the deploy published a 16-URL sitemap for a site
+with 293 published articles. Search Console reported "Server error (5xx)" and
+pages dropping out of the index — the 5xx from the same outage, compounded by a
+sitemap that no longer mentioned the articles.
+
+The rule now:
+
+- **Runtime: throw.** Next keeps serving the last good sitemap and retries on
+  the next revalidate, so Google never sees the truncated version.
+- **Build time only** (`process.env.NEXT_PHASE === PHASE_PRODUCTION_BUILD`):
+  return the static entries so the deploy still succeeds — that is what the
+  3 Nov fix was for — and let the hourly revalidate fill the articles back in.
+- The sitemap gets `SITEMAP_DB_TIMEOUT_MS` (15s), not the 4s reader budget. It
+  is a crawler endpoint; nobody is watching a blank screen, and completeness
+  beats speed.
+
+This is the same trap as the `unstable_cache` rule above — **an empty result
+returned instead of thrown gets cached as fact** — just with Google as the
+victim rather than a reader.
+
 ## SEO Canonicalisation — `lib/seo-canonical.ts`
 
 One indexable URL per search intent. Three mechanisms, all reversible by editing that one file — **nothing here deletes an article row**:
